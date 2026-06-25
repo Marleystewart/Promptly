@@ -133,6 +133,7 @@ const openings = [
 
 const profile = {
   name: "Marley",
+  email: "",
   major: "",
   fields: ["Technology", "Healthcare", "Marketing"],
 };
@@ -147,6 +148,7 @@ const fieldGrid = document.querySelector("[data-field-grid]");
 const pushStatus = document.querySelector("[data-push-status]");
 const saved = new Map();
 const fallbackVapidPublicKey = "BIQfsqoTgEEQRYIM-YdEvr8-95V4xhNHKf9CwIRPIb3O0ZyIqABnNXUeuR-cSuoEl4wYkNptOd5aie8PU0e78o8";
+const profileStorageKey = "openingProfile";
 
 function logoMarkup(item) {
   return `<div class="logo ${item.logoClass}">${item.short}</div>`;
@@ -251,11 +253,11 @@ function applyMajor(major) {
   updateFieldButtons();
 }
 
-function enterApp() {
-  const customMajor = document.querySelector("[data-major-custom]").value.trim();
-  const typedName = document.querySelector("[data-name-input]").value.trim();
-  if (customMajor) applyMajor(customMajor);
-  if (typedName) profile.name = typedName;
+function saveProfile() {
+  localStorage.setItem(profileStorageKey, JSON.stringify(profile));
+}
+
+function applyProfileToUI() {
   document.body.classList.remove("onboarding-active");
   document.querySelector("[data-title]").textContent = `Good Morning ${profile.name}`;
   document.querySelector(".profile-chip").textContent = profile.name[0]?.toUpperCase() || "M";
@@ -264,6 +266,32 @@ function enterApp() {
   document.querySelector(".watch-card span").textContent = String(36 + profile.fields.length * 8);
   setFeatured();
   renderOpenings();
+}
+
+function restoreProfile() {
+  try {
+    const savedProfile = JSON.parse(localStorage.getItem(profileStorageKey) || "null");
+    if (!savedProfile) return false;
+    Object.assign(profile, savedProfile);
+    document.querySelector("[data-name-input]").value = profile.name || "";
+    document.querySelector("[data-email-input]").value = profile.email || "";
+    applyProfileToUI();
+    setView("home");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function enterApp() {
+  const customMajor = document.querySelector("[data-major-custom]").value.trim();
+  const typedName = document.querySelector("[data-name-input]").value.trim();
+  const typedEmail = document.querySelector("[data-email-input]").value.trim();
+  if (customMajor) applyMajor(customMajor);
+  if (typedName) profile.name = typedName;
+  if (typedEmail) profile.email = typedEmail;
+  saveProfile();
+  applyProfileToUI();
   setView("home");
 }
 
@@ -371,6 +399,7 @@ async function sendTestPush() {
 renderFieldChoices();
 renderOpenings();
 setFeatured();
+restoreProfile();
 
 document.addEventListener("click", (event) => {
   const nextButton = event.target.closest("[data-next-step]");
