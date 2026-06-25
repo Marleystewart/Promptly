@@ -1,10 +1,26 @@
+const { isValidEmail } = require("./_shared/email-validator");
+const { readBody, saveSubscriber } = require("./_shared/store");
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  return res.status(200).json({
-    ok: true,
-    note: "Prototype saved subscription locally. Add a database next for automatic alerts.",
-  });
+  try {
+    const body = readBody(req);
+    const profile = body.profile || {};
+
+    if (!isValidEmail(profile.email)) {
+      return res.status(400).json({ error: "Use a valid Gmail, Yahoo, iCloud, Outlook, Hotmail, AOL, or .edu email." });
+    }
+
+    const result = await saveSubscriber(profile, body.subscription || null);
+    return res.status(result.saved ? 200 : 202).json({
+      ok: true,
+      saved: result.saved,
+      setupRequired: result.setupRequired,
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || "Could not save subscriber." });
+  }
 };

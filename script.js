@@ -340,6 +340,7 @@ function enterApp() {
   if (typedName) profile.name = typedName;
   if (typedEmail) profile.email = typedEmail;
   saveProfile();
+  saveSubscriber();
   applyProfileToUI();
   setView("home");
 }
@@ -384,6 +385,21 @@ async function getVapidPublicKey() {
   }
 }
 
+async function saveSubscriber(subscription = null) {
+  try {
+    const response = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscription, profile }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (data.setupRequired) setPushStatus(data.setupRequired);
+    return response.ok || response.status === 202;
+  } catch {
+    return false;
+  }
+}
+
 async function enablePushAlerts() {
   if (!("Notification" in window) || !("PushManager" in window)) {
     setPushStatus("Push alerts are not supported here. On iPhone, add the site to Home Screen first.");
@@ -408,14 +424,50 @@ async function enablePushAlerts() {
   localStorage.setItem("openingPushSubscription", JSON.stringify(subscription));
   setPushStatus("Alerts are enabled. Tap Send Test to check your phone notification.");
 
+  await saveSubscriber(subscription);
+}
+
+function currentTestOpening() {
+  const item = preferredOpenings()[0];
+  return {
+    company: item.company,
+    role: item.role,
+    program: item.program,
+    deadline: item.deadline,
+    field: item.field,
+  };
+}
+
+async function sendTestAlert() {
+  if (!validateSignup()) {
+    setView("home");
+    return;
+  }
+
+  const raw = localStorage.getItem("openingPushSubscription");
+  setPushStatus("Sending a test email alert...");
+
   try {
-    await fetch("/api/subscribe", {
+    const response = await fetch("/api/send-alert", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subscription, profile }),
+      body: JSON.stringify({
+        opening: currentTestOpening(),
+        profile,
+        subscription: raw ? JSON.parse(raw) : null,
+      }),
     });
+    const data = await response.json();
+    const setup = Array.isArray(data.setupRequired) && data.setupRequired.length ? `Setup needed: ${data.setupRequired.join(" ")}` : "";
+    const errors = Array.isArray(data.errors) && data.errors.length ? data.errors.join(" ") : "";
+    const sentCount = (data.emailSent || 0) + (data.pushSent || 0);
+    if (response.ok && sentCount > 0) {
+      setPushStatus(`Test sent to ${data.emailSent || 0} email inbox and ${data.pushSent || 0} phone.`);
+    } else {
+      setPushStatus(data.error || setup || errors || "Test alert failed.");
+    }
   } catch {
-    // The subscription is still stored locally, so test alerts can continue.
+    setPushStatus("Test alert failed. Add Resend and Redis keys in Vercel, then try again.");
   }
 }
 
@@ -462,6 +514,7 @@ document.addEventListener("click", (event) => {
   const closeButton = event.target.closest(".close-modal");
   const enablePushButton = event.target.closest("[data-enable-push]");
   const sendTestButton = event.target.closest("[data-send-test-push]");
+  const sendTestAlertButton = event.target.closest("[data-send-test-alert]");
 
   if (nextButton) {
     if (nextButton.dataset.nextStep === "2" && !validateSignup()) return;
@@ -490,6 +543,10 @@ document.addEventListener("click", (event) => {
 
   if (sendTestButton) {
     sendTestPush();
+  }
+
+  if (sendTestAlertButton) {
+    sendTestAlert();
   }
 
   if (viewButton && !document.body.classList.contains("onboarding-active")) {
