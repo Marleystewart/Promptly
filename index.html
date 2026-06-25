@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Opening | Internship recruiting alerts</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="onboarding-active">
+    <section class="onboarding-shell" aria-label="Opening sign up">
+      <div class="onboarding-brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M18 9.8c0-3.4-2.1-6-5-6.7V2h-2v1.1c-2.9.7-5 3.3-5 6.7v3.9l-1.8 3h15.6l-1.8-3V9.8Z"/><path d="M9.2 19.2a2.9 2.9 0 0 0 5.6 0"/></svg>
+        </span>
+        <strong>Opening</strong>
+      </div>
+
+      <div class="signup-card onboard-step active" data-step="1">
+        <p class="eyebrow">Start here</p>
+        <h1>Tell us what you study. We’ll track what fits.</h1>
+        <p>Opening is for every major, not just finance. Sign up and we’ll connect your major to the right internship fields.</p>
+        <label class="field-label">Name<input data-name-input type="text" value="Marley" /></label>
+        <label class="field-label">Email<input type="email" placeholder="you@school.edu" /></label>
+        <button class="primary-action wide" data-next-step="2">Create Account</button>
+      </div>
+
+      <div class="signup-card onboard-step" data-step="2">
+        <p class="eyebrow">Your major</p>
+        <h1>What’s your major?</h1>
+        <p>Pick the closest match. You can still follow any field you want.</p>
+        <div class="major-grid">
+          <button data-major="Computer Science">Computer Science</button>
+          <button data-major="Business">Business</button>
+          <button data-major="Biology / Pre-Med">Biology / Pre-Med</button>
+          <button data-major="Psychology">Psychology</button>
+          <button data-major="Communications">Communications</button>
+          <button data-major="Design / Art">Design / Art</button>
+          <button data-major="Engineering">Engineering</button>
+          <button data-major="Education">Education</button>
+          <button data-major="Political Science">Political Science</button>
+          <button data-major="Data Science">Data Science</button>
+          <button data-major="Marketing">Marketing</button>
+          <button data-major="Undecided">Undecided</button>
+        </div>
+        <label class="field-label">Or type your major<input data-major-custom type="text" placeholder="Example: Environmental Science" /></label>
+        <div class="step-actions">
+          <button class="soft-action" data-next-step="1">Back</button>
+          <button class="primary-action" data-next-step="3">Continue</button>
+        </div>
+      </div>
+
+      <div class="signup-card onboard-step" data-step="3">
+        <p class="eyebrow">Career fields</p>
+        <h1>Choose fields you want alerts for.</h1>
+        <p>We’ll suggest a few based on your major, but you’re in control.</p>
+        <div class="field-grid" data-field-grid></div>
+        <div class="step-actions">
+          <button class="soft-action" data-next-step="2">Back</button>
+          <button class="primary-action" data-finish-onboarding>Enter Opening</button>
+        </div>
+      </div>
+    </section>
+
+    <main class="app-shell">
+      <aside class="rail" aria-label="Opening navigation">
+        <a class="brand" href="#" data-view="home" aria-label="Opening home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M18 9.8c0-3.4-2.1-6-5-6.7V2h-2v1.1c-2.9.7-5 3.3-5 6.7v3.9l-1.8 3h15.6l-1.8-3V9.8Z"/><path d="M9.2 19.2a2.9 2.9 0 0 0 5.6 0"/></svg>
+          </span>
+          <strong>Opening</strong>
+        </a>
+
+        <nav class="desktop-nav">
+          <button class="nav-item active" data-view="home">
+            <svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>
+            Home
+          </button>
+          <button class="nav-item" data-view="openings">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+            Openings
+          </button>
+          <button class="nav-item" data-view="cycles">
+            <svg viewBox="0 0 24 24"><path d="M7 2v4"/><path d="M17 2v4"/><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18"/></svg>
+            Recruiting Cycles
+          </button>
+          <button class="nav-item" data-view="saved">
+            <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
+            Saved
+          </button>
+          <button class="nav-item" data-view="profile">
+            <svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+            Profile
+          </button>
+        </nav>
+
+        <div class="watch-card">
+          <span>42</span>
+          <p>opportunities tracked</p>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Mission control</p>
+            <h1 data-title>Good Morning Marley</h1>
+          </div>
+          <div class="top-actions">
+            <button class="icon-btn" aria-label="Search" data-view="openings">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+            </button>
+            <button class="icon-btn" aria-label="Notifications">
+              <svg viewBox="0 0 24 24"><path d="M18 9.8c0-3.4-2.1-6-5-6.7V2h-2v1.1c-2.9.7-5 3.3-5 6.7v3.9l-1.8 3h15.6l-1.8-3V9.8Z"/><path d="M9.2 19.2a2.9 2.9 0 0 0 5.6 0"/></svg>
+              <b>3</b>
+            </button>
+            <button class="profile-chip" data-view="profile">M</button>
+          </div>
+        </header>
+
+        <section class="view active" id="view-home" data-heading="Good Morning Marley">
+          <div class="home-grid">
+            <article class="featured-card">
+              <div class="card-copy">
+                <span class="status-pill">JUST OPENED</span>
+                <h2 data-feature-title>Your first alerts are ready.</h2>
+                <p data-feature-copy>Pick your fields to see roles across every major.</p>
+                <div class="card-actions">
+                  <button class="primary-action" data-feature-open data-open-details="Google">Apply Now</button>
+                  <button class="soft-action" data-feature-save data-save="Google">Save</button>
+                </div>
+              </div>
+              <div class="mega-logo tech" data-feature-logo>GO</div>
+            </article>
+
+            <aside class="pulse-panel">
+              <div class="pulse-ring">
+                <span></span>
+                <svg viewBox="0 0 24 24"><path d="M18 9.8c0-3.4-2.1-6-5-6.7V2h-2v1.1c-2.9.7-5 3.3-5 6.7v3.9l-1.8 3h15.6l-1.8-3V9.8Z"/></svg>
+              </div>
+              <h3>Always watching</h3>
+              <p>Only live, relevant openings make it here.</p>
+            </aside>
+          </div>
+
+          <div class="filter-row" aria-label="Industry filters">
+            <button class="filter-chip">Technology</button>
+            <button class="filter-chip">Healthcare</button>
+            <button class="filter-chip">Design</button>
+            <button class="filter-chip">Marketing</button>
+            <button class="filter-chip">Education</button>
+            <button class="filter-chip">Media</button>
+            <button class="filter-chip">Science</button>
+            <button class="filter-chip">Policy</button>
+            <button class="filter-chip">Finance</button>
+            <button class="filter-chip">Consulting</button>
+          </div>
+
+          <div class="section-head">
+            <h2>Recent Openings</h2>
+            <button class="text-button" data-view="openings">See all</button>
+          </div>
+          <div class="opening-list compact-list"></div>
+
+          <div class="section-head">
+            <h2>Coming Soon</h2>
+            <button class="text-button" data-view="cycles">Timeline</button>
+          </div>
+          <div class="soon-grid">
+            <article><span></span><strong>Google APM</strong><p>Expected in about 9 days</p></article>
+            <article><span></span><strong>Mayo Clinic Research</strong><p>Expected in about 2 weeks</p></article>
+            <article><span></span><strong>Spotify Marketing</strong><p>Likely begins next month</p></article>
+          </div>
+        </section>
+
+        <section class="view" id="view-openings" data-heading="Live Openings">
+          <div class="search-panel">
+            <label>
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+              <input type="search" placeholder="Search Google, Mayo, Spotify, NASA..." />
+            </label>
+            <div class="filter-row tight">
+              <button class="filter-chip active">All</button>
+              <button class="filter-chip">Technology</button>
+              <button class="filter-chip">Healthcare</button>
+              <button class="filter-chip">Design</button>
+              <button class="filter-chip">Education</button>
+              <button class="filter-chip">Media</button>
+              <button class="filter-chip">Science</button>
+              <button class="filter-chip">Policy</button>
+              <button class="filter-chip">Finance</button>
+              <button class="filter-chip">Saved</button>
+            </div>
+          </div>
+          <div class="opening-list full-list"></div>
+        </section>
+
+        <section class="view" id="view-cycles" data-heading="Recruiting Cycles">
+          <div class="timeline-card">
+            <div class="months">
+              <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+            </div>
+            <div class="timeline">
+              <article>
+                <strong>Technology</strong>
+                <button class="company-chip tech-chip" data-open-details="Google" style="--start: 2.5;">Google</button>
+                <button class="company-chip" data-open-details="Duolingo" style="--start: 3.2;">Duo</button>
+                <button class="company-chip" data-open-details="Microsoft" style="--start: 4.2;">MSFT</button>
+              </article>
+              <article>
+                <strong>Healthcare</strong>
+                <button class="company-chip health-chip" data-open-details="Mayo Clinic" style="--start: 4.6;">Mayo</button>
+                <button class="company-chip" data-open-details="Pfizer" style="--start: 5.7;">Pfizer</button>
+                <button class="company-chip" data-open-details="NIH" style="--start: 7;">NIH</button>
+              </article>
+              <article>
+                <strong>Media & Design</strong>
+                <button class="company-chip media-chip" data-open-details="Spotify" style="--start: 3.4;">Spotify</button>
+                <button class="company-chip" data-open-details="New York Times" style="--start: 5.3;">NYT</button>
+                <button class="company-chip" data-open-details="Adobe" style="--start: 8.1;">Adobe</button>
+              </article>
+              <article>
+                <strong>Science & Policy</strong>
+                <button class="company-chip science-chip" data-open-details="NASA" style="--start: 2.8;">NASA</button>
+                <button class="company-chip" data-open-details="EPA" style="--start: 4.9;">EPA</button>
+                <button class="company-chip" data-open-details="UNICEF" style="--start: 6.8;">UNICEF</button>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-saved" data-heading="Saved Alerts">
+          <div class="empty-state">
+            <div class="pulse-ring small"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg></div>
+            <h2>Your saved firms appear here.</h2>
+            <p>Tap Save on any opening to keep it close.</p>
+          </div>
+          <div class="saved-list"></div>
+        </section>
+
+        <section class="view" id="view-profile" data-heading="Profile">
+          <div class="settings-grid">
+            <article class="settings-card">
+              <h2>Alerts</h2>
+              <label><span>Push notifications<small>Instant openings on your device</small></span><input type="checkbox" checked /></label>
+              <label><span>Email digest<small>Daily summary of new openings</small></span><input type="checkbox" checked /></label>
+              <label><span>SMS alerts<small>Only for time-sensitive roles</small></span><input type="checkbox" /></label>
+            </article>
+            <article class="settings-card">
+              <h2>Tracking</h2>
+              <div class="profile-row"><span>School</span><strong>Howard University</strong></div>
+              <div class="profile-row"><span>Graduation year</span><strong>2028</strong></div>
+              <div class="profile-row"><span>Major</span><strong data-profile-major>Not set</strong></div>
+              <div class="profile-row"><span>Fields</span><strong data-profile-fields>Technology, Healthcare</strong></div>
+              <button class="primary-action">Upload Resume</button>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <nav class="mobile-nav" aria-label="Mobile navigation">
+      <button class="nav-item active" data-view="home"><svg viewBox="0 0 24 24"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Home</span></button>
+      <button class="nav-item" data-view="openings"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><span>Openings</span></button>
+      <button class="nav-item" data-view="cycles"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18"/></svg><span>Cycles</span></button>
+      <button class="nav-item" data-view="saved"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg><span>Saved</span></button>
+      <button class="nav-item" data-view="profile"><svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></button>
+    </nav>
+
+    <dialog class="details-modal">
+      <button class="close-modal" aria-label="Close details">×</button>
+      <div class="modal-logo gs">Goldman<br />Sachs</div>
+      <span class="status-pill">OPEN</span>
+      <h2 data-modal-company>Goldman Sachs</h2>
+      <p data-modal-role>Investment Banking Summer Analyst</p>
+      <div class="modal-grid">
+        <span>Deadline<strong data-modal-deadline>Oct 15</strong></span>
+        <span>Opened<strong data-modal-opened>18 min ago</strong></span>
+        <span>Field<strong data-modal-field>Technology</strong></span>
+        <span>Type<strong>Rolling</strong></span>
+      </div>
+      <button class="primary-action wide">Apply Now</button>
+    </dialog>
+
+    <script src="script.js"></script>
+  </body>
+</html>
