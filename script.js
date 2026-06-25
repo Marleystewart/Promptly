@@ -144,7 +144,9 @@ const modalCompany = document.querySelector("[data-modal-company]");
 const savedList = document.querySelector(".saved-list");
 const emptyState = document.querySelector(".empty-state");
 const fieldGrid = document.querySelector("[data-field-grid]");
+const pushStatus = document.querySelector("[data-push-status]");
 const saved = new Map();
+const fallbackVapidPublicKey = "BIQfsqoTgEEQRYIM-YdEvr8-95V4xhNHKf9CwIRPIb3O0ZyIqABnNXUeuR-cSuoEl4wYkNptOd5aie8PU0e78o8";
 
 function logoMarkup(item) {
   return `<div class="logo ${item.logoClass}">${item.short}</div>`;
@@ -265,6 +267,107 @@ function enterApp() {
   setView("home");
 }
 
+function setPushStatus(message) {
+  document.querySelectorAll("[data-push-status]").forEach((item) => {
+    item.textContent = message;
+  });
+}
+
+function urlBase64ToUint8Array(value) {
+  const padding = "=".repeat((4 - (value.length % 4)) % 4);
+  const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = window.atob(base64);
+  return Uint8Array.from([...raw].map((char) => char.charCodeAt(0)));
+}
+
+async function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    setPushStatus("This browser does not support service workers yet.");
+    return null;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.register("/service-worker.js");
+    await navigator.serviceWorker.ready;
+    return registration;
+  } catch (error) {
+    setPushStatus("Service worker setup failed. Deploy on HTTPS or use localhost to test.");
+    return null;
+  }
+}
+
+async function getVapidPublicKey() {
+  try {
+    const response = await fetch("/api/vapid-public-key");
+    if (!response.ok) return fallbackVapidPublicKey;
+    const data = await response.json();
+    return data.publicKey || fallbackVapidPublicKey;
+  } catch {
+    return fallbackVapidPublicKey;
+  }
+}
+
+async function enablePushAlerts() {
+  if (!("Notification" in window) || !("PushManager" in window)) {
+    setPushStatus("Push alerts are not supported here. On iPhone, add the site to Home Screen first.");
+    return;
+  }
+
+  const registration = await registerServiceWorker();
+  if (!registration) return;
+
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") {
+    setPushStatus("Notifications are off. Turn them on to receive opening alerts.");
+    return;
+  }
+
+  const existing = await registration.pushManager.getSubscription();
+  const subscription = existing || await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(await getVapidPublicKey()),
+  });
+
+  localStorage.setItem("openingPushSubscription", JSON.stringify(subscription));
+  setPushStatus("Alerts are enabled. Tap Send Test to check your phone notification.");
+
+  try {
+    await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscription, profile }),
+    });
+  } catch {
+    // The subscription is still stored locally, so test alerts can continue.
+  }
+}
+
+async function sendTestPush() {
+  const raw = localStorage.getItem("openingPushSubscription");
+  if (!raw) {
+    setPushStatus("Enable alerts first, then send a test notification.");
+    return;
+  }
+
+  setPushStatus("Sending a real test notification...");
+
+  try {
+    const response = await fetch("/api/send-test", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subscription: JSON.parse(raw),
+        title: "Opening",
+        body: `${preferredOpenings()[0].company} ${preferredOpenings()[0].role} just opened.`,
+      }),
+    });
+    const data = await response.json();
+    setPushStatus(response.ok ? "Test sent. Check your lock screen or notification center." : data.error || "Test failed.");
+  } catch {
+    setPushStatus("Test failed. This works after the site is deployed on Vercel with push keys.");
+  }
+}
+
 renderFieldChoices();
 renderOpenings();
 setFeatured();
@@ -279,6 +382,8 @@ document.addEventListener("click", (event) => {
   const saveButton = event.target.closest("[data-save]");
   const filterButton = event.target.closest(".filter-chip");
   const closeButton = event.target.closest(".close-modal");
+  const enablePushButton = event.target.closest("[data-enable-push]");
+  const sendTestButton = event.target.closest("[data-send-test-push]");
 
   if (nextButton) {
     setOnboardingStep(nextButton.dataset.nextStep);
@@ -298,6 +403,14 @@ document.addEventListener("click", (event) => {
 
   if (finishButton) {
     enterApp();
+  }
+
+  if (enablePushButton) {
+    enablePushAlerts();
+  }
+
+  if (sendTestButton) {
+    sendTestPush();
   }
 
   if (viewButton && !document.body.classList.contains("onboarding-active")) {
@@ -332,3 +445,5 @@ document.querySelector(".search-panel input")?.addEventListener("input", (event)
   const matches = openings.filter((item) => `${item.company} ${item.role} ${item.field}`.toLowerCase().includes(query));
   document.querySelector(".full-list").innerHTML = matches.map(openingRow).join("");
 });
+
+registerServiceWorker();

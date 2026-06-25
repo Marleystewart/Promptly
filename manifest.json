@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Opening",
+  "short_name": "Opening",
+  "description": "Internship recruiting alerts for every major.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#060815",
+  "theme_color": "#0b1020",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

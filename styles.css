@@ -421,7 +421,8 @@ body:not(.onboarding-active) .onboarding-shell {
 .settings-card,
 .empty-state,
 .opening-row,
-.soon-grid article {
+.soon-grid article,
+.notification-setup {
   border: 1px solid var(--line);
   background: linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.065));
   box-shadow: 0 18px 48px rgba(0,0,0,0.22);
@@ -782,6 +783,38 @@ body:not(.onboarding-active) .onboarding-shell {
   color: var(--muted);
 }
 
+.notification-setup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 18px;
+  border-radius: 26px;
+  padding: 22px;
+  background:
+    radial-gradient(circle at 92% 20%, rgba(97,232,170,0.2), transparent 30%),
+    linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.065));
+}
+
+.notification-setup h2 {
+  margin-top: 12px;
+  font-size: 26px;
+}
+
+.notification-setup p {
+  max-width: 560px;
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.notify-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .search-panel {
   display: grid;
   gap: 16px;
@@ -1078,6 +1111,20 @@ input[type="checkbox"] {
 
   .soon-grid {
     grid-template-columns: 1fr;
+  }
+
+  .notification-setup {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .notify-actions {
+    justify-content: stretch;
+  }
+
+  .notify-actions .primary-action,
+  .notify-actions .soft-action {
+    flex: 1;
   }
 
   .mobile-nav {

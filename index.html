@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Opening | Internship recruiting alerts</title>
+    <meta name="theme-color" content="#0b1020" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Opening" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icon.svg" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="onboarding-active">
@@ -161,6 +167,18 @@
           </div>
           <div class="opening-list compact-list"></div>
 
+          <article class="notification-setup">
+            <div>
+              <span class="status-pill">PHONE ALERTS</span>
+              <h2>Test real lock-screen alerts.</h2>
+              <p data-push-status>Add Opening to your phone Home Screen, then enable alerts and send a test notification.</p>
+            </div>
+            <div class="notify-actions">
+              <button class="primary-action" data-enable-push>Enable Alerts</button>
+              <button class="soft-action" data-send-test-push>Send Test</button>
+            </div>
+          </article>
+
           <div class="section-head">
             <h2>Coming Soon</h2>
             <button class="text-button" data-view="cycles">Timeline</button>
@@ -244,6 +262,8 @@
               <label><span>Push notifications<small>Instant openings on your device</small></span><input type="checkbox" checked /></label>
               <label><span>Email digest<small>Daily summary of new openings</small></span><input type="checkbox" checked /></label>
               <label><span>SMS alerts<small>Only for time-sensitive roles</small></span><input type="checkbox" /></label>
+              <button class="primary-action" data-enable-push>Enable Phone Alerts</button>
+              <button class="soft-action" data-send-test-push>Send Test Alert</button>
             </article>
             <article class="settings-card">
               <h2>Tracking</h2>
