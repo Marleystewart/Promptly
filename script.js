@@ -385,7 +385,7 @@ async function sendTestPush() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         subscription: JSON.parse(raw),
-        title: "Opening",
+        title: "Promptly",
         body: `${preferredOpenings()[0].company} ${preferredOpenings()[0].role} just opened.`,
       }),
     });

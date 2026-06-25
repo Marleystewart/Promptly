@@ -5,7 +5,8 @@ const appShell = [
   "/styles.css",
   "/script.js",
   "/manifest.json",
-  "/icon.svg",
+  "/assets/app-icon.png",
+  "/assets/wordmark.png",
 ];
 
 self.addEventListener("install", (event) => {
@@ -55,14 +56,14 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: "Opening", body: "A new internship opening is live." };
+    data = { title: "Promptly", body: "A new internship opening is live." };
   }
 
-  const title = data.title || "Opening";
+  const title = data.title || "Promptly";
   const options = {
     body: data.body || "A new internship opening is live.",
-    badge: "/icon.svg",
-    icon: "/icon.svg",
+    badge: "/assets/app-icon.png",
+    icon: "/assets/app-icon.png",
     data: { url: data.url || "/" },
     tag: "opening-alert",
   };

@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Opening",
-  "short_name": "Opening",
+  "name": "Promptly",
+  "short_name": "Promptly",
   "description": "Internship recruiting alerts for every major.",
   "start_url": "/",
   "scope": "/",
@@ -10,9 +10,9 @@
   "theme_color": "#0b1020",
   "icons": [
     {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/assets/app-icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

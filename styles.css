@@ -114,6 +114,15 @@ body:not(.onboarding-active) .onboarding-shell {
   font-weight: 900;
 }
 
+.brand-logo {
+  width: 190px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 16px;
+  filter: drop-shadow(0 0 24px rgba(128, 87, 255, 0.22));
+}
+
 .signup-card {
   width: min(720px, 100%);
   display: none;
@@ -238,6 +247,10 @@ body:not(.onboarding-active) .onboarding-shell {
   gap: 12px;
   font-size: 22px;
   font-weight: 900;
+}
+
+.rail .brand-logo {
+  width: 196px;
 }
 
 .brand-mark {
@@ -1169,6 +1182,11 @@ input[type="checkbox"] {
   .onboarding-brand {
     top: 18px;
     left: 18px;
+  }
+
+  .brand-logo,
+  .rail .brand-logo {
+    width: 160px;
   }
 
   .signup-card {
