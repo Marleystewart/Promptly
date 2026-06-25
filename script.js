@@ -132,7 +132,7 @@ const openings = [
 ];
 
 const profile = {
-  name: "Marley",
+  name: "",
   email: "",
   major: "",
   fields: ["Technology", "Healthcare", "Marketing"],
@@ -202,7 +202,7 @@ function setView(name) {
 
   views.forEach((item) => item.classList.toggle("active", item === view));
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
-  title.textContent = view.dataset.heading;
+  title.textContent = name === "home" ? greetingText() : view.dataset.heading;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -257,10 +257,19 @@ function saveProfile() {
   localStorage.setItem(profileStorageKey, JSON.stringify(profile));
 }
 
+function displayName() {
+  return profile.name.trim() || "there";
+}
+
+function greetingText() {
+  return `Good Morning ${displayName()}`;
+}
+
 function applyProfileToUI() {
   document.body.classList.remove("onboarding-active");
-  document.querySelector("[data-title]").textContent = `Good Morning ${profile.name}`;
-  document.querySelector(".profile-chip").textContent = profile.name[0]?.toUpperCase() || "M";
+  document.querySelector("[data-title]").textContent = greetingText();
+  document.querySelector("#view-home").dataset.heading = greetingText();
+  document.querySelector(".profile-chip").textContent = profile.name.trim()[0]?.toUpperCase() || "P";
   document.querySelector("[data-profile-major]").textContent = profile.major || "Undecided";
   document.querySelector("[data-profile-fields]").textContent = profile.fields.join(", ");
   document.querySelector(".watch-card span").textContent = String(36 + profile.fields.length * 8);
