@@ -257,6 +257,45 @@ function saveProfile() {
   localStorage.setItem(profileStorageKey, JSON.stringify(profile));
 }
 
+function isValidEmail(value) {
+  const email = value.trim().toLowerCase();
+  const basicShape = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
+  if (!basicShape) return false;
+
+  const domain = email.split("@").pop();
+  const acceptedDomains = ["gmail.com", "yahoo.com", "icloud.com", "outlook.com", "hotmail.com", "aol.com"];
+  return acceptedDomains.includes(domain) || domain.endsWith(".edu");
+}
+
+function setSignupError(message = "") {
+  const error = document.querySelector("[data-signup-error]");
+  if (!error) return;
+  error.textContent = message;
+  error.hidden = !message;
+}
+
+function validateSignup() {
+  const nameInput = document.querySelector("[data-name-input]");
+  const emailInput = document.querySelector("[data-email-input]");
+  const typedName = nameInput.value.trim();
+  const typedEmail = emailInput.value.trim();
+
+  if (!typedName) {
+    setSignupError("Add your name first.");
+    nameInput.focus();
+    return false;
+  }
+
+  if (!isValidEmail(typedEmail)) {
+    setSignupError("Use a real email like name@gmail.com, name@yahoo.com, or your school .edu email.");
+    emailInput.focus();
+    return false;
+  }
+
+  setSignupError();
+  return true;
+}
+
 function displayName() {
   return profile.name.trim() || "there";
 }
@@ -296,6 +335,7 @@ function enterApp() {
   const customMajor = document.querySelector("[data-major-custom]").value.trim();
   const typedName = document.querySelector("[data-name-input]").value.trim();
   const typedEmail = document.querySelector("[data-email-input]").value.trim();
+  if (!validateSignup()) return;
   if (customMajor) applyMajor(customMajor);
   if (typedName) profile.name = typedName;
   if (typedEmail) profile.email = typedEmail;
@@ -424,6 +464,7 @@ document.addEventListener("click", (event) => {
   const sendTestButton = event.target.closest("[data-send-test-push]");
 
   if (nextButton) {
+    if (nextButton.dataset.nextStep === "2" && !validateSignup()) return;
     setOnboardingStep(nextButton.dataset.nextStep);
   }
 
@@ -477,6 +518,9 @@ document.addEventListener("click", (event) => {
     modal.close();
   }
 });
+
+document.querySelector("[data-email-input]")?.addEventListener("input", () => setSignupError());
+document.querySelector("[data-name-input]")?.addEventListener("input", () => setSignupError());
 
 document.querySelector(".search-panel input")?.addEventListener("input", (event) => {
   const query = event.target.value.trim().toLowerCase();

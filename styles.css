@@ -189,6 +189,18 @@ body:not(.onboarding-active) .onboarding-shell {
   box-shadow: 0 0 0 4px rgba(128,87,255,0.14);
 }
 
+.form-error {
+  margin: 12px 0 0;
+  color: #ffb4c2;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.form-error[hidden] {
+  display: none;
+}
+
 .major-grid,
 .field-grid {
   display: grid;
