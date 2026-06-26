@@ -550,7 +550,9 @@ function displayName() {
 }
 
 function greetingText() {
-  return `Good Morning ${displayName()}`;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+  return `${greeting} ${displayName()}`;
 }
 
 function applyProfileToUI() {
