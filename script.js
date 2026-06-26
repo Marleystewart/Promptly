@@ -175,7 +175,7 @@ function openingRow(item) {
         <button class="round-btn" aria-label="Save ${item.company}" data-save="${item.company}">
           <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
         </button>
-        <button class="round-btn primary" aria-label="Open ${item.company}" data-open-details="${item.company}">
+        <button class="round-btn primary" aria-label="View alert details for ${item.company}" data-open-details="${item.company}">
           <svg viewBox="0 0 24 24"><path d="M8 5h11v11"/><path d="M19 5 7 17"/><path d="M5 9v10h10"/></svg>
         </button>
       </div>
@@ -238,7 +238,7 @@ function setFeatured() {
   document.querySelector("[data-feature-copy]").textContent = `${item.field} · Deadline ${item.deadline}. ${item.opened}.`;
   document.querySelector("[data-feature-logo]").className = `mega-logo ${item.logoClass}`;
   document.querySelector("[data-feature-logo]").textContent = item.short;
-  document.querySelector("[data-feature-open]").dataset.openDetails = item.company;
+  document.querySelector("[data-feature-details]").dataset.openDetails = item.company;
   document.querySelector("[data-feature-save]").dataset.save = item.company;
 }
 
@@ -258,6 +258,7 @@ function findOpening(company) {
 
 function openDetails(company) {
   const item = findOpening(company);
+  modal.dataset.company = item.company;
   modalCompany.textContent = item.company;
   modal.querySelector("[data-modal-role]").textContent = `${item.role} · ${item.program}`;
   modal.querySelector("[data-modal-deadline]").textContent = item.deadline.replace(/, 20\d{2}/, "");
@@ -660,6 +661,7 @@ document.addEventListener("click", (event) => {
   const enablePushButton = event.target.closest("[data-enable-push]");
   const sendTestButton = event.target.closest("[data-send-test-push]");
   const sendTestAlertButton = event.target.closest("[data-send-test-alert]");
+  const saveModalButton = event.target.closest("[data-save-modal]");
   const resetDemoButton = event.target.closest("[data-reset-demo]");
   const photoButton = event.target.closest("[data-photo-button]");
   const editProfileButton = event.target.closest("[data-edit-profile]");
@@ -698,6 +700,10 @@ document.addEventListener("click", (event) => {
 
   if (sendTestAlertButton) {
     sendTestAlert();
+  }
+
+  if (saveModalButton && modal.dataset.company) {
+    saveCompany(modal.dataset.company);
   }
 
   if (resetDemoButton) {

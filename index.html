@@ -116,6 +116,11 @@
         </header>
 
         <section class="view active" id="view-home" data-heading="Good Morning">
+          <article class="purpose-bar">
+            <span class="purpose-dot"></span>
+            <p><strong>Promptly is an alert system.</strong> We watch openings, notify you fast, and keep the details organized. You apply on the employer's official site.</p>
+          </article>
+
           <div class="home-grid">
             <article class="featured-card">
               <div class="card-copy">
@@ -123,8 +128,8 @@
                 <h2 data-feature-title>Your first alerts are ready.</h2>
                 <p data-feature-copy>Pick your fields to see roles across every major.</p>
                 <div class="card-actions">
-                  <button class="primary-action" data-feature-open data-open-details="Google">Apply Now</button>
-                  <button class="soft-action" data-feature-save data-save="Google">Save</button>
+                  <button class="primary-action" data-feature-details data-open-details="Google">View Alert</button>
+                  <button class="soft-action" data-feature-save data-save="Google">Save Alert</button>
                 </div>
               </div>
               <div class="mega-logo tech" data-feature-logo>GO</div>
@@ -325,7 +330,8 @@
         <span>Field<strong data-modal-field>Technology</strong></span>
         <span>Type<strong>Rolling</strong></span>
       </div>
-      <button class="primary-action wide">Apply Now</button>
+      <button class="primary-action wide" data-save-modal>Save Alert</button>
+      <p class="modal-note">Promptly does not submit applications. Use this alert to move fast, then apply on the employer's official site.</p>
     </dialog>
 
     <script src="script.js"></script>
