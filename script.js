@@ -39,6 +39,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Aug 28, 2026",
     opened: "Opened today",
+    sourceLabel: "Google Careers",
+    sourceUrl: "https://www.google.com/about/careers/applications/students/",
   },
   {
     company: "Microsoft",
@@ -50,6 +52,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Sep 4, 2026",
     opened: "Opened today",
+    sourceLabel: "Microsoft Students",
+    sourceUrl: "https://careers.microsoft.com/students/us/en",
   },
   {
     company: "Mayo Clinic",
@@ -61,6 +65,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Sep 18, 2026",
     opened: "Opened 1 hr ago",
+    sourceLabel: "Mayo Clinic Jobs",
+    sourceUrl: "https://jobs.mayoclinic.org/",
   },
   {
     company: "Pfizer",
@@ -72,6 +78,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Sep 30, 2026",
     opened: "Opened 90 min ago",
+    sourceLabel: "Pfizer Careers",
+    sourceUrl: "https://www.pfizer.com/about/careers",
   },
   {
     company: "Spotify",
@@ -83,6 +91,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Sep 25, 2026",
     opened: "Opened 2 hrs ago",
+    sourceLabel: "Life at Spotify",
+    sourceUrl: "https://www.lifeatspotify.com/jobs",
   },
   {
     company: "NASA",
@@ -94,6 +104,8 @@ const openings = [
     program: "Spring 2027",
     deadline: "Jul 31, 2026",
     opened: "Opened yesterday",
+    sourceLabel: "NASA Internships",
+    sourceUrl: "https://intern.nasa.gov/",
   },
   {
     company: "Duolingo",
@@ -104,6 +116,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Oct 9, 2026",
     opened: "Opened yesterday",
+    sourceLabel: "Duolingo Careers",
+    sourceUrl: "https://careers.duolingo.com/",
   },
   {
     company: "New York Times",
@@ -114,6 +128,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Oct 16, 2026",
     opened: "Opened 3 days ago",
+    sourceLabel: "NYT Careers",
+    sourceUrl: "https://www.nytco.com/careers/",
   },
   {
     company: "EPA",
@@ -125,6 +141,8 @@ const openings = [
     program: "Spring 2027",
     deadline: "Aug 14, 2026",
     opened: "Opened 4 days ago",
+    sourceLabel: "EPA Careers",
+    sourceUrl: "https://www.epa.gov/careers",
   },
   {
     company: "UNICEF",
@@ -136,6 +154,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Oct 21, 2026",
     opened: "Opened 4 days ago",
+    sourceLabel: "UNICEF Jobs",
+    sourceUrl: "https://jobs.unicef.org/",
   },
   {
     company: "Adobe",
@@ -147,6 +167,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Sep 6, 2026",
     opened: "Opened 5 days ago",
+    sourceLabel: "Adobe University",
+    sourceUrl: "https://www.adobe.com/careers/university.html",
   },
   {
     company: "Goldman Sachs",
@@ -158,6 +180,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Jul 12, 2026",
     opened: "Opened 6 days ago",
+    sourceLabel: "Goldman Sachs Students",
+    sourceUrl: "https://www.goldmansachs.com/careers/students/",
   },
   {
     company: "JPMorgan",
@@ -169,6 +193,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Jul 19, 2026",
     opened: "Opened 1 week ago",
+    sourceLabel: "JPMorgan Students",
+    sourceUrl: "https://careers.jpmorgan.com/us/en/students",
   },
   {
     company: "McKinsey & Company",
@@ -180,6 +206,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Aug 2, 2026",
     opened: "Opened 1 week ago",
+    sourceLabel: "McKinsey Students",
+    sourceUrl: "https://www.mckinsey.com/careers/students",
   },
   {
     company: "Bain & Company",
@@ -191,6 +219,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Aug 9, 2026",
     opened: "Opened 1 week ago",
+    sourceLabel: "Bain Internships",
+    sourceUrl: "https://www.bain.com/careers/work-with-us/internships-programs/",
   },
 ];
 
@@ -236,6 +266,7 @@ function openingRow(item) {
         <p>${item.role} · ${item.program}</p>
         <small>Deadline: ${item.deadline} · ${item.opened}</small>
         <small class="match-line">Student fit: ${match.label}</small>
+        <small class="source-line">Verified source: ${item.sourceLabel || "Official careers page"}</small>
       </div>
       <div class="row-actions">
         <button class="round-btn" aria-label="Save ${item.company}" data-save="${item.company}">
@@ -290,7 +321,35 @@ function openingMatch(item) {
   score = Math.min(score, 98);
 
   const reasonText = reasons.length ? reasons.slice(0, 2).join(" + ") : "broad profile";
-  return { score, label: `AI match ${score}% · ${reasonText}` };
+  return { score, reasonText, label: `AI match ${score}% · ${reasonText}` };
+}
+
+function topFields() {
+  if (profile.fields.length) return profile.fields.slice(0, 3);
+  return preferredOpenings().slice(0, 3).map((item) => item.field);
+}
+
+function nextWindowText() {
+  const fields = topFields();
+  const first = fields[0] || "student";
+  const second = fields[1] || "early-career";
+  return {
+    title: `${first} and ${second} alerts are the next watchlist.`,
+    copy: `${profile.gradYear ? `Class of ${profile.gradYear}` : "Student"} recruiting for ${first.toLowerCase()} roles is most active from July through October 2026.`,
+  };
+}
+
+function updateAlertIntelligence() {
+  const fields = topFields();
+  const major = profile.major || "your major";
+  const school = profile.school || "your school";
+  const fieldText = fields.length ? fields.join(", ") : "every field";
+  const next = nextWindowText();
+
+  document.querySelector("[data-alert-profile]").textContent = `Tracking ${fieldText} for ${major}.`;
+  document.querySelector("[data-alert-profile-copy]").textContent = `${school} context, ${profile.gradYear ? `Class of ${profile.gradYear}` : "class year"}, and your interests decide which alerts rise first.`;
+  document.querySelector("[data-next-window]").textContent = next.title;
+  document.querySelector("[data-next-window-copy]").textContent = next.copy;
 }
 
 function renderOpenings(items = preferredOpenings()) {
@@ -325,12 +384,18 @@ function findOpening(company) {
 
 function openDetails(company) {
   const item = findOpening(company);
+  const match = openingMatch(item);
   modal.dataset.company = item.company;
   modalCompany.textContent = item.company;
   modal.querySelector("[data-modal-role]").textContent = `${item.role} · ${item.program}`;
+  modal.querySelector("[data-modal-why]").textContent = `Why this alert: ${match.reasonText === "broad profile" ? "It fits your broader student alert profile." : `Matched ${match.reasonText} from your profile.`}`;
   modal.querySelector("[data-modal-deadline]").textContent = item.deadline.replace(/, 20\d{2}/, "");
   modal.querySelector("[data-modal-opened]").textContent = item.opened.replace("Opened ", "");
   modal.querySelector("[data-modal-field]").textContent = item.field;
+  modal.querySelector("[data-modal-source]").textContent = item.sourceLabel || "Official source";
+  const sourceLink = modal.querySelector("[data-modal-source-link]");
+  sourceLink.href = item.sourceUrl || "#";
+  sourceLink.hidden = !item.sourceUrl;
   const modalLogo = modal.querySelector(".modal-logo");
   modalLogo.className = `modal-logo ${item.logo ? "logo-tile" : item.logoClass}`;
   modalLogo.innerHTML = item.logo ? `<img src="${item.logo}" alt="${item.company} logo" />` : item.short;
@@ -487,6 +552,7 @@ function applyProfileToUI() {
   document.querySelector("[data-home-year]").textContent = profile.gradYear ? `Class of ${profile.gradYear}` : "Graduation year";
   document.querySelector("[data-home-major]").textContent = profile.major || "Your major";
   document.querySelector(".watch-card span").textContent = String(36 + profile.fields.length * 8);
+  updateAlertIntelligence();
   setFeatured();
   renderOpenings();
 }
@@ -649,6 +715,7 @@ function currentTestOpening() {
     program: item.program,
     deadline: item.deadline,
     field: item.field,
+    sourceUrl: item.sourceUrl,
   };
 }
 
