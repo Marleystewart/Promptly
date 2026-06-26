@@ -982,6 +982,22 @@ body.launch-active .onboarding-brand {
   padding: 22px;
 }
 
+.cycle-note {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid var(--line);
+}
+
+.cycle-note p {
+  max-width: 760px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .months {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -1154,6 +1170,30 @@ input[type="checkbox"] {
   font-size: 13px;
   font-weight: 750;
   overflow-wrap: anywhere;
+}
+
+.resume-feedback {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid var(--line);
+}
+
+.resume-feedback p,
+.resume-feedback li {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.resume-feedback ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 18px;
 }
 
 .profile-row {

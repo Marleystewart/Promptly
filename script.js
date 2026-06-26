@@ -35,9 +35,9 @@ const openings = [
     logoClass: "tech",
     field: "Technology",
     role: "Associate Product Manager",
-    program: "Summer 2026",
-    deadline: "Nov 4, 2025",
-    opened: "Opened 18 min ago",
+    program: "Summer 2027",
+    deadline: "Aug 28, 2026",
+    opened: "Opened today",
   },
   {
     company: "Mayo Clinic",
@@ -45,8 +45,8 @@ const openings = [
     logoClass: "health",
     field: "Healthcare",
     role: "Clinical Research Intern",
-    program: "Summer 2026",
-    deadline: "Oct 22, 2025",
+    program: "Summer 2027",
+    deadline: "Sep 18, 2026",
     opened: "Opened 1 hr ago",
   },
   {
@@ -55,8 +55,8 @@ const openings = [
     logoClass: "media",
     field: "Marketing",
     role: "Music Marketing Intern",
-    program: "Summer 2026",
-    deadline: "Nov 1, 2025",
+    program: "Summer 2027",
+    deadline: "Sep 25, 2026",
     opened: "Opened 2 hrs ago",
   },
   {
@@ -65,8 +65,8 @@ const openings = [
     logoClass: "science",
     field: "Science",
     role: "Mission Systems Intern",
-    program: "Summer 2026",
-    deadline: "Oct 30, 2025",
+    program: "Spring 2027",
+    deadline: "Jul 31, 2026",
     opened: "Opened yesterday",
   },
   {
@@ -75,8 +75,8 @@ const openings = [
     logoClass: "education",
     field: "Education",
     role: "Learning Product Intern",
-    program: "Summer 2026",
-    deadline: "Nov 8, 2025",
+    program: "Summer 2027",
+    deadline: "Oct 9, 2026",
     opened: "Opened yesterday",
   },
   {
@@ -85,8 +85,8 @@ const openings = [
     logoClass: "media",
     field: "Media",
     role: "Newsroom Fellowship",
-    program: "Summer 2026",
-    deadline: "Oct 28, 2025",
+    program: "Summer 2027",
+    deadline: "Oct 16, 2026",
     opened: "Opened 3 days ago",
   },
   {
@@ -95,8 +95,8 @@ const openings = [
     logoClass: "policy",
     field: "Policy",
     role: "Environmental Policy Intern",
-    program: "Summer 2026",
-    deadline: "Nov 12, 2025",
+    program: "Spring 2027",
+    deadline: "Aug 14, 2026",
     opened: "Opened 4 days ago",
   },
   {
@@ -105,8 +105,8 @@ const openings = [
     logoClass: "tech",
     field: "Design",
     role: "Product Design Intern",
-    program: "Summer 2026",
-    deadline: "Oct 24, 2025",
+    program: "Summer 2027",
+    deadline: "Sep 6, 2026",
     opened: "Opened 5 days ago",
   },
   {
@@ -115,8 +115,8 @@ const openings = [
     logoClass: "gs",
     field: "Finance",
     role: "Investment Banking",
-    program: "Summer 2026",
-    deadline: "Oct 15, 2025",
+    program: "Summer 2027",
+    deadline: "Jul 12, 2026",
     opened: "Opened 6 days ago",
   },
   {
@@ -125,8 +125,8 @@ const openings = [
     logoClass: "mck",
     field: "Consulting",
     role: "Business Analyst",
-    program: "Summer 2026",
-    deadline: "Oct 12, 2025",
+    program: "Summer 2027",
+    deadline: "Aug 2, 2026",
     opened: "Opened 1 week ago",
   },
 ];
@@ -219,7 +219,7 @@ function openDetails(company) {
   const item = findOpening(company);
   modalCompany.textContent = item.company;
   modal.querySelector("[data-modal-role]").textContent = `${item.role} · ${item.program}`;
-  modal.querySelector("[data-modal-deadline]").textContent = item.deadline.replace(", 2025", "");
+  modal.querySelector("[data-modal-deadline]").textContent = item.deadline.replace(/, 20\d{2}/, "");
   modal.querySelector("[data-modal-opened]").textContent = item.opened.replace("Opened ", "");
   modal.querySelector("[data-modal-field]").textContent = item.field;
   modal.querySelector(".modal-logo").className = `modal-logo ${item.logoClass}`;
@@ -369,9 +369,31 @@ function applyProfileToUI() {
   document.querySelector("[data-profile-interests]").textContent = profile.interests || "Not set";
   document.querySelector("[data-profile-fields]").textContent = profile.fields.length ? profile.fields.join(", ") : "All fields";
   document.querySelector("[data-resume-status]").textContent = profile.resumeName ? `${profile.resumeName} uploaded.` : "No resume uploaded yet.";
+  renderResumeFeedback();
   document.querySelector(".watch-card span").textContent = String(36 + profile.fields.length * 8);
   setFeatured();
   renderOpenings();
+}
+
+function renderResumeFeedback() {
+  const panel = document.querySelector("[data-resume-feedback]");
+  if (!panel) return;
+
+  if (!profile.resumeName) {
+    panel.innerHTML = "<strong>Resume feedback</strong><p>Upload a resume to unlock a quick readiness check.</p>";
+    return;
+  }
+
+  const fieldText = profile.fields.length ? profile.fields.slice(0, 3).join(", ") : "your target roles";
+  const schoolText = profile.school || "your school";
+  panel.innerHTML = `
+    <strong>Resume feedback</strong>
+    <ul>
+      <li>Tailor the top third toward ${fieldText}.</li>
+      <li>Add 2-3 measurable results from projects, work, clubs, or classes at ${schoolText}.</li>
+      <li>Use keywords from each opening before you apply.</li>
+    </ul>
+  `;
 }
 
 function updateProfilePhoto() {
