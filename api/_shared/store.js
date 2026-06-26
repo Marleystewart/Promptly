@@ -30,7 +30,10 @@ function normalizeSubscriber(profile = {}, subscription = null) {
   return {
     email,
     name: String(profile.name || "").trim() || "there",
+    school: String(profile.school || "").trim(),
+    gradYear: String(profile.gradYear || "").trim(),
     major: String(profile.major || "").trim(),
+    interests: String(profile.interests || "").trim(),
     fields: Array.isArray(profile.fields) ? profile.fields.filter(Boolean) : [],
     pushSubscription: subscription || profile.pushSubscription || null,
     emailNotifications: profile.emailNotifications !== false,

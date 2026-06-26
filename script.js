@@ -13,19 +13,19 @@ const fieldOptions = [
   "Startups",
 ];
 
-const majorMap = {
-  "Computer Science": ["Technology", "Startups", "Science"],
-  Business: ["Marketing", "Finance", "Consulting", "Startups"],
-  "Biology / Pre-Med": ["Healthcare", "Science", "Policy"],
-  Psychology: ["Healthcare", "Education", "Marketing", "Policy"],
-  Communications: ["Media", "Marketing", "Policy"],
-  "Design / Art": ["Design", "Media", "Marketing", "Technology"],
-  Engineering: ["Technology", "Science", "Startups"],
-  Education: ["Education", "Policy", "Healthcare"],
-  "Political Science": ["Policy", "Consulting", "Media"],
-  "Data Science": ["Technology", "Science", "Finance"],
-  Marketing: ["Marketing", "Media", "Startups"],
-  Undecided: ["Technology", "Healthcare", "Marketing", "Media"],
+const interestKeywords = {
+  Technology: ["tech", "software", "computer", "coding", "data", "ai", "product", "cyber", "engineering", "google", "microsoft"],
+  Healthcare: ["health", "hospital", "clinic", "medical", "medicine", "pre-med", "nursing", "research", "mayo"],
+  Design: ["design", "ux", "ui", "creative", "brand", "visual", "adobe"],
+  Marketing: ["marketing", "social", "growth", "brand", "advertising", "sports marketing"],
+  Education: ["education", "teaching", "learning", "school", "student", "duolingo"],
+  Media: ["media", "journalism", "music", "film", "news", "spotify", "content"],
+  Science: ["science", "lab", "biology", "chemistry", "climate", "space", "nasa", "environment"],
+  Policy: ["policy", "government", "law", "political", "public", "nonprofit", "epa"],
+  Finance: ["finance", "investment", "banking", "accounting", "money"],
+  Consulting: ["consulting", "strategy", "operations", "business analyst"],
+  Sports: ["sports", "athletics", "team", "league"],
+  Startups: ["startup", "founder", "venture", "entrepreneur"],
 };
 
 const openings = [
@@ -134,8 +134,11 @@ const openings = [
 const profile = {
   name: "",
   email: "",
+  school: "",
+  gradYear: "",
   major: "",
-  fields: ["Technology", "Healthcare", "Marketing"],
+  interests: "",
+  fields: [],
 };
 
 const views = document.querySelectorAll(".view");
@@ -248,10 +251,21 @@ function setOnboardingStep(step) {
   });
 }
 
-function applyMajor(major) {
-  profile.major = major;
-  profile.fields = [...(majorMap[major] || profile.fields)];
+function inferFieldsFromText(value) {
+  const text = String(value || "").toLowerCase();
+  return fieldOptions.filter((field) => interestKeywords[field].some((keyword) => text.includes(keyword)));
+}
+
+function mergeFields(fields) {
+  profile.fields = [...new Set([...profile.fields, ...fields])];
   updateFieldButtons();
+}
+
+function updateAcademicProfile() {
+  profile.school = document.querySelector("[data-school-input]").value.trim();
+  profile.gradYear = document.querySelector("[data-grad-year-input]").value.trim();
+  profile.major = document.querySelector("[data-major-input]").value.trim();
+  mergeFields(inferFieldsFromText(profile.major));
 }
 
 function saveProfile() {
@@ -268,11 +282,19 @@ function isValidEmail(value) {
   return acceptedDomains.includes(domain) || domain.endsWith(".edu");
 }
 
-function setSignupError(message = "") {
-  const error = document.querySelector("[data-signup-error]");
+function setFormError(selector, message = "") {
+  const error = document.querySelector(selector);
   if (!error) return;
   error.textContent = message;
   error.hidden = !message;
+}
+
+function setSignupError(message = "") {
+  setFormError("[data-signup-error]", message);
+}
+
+function setAcademicError(message = "") {
+  setFormError("[data-academic-error]", message);
 }
 
 function validateSignup() {
@@ -297,6 +319,35 @@ function validateSignup() {
   return true;
 }
 
+function validateAcademicProfile() {
+  const schoolInput = document.querySelector("[data-school-input]");
+  const yearInput = document.querySelector("[data-grad-year-input]");
+  const majorInput = document.querySelector("[data-major-input]");
+  const year = yearInput.value.trim();
+
+  if (!schoolInput.value.trim()) {
+    setAcademicError("Add your school so the tracking page is accurate.");
+    schoolInput.focus();
+    return false;
+  }
+
+  if (!/^20\d{2}$/.test(year)) {
+    setAcademicError("Add a graduation year like 2028.");
+    yearInput.focus();
+    return false;
+  }
+
+  if (!majorInput.value.trim()) {
+    setAcademicError("Add your major or type Undecided.");
+    majorInput.focus();
+    return false;
+  }
+
+  setAcademicError();
+  updateAcademicProfile();
+  return true;
+}
+
 function displayName() {
   return profile.name.trim() || "there";
 }
@@ -310,8 +361,11 @@ function applyProfileToUI() {
   document.querySelector("[data-title]").textContent = greetingText();
   document.querySelector("#view-home").dataset.heading = greetingText();
   document.querySelector(".profile-chip").textContent = profile.name.trim()[0]?.toUpperCase() || "P";
+  document.querySelector("[data-profile-school]").textContent = profile.school || "Not set";
+  document.querySelector("[data-profile-year]").textContent = profile.gradYear || "Not set";
   document.querySelector("[data-profile-major]").textContent = profile.major || "Undecided";
-  document.querySelector("[data-profile-fields]").textContent = profile.fields.join(", ");
+  document.querySelector("[data-profile-interests]").textContent = profile.interests || "Not set";
+  document.querySelector("[data-profile-fields]").textContent = profile.fields.length ? profile.fields.join(", ") : "All fields";
   document.querySelector(".watch-card span").textContent = String(36 + profile.fields.length * 8);
   setFeatured();
   renderOpenings();
@@ -324,6 +378,10 @@ function restoreProfile() {
     Object.assign(profile, savedProfile);
     document.querySelector("[data-name-input]").value = profile.name || "";
     document.querySelector("[data-email-input]").value = profile.email || "";
+    document.querySelector("[data-school-input]").value = profile.school || "";
+    document.querySelector("[data-grad-year-input]").value = profile.gradYear || "";
+    document.querySelector("[data-major-input]").value = profile.major || "";
+    document.querySelector("[data-interests-input]").value = profile.interests || "";
     applyProfileToUI();
     setView("home");
     return true;
@@ -333,13 +391,14 @@ function restoreProfile() {
 }
 
 function enterApp() {
-  const customMajor = document.querySelector("[data-major-custom]").value.trim();
   const typedName = document.querySelector("[data-name-input]").value.trim();
   const typedEmail = document.querySelector("[data-email-input]").value.trim();
-  if (!validateSignup()) return;
-  if (customMajor) applyMajor(customMajor);
+  const typedInterests = document.querySelector("[data-interests-input]").value.trim();
+  if (!validateSignup() || !validateAcademicProfile()) return;
   if (typedName) profile.name = typedName;
   if (typedEmail) profile.email = typedEmail;
+  profile.interests = typedInterests;
+  mergeFields(inferFieldsFromText(typedInterests));
   saveProfile();
   saveSubscriber();
   applyProfileToUI();
@@ -508,7 +567,6 @@ if (!restoreProfile()) {
 
 document.addEventListener("click", (event) => {
   const nextButton = event.target.closest("[data-next-step]");
-  const majorButton = event.target.closest("[data-major]");
   const fieldButton = event.target.closest("[data-field-choice]");
   const finishButton = event.target.closest("[data-finish-onboarding]");
   const viewButton = event.target.closest("[data-view]");
@@ -519,16 +577,12 @@ document.addEventListener("click", (event) => {
   const enablePushButton = event.target.closest("[data-enable-push]");
   const sendTestButton = event.target.closest("[data-send-test-push]");
   const sendTestAlertButton = event.target.closest("[data-send-test-alert]");
+  const resetDemoButton = event.target.closest("[data-reset-demo]");
 
   if (nextButton) {
     if (nextButton.dataset.nextStep === "2" && !validateSignup()) return;
+    if (nextButton.dataset.nextStep === "3" && !validateAcademicProfile()) return;
     setOnboardingStep(nextButton.dataset.nextStep);
-  }
-
-  if (majorButton) {
-    document.querySelectorAll("[data-major]").forEach((button) => button.classList.remove("active"));
-    majorButton.classList.add("active");
-    applyMajor(majorButton.dataset.major);
   }
 
   if (fieldButton) {
@@ -551,6 +605,12 @@ document.addEventListener("click", (event) => {
 
   if (sendTestAlertButton) {
     sendTestAlert();
+  }
+
+  if (resetDemoButton) {
+    localStorage.removeItem(profileStorageKey);
+    localStorage.removeItem("openingPushSubscription");
+    window.location.reload();
   }
 
   if (viewButton && !document.body.classList.contains("onboarding-active")) {
@@ -582,6 +642,9 @@ document.addEventListener("click", (event) => {
 
 document.querySelector("[data-email-input]")?.addEventListener("input", () => setSignupError());
 document.querySelector("[data-name-input]")?.addEventListener("input", () => setSignupError());
+document.querySelector("[data-school-input]")?.addEventListener("input", () => setAcademicError());
+document.querySelector("[data-grad-year-input]")?.addEventListener("input", () => setAcademicError());
+document.querySelector("[data-major-input]")?.addEventListener("input", () => setAcademicError());
 
 document.querySelector(".search-panel input")?.addEventListener("input", (event) => {
   const query = event.target.value.trim().toLowerCase();

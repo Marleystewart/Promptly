@@ -34,24 +34,15 @@
       </div>
 
       <div class="signup-card onboard-step" data-step="2">
-        <p class="eyebrow">Your major</p>
-        <h1>What’s your major?</h1>
-        <p>Pick the closest match. You can still follow any field you want.</p>
-        <div class="major-grid">
-          <button data-major="Computer Science">Computer Science</button>
-          <button data-major="Business">Business</button>
-          <button data-major="Biology / Pre-Med">Biology / Pre-Med</button>
-          <button data-major="Psychology">Psychology</button>
-          <button data-major="Communications">Communications</button>
-          <button data-major="Design / Art">Design / Art</button>
-          <button data-major="Engineering">Engineering</button>
-          <button data-major="Education">Education</button>
-          <button data-major="Political Science">Political Science</button>
-          <button data-major="Data Science">Data Science</button>
-          <button data-major="Marketing">Marketing</button>
-          <button data-major="Undecided">Undecided</button>
+        <p class="eyebrow">Academic profile</p>
+        <h1>Where are you studying?</h1>
+        <p>This keeps Promptly from guessing. Add your real school, year, and major so your tracking page feels like yours.</p>
+        <div class="input-grid two-col">
+          <label class="field-label">School<input data-school-input type="text" placeholder="Example: Georgia State University" autocomplete="organization" /></label>
+          <label class="field-label">Graduation year<input data-grad-year-input type="text" inputmode="numeric" placeholder="Example: 2028" /></label>
         </div>
-        <label class="field-label">Or type your major<input data-major-custom type="text" placeholder="Example: Environmental Science" /></label>
+        <label class="field-label">Major or program<input data-major-input type="text" placeholder="Example: Environmental Science" /></label>
+        <p class="form-error" data-academic-error hidden></p>
         <div class="step-actions">
           <button class="soft-action" data-next-step="1">Back</button>
           <button class="primary-action" data-next-step="3">Continue</button>
@@ -59,9 +50,10 @@
       </div>
 
       <div class="signup-card onboard-step" data-step="3">
-        <p class="eyebrow">Career fields</p>
-        <h1>Choose fields you want alerts for.</h1>
-        <p>We’ll suggest a few based on your major, but you’re in control.</p>
+        <p class="eyebrow">Interests</p>
+        <h1>What do you actually want?</h1>
+        <p>Type the roles, industries, companies, or problems you want Promptly to watch. Pick broad categories only if they help.</p>
+        <label class="field-label">Interests<textarea data-interests-input placeholder="Example: product design, sports marketing, climate internships, hospital research, Google APM"></textarea></label>
         <div class="field-grid" data-field-grid></div>
         <div class="step-actions">
           <button class="soft-action" data-next-step="2">Back</button>
@@ -269,11 +261,13 @@
             </article>
             <article class="settings-card">
               <h2>Tracking</h2>
-              <div class="profile-row"><span>School</span><strong>Howard University</strong></div>
-              <div class="profile-row"><span>Graduation year</span><strong>2028</strong></div>
+              <div class="profile-row"><span>School</span><strong data-profile-school>Not set</strong></div>
+              <div class="profile-row"><span>Graduation year</span><strong data-profile-year>Not set</strong></div>
               <div class="profile-row"><span>Major</span><strong data-profile-major>Not set</strong></div>
+              <div class="profile-row"><span>Interests</span><strong data-profile-interests>Not set</strong></div>
               <div class="profile-row"><span>Fields</span><strong data-profile-fields>Technology, Healthcare</strong></div>
               <button class="primary-action">Upload Resume</button>
+              <button class="tiny-action" data-reset-demo>Restart demo</button>
             </article>
           </div>
         </section>

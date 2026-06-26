@@ -71,7 +71,8 @@ async function sendPushAlert(opening, subscriber) {
 
 function matchesOpening(opening, subscriber) {
   if (!opening.field) return true;
-  return Array.isArray(subscriber.fields) && subscriber.fields.includes(opening.field);
+  if (!Array.isArray(subscriber.fields) || subscriber.fields.length === 0) return true;
+  return subscriber.fields.includes(opening.field);
 }
 
 module.exports = { sendEmailAlert, sendPushAlert, matchesOpening };
