@@ -3,16 +3,25 @@ function readBody(req) {
   return req.body || {};
 }
 
+function redisEnv() {
+  return {
+    url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN,
+  };
+}
+
 function hasRedisEnv() {
-  return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+  const env = redisEnv();
+  return Boolean(env.url && env.token);
 }
 
 async function getRedis() {
-  if (!hasRedisEnv()) return null;
+  const env = redisEnv();
+  if (!env.url || !env.token) return null;
   const { Redis } = await import("@upstash/redis");
   return new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    url: env.url,
+    token: env.token,
   });
 }
 
