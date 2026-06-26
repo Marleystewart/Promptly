@@ -1153,49 +1153,6 @@ input[type="checkbox"] {
   font-weight: 950;
 }
 
-.file-action {
-  display: grid;
-  place-items: center;
-  text-align: center;
-  cursor: pointer;
-}
-
-.file-action input {
-  display: none;
-}
-
-.file-status {
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 750;
-  overflow-wrap: anywhere;
-}
-
-.resume-feedback {
-  display: grid;
-  gap: 10px;
-  margin-top: 14px;
-  padding: 16px;
-  border-radius: 18px;
-  background: rgba(0,0,0,0.18);
-  border: 1px solid var(--line);
-}
-
-.resume-feedback p,
-.resume-feedback li {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.45;
-}
-
-.resume-feedback ul {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding-left: 18px;
-}
-
 .profile-row {
   display: flex;
   justify-content: space-between;

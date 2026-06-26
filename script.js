@@ -139,7 +139,6 @@ const profile = {
   major: "",
   interests: "",
   photoDataUrl: "",
-  resumeName: "",
   fields: [],
 };
 
@@ -368,32 +367,9 @@ function applyProfileToUI() {
   document.querySelector("[data-profile-major]").textContent = profile.major || "Undecided";
   document.querySelector("[data-profile-interests]").textContent = profile.interests || "Not set";
   document.querySelector("[data-profile-fields]").textContent = profile.fields.length ? profile.fields.join(", ") : "All fields";
-  document.querySelector("[data-resume-status]").textContent = profile.resumeName ? `${profile.resumeName} uploaded.` : "No resume uploaded yet.";
-  renderResumeFeedback();
   document.querySelector(".watch-card span").textContent = String(36 + profile.fields.length * 8);
   setFeatured();
   renderOpenings();
-}
-
-function renderResumeFeedback() {
-  const panel = document.querySelector("[data-resume-feedback]");
-  if (!panel) return;
-
-  if (!profile.resumeName) {
-    panel.innerHTML = "<strong>Resume feedback</strong><p>Upload a resume to unlock a quick readiness check.</p>";
-    return;
-  }
-
-  const fieldText = profile.fields.length ? profile.fields.slice(0, 3).join(", ") : "your target roles";
-  const schoolText = profile.school || "your school";
-  panel.innerHTML = `
-    <strong>Resume feedback</strong>
-    <ul>
-      <li>Tailor the top third toward ${fieldText}.</li>
-      <li>Add 2-3 measurable results from projects, work, clubs, or classes at ${schoolText}.</li>
-      <li>Use keywords from each opening before you apply.</li>
-    </ul>
-  `;
 }
 
 function updateProfilePhoto() {
@@ -684,14 +660,6 @@ document.querySelector("[data-name-input]")?.addEventListener("input", () => set
 document.querySelector("[data-school-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-grad-year-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-major-input]")?.addEventListener("input", () => setAcademicError());
-
-document.querySelector("[data-resume-input]")?.addEventListener("change", (event) => {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  profile.resumeName = file.name;
-  saveProfile();
-  applyProfileToUI();
-});
 
 document.querySelector("[data-photo-input]")?.addEventListener("change", (event) => {
   const file = event.target.files?.[0];

@@ -34,7 +34,6 @@ function normalizeSubscriber(profile = {}, subscription = null) {
     gradYear: String(profile.gradYear || "").trim(),
     major: String(profile.major || "").trim(),
     interests: String(profile.interests || "").trim(),
-    resumeName: String(profile.resumeName || "").trim(),
     fields: Array.isArray(profile.fields) ? profile.fields.filter(Boolean) : [],
     pushSubscription: subscription || profile.pushSubscription || null,
     emailNotifications: profile.emailNotifications !== false,
