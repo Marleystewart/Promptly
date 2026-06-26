@@ -24,6 +24,10 @@
   letter-spacing: 0 !important;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -947,6 +951,16 @@ body.launch-active .onboarding-brand {
   align-items: center;
   border-radius: 22px;
   padding: 14px;
+  cursor: pointer;
+  transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+}
+
+.opening-row:hover,
+.opening-row:focus-visible {
+  border-color: rgba(183,165,255,0.36);
+  background: linear-gradient(145deg, rgba(255,255,255,0.17), rgba(255,255,255,0.08));
+  transform: translateY(-1px);
+  outline: none;
 }
 
 .logo {
@@ -964,10 +978,12 @@ body.launch-active .onboarding-brand {
 .logo img {
   max-width: 100%;
   max-height: 100%;
+  border-radius: 12px;
 }
 
 .opening-row h3 {
   font-size: 18px;
+  line-height: 1.15;
 }
 
 .opening-row p {
@@ -985,6 +1001,8 @@ body.launch-active .onboarding-brand {
 .row-actions {
   display: flex;
   gap: 8px;
+  align-items: center;
+  justify-content: center;
 }
 
 .round-btn {
@@ -998,9 +1016,23 @@ body.launch-active .onboarding-brand {
   border: 1px solid var(--line);
 }
 
+.round-btn:hover {
+  border-color: rgba(255,255,255,0.28);
+}
+
 .round-btn svg {
   width: 19px;
   height: 19px;
+}
+
+.save-btn.saved {
+  color: #fff;
+  background: rgba(128,87,255,0.32);
+  border-color: rgba(183,165,255,0.58);
+}
+
+.save-btn.saved svg {
+  fill: currentColor;
 }
 
 .round-btn.primary {

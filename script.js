@@ -85,7 +85,7 @@ const openings = [
     company: "Spotify",
     short: "SP",
     logoClass: "media",
-    logo: "assets/logos/spotify.jpeg",
+    logo: "assets/logos/spotify-clean.svg",
     field: "Marketing",
     role: "Music Marketing Intern",
     program: "Summer 2027",
@@ -257,8 +257,9 @@ function logoMarkup(item) {
 
 function openingRow(item) {
   const match = openingMatch(item);
+  const isSaved = saved.has(item.company);
   return `
-    <article class="opening-row" data-company="${item.company}" data-field="${item.field}">
+    <article class="opening-row" data-company="${item.company}" data-field="${item.field}" data-open-details="${item.company}" tabindex="0" role="button" aria-label="View alert details for ${item.company}">
       ${logoMarkup(item)}
       <div>
         <span class="status-pill">${item.field}</span>
@@ -269,10 +270,10 @@ function openingRow(item) {
         <small class="source-line">Verified source: ${item.sourceLabel || "Official careers page"}</small>
       </div>
       <div class="row-actions">
-        <button class="round-btn" aria-label="Save ${item.company}" data-save="${item.company}">
+        <button class="round-btn save-btn ${isSaved ? "saved" : ""}" aria-label="${isSaved ? "Unsave" : "Save"} ${item.company}" data-save="${item.company}" aria-pressed="${isSaved}">
           <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
         </button>
-        <button class="round-btn primary" aria-label="View alert details for ${item.company}" data-open-details="${item.company}">
+        <button class="round-btn primary" aria-label="View alert details for ${item.company}" data-open-details-button="${item.company}">
           <svg viewBox="0 0 24 24"><path d="M8 5h11v11"/><path d="M19 5 7 17"/><path d="M5 9v10h10"/></svg>
         </button>
       </div>
@@ -359,6 +360,7 @@ function renderOpenings(items = preferredOpenings()) {
 
 function setFeatured() {
   const item = preferredOpenings()[0];
+  const isSaved = saved.has(item.company);
   document.querySelector("[data-feature-title]").textContent = `${item.company} ${item.role} just opened.`;
   document.querySelector("[data-feature-copy]").textContent = `${item.field} student alert · Deadline ${item.deadline}. ${item.opened}.`;
   const featureLogo = document.querySelector("[data-feature-logo]");
@@ -366,6 +368,7 @@ function setFeatured() {
   featureLogo.innerHTML = item.logo ? `<img src="${item.logo}" alt="${item.company} logo" />` : item.short;
   document.querySelector("[data-feature-details]").dataset.openDetails = item.company;
   document.querySelector("[data-feature-save]").dataset.save = item.company;
+  document.querySelector("[data-feature-save]").textContent = isSaved ? "Unsave Alert" : "Save Alert";
 }
 
 function setView(name) {
@@ -404,10 +407,20 @@ function openDetails(company) {
 
 function saveCompany(company) {
   const item = findOpening(company);
-  saved.set(item.company, item);
+  if (saved.has(item.company)) {
+    saved.delete(item.company);
+  } else {
+    saved.set(item.company, item);
+  }
+  renderOpenings();
+  setFeatured();
+  refreshSavedList();
+  setView("saved");
+}
+
+function refreshSavedList() {
   emptyState.hidden = saved.size > 0;
   savedList.innerHTML = [...saved.values()].map(openingRow).join("");
-  setView("saved");
 }
 
 function renderFieldChoices() {
@@ -792,7 +805,7 @@ document.addEventListener("click", (event) => {
   const editFieldButton = event.target.closest("[data-edit-field-choice]");
   const finishButton = event.target.closest("[data-finish-onboarding]");
   const viewButton = event.target.closest("[data-view]");
-  const detailsButton = event.target.closest("[data-open-details]");
+  const detailsButton = event.target.closest("[data-open-details-button], [data-open-details]");
   const saveButton = event.target.closest("[data-save]");
   const filterButton = event.target.closest(".filter-chip");
   const closeButton = event.target.closest(".close-modal");
@@ -844,6 +857,13 @@ document.addEventListener("click", (event) => {
     saveCompany(modal.dataset.company);
   }
 
+  if (saveButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    saveCompany(saveButton.dataset.save);
+    return;
+  }
+
   if (resetDemoButton) {
     localStorage.removeItem(profileStorageKey);
     localStorage.removeItem("openingPushSubscription");
@@ -872,11 +892,7 @@ document.addEventListener("click", (event) => {
   }
 
   if (detailsButton) {
-    openDetails(detailsButton.dataset.openDetails);
-  }
-
-  if (saveButton) {
-    saveCompany(saveButton.dataset.save);
+    openDetails(detailsButton.dataset.openDetails || detailsButton.dataset.openDetailsButton);
   }
 
   if (filterButton) {
@@ -898,6 +914,13 @@ document.querySelector("[data-name-input]")?.addEventListener("input", () => set
 document.querySelector("[data-school-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-grad-year-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-major-input]")?.addEventListener("input", () => setAcademicError());
+
+document.addEventListener("keydown", (event) => {
+  const row = event.target.closest?.(".opening-row[data-open-details]");
+  if (!row || !["Enter", " "].includes(event.key)) return;
+  event.preventDefault();
+  openDetails(row.dataset.openDetails);
+});
 
 document.querySelector("[data-photo-input]")?.addEventListener("change", (event) => {
   const file = event.target.files?.[0];
