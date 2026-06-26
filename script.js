@@ -1028,6 +1028,16 @@ function setView(name) {
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
   title.textContent = name === "home" ? greetingText() : view.dataset.heading;
   window.scrollTo({ top: 0, behavior: "smooth" });
+
+  if (name === "alerts") {
+    const list = document.querySelector(".alerts-recent-list");
+    if (list) {
+      const recent = recentOpenings();
+      list.innerHTML = recent.length
+        ? recent.map(openingRow).join("")
+        : "<p style='color:var(--muted);padding:16px 0'>No new openings in the last 7 days.</p>";
+    }
+  }
 }
 
 function findOpening(company) {
@@ -1737,20 +1747,5 @@ function updateAlertBadge() {
   });
 }
 updateAlertBadge();
-
-// Populate recent alerts list when alerts view is opened
-const _origSetView = setView;
-function setView(name) {
-  _origSetView(name);
-  if (name === "alerts") {
-    const list = document.querySelector(".alerts-recent-list");
-    if (list) {
-      const recent = recentOpenings();
-      list.innerHTML = recent.length
-        ? recent.map(openingRow).join("")
-        : "<p style='color:var(--muted);padding:16px 0'>No new openings in the last 7 days.</p>";
-    }
-  }
-}
 
 registerServiceWorker();
