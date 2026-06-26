@@ -169,7 +169,7 @@ function openingRow(item) {
         <h3>${item.company}</h3>
         <p>${item.role} · ${item.program}</p>
         <small>Deadline: ${item.deadline} · ${item.opened}</small>
-        <small class="match-line">${match.label}</small>
+        <small class="match-line">Student fit: ${match.label}</small>
       </div>
       <div class="row-actions">
         <button class="round-btn" aria-label="Save ${item.company}" data-save="${item.company}">
@@ -235,7 +235,7 @@ function renderOpenings(items = preferredOpenings()) {
 function setFeatured() {
   const item = preferredOpenings()[0];
   document.querySelector("[data-feature-title]").textContent = `${item.company} ${item.role} just opened.`;
-  document.querySelector("[data-feature-copy]").textContent = `${item.field} · Deadline ${item.deadline}. ${item.opened}.`;
+  document.querySelector("[data-feature-copy]").textContent = `${item.field} student alert · Deadline ${item.deadline}. ${item.opened}.`;
   document.querySelector("[data-feature-logo]").className = `mega-logo ${item.logoClass}`;
   document.querySelector("[data-feature-logo]").textContent = item.short;
   document.querySelector("[data-feature-details]").dataset.openDetails = item.company;
@@ -415,6 +415,9 @@ function applyProfileToUI() {
   document.querySelector("[data-profile-major]").textContent = profile.major || "Undecided";
   document.querySelector("[data-profile-interests]").textContent = profile.interests || "Not set";
   document.querySelector("[data-profile-fields]").textContent = profile.fields.length ? profile.fields.join(", ") : "All fields";
+  document.querySelector("[data-home-school]").textContent = profile.school || "Your school";
+  document.querySelector("[data-home-year]").textContent = profile.gradYear ? `Class of ${profile.gradYear}` : "Graduation year";
+  document.querySelector("[data-home-major]").textContent = profile.major || "Your major";
   document.querySelector(".watch-card span").textContent = String(36 + profile.fields.length * 8);
   setFeatured();
   renderOpenings();
