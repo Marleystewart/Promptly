@@ -317,53 +317,57 @@
         <section class="view" id="view-alerts" data-heading="Alerts">
           <article class="purpose-bar">
             <span class="purpose-dot"></span>
-            <p><strong>Your alert center.</strong> Manage how Promptly notifies you about new internship openings that match your profile.</p>
+            <p><strong>New this week.</strong> Internships that just opened — matched to your profile.</p>
           </article>
-          <div class="alerts-grid">
-            <article class="settings-card">
-              <span class="status-pill">PHONE ALERTS</span>
-              <h2>Push Notifications</h2>
-              <p style="color:var(--muted);font-size:14px;margin:10px 0 16px;">Get instant lock-screen alerts when a matching internship drops. Add Promptly to your Home Screen first on iPhone.</p>
-              <label><span>Push notifications<small>Instant openings on your device</small></span><input type="checkbox" checked /></label>
-              <label><span>Email alerts<small>Matched openings sent to your inbox</small></span><input type="checkbox" checked /></label>
-              <label><span>Text alerts<small>Coming next with SMS setup</small></span><input type="checkbox" disabled /></label>
-              <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
-                <button class="primary-action wide" data-enable-push>Enable Phone Notifications</button>
-                <button class="soft-action wide" data-send-test-push>Send Test Notification</button>
-                <button class="soft-action wide" data-send-test-alert>Send Test Email</button>
-              </div>
-              <p class="alert-status" data-push-status>Tap Enable Phone Notifications first. If you are on iPhone, open Promptly from the Home Screen app icon.</p>
-            </article>
-            <article class="settings-card">
-              <span class="status-pill">RECENT ALERTS</span>
-              <h2>New This Week</h2>
-              <div class="opening-list alerts-recent-list"></div>
-            </article>
-          </div>
+          <div class="opening-list alerts-recent-list"></div>
         </section>
 
         <section class="view" id="view-profile" data-heading="Profile">
-          <div class="settings-grid">
-            <article class="settings-card">
-              <h2>Student Profile</h2>
-              <div class="profile-photo-row">
-                <button class="profile-photo" data-photo-button aria-label="Change profile photo">P</button>
-                <div>
-                  <strong>Profile photo</strong>
-                  <small>Use a picture that feels like you.</small>
+          <div class="profile-tabs">
+            <button class="profile-tab active" data-profile-tab="info">Profile</button>
+            <button class="profile-tab" data-profile-tab="settings">Settings</button>
+          </div>
+          <div class="profile-tab-panel active" data-profile-panel="info">
+            <div class="settings-grid">
+              <article class="settings-card">
+                <h2>Student Profile</h2>
+                <div class="profile-photo-row">
+                  <button class="profile-photo" data-photo-button aria-label="Change profile photo">P</button>
+                  <div>
+                    <strong>Profile photo</strong>
+                    <small>Use a picture that feels like you.</small>
+                  </div>
                 </div>
-              </div>
-              <input class="sr-only" data-photo-input type="file" accept="image/*" />
-              <div class="profile-row"><span>School</span><strong data-profile-school>Not set</strong></div>
-              <div class="profile-row"><span>Graduation year</span><strong data-profile-year>Not set</strong></div>
-              <div class="profile-row"><span>Major</span><strong data-profile-major>Not set</strong></div>
-              <div class="profile-row"><span>Interests</span><strong data-profile-interests>Not set</strong></div>
-              <div class="profile-row"><span>Alert fields</span><strong data-profile-fields>Technology, Healthcare</strong></div>
-              <div class="profile-actions">
-                <button class="tiny-action" data-edit-profile>Edit profile</button>
-                <button class="tiny-action" data-reset-demo>Restart demo</button>
-              </div>
-            </article>
+                <input class="sr-only" data-photo-input type="file" accept="image/*" />
+                <div class="profile-row"><span>School</span><strong data-profile-school>Not set</strong></div>
+                <div class="profile-row"><span>Graduation year</span><strong data-profile-year>Not set</strong></div>
+                <div class="profile-row"><span>Major</span><strong data-profile-major>Not set</strong></div>
+                <div class="profile-row"><span>Interests</span><strong data-profile-interests>Not set</strong></div>
+                <div class="profile-row"><span>Alert fields</span><strong data-profile-fields>Technology, Healthcare</strong></div>
+                <div class="profile-actions">
+                  <button class="tiny-action" data-edit-profile>Edit profile</button>
+                  <button class="tiny-action" data-reset-demo>Restart demo</button>
+                </div>
+              </article>
+            </div>
+          </div>
+          <div class="profile-tab-panel" data-profile-panel="settings">
+            <div class="settings-grid">
+              <article class="settings-card">
+                <span class="status-pill">PHONE ALERTS</span>
+                <h2>Push Notifications</h2>
+                <p style="color:var(--muted);font-size:14px;margin:10px 0 16px;">Get instant lock-screen alerts when a matching internship drops. Add Promptly to your Home Screen first on iPhone.</p>
+                <label><span>Push notifications<small>Instant openings on your device</small></span><input type="checkbox" checked /></label>
+                <label><span>Email alerts<small>Matched openings sent to your inbox</small></span><input type="checkbox" checked /></label>
+                <label><span>Text alerts<small>Coming next with SMS setup</small></span><input type="checkbox" disabled /></label>
+                <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
+                  <button class="primary-action wide" data-enable-push>Enable Phone Notifications</button>
+                  <button class="soft-action wide" data-send-test-push>Send Test Notification</button>
+                  <button class="soft-action wide" data-send-test-alert>Send Test Email</button>
+                </div>
+                <p class="alert-status" data-push-status>Tap Enable Phone Notifications first. If you are on iPhone, open Promptly from the Home Screen app icon.</p>
+              </article>
+            </div>
           </div>
         </section>
       </section>

@@ -1731,6 +1731,41 @@ input[type="checkbox"] {
   }
 }
 
+/* ─── Profile Tabs ─── */
+.profile-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 20px;
+  width: fit-content;
+}
+
+.profile-tab {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font: 600 14px var(--font);
+  padding: 8px 20px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+
+.profile-tab.active {
+  background: var(--purple);
+  color: #fff;
+}
+
+.profile-tab-panel {
+  display: none;
+}
+
+.profile-tab-panel.active {
+  display: block;
+}
+
 /* ─── College Autocomplete ─── */
 .autocomplete-wrap {
   position: relative;
