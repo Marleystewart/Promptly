@@ -549,16 +549,26 @@ function displayName() {
   return profile.name.trim() || "there";
 }
 
-function greetingText() {
+function timeGreeting() {
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
-  return `${greeting} ${displayName()}`;
+  if (hour < 12) return "Good Morning";
+  if (hour < 17) return "Good Afternoon";
+  return "Good Evening";
+}
+
+function greetingText() {
+  return `${timeGreeting()} ${displayName()}`;
+}
+
+function updateDashboardGreeting() {
+  const text = greetingText();
+  document.querySelector("[data-title]").textContent = text;
+  document.querySelector("#view-home").dataset.heading = text;
 }
 
 function applyProfileToUI() {
   document.body.classList.remove("onboarding-active", "launch-active");
-  document.querySelector("[data-title]").textContent = greetingText();
-  document.querySelector("#view-home").dataset.heading = greetingText();
+  updateDashboardGreeting();
   updateProfilePhoto();
   document.querySelector("[data-profile-school]").textContent = profile.school || "Not set";
   document.querySelector("[data-profile-year]").textContent = profile.gradYear || "Not set";
@@ -797,6 +807,7 @@ async function sendTestPush() {
 }
 
 renderFieldChoices();
+updateDashboardGreeting();
 renderOpenings();
 setFeatured();
 
