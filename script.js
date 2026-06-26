@@ -145,6 +145,7 @@ const profile = {
 const views = document.querySelectorAll(".view");
 const title = document.querySelector("[data-title]");
 const modal = document.querySelector(".details-modal");
+const profileModal = document.querySelector("[data-profile-modal]");
 const modalCompany = document.querySelector("[data-modal-company]");
 const savedList = document.querySelector(".saved-list");
 const emptyState = document.querySelector(".empty-state");
@@ -159,6 +160,7 @@ function logoMarkup(item) {
 }
 
 function openingRow(item) {
+  const match = openingMatch(item);
   return `
     <article class="opening-row" data-company="${item.company}" data-field="${item.field}">
       ${logoMarkup(item)}
@@ -167,6 +169,7 @@ function openingRow(item) {
         <h3>${item.company}</h3>
         <p>${item.role} · ${item.program}</p>
         <small>Deadline: ${item.deadline} · ${item.opened}</small>
+        <small class="match-line">${match.label}</small>
       </div>
       <div class="row-actions">
         <button class="round-btn" aria-label="Save ${item.company}" data-save="${item.company}">
@@ -181,8 +184,47 @@ function openingRow(item) {
 }
 
 function preferredOpenings() {
-  const matches = openings.filter((item) => profile.fields.includes(item.field));
-  return matches.length ? matches : openings;
+  return [...openings].sort((a, b) => openingMatch(b).score - openingMatch(a).score);
+}
+
+function profileMatchText() {
+  return [profile.major, profile.interests, profile.school, profile.fields.join(" ")].join(" ").toLowerCase();
+}
+
+function openingMatch(item) {
+  const text = profileMatchText();
+  const searchable = [item.company, item.role, item.field, item.program].join(" ").toLowerCase();
+  const reasons = [];
+  let score = 42;
+
+  if (profile.fields.includes(item.field)) {
+    score += 28;
+    reasons.push(item.field);
+  }
+
+  if (text && text.includes(item.company.toLowerCase().split(" ")[0])) {
+    score += 24;
+    reasons.push(item.company);
+  }
+
+  const roleWords = item.role.toLowerCase().split(/\W+/).filter((word) => word.length > 4);
+  const roleHits = roleWords.filter((word) => text.includes(word));
+  if (roleHits.length) {
+    score += Math.min(roleHits.length * 10, 22);
+    reasons.push(roleHits[0]);
+  }
+
+  const fieldHits = (interestKeywords[item.field] || []).filter((keyword) => text.includes(keyword));
+  if (fieldHits.length) {
+    score += Math.min(fieldHits.length * 6, 20);
+    if (!reasons.includes(item.field)) reasons.push(item.field);
+  }
+
+  if (profile.major && searchable.includes(profile.major.toLowerCase().split(" ")[0])) score += 6;
+  score = Math.min(score, 98);
+
+  const reasonText = reasons.length ? reasons.slice(0, 2).join(" + ") : "broad profile";
+  return { score, label: `AI match ${score}% · ${reasonText}` };
 }
 
 function renderOpenings(items = preferredOpenings()) {
@@ -236,12 +278,17 @@ function saveCompany(company) {
 
 function renderFieldChoices() {
   fieldGrid.innerHTML = fieldOptions.map((field) => `<button data-field-choice="${field}">${field}</button>`).join("");
+  const editGrid = document.querySelector("[data-edit-field-grid]");
+  if (editGrid) editGrid.innerHTML = fieldOptions.map((field) => `<button data-edit-field-choice="${field}">${field}</button>`).join("");
   updateFieldButtons();
 }
 
 function updateFieldButtons() {
   document.querySelectorAll("[data-field-choice]").forEach((button) => {
     button.classList.toggle("active", profile.fields.includes(button.dataset.fieldChoice));
+  });
+  document.querySelectorAll("[data-edit-field-choice]").forEach((button) => {
+    button.classList.toggle("active", profile.fields.includes(button.dataset.editFieldChoice));
   });
 }
 
@@ -379,6 +426,31 @@ function updateProfilePhoto() {
     button.style.backgroundImage = profile.photoDataUrl ? `url("${profile.photoDataUrl}")` : "";
     button.classList.toggle("has-photo", Boolean(profile.photoDataUrl));
   });
+}
+
+function openProfileEditor() {
+  document.querySelector("[data-edit-name]").value = profile.name || "";
+  document.querySelector("[data-edit-email]").value = profile.email || "";
+  document.querySelector("[data-edit-school]").value = profile.school || "";
+  document.querySelector("[data-edit-year]").value = profile.gradYear || "";
+  document.querySelector("[data-edit-major]").value = profile.major || "";
+  document.querySelector("[data-edit-interests]").value = profile.interests || "";
+  updateFieldButtons();
+  if (typeof profileModal.showModal === "function") profileModal.showModal();
+}
+
+function saveProfileEdits() {
+  profile.name = document.querySelector("[data-edit-name]").value.trim();
+  profile.email = document.querySelector("[data-edit-email]").value.trim();
+  profile.school = document.querySelector("[data-edit-school]").value.trim();
+  profile.gradYear = document.querySelector("[data-edit-year]").value.trim();
+  profile.major = document.querySelector("[data-edit-major]").value.trim();
+  profile.interests = document.querySelector("[data-edit-interests]").value.trim();
+  mergeFields(inferFieldsFromText(`${profile.major} ${profile.interests}`));
+  saveProfile();
+  saveSubscriber();
+  applyProfileToUI();
+  profileModal.close();
 }
 
 function restoreProfile() {
@@ -578,6 +650,7 @@ if (!restoreProfile()) {
 document.addEventListener("click", (event) => {
   const nextButton = event.target.closest("[data-next-step]");
   const fieldButton = event.target.closest("[data-field-choice]");
+  const editFieldButton = event.target.closest("[data-edit-field-choice]");
   const finishButton = event.target.closest("[data-finish-onboarding]");
   const viewButton = event.target.closest("[data-view]");
   const detailsButton = event.target.closest("[data-open-details]");
@@ -589,6 +662,9 @@ document.addEventListener("click", (event) => {
   const sendTestAlertButton = event.target.closest("[data-send-test-alert]");
   const resetDemoButton = event.target.closest("[data-reset-demo]");
   const photoButton = event.target.closest("[data-photo-button]");
+  const editProfileButton = event.target.closest("[data-edit-profile]");
+  const saveProfileButton = event.target.closest("[data-save-profile-edits]");
+  const closeProfileButton = event.target.closest("[data-close-profile-modal]");
 
   if (nextButton) {
     if (nextButton.dataset.nextStep === "2" && !validateSignup()) return;
@@ -598,6 +674,12 @@ document.addEventListener("click", (event) => {
 
   if (fieldButton) {
     const field = fieldButton.dataset.fieldChoice;
+    profile.fields = profile.fields.includes(field) ? profile.fields.filter((item) => item !== field) : [...profile.fields, field];
+    updateFieldButtons();
+  }
+
+  if (editFieldButton) {
+    const field = editFieldButton.dataset.editFieldChoice;
     profile.fields = profile.fields.includes(field) ? profile.fields.filter((item) => item !== field) : [...profile.fields, field];
     updateFieldButtons();
   }
@@ -626,6 +708,18 @@ document.addEventListener("click", (event) => {
 
   if (photoButton) {
     document.querySelector("[data-photo-input]").click();
+  }
+
+  if (editProfileButton) {
+    openProfileEditor();
+  }
+
+  if (saveProfileButton) {
+    saveProfileEdits();
+  }
+
+  if (closeProfileButton) {
+    profileModal.close();
   }
 
   if (viewButton && !document.body.classList.contains("onboarding-active")) {

@@ -278,7 +278,10 @@
               <div class="profile-row"><span>Major</span><strong data-profile-major>Not set</strong></div>
               <div class="profile-row"><span>Interests</span><strong data-profile-interests>Not set</strong></div>
               <div class="profile-row"><span>Fields</span><strong data-profile-fields>Technology, Healthcare</strong></div>
-              <button class="tiny-action" data-reset-demo>Restart demo</button>
+              <div class="profile-actions">
+                <button class="tiny-action" data-edit-profile>Edit profile</button>
+                <button class="tiny-action" data-reset-demo>Restart demo</button>
+              </div>
             </article>
           </div>
         </section>
@@ -292,6 +295,23 @@
       <button class="nav-item" data-view="saved"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg><span>Saved</span></button>
       <button class="nav-item" data-view="profile"><svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></button>
     </nav>
+
+    <dialog class="profile-modal" data-profile-modal>
+      <button class="close-modal" data-close-profile-modal aria-label="Close profile editor">×</button>
+      <span class="status-pill">MATCH PROFILE</span>
+      <h2>Edit profile</h2>
+      <p>Promptly uses this to rank openings and decide which alerts matter most.</p>
+      <div class="edit-grid">
+        <label class="field-label">Name<input data-edit-name type="text" /></label>
+        <label class="field-label">Email<input data-edit-email type="email" /></label>
+        <label class="field-label">School<input data-edit-school type="text" /></label>
+        <label class="field-label">Graduation year<input data-edit-year type="text" inputmode="numeric" /></label>
+        <label class="field-label wide">Major<input data-edit-major type="text" /></label>
+        <label class="field-label wide">Goals and interests<textarea data-edit-interests></textarea></label>
+      </div>
+      <div class="field-grid edit-fields" data-edit-field-grid></div>
+      <button class="primary-action wide" data-save-profile-edits>Save Profile</button>
+    </dialog>
 
     <dialog class="details-modal">
       <button class="close-modal" aria-label="Close details">×</button>

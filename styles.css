@@ -976,6 +976,13 @@ body.launch-active .onboarding-brand {
   color: var(--faint);
 }
 
+.match-line {
+  display: block;
+  margin-top: 6px;
+  color: rgba(134, 255, 207, 0.82);
+  font-weight: 850;
+}
+
 .timeline-card {
   overflow: hidden;
   border-radius: 30px;
@@ -1161,6 +1168,13 @@ input[type="checkbox"] {
   border-bottom: 1px solid var(--line);
 }
 
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
+}
+
 .empty-state {
   display: grid;
   justify-items: center;
@@ -1179,6 +1193,7 @@ input[type="checkbox"] {
   display: none;
 }
 
+.profile-modal,
 .details-modal {
   width: min(520px, calc(100vw - 28px));
   border-radius: 30px;
@@ -1186,9 +1201,34 @@ input[type="checkbox"] {
   color: #fff;
 }
 
+.profile-modal::backdrop,
 .details-modal::backdrop {
   background: rgba(0,0,0,0.6);
   backdrop-filter: blur(8px);
+}
+
+.profile-modal {
+  width: min(720px, calc(100vw - 28px));
+}
+
+.profile-modal > p {
+  margin: 10px 0 20px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.edit-grid .wide {
+  grid-column: 1 / -1;
+}
+
+.edit-fields {
+  margin: 18px 0;
 }
 
 .close-modal {
