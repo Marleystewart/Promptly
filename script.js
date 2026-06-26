@@ -232,6 +232,7 @@ const profile = {
   major: "",
   interests: "",
   photoDataUrl: "",
+  resumeName: "",
   fields: [],
 };
 
@@ -346,9 +347,10 @@ function updateAlertIntelligence() {
   const school = profile.school || "your school";
   const fieldText = fields.length ? fields.join(", ") : "every field";
   const next = nextWindowText();
+  const resumeSignal = profile.resumeName ? " Your resume is also helping Promptly understand your experience." : "";
 
   document.querySelector("[data-alert-profile]").textContent = `Tracking ${fieldText} for ${major}.`;
-  document.querySelector("[data-alert-profile-copy]").textContent = `${school} context, ${profile.gradYear ? `Class of ${profile.gradYear}` : "class year"}, and your interests decide which alerts rise first.`;
+  document.querySelector("[data-alert-profile-copy]").textContent = `${school} context, ${profile.gradYear ? `Class of ${profile.gradYear}` : "class year"}, and your interests decide which alerts rise first.${resumeSignal}`;
   document.querySelector("[data-next-window]").textContent = next.title;
   document.querySelector("[data-next-window-copy]").textContent = next.copy;
 }
@@ -615,6 +617,7 @@ function restoreProfile() {
     document.querySelector("[data-grad-year-input]").value = profile.gradYear || "";
     document.querySelector("[data-major-input]").value = profile.major || "";
     document.querySelector("[data-interests-input]").value = profile.interests || "";
+    if (profile.resumeName) document.querySelector("[data-resume-status]").textContent = `${profile.resumeName} added. Promptly will use it only to improve matches and recruiting timeline signals.`;
     applyProfileToUI();
     setView("home");
     return true;
@@ -815,6 +818,7 @@ document.addEventListener("click", (event) => {
   const saveModalButton = event.target.closest("[data-save-modal]");
   const resetDemoButton = event.target.closest("[data-reset-demo]");
   const photoButton = event.target.closest("[data-photo-button]");
+  const resumeButton = event.target.closest("[data-resume-button]");
   const editProfileButton = event.target.closest("[data-edit-profile]");
   const saveProfileButton = event.target.closest("[data-save-profile-edits]");
   const closeProfileButton = event.target.closest("[data-close-profile-modal]");
@@ -874,6 +878,10 @@ document.addEventListener("click", (event) => {
     document.querySelector("[data-photo-input]").click();
   }
 
+  if (resumeButton) {
+    document.querySelector("[data-resume-input]").click();
+  }
+
   if (editProfileButton) {
     openProfileEditor();
   }
@@ -914,6 +922,14 @@ document.querySelector("[data-name-input]")?.addEventListener("input", () => set
 document.querySelector("[data-school-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-grad-year-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-major-input]")?.addEventListener("input", () => setAcademicError());
+
+document.querySelector("[data-resume-input]")?.addEventListener("change", (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  profile.resumeName = file.name;
+  document.querySelector("[data-resume-status]").textContent = `${file.name} added. Promptly will use it only to improve matches and recruiting timeline signals.`;
+  saveProfile();
+});
 
 document.addEventListener("keydown", (event) => {
   const row = event.target.closest?.(".opening-row[data-open-details]");
