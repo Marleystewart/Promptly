@@ -632,7 +632,7 @@ body.launch-active .onboarding-brand {
   position: relative;
   min-height: 302px;
   display: grid;
-  grid-template-columns: 1fr 250px;
+  grid-template-columns: minmax(0, 1fr) minmax(128px, 180px);
   gap: 24px;
   overflow: hidden;
   border-radius: 30px;
@@ -670,7 +670,7 @@ body.launch-active .onboarding-brand {
 .featured-card h2 {
   max-width: 540px;
   margin-top: 18px;
-  font-size: clamp(34px, 5vw, 58px);
+  font-size: clamp(30px, 3.6vw, 46px);
   line-height: 1.02;
   font-weight: 900;
 }
@@ -733,6 +733,24 @@ body.launch-active .onboarding-brand {
   font-weight: 900;
   line-height: 0.88;
   text-align: center;
+}
+
+.mega-logo {
+  width: clamp(126px, 15vw, 180px);
+  height: clamp(126px, 15vw, 180px);
+}
+
+.logo-tile {
+  overflow: hidden;
+  padding: 10px;
+  background: rgba(255,255,255,0.96);
+}
+
+.logo-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .gs {
@@ -912,6 +930,11 @@ body.launch-active .onboarding-brand {
   font-size: 16px;
   font-weight: 900;
   text-align: center;
+}
+
+.logo img {
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .opening-row h3 {

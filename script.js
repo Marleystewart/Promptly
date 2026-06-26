@@ -15,15 +15,15 @@ const fieldOptions = [
 
 const interestKeywords = {
   Technology: ["tech", "software", "computer", "coding", "data", "ai", "product", "cyber", "engineering", "google", "microsoft"],
-  Healthcare: ["health", "hospital", "clinic", "medical", "medicine", "pre-med", "nursing", "research", "mayo"],
+  Healthcare: ["health", "hospital", "clinic", "medical", "medicine", "pre-med", "nursing", "research", "mayo", "pfizer"],
   Design: ["design", "ux", "ui", "creative", "brand", "visual", "adobe"],
   Marketing: ["marketing", "social", "growth", "brand", "advertising", "sports marketing"],
   Education: ["education", "teaching", "learning", "school", "student", "duolingo"],
   Media: ["media", "journalism", "music", "film", "news", "spotify", "content"],
   Science: ["science", "lab", "biology", "chemistry", "climate", "space", "nasa", "environment"],
-  Policy: ["policy", "government", "law", "political", "public", "nonprofit", "epa"],
+  Policy: ["policy", "government", "law", "political", "public", "nonprofit", "epa", "unicef"],
   Finance: ["finance", "investment", "banking", "accounting", "money"],
-  Consulting: ["consulting", "strategy", "operations", "business analyst"],
+  Consulting: ["consulting", "strategy", "operations", "business analyst", "mckinsey", "bain"],
   Sports: ["sports", "athletics", "team", "league"],
   Startups: ["startup", "founder", "venture", "entrepreneur"],
 };
@@ -33,6 +33,7 @@ const openings = [
     company: "Google",
     short: "GO",
     logoClass: "tech",
+    logo: "assets/logos/google.webp",
     field: "Technology",
     role: "Associate Product Manager",
     program: "Summer 2027",
@@ -40,9 +41,21 @@ const openings = [
     opened: "Opened today",
   },
   {
+    company: "Microsoft",
+    short: "MS",
+    logoClass: "tech",
+    logo: "assets/logos/microsoft.jpeg",
+    field: "Technology",
+    role: "Explore Program Intern",
+    program: "Summer 2027",
+    deadline: "Sep 4, 2026",
+    opened: "Opened today",
+  },
+  {
     company: "Mayo Clinic",
     short: "Mayo",
     logoClass: "health",
+    logo: "assets/logos/mayo-clinic.jpeg",
     field: "Healthcare",
     role: "Clinical Research Intern",
     program: "Summer 2027",
@@ -50,9 +63,21 @@ const openings = [
     opened: "Opened 1 hr ago",
   },
   {
+    company: "Pfizer",
+    short: "PFE",
+    logoClass: "health",
+    logo: "assets/logos/pfizer.png",
+    field: "Healthcare",
+    role: "Biopharma Strategy Intern",
+    program: "Summer 2027",
+    deadline: "Sep 30, 2026",
+    opened: "Opened 90 min ago",
+  },
+  {
     company: "Spotify",
     short: "SP",
     logoClass: "media",
+    logo: "assets/logos/spotify.jpeg",
     field: "Marketing",
     role: "Music Marketing Intern",
     program: "Summer 2027",
@@ -63,6 +88,7 @@ const openings = [
     company: "NASA",
     short: "NASA",
     logoClass: "science",
+    logo: "assets/logos/nasa.jpeg",
     field: "Science",
     role: "Mission Systems Intern",
     program: "Spring 2027",
@@ -93,6 +119,7 @@ const openings = [
     company: "EPA",
     short: "EPA",
     logoClass: "policy",
+    logo: "assets/logos/epa.jpeg",
     field: "Policy",
     role: "Environmental Policy Intern",
     program: "Spring 2027",
@@ -100,9 +127,21 @@ const openings = [
     opened: "Opened 4 days ago",
   },
   {
+    company: "UNICEF",
+    short: "UN",
+    logoClass: "policy",
+    logo: "assets/logos/unicef.jpeg",
+    field: "Policy",
+    role: "Programs & Partnerships Intern",
+    program: "Summer 2027",
+    deadline: "Oct 21, 2026",
+    opened: "Opened 4 days ago",
+  },
+  {
     company: "Adobe",
     short: "AD",
     logoClass: "tech",
+    logo: "assets/logos/adobe.png",
     field: "Design",
     role: "Product Design Intern",
     program: "Summer 2027",
@@ -113,6 +152,7 @@ const openings = [
     company: "Goldman Sachs",
     short: "GS",
     logoClass: "gs",
+    logo: "assets/logos/goldman-sachs.png",
     field: "Finance",
     role: "Investment Banking",
     program: "Summer 2027",
@@ -120,13 +160,36 @@ const openings = [
     opened: "Opened 6 days ago",
   },
   {
+    company: "JPMorgan",
+    short: "JPM",
+    logoClass: "gs",
+    logo: "assets/logos/jpmorgan.png",
+    field: "Finance",
+    role: "Markets Summer Analyst",
+    program: "Summer 2027",
+    deadline: "Jul 19, 2026",
+    opened: "Opened 1 week ago",
+  },
+  {
     company: "McKinsey & Company",
     short: "McK",
     logoClass: "mck",
+    logo: "assets/logos/mckinsey.png",
     field: "Consulting",
     role: "Business Analyst",
     program: "Summer 2027",
     deadline: "Aug 2, 2026",
+    opened: "Opened 1 week ago",
+  },
+  {
+    company: "Bain & Company",
+    short: "Bain",
+    logoClass: "bain",
+    logo: "assets/logos/bain.webp",
+    field: "Consulting",
+    role: "Associate Consultant Intern",
+    program: "Summer 2027",
+    deadline: "Aug 9, 2026",
     opened: "Opened 1 week ago",
   },
 ];
@@ -156,6 +219,9 @@ const fallbackVapidPublicKey = "BIQfsqoTgEEQRYIM-YdEvr8-95V4xhNHKf9CwIRPIb3O0ZyI
 const profileStorageKey = "openingProfile";
 
 function logoMarkup(item) {
+  if (item.logo) {
+    return `<div class="logo logo-tile"><img src="${item.logo}" alt="${item.company} logo" loading="lazy" /></div>`;
+  }
   return `<div class="logo ${item.logoClass}">${item.short}</div>`;
 }
 
@@ -236,8 +302,9 @@ function setFeatured() {
   const item = preferredOpenings()[0];
   document.querySelector("[data-feature-title]").textContent = `${item.company} ${item.role} just opened.`;
   document.querySelector("[data-feature-copy]").textContent = `${item.field} student alert · Deadline ${item.deadline}. ${item.opened}.`;
-  document.querySelector("[data-feature-logo]").className = `mega-logo ${item.logoClass}`;
-  document.querySelector("[data-feature-logo]").textContent = item.short;
+  const featureLogo = document.querySelector("[data-feature-logo]");
+  featureLogo.className = `mega-logo ${item.logo ? "logo-tile" : item.logoClass}`;
+  featureLogo.innerHTML = item.logo ? `<img src="${item.logo}" alt="${item.company} logo" />` : item.short;
   document.querySelector("[data-feature-details]").dataset.openDetails = item.company;
   document.querySelector("[data-feature-save]").dataset.save = item.company;
 }
@@ -264,8 +331,9 @@ function openDetails(company) {
   modal.querySelector("[data-modal-deadline]").textContent = item.deadline.replace(/, 20\d{2}/, "");
   modal.querySelector("[data-modal-opened]").textContent = item.opened.replace("Opened ", "");
   modal.querySelector("[data-modal-field]").textContent = item.field;
-  modal.querySelector(".modal-logo").className = `modal-logo ${item.logoClass}`;
-  modal.querySelector(".modal-logo").textContent = item.short;
+  const modalLogo = modal.querySelector(".modal-logo");
+  modalLogo.className = `modal-logo ${item.logo ? "logo-tile" : item.logoClass}`;
+  modalLogo.innerHTML = item.logo ? `<img src="${item.logo}" alt="${item.company} logo" />` : item.short;
   if (typeof modal.showModal === "function") modal.showModal();
 }
 
