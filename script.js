@@ -781,10 +781,15 @@ async function sendTestAlert() {
 }
 
 async function sendTestPush() {
-  const raw = localStorage.getItem("openingPushSubscription");
+  let raw = localStorage.getItem("openingPushSubscription");
   if (!raw) {
-    setPushStatus("Enable alerts first, then send a test notification.");
-    return;
+    setPushStatus("Setting up phone alerts first. Tap Allow if your device asks.");
+    await enablePushAlerts();
+    raw = localStorage.getItem("openingPushSubscription");
+    if (!raw) {
+      setPushStatus("Phone alerts are not enabled yet. On iPhone, open Promptly from the Home Screen app icon, then tap Enable Phone Notifications.");
+      return;
+    }
   }
 
   setPushStatus("Sending a real test notification...");

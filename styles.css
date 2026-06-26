@@ -1297,6 +1297,17 @@ body.launch-active .onboarding-brand {
   font-weight: 600;
 }
 
+.alert-status {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(134,255,207,0.2);
+  border-radius: 16px;
+  color: rgba(232,238,255,0.78);
+  background: rgba(97,232,170,0.08);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 input[type="checkbox"] {
   width: 43px;
   height: 24px;
