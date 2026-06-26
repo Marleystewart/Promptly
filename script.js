@@ -1,3 +1,74 @@
+const COLLEGES = [
+  "Abilene Christian University", "Agnes Scott College", "Alabama A&M University", "Alcorn State University",
+  "American University", "Amherst College", "Arizona State University", "Auburn University",
+  "Babson College", "Ball State University", "Barnard College", "Bates College", "Baylor University",
+  "Belmont University", "Bentley University", "Bethune-Cookman University", "Boston College",
+  "Boston University", "Bowdoin College", "Brandeis University", "Brown University", "Bryant University",
+  "Bryn Mawr College", "Bucknell University", "California Institute of Technology",
+  "California Polytechnic State University, San Luis Obispo", "Carnegie Mellon University",
+  "Case Western Reserve University", "Chapman University", "Clark Atlanta University", "Clemson University",
+  "Colby College", "Colgate University", "College of Charleston", "College of the Holy Cross",
+  "College of William & Mary", "Colorado College", "Colorado State University", "Columbia University",
+  "Cornell University", "Creighton University", "Dartmouth College", "Davidson College",
+  "Delaware State University", "DePaul University", "Dickinson College", "Drexel University",
+  "Duke University", "Duquesne University", "Elon University", "Embry-Riddle Aeronautical University",
+  "Emory University", "Fairfield University", "Fisk University", "Florida A&M University",
+  "Florida International University", "Florida State University", "Fordham University",
+  "Franklin & Marshall College", "Furman University", "George Mason University",
+  "George Washington University", "Georgetown University", "Georgia Institute of Technology",
+  "Georgia State University", "Gonzaga University", "Grambling State University", "Grinnell College",
+  "Hamilton College", "Hampton University", "Harvard University", "Harvey Mudd College",
+  "Haverford College", "High Point University", "Hofstra University", "Howard University",
+  "Illinois Institute of Technology", "Indiana University Bloomington", "Iowa State University",
+  "Ithaca College", "Jackson State University", "James Madison University", "Johns Hopkins University",
+  "Kansas State University", "Kennesaw State University", "Kenyon College", "Lafayette College",
+  "Lehigh University", "Lincoln University", "Louisiana State University", "Loyola Marymount University",
+  "Loyola University Chicago", "Loyola University Maryland", "Macalester College", "Manhattan College",
+  "Marquette University", "Massachusetts Institute of Technology", "Miami University",
+  "Michigan State University", "Middlebury College", "Mississippi State University", "Morehouse College",
+  "Morgan State University", "Mount Holyoke College", "NC State University", "New York University",
+  "North Carolina A&T State University", "Northeastern University", "Northwestern University",
+  "Oberlin College", "Ohio State University", "Ohio University", "Oklahoma State University",
+  "Oregon State University", "Pace University", "Penn State University", "Pepperdine University",
+  "Pomona College", "Prairie View A&M University", "Princeton University", "Providence College",
+  "Purdue University", "Rensselaer Polytechnic Institute", "Rhodes College", "Rice University",
+  "Rochester Institute of Technology", "Rose-Hulman Institute of Technology", "Rutgers University",
+  "Santa Clara University", "Savannah College of Art and Design", "Scripps College",
+  "Seton Hall University", "Skidmore College", "Smith College", "Southern Methodist University",
+  "Southern University and A&M College", "Spelman College", "St. John's University", "Stanford University",
+  "Stevens Institute of Technology", "Stony Brook University", "Syracuse University",
+  "Temple University", "Tennessee State University", "Texas A&M University",
+  "Texas Christian University", "Trinity College", "Trinity University", "Tufts University",
+  "Tulane University", "Union College", "University of Alabama", "University of Arizona",
+  "University of Arkansas", "University of California, Berkeley", "University of California, Davis",
+  "University of California, Irvine", "University of California, Los Angeles",
+  "University of California, San Diego", "University of California, Santa Barbara",
+  "University of Chicago", "University of Cincinnati", "University of Colorado Boulder",
+  "University of Connecticut", "University of Delaware", "University of Denver",
+  "University of Florida", "University of Georgia", "University of Houston",
+  "University of Illinois Urbana-Champaign", "University of Iowa", "University of Kansas",
+  "University of Kentucky", "University of Maryland", "University of Massachusetts Amherst",
+  "University of Miami", "University of Michigan", "University of Minnesota",
+  "University of Mississippi", "University of Missouri", "University of Nebraska-Lincoln",
+  "University of North Carolina at Chapel Hill", "University of Notre Dame",
+  "University of Oklahoma", "University of Oregon", "University of Pennsylvania",
+  "University of Pittsburgh", "University of Richmond", "University of Rochester",
+  "University of San Diego", "University of South Carolina", "University of South Florida",
+  "University of Southern California", "University of Tennessee", "University of Texas at Austin",
+  "University of Utah", "University of Vermont", "University of Virginia",
+  "University of Washington", "University of Wisconsin-Madison", "Vanderbilt University",
+  "Vassar College", "Villanova University", "Virginia Tech", "Wake Forest University",
+  "Washington and Lee University", "Washington University in St. Louis", "Wellesley College",
+  "Wesleyan University", "West Virginia University", "Williams College",
+  "Winston-Salem State University", "Worcester Polytechnic Institute",
+  "Xavier University of Louisiana", "Yale University",
+];
+
+const subFields = {
+  Finance: ["All Finance", "Investment Banking", "Asset Management", "Sales & Trading", "Private Equity"],
+  Consulting: ["All Consulting", "MBB", "Big 4", "Tech Consulting", "Government & Defense"],
+};
+
 const fieldOptions = [
   "Technology",
   "Healthcare",
@@ -188,7 +259,8 @@ const openings = [
     logoClass: "gs",
     logo: "assets/logos/goldman-sachs.png",
     field: "Finance",
-    role: "Investment Banking",
+    subField: "Investment Banking",
+    role: "Investment Banking Summer Analyst",
     program: "Summer 2027",
     deadline: "Jul 12, 2026",
     opened: "Opened 6 days ago",
@@ -201,6 +273,7 @@ const openings = [
     logoClass: "gs",
     logo: "assets/logos/jpmorgan.png",
     field: "Finance",
+    subField: "Investment Banking",
     role: "Markets Summer Analyst",
     program: "Summer 2027",
     deadline: "Jul 19, 2026",
@@ -214,7 +287,8 @@ const openings = [
     logoClass: "mck",
     logo: "assets/logos/mckinsey.png",
     field: "Consulting",
-    role: "Business Analyst",
+    subField: "MBB",
+    role: "Business Analyst Intern",
     program: "Summer 2027",
     deadline: "Aug 2, 2026",
     opened: "Opened 1 week ago",
@@ -227,12 +301,573 @@ const openings = [
     logoClass: "bain",
     logo: "assets/logos/bain.webp",
     field: "Consulting",
+    subField: "MBB",
     role: "Associate Consultant Intern",
     program: "Summer 2027",
     deadline: "Aug 9, 2026",
     opened: "Opened 1 week ago",
     sourceLabel: "Bain Internships",
     sourceUrl: "https://www.bain.com/careers/work-with-us/internships-programs/",
+  },
+  // Finance — Investment Banking
+  {
+    company: "Morgan Stanley",
+    short: "MS",
+    logoClass: "ms",
+    field: "Finance",
+    subField: "Investment Banking",
+    role: "Investment Banking Summer Analyst",
+    program: "Summer 2027",
+    deadline: "Jul 18, 2026",
+    opened: "Opened 5 days ago",
+    sourceLabel: "Morgan Stanley Students",
+    sourceUrl: "https://www.morganstanley.com/people-opportunities/students-graduates",
+  },
+  {
+    company: "Bank of America",
+    short: "BofA",
+    logoClass: "boa",
+    field: "Finance",
+    subField: "Investment Banking",
+    role: "Global Banking & Markets Intern",
+    program: "Summer 2027",
+    deadline: "Jul 25, 2026",
+    opened: "Opened 1 week ago",
+    sourceLabel: "BofA Students",
+    sourceUrl: "https://careers.bankofamerica.com/en-us/students-and-recent-grads",
+  },
+  {
+    company: "Citigroup",
+    short: "C",
+    logoClass: "citi",
+    field: "Finance",
+    subField: "Investment Banking",
+    role: "Banking Capital Markets Intern",
+    program: "Summer 2027",
+    deadline: "Aug 1, 2026",
+    opened: "Opened 1 week ago",
+    sourceLabel: "Citi Students",
+    sourceUrl: "https://jobs.citi.com/category/students-and-graduates/287",
+  },
+  {
+    company: "Barclays",
+    short: "BCS",
+    logoClass: "bcs",
+    field: "Finance",
+    subField: "Investment Banking",
+    role: "Investment Banking Summer Analyst",
+    program: "Summer 2027",
+    deadline: "Aug 5, 2026",
+    opened: "Opened 10 days ago",
+    sourceLabel: "Barclays Students",
+    sourceUrl: "https://home.barclays/careers/students/",
+  },
+  {
+    company: "Lazard",
+    short: "LAZ",
+    logoClass: "laz",
+    field: "Finance",
+    subField: "Investment Banking",
+    role: "Investment Banking Summer Analyst",
+    program: "Summer 2027",
+    deadline: "Aug 8, 2026",
+    opened: "Opened 10 days ago",
+    sourceLabel: "Lazard Careers",
+    sourceUrl: "https://www.lazard.com/careers/",
+  },
+  {
+    company: "Evercore",
+    short: "EVR",
+    logoClass: "laz",
+    field: "Finance",
+    subField: "Investment Banking",
+    role: "Investment Banking Intern",
+    program: "Summer 2027",
+    deadline: "Aug 15, 2026",
+    opened: "Opened 12 days ago",
+    sourceLabel: "Evercore Careers",
+    sourceUrl: "https://www.evercore.com/careers/",
+  },
+  // Finance — Asset Management
+  {
+    company: "BlackRock",
+    short: "BLK",
+    logoClass: "blk",
+    field: "Finance",
+    subField: "Asset Management",
+    role: "Summer Analyst",
+    program: "Summer 2027",
+    deadline: "Sep 10, 2026",
+    opened: "Opened 2 weeks ago",
+    sourceLabel: "BlackRock Students",
+    sourceUrl: "https://careers.blackrock.com/students",
+  },
+  {
+    company: "Fidelity",
+    short: "FID",
+    logoClass: "fid",
+    field: "Finance",
+    subField: "Asset Management",
+    role: "Investments Intern",
+    program: "Summer 2027",
+    deadline: "Sep 18, 2026",
+    opened: "Opened 2 weeks ago",
+    sourceLabel: "Fidelity Careers",
+    sourceUrl: "https://jobs.fidelity.com/",
+  },
+  {
+    company: "Vanguard",
+    short: "VGI",
+    logoClass: "vgd",
+    field: "Finance",
+    subField: "Asset Management",
+    role: "Technology & Analytics Intern",
+    program: "Summer 2027",
+    deadline: "Oct 5, 2026",
+    opened: "Opened 3 weeks ago",
+    sourceLabel: "Vanguard Careers",
+    sourceUrl: "https://www.vanguard.com/web/portal/mycm/careers",
+  },
+  // Finance — Sales & Trading
+  {
+    company: "Jane Street",
+    short: "JS",
+    logoClass: "jane",
+    field: "Finance",
+    subField: "Sales & Trading",
+    role: "Trading Intern",
+    program: "Summer 2027",
+    deadline: "Aug 30, 2026",
+    opened: "Opened 10 days ago",
+    sourceLabel: "Jane Street Careers",
+    sourceUrl: "https://www.janestreet.com/join-jane-street/",
+  },
+  {
+    company: "Citadel",
+    short: "CITD",
+    logoClass: "jane",
+    field: "Finance",
+    subField: "Sales & Trading",
+    role: "Global Fixed Income & Macro Intern",
+    program: "Summer 2027",
+    deadline: "Sep 3, 2026",
+    opened: "Opened 2 weeks ago",
+    sourceLabel: "Citadel Careers",
+    sourceUrl: "https://www.citadel.com/careers/",
+  },
+  {
+    company: "Two Sigma",
+    short: "2SIG",
+    logoClass: "jane",
+    field: "Finance",
+    subField: "Sales & Trading",
+    role: "Quantitative Research Intern",
+    program: "Summer 2027",
+    deadline: "Sep 15, 2026",
+    opened: "Opened 3 weeks ago",
+    sourceLabel: "Two Sigma Careers",
+    sourceUrl: "https://www.twosigma.com/careers/",
+  },
+  // Finance — Private Equity
+  {
+    company: "Blackstone",
+    short: "BX",
+    logoClass: "bx",
+    field: "Finance",
+    subField: "Private Equity",
+    role: "Private Equity Summer Analyst",
+    program: "Summer 2027",
+    deadline: "Aug 20, 2026",
+    opened: "Opened 2 weeks ago",
+    sourceLabel: "Blackstone Careers",
+    sourceUrl: "https://www.blackstone.com/careers/",
+  },
+  {
+    company: "KKR",
+    short: "KKR",
+    logoClass: "bx",
+    field: "Finance",
+    subField: "Private Equity",
+    role: "Private Equity Intern",
+    program: "Summer 2027",
+    deadline: "Aug 28, 2026",
+    opened: "Opened 3 weeks ago",
+    sourceLabel: "KKR Careers",
+    sourceUrl: "https://www.kkr.com/careers",
+  },
+  // Consulting
+  {
+    company: "BCG",
+    short: "BCG",
+    logoClass: "bcg",
+    field: "Consulting",
+    subField: "MBB",
+    role: "Associate Intern",
+    program: "Summer 2027",
+    deadline: "Aug 6, 2026",
+    opened: "Opened 1 week ago",
+    sourceLabel: "BCG Careers",
+    sourceUrl: "https://www.bcg.com/careers/paths/consulting",
+  },
+  {
+    company: "Deloitte",
+    short: "DEL",
+    logoClass: "deloitte",
+    field: "Consulting",
+    subField: "Big 4",
+    role: "Business Technology Analyst Intern",
+    program: "Summer 2027",
+    deadline: "Sep 1, 2026",
+    opened: "Opened 2 weeks ago",
+    sourceLabel: "Deloitte Students",
+    sourceUrl: "https://www2.deloitte.com/us/en/pages/careers/articles/join-deloitte-students.html",
+  },
+  {
+    company: "PwC",
+    short: "PwC",
+    logoClass: "pwc",
+    field: "Consulting",
+    subField: "Big 4",
+    role: "Risk & Regulatory Intern",
+    program: "Summer 2027",
+    deadline: "Sep 8, 2026",
+    opened: "Opened 2 weeks ago",
+    sourceLabel: "PwC Students",
+    sourceUrl: "https://www.pwc.com/us/en/careers/campus.html",
+  },
+  {
+    company: "Ernst & Young",
+    short: "EY",
+    logoClass: "ey",
+    field: "Consulting",
+    subField: "Big 4",
+    role: "Advisory Intern",
+    program: "Summer 2027",
+    deadline: "Sep 12, 2026",
+    opened: "Opened 3 weeks ago",
+    sourceLabel: "EY Students",
+    sourceUrl: "https://www.ey.com/en_us/careers/students",
+  },
+  {
+    company: "KPMG",
+    short: "KPMG",
+    logoClass: "kpmg",
+    field: "Consulting",
+    subField: "Big 4",
+    role: "Technology Risk Intern",
+    program: "Summer 2027",
+    deadline: "Sep 20, 2026",
+    opened: "Opened 3 weeks ago",
+    sourceLabel: "KPMG Students",
+    sourceUrl: "https://home.kpmg/us/en/home/careers/students.html",
+  },
+  {
+    company: "Accenture",
+    short: "ACN",
+    logoClass: "acn",
+    field: "Consulting",
+    subField: "Tech Consulting",
+    role: "Technology Development Intern",
+    program: "Summer 2027",
+    deadline: "Oct 1, 2026",
+    opened: "Opened 3 weeks ago",
+    sourceLabel: "Accenture Students",
+    sourceUrl: "https://www.accenture.com/us-en/careers/your-future-students",
+  },
+  {
+    company: "Booz Allen Hamilton",
+    short: "BAH",
+    logoClass: "bah",
+    field: "Consulting",
+    subField: "Government & Defense",
+    role: "Strategy & Innovation Intern",
+    program: "Summer 2027",
+    deadline: "Sep 25, 2026",
+    opened: "Opened 3 weeks ago",
+    sourceLabel: "Booz Allen Careers",
+    sourceUrl: "https://www.boozallen.com/careers/find-your-fit/students.html",
+  },
+  // Technology
+  {
+    company: "Meta",
+    short: "META",
+    logoClass: "meta",
+    field: "Technology",
+    role: "Software Engineering Intern",
+    program: "Summer 2027",
+    deadline: "Sep 22, 2026",
+    opened: "Opened 2 days ago",
+    sourceLabel: "Meta Students",
+    sourceUrl: "https://www.metacareers.com/careerprograms/pathways/students",
+  },
+  {
+    company: "Apple",
+    short: "AAPL",
+    logoClass: "apple",
+    field: "Technology",
+    role: "Software Engineer Intern",
+    program: "Summer 2027",
+    deadline: "Sep 28, 2026",
+    opened: "Opened 3 days ago",
+    sourceLabel: "Apple Students",
+    sourceUrl: "https://jobs.apple.com/en-us/go",
+  },
+  {
+    company: "Amazon",
+    short: "AMZN",
+    logoClass: "amzn",
+    field: "Technology",
+    role: "Software Development Engineer Intern",
+    program: "Summer 2027",
+    deadline: "Oct 3, 2026",
+    opened: "Opened 4 days ago",
+    sourceLabel: "Amazon Students",
+    sourceUrl: "https://www.amazon.jobs/en/teams/internships-us",
+  },
+  {
+    company: "Netflix",
+    short: "NFLX",
+    logoClass: "nflx",
+    field: "Technology",
+    role: "Analytics Engineering Intern",
+    program: "Summer 2027",
+    deadline: "Oct 8, 2026",
+    opened: "Opened 5 days ago",
+    sourceLabel: "Netflix Jobs",
+    sourceUrl: "https://jobs.netflix.com/",
+  },
+  {
+    company: "Nvidia",
+    short: "NVDA",
+    logoClass: "nvda",
+    field: "Technology",
+    role: "Software Engineering Intern",
+    program: "Summer 2027",
+    deadline: "Sep 15, 2026",
+    opened: "Opened 3 days ago",
+    sourceLabel: "Nvidia University",
+    sourceUrl: "https://www.nvidia.com/en-us/about-nvidia/careers/university-recruiting/",
+  },
+  {
+    company: "Salesforce",
+    short: "CRM",
+    logoClass: "tech",
+    field: "Technology",
+    role: "Software Engineer Intern",
+    program: "Summer 2027",
+    deadline: "Oct 12, 2026",
+    opened: "Opened 6 days ago",
+    sourceLabel: "Salesforce University",
+    sourceUrl: "https://salesforce.com/company/careers/university-recruiting/",
+  },
+  {
+    company: "Uber",
+    short: "UBER",
+    logoClass: "uber",
+    field: "Technology",
+    role: "Software Engineering Intern",
+    program: "Summer 2027",
+    deadline: "Oct 15, 2026",
+    opened: "Opened 1 week ago",
+    sourceLabel: "Uber Students",
+    sourceUrl: "https://www.uber.com/us/en/careers/list/students/",
+  },
+  {
+    company: "Airbnb",
+    short: "ABNB",
+    logoClass: "abnb",
+    field: "Technology",
+    role: "Software Engineering Intern",
+    program: "Summer 2027",
+    deadline: "Oct 18, 2026",
+    opened: "Opened 1 week ago",
+    sourceLabel: "Airbnb Careers",
+    sourceUrl: "https://careers.airbnb.com/",
+  },
+  {
+    company: "Palantir",
+    short: "PLTR",
+    logoClass: "pltr",
+    field: "Technology",
+    role: "Forward Deployed Engineering Intern",
+    program: "Summer 2027",
+    deadline: "Sep 30, 2026",
+    opened: "Opened 5 days ago",
+    sourceLabel: "Palantir Students",
+    sourceUrl: "https://www.palantir.com/careers/students/",
+  },
+  {
+    company: "Stripe",
+    short: "STR",
+    logoClass: "stripe",
+    field: "Technology",
+    role: "Software Engineering Intern",
+    program: "Summer 2027",
+    deadline: "Oct 20, 2026",
+    opened: "Opened 1 week ago",
+    sourceLabel: "Stripe Students",
+    sourceUrl: "https://stripe.com/jobs/university",
+  },
+  {
+    company: "OpenAI",
+    short: "OAI",
+    logoClass: "oai",
+    field: "Technology",
+    role: "Research Engineering Intern",
+    program: "Summer 2027",
+    deadline: "Oct 25, 2026",
+    opened: "Opened 1 week ago",
+    sourceLabel: "OpenAI Careers",
+    sourceUrl: "https://openai.com/careers/",
+  },
+  // Healthcare
+  {
+    company: "Johnson & Johnson",
+    short: "J&J",
+    logoClass: "health",
+    field: "Healthcare",
+    role: "R&D Summer Analyst",
+    program: "Summer 2027",
+    deadline: "Oct 1, 2026",
+    opened: "Opened 5 days ago",
+    sourceLabel: "J&J Students",
+    sourceUrl: "https://jobs.jnj.com/en/students",
+  },
+  {
+    company: "UnitedHealth Group",
+    short: "UNH",
+    logoClass: "health",
+    field: "Healthcare",
+    role: "Healthcare Analytics Intern",
+    program: "Summer 2027",
+    deadline: "Oct 8, 2026",
+    opened: "Opened 1 week ago",
+    sourceLabel: "UnitedHealth Careers",
+    sourceUrl: "https://careers.unitedhealthgroup.com/students",
+  },
+  {
+    company: "Moderna",
+    short: "MRNA",
+    logoClass: "health",
+    field: "Healthcare",
+    role: "Research Science Intern",
+    program: "Summer 2027",
+    deadline: "Sep 15, 2026",
+    opened: "Opened 3 days ago",
+    sourceLabel: "Moderna Careers",
+    sourceUrl: "https://www.modernatx.com/en-US/careers",
+  },
+  {
+    company: "Abbott",
+    short: "ABT",
+    logoClass: "health",
+    field: "Healthcare",
+    role: "Research & Development Intern",
+    program: "Summer 2027",
+    deadline: "Sep 22, 2026",
+    opened: "Opened 1 week ago",
+    sourceLabel: "Abbott Careers",
+    sourceUrl: "https://www.abbott.com/careers.html",
+  },
+  // Marketing
+  {
+    company: "Nike",
+    short: "NKE",
+    logoClass: "nike",
+    field: "Marketing",
+    role: "Marketing Intern",
+    program: "Summer 2027",
+    deadline: "Oct 10, 2026",
+    opened: "Opened 4 days ago",
+    sourceLabel: "Nike Students",
+    sourceUrl: "https://jobs.nike.com/students",
+  },
+  {
+    company: "Disney",
+    short: "DIS",
+    logoClass: "disney",
+    field: "Marketing",
+    role: "Marketing & Strategy Intern",
+    program: "Summer 2027",
+    deadline: "Oct 20, 2026",
+    opened: "Opened 1 week ago",
+    sourceLabel: "Disney Internships",
+    sourceUrl: "https://jobs.disneycareers.com/professional-internships",
+  },
+  // Media
+  {
+    company: "ESPN",
+    short: "ESPN",
+    logoClass: "espn",
+    field: "Media",
+    role: "Production Intern",
+    program: "Summer 2027",
+    deadline: "Oct 16, 2026",
+    opened: "Opened 6 days ago",
+    sourceLabel: "ESPN Internships",
+    sourceUrl: "https://espncareers.com/",
+  },
+  {
+    company: "Warner Bros. Discovery",
+    short: "WBD",
+    logoClass: "media",
+    field: "Media",
+    role: "Content Strategy Intern",
+    program: "Summer 2027",
+    deadline: "Oct 22, 2026",
+    opened: "Opened 2 weeks ago",
+    sourceLabel: "WBD Students",
+    sourceUrl: "https://careers.wbd.com/global/en/students",
+  },
+  {
+    company: "NBCUniversal",
+    short: "NBC",
+    logoClass: "media",
+    field: "Media",
+    role: "Digital Media Intern",
+    program: "Summer 2027",
+    deadline: "Oct 28, 2026",
+    opened: "Opened 2 weeks ago",
+    sourceLabel: "NBCUniversal Students",
+    sourceUrl: "https://www.nbcunicareers.com/internships",
+  },
+  // Science
+  {
+    company: "CDC",
+    short: "CDC",
+    logoClass: "policy",
+    field: "Science",
+    role: "Public Health Associate Intern",
+    program: "Summer 2027",
+    deadline: "Sep 5, 2026",
+    opened: "Opened 2 days ago",
+    sourceLabel: "CDC Students",
+    sourceUrl: "https://www.cdc.gov/employment/index.html",
+  },
+  // Education
+  {
+    company: "Khan Academy",
+    short: "KA",
+    logoClass: "education",
+    field: "Education",
+    role: "Software Engineer Intern",
+    program: "Summer 2027",
+    deadline: "Oct 30, 2026",
+    opened: "Opened 2 weeks ago",
+    sourceLabel: "Khan Academy Careers",
+    sourceUrl: "https://www.khanacademy.org/careers",
+  },
+  {
+    company: "Coursera",
+    short: "COUR",
+    logoClass: "education",
+    field: "Education",
+    role: "Product Management Intern",
+    program: "Summer 2027",
+    deadline: "Nov 1, 2026",
+    opened: "Opened 3 weeks ago",
+    sourceLabel: "Coursera Jobs",
+    sourceUrl: "https://careers.coursera.org/",
   },
 ];
 
@@ -941,11 +1576,39 @@ document.addEventListener("click", (event) => {
 
   if (filterButton) {
     const field = filterButton.textContent.trim();
+    const inSearchPanel = filterButton.closest(".search-panel");
     filterButton.parentElement.querySelectorAll(".filter-chip").forEach((button) => button.classList.remove("active"));
     filterButton.classList.add("active");
+
+    // Sub-filter row: show for Finance / Consulting in the openings panel only
+    const subFilterRow = document.getElementById("sub-filter-row");
+    if (subFilterRow && inSearchPanel) {
+      if (subFields[field]) {
+        subFilterRow.innerHTML = subFields[field].map((sf, i) =>
+          `<button class="sub-filter-chip${i === 0 ? " active" : ""}" data-sub-field="${sf}">${sf}</button>`
+        ).join("");
+        subFilterRow.hidden = false;
+      } else {
+        subFilterRow.hidden = true;
+      }
+    }
+
     const list = field === "All" ? preferredOpenings() : field === "Saved" ? [...saved.values()] : openings.filter((item) => item.field === field);
-    const target = filterButton.closest(".search-panel") ? document.querySelector(".full-list") : document.querySelector(".compact-list");
+    const target = inSearchPanel ? document.querySelector(".full-list") : document.querySelector(".compact-list");
     target.innerHTML = list.map(openingRow).join("");
+  }
+
+  const subFilterChip = event.target.closest("[data-sub-field]");
+  if (subFilterChip) {
+    document.querySelectorAll(".sub-filter-chip").forEach((btn) => btn.classList.remove("active"));
+    subFilterChip.classList.add("active");
+    const subField = subFilterChip.dataset.subField;
+    const activeMain = document.querySelector(".search-panel .filter-chip.active");
+    const field = activeMain ? activeMain.textContent.trim() : "";
+    const list = subField.startsWith("All ")
+      ? openings.filter((item) => item.field === field)
+      : openings.filter((item) => item.field === field && item.subField === subField);
+    document.querySelector(".full-list").innerHTML = list.map(openingRow).join("");
   }
 
   if (closeButton) {
@@ -991,5 +1654,77 @@ document.querySelector(".search-panel input")?.addEventListener("input", (event)
   const matches = openings.filter((item) => `${item.company} ${item.role} ${item.field}`.toLowerCase().includes(query));
   document.querySelector(".full-list").innerHTML = matches.map(openingRow).join("");
 });
+
+// --- College Autocomplete ---
+function setupCollegeAutocomplete(inputSel, dropdownSel) {
+  const input = document.querySelector(inputSel);
+  const dropdown = document.querySelector(dropdownSel);
+  if (!input || !dropdown) return;
+
+  let ignoreBlur = false;
+
+  function showMatches(query) {
+    if (query.length < 1) { dropdown.hidden = true; return; }
+    const matches = COLLEGES.filter((c) => c.toLowerCase().includes(query.toLowerCase())).slice(0, 9);
+    if (!matches.length) { dropdown.hidden = true; return; }
+    const q = query.toLowerCase();
+    dropdown.innerHTML = matches.map((c) => {
+      const i = c.toLowerCase().indexOf(q);
+      const highlighted = c.slice(0, i) + `<mark>${c.slice(i, i + q.length)}</mark>` + c.slice(i + q.length);
+      return `<li tabindex="-1">${highlighted}</li>`;
+    }).join("");
+    dropdown.hidden = false;
+  }
+
+  input.addEventListener("input", () => showMatches(input.value.trim()));
+
+  input.addEventListener("keydown", (e) => {
+    if (dropdown.hidden) return;
+    const items = [...dropdown.querySelectorAll("li")];
+    if (e.key === "ArrowDown") { e.preventDefault(); items[0]?.focus(); }
+    if (e.key === "Escape") { dropdown.hidden = true; }
+  });
+
+  dropdown.addEventListener("keydown", (e) => {
+    const items = [...dropdown.querySelectorAll("li")];
+    const idx = items.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") { e.preventDefault(); items[idx + 1]?.focus(); }
+    if (e.key === "ArrowUp") { e.preventDefault(); idx <= 0 ? input.focus() : items[idx - 1]?.focus(); }
+    if (e.key === "Escape") { dropdown.hidden = true; input.focus(); }
+    if (e.key === "Enter" && idx >= 0) {
+      e.preventDefault();
+      input.value = items[idx].textContent;
+      dropdown.hidden = true;
+      input.focus();
+    }
+  });
+
+  dropdown.addEventListener("mousedown", () => { ignoreBlur = true; });
+  dropdown.addEventListener("click", (e) => {
+    const li = e.target.closest("li");
+    if (!li) return;
+    input.value = li.textContent;
+    dropdown.hidden = true;
+    input.focus();
+    ignoreBlur = false;
+  });
+
+  input.addEventListener("blur", () => {
+    if (!ignoreBlur) window.setTimeout(() => { dropdown.hidden = true; }, 80);
+    ignoreBlur = false;
+  });
+}
+
+setupCollegeAutocomplete("[data-school-input]", "[data-college-dropdown]");
+setupCollegeAutocomplete("[data-edit-school]", "[data-college-dropdown-edit]");
+
+// --- Alert badge ---
+function updateAlertBadge() {
+  const count = openings.length;
+  document.querySelectorAll("[data-alert-badge]").forEach((el) => {
+    el.textContent = count > 99 ? "99+" : String(count);
+  });
+}
+updateAlertBadge();
 
 registerServiceWorker();
