@@ -166,9 +166,9 @@
               <p data-push-status>Add Promptly to your phone Home Screen, then enable alerts and send a test notification.</p>
             </div>
             <div class="notify-actions">
-              <button class="primary-action" data-enable-push>Enable Alerts</button>
-              <button class="soft-action" data-send-test-push>Send Phone Test</button>
-              <button class="soft-action" data-send-test-alert>Send Email Test</button>
+              <button class="primary-action" data-enable-push>Enable Phone Notifications</button>
+              <button class="soft-action" data-send-test-push>Send Test Notification</button>
+              <button class="soft-action" data-send-test-alert>Send Test Email</button>
             </div>
           </article>
 
@@ -255,18 +255,27 @@
               <label><span>Push notifications<small>Instant openings on your device</small></span><input type="checkbox" checked /></label>
               <label><span>Email alerts<small>Matched openings sent to your inbox</small></span><input type="checkbox" checked /></label>
               <label><span>SMS alerts<small>Only for time-sensitive roles</small></span><input type="checkbox" /></label>
-              <button class="primary-action" data-enable-push>Enable Phone Alerts</button>
-              <button class="soft-action" data-send-test-push>Send Phone Test</button>
-              <button class="soft-action" data-send-test-alert>Send Email Test</button>
+              <button class="primary-action" data-enable-push>Enable Phone Notifications</button>
+              <button class="soft-action" data-send-test-push>Send Test Notification</button>
+              <button class="soft-action" data-send-test-alert>Send Test Email</button>
             </article>
             <article class="settings-card">
               <h2>Tracking</h2>
+              <div class="profile-photo-row">
+                <button class="profile-photo" data-photo-button aria-label="Change profile photo">P</button>
+                <div>
+                  <strong>Profile photo</strong>
+                  <small>Use a picture that feels like you.</small>
+                </div>
+              </div>
+              <input class="sr-only" data-photo-input type="file" accept="image/*" />
               <div class="profile-row"><span>School</span><strong data-profile-school>Not set</strong></div>
               <div class="profile-row"><span>Graduation year</span><strong data-profile-year>Not set</strong></div>
               <div class="profile-row"><span>Major</span><strong data-profile-major>Not set</strong></div>
               <div class="profile-row"><span>Interests</span><strong data-profile-interests>Not set</strong></div>
               <div class="profile-row"><span>Fields</span><strong data-profile-fields>Technology, Healthcare</strong></div>
-              <button class="primary-action">Upload Resume</button>
+              <label class="primary-action file-action">Upload Resume<input data-resume-input type="file" accept=".pdf,.doc,.docx" /></label>
+              <p class="file-status" data-resume-status>No resume uploaded yet.</p>
               <button class="tiny-action" data-reset-demo>Restart demo</button>
             </article>
           </div>

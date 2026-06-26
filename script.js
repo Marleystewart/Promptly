@@ -138,6 +138,8 @@ const profile = {
   gradYear: "",
   major: "",
   interests: "",
+  photoDataUrl: "",
+  resumeName: "",
   fields: [],
 };
 
@@ -360,15 +362,25 @@ function applyProfileToUI() {
   document.body.classList.remove("onboarding-active", "launch-active");
   document.querySelector("[data-title]").textContent = greetingText();
   document.querySelector("#view-home").dataset.heading = greetingText();
-  document.querySelector(".profile-chip").textContent = profile.name.trim()[0]?.toUpperCase() || "P";
+  updateProfilePhoto();
   document.querySelector("[data-profile-school]").textContent = profile.school || "Not set";
   document.querySelector("[data-profile-year]").textContent = profile.gradYear || "Not set";
   document.querySelector("[data-profile-major]").textContent = profile.major || "Undecided";
   document.querySelector("[data-profile-interests]").textContent = profile.interests || "Not set";
   document.querySelector("[data-profile-fields]").textContent = profile.fields.length ? profile.fields.join(", ") : "All fields";
+  document.querySelector("[data-resume-status]").textContent = profile.resumeName ? `${profile.resumeName} uploaded.` : "No resume uploaded yet.";
   document.querySelector(".watch-card span").textContent = String(36 + profile.fields.length * 8);
   setFeatured();
   renderOpenings();
+}
+
+function updateProfilePhoto() {
+  const initial = profile.name.trim()[0]?.toUpperCase() || "P";
+  document.querySelectorAll(".profile-chip, [data-photo-button]").forEach((button) => {
+    button.textContent = profile.photoDataUrl ? "" : initial;
+    button.style.backgroundImage = profile.photoDataUrl ? `url("${profile.photoDataUrl}")` : "";
+    button.classList.toggle("has-photo", Boolean(profile.photoDataUrl));
+  });
 }
 
 function restoreProfile() {
@@ -578,6 +590,7 @@ document.addEventListener("click", (event) => {
   const sendTestButton = event.target.closest("[data-send-test-push]");
   const sendTestAlertButton = event.target.closest("[data-send-test-alert]");
   const resetDemoButton = event.target.closest("[data-reset-demo]");
+  const photoButton = event.target.closest("[data-photo-button]");
 
   if (nextButton) {
     if (nextButton.dataset.nextStep === "2" && !validateSignup()) return;
@@ -613,6 +626,10 @@ document.addEventListener("click", (event) => {
     window.location.reload();
   }
 
+  if (photoButton) {
+    document.querySelector("[data-photo-input]").click();
+  }
+
   if (viewButton && !document.body.classList.contains("onboarding-active")) {
     event.preventDefault();
     setView(viewButton.dataset.view);
@@ -645,6 +662,26 @@ document.querySelector("[data-name-input]")?.addEventListener("input", () => set
 document.querySelector("[data-school-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-grad-year-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-major-input]")?.addEventListener("input", () => setAcademicError());
+
+document.querySelector("[data-resume-input]")?.addEventListener("change", (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  profile.resumeName = file.name;
+  saveProfile();
+  applyProfileToUI();
+});
+
+document.querySelector("[data-photo-input]")?.addEventListener("change", (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.addEventListener("load", () => {
+    profile.photoDataUrl = String(reader.result || "");
+    saveProfile();
+    applyProfileToUI();
+  });
+  reader.readAsDataURL(file);
+});
 
 document.querySelector(".search-panel input")?.addEventListener("input", (event) => {
   const query = event.target.value.trim().toLowerCase();
