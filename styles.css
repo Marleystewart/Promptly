@@ -103,6 +103,41 @@ body:not(.onboarding-active) .onboarding-shell {
   padding: 24px;
 }
 
+.launch-screen {
+  min-height: calc(100vh - 48px);
+  width: min(520px, 100%);
+  display: none;
+  place-items: center;
+  align-content: center;
+  gap: 22px;
+  text-align: center;
+}
+
+.launch-screen.active {
+  display: grid;
+  animation: launch-in 900ms cubic-bezier(.2,.8,.2,1) both;
+}
+
+.launch-icon {
+  width: clamp(116px, 22vw, 178px);
+  height: clamp(116px, 22vw, 178px);
+  border-radius: 34px;
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.42), 0 0 52px rgba(128, 87, 255, 0.5);
+}
+
+.launch-wordmark {
+  width: clamp(150px, 32vw, 230px);
+  height: auto;
+  border-radius: 16px;
+  filter: drop-shadow(0 0 24px rgba(128, 87, 255, 0.25));
+  animation: launch-wordmark 900ms ease 140ms both;
+}
+
+body.launch-active .onboarding-brand {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .onboarding-brand {
   position: fixed;
   top: 24px;
@@ -112,6 +147,7 @@ body:not(.onboarding-active) .onboarding-shell {
   gap: 12px;
   font-size: 22px;
   font-weight: 900;
+  transition: opacity 240ms ease;
 }
 
 .brand-logo {
@@ -138,7 +174,7 @@ body:not(.onboarding-active) .onboarding-shell {
 
 .signup-card.active {
   display: block;
-  animation: view-in 260ms ease both;
+  animation: signup-rise 520ms cubic-bezier(.2,.8,.2,1) both;
 }
 
 .signup-card h1 {
@@ -430,6 +466,43 @@ body:not(.onboarding-active) .onboarding-shell {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes launch-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(18px);
+  }
+  48% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes launch-wordmark {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes signup-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -1194,6 +1267,14 @@ input[type="checkbox"] {
   .onboarding-brand {
     top: 18px;
     left: 18px;
+  }
+
+  .launch-screen {
+    min-height: calc(100vh - 112px);
+  }
+
+  .launch-icon {
+    border-radius: 28px;
   }
 
   .brand-logo,

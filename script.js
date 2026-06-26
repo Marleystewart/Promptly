@@ -242,6 +242,7 @@ function updateFieldButtons() {
 }
 
 function setOnboardingStep(step) {
+  document.body.classList.toggle("launch-active", String(step) === "0");
   document.querySelectorAll(".onboard-step").forEach((panel) => {
     panel.classList.toggle("active", panel.dataset.step === String(step));
   });
@@ -305,7 +306,7 @@ function greetingText() {
 }
 
 function applyProfileToUI() {
-  document.body.classList.remove("onboarding-active");
+  document.body.classList.remove("onboarding-active", "launch-active");
   document.querySelector("[data-title]").textContent = greetingText();
   document.querySelector("#view-home").dataset.heading = greetingText();
   document.querySelector(".profile-chip").textContent = profile.name.trim()[0]?.toUpperCase() || "P";
@@ -500,7 +501,10 @@ async function sendTestPush() {
 renderFieldChoices();
 renderOpenings();
 setFeatured();
-restoreProfile();
+
+if (!restoreProfile()) {
+  window.setTimeout(() => setOnboardingStep(1), 1200);
+}
 
 document.addEventListener("click", (event) => {
   const nextButton = event.target.closest("[data-next-step]");
