@@ -1718,13 +1718,39 @@ function setupCollegeAutocomplete(inputSel, dropdownSel) {
 setupCollegeAutocomplete("[data-school-input]", "[data-college-dropdown]");
 setupCollegeAutocomplete("[data-edit-school]", "[data-college-dropdown-edit]");
 
-// --- Alert badge ---
+// --- Alert badge (recent = opened within last 7 days) ---
+function recentOpenings() {
+  return openings.filter((o) => {
+    if (!o.opened) return false;
+    const t = o.opened.toLowerCase();
+    if (t.includes("min") || t.includes("hour")) return true;
+    const m = t.match(/(\d+)\s*day/);
+    return m && parseInt(m[1]) <= 7;
+  });
+}
+
 function updateAlertBadge() {
-  const count = openings.length;
+  const count = recentOpenings().length;
   document.querySelectorAll("[data-alert-badge]").forEach((el) => {
     el.textContent = count > 99 ? "99+" : String(count);
+    el.style.display = count === 0 ? "none" : "";
   });
 }
 updateAlertBadge();
+
+// Populate recent alerts list when alerts view is opened
+const _origSetView = setView;
+function setView(name) {
+  _origSetView(name);
+  if (name === "alerts") {
+    const list = document.querySelector(".alerts-recent-list");
+    if (list) {
+      const recent = recentOpenings();
+      list.innerHTML = recent.length
+        ? recent.map(openingRow).join("")
+        : "<p style='color:var(--muted);padding:16px 0'>No new openings in the last 7 days.</p>";
+    }
+  }
+}
 
 registerServiceWorker();
