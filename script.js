@@ -82,6 +82,18 @@ const openings = [
     sourceUrl: "https://www.pfizer.com/about/careers",
   },
   {
+    company: "NIH",
+    short: "NIH",
+    logoClass: "health",
+    field: "Healthcare",
+    role: "Biomedical Research Intern",
+    program: "Summer 2027",
+    deadline: "Oct 12, 2026",
+    opened: "Opened 2 hrs ago",
+    sourceLabel: "NIH Training",
+    sourceUrl: "https://www.training.nih.gov/",
+  },
+  {
     company: "Spotify",
     short: "SP",
     logoClass: "media",
@@ -167,8 +179,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Sep 6, 2026",
     opened: "Opened 5 days ago",
-    sourceLabel: "Adobe University",
-    sourceUrl: "https://www.adobe.com/careers/university.html",
+    sourceLabel: "Adobe Careers Search",
+    sourceUrl: "https://careers.adobe.com/us/en/search-results?keywords=intern",
   },
   {
     company: "Goldman Sachs",
@@ -401,6 +413,7 @@ function openDetails(company) {
   const sourceLink = modal.querySelector("[data-modal-source-link]");
   sourceLink.href = item.sourceUrl || "#";
   sourceLink.hidden = !item.sourceUrl;
+  modal.querySelector("[data-save-modal]").textContent = saved.has(item.company) ? "Unsave Alert" : "Save Alert";
   const modalLogo = modal.querySelector(".modal-logo");
   modalLogo.className = `modal-logo ${item.logo ? "logo-tile" : item.logoClass}`;
   modalLogo.innerHTML = item.logo ? `<img src="${item.logo}" alt="${item.company} logo" />` : item.short;
@@ -417,7 +430,6 @@ function saveCompany(company) {
   renderOpenings();
   setFeatured();
   refreshSavedList();
-  setView("saved");
 }
 
 function refreshSavedList() {
@@ -611,6 +623,12 @@ function saveProfileEdits() {
   profile.gradYear = document.querySelector("[data-edit-year]").value.trim();
   profile.major = document.querySelector("[data-edit-major]").value.trim();
   profile.interests = document.querySelector("[data-edit-interests]").value.trim();
+  document.querySelector("[data-name-input]").value = profile.name;
+  document.querySelector("[data-email-input]").value = profile.email;
+  document.querySelector("[data-school-input]").value = profile.school;
+  document.querySelector("[data-grad-year-input]").value = profile.gradYear;
+  document.querySelector("[data-major-input]").value = profile.major;
+  document.querySelector("[data-interests-input]").value = profile.interests;
   mergeFields(inferFieldsFromText(`${profile.major} ${profile.interests}`));
   saveProfile();
   saveSubscriber();

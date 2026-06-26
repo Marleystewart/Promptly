@@ -38,7 +38,7 @@
         <h1>Where are you studying?</h1>
         <p>This keeps Promptly from guessing. Add your real school, year, and major so your tracking page feels like yours.</p>
         <div class="input-grid two-col">
-          <label class="field-label">School<input data-school-input type="text" placeholder="Example: Georgia State University" autocomplete="organization" /></label>
+          <label class="field-label">School<input data-school-input type="text" list="college-list" placeholder="Example: Georgia State University" autocomplete="organization" /></label>
           <label class="field-label">Graduation year<input data-grad-year-input type="text" inputmode="numeric" placeholder="Example: 2028" /></label>
         </div>
         <label class="field-label">Major or program<input data-major-input type="text" placeholder="Example: Environmental Science" /></label>
@@ -112,7 +112,7 @@
             <button class="icon-btn" aria-label="Search" data-view="openings">
               <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
             </button>
-            <button class="icon-btn" aria-label="Notifications">
+            <button class="icon-btn" aria-label="Alert settings" data-view="profile">
               <svg viewBox="0 0 24 24"><path d="M18 9.8c0-3.4-2.1-6-5-6.7V2h-2v1.1c-2.9.7-5 3.3-5 6.7v3.9l-1.8 3h15.6l-1.8-3V9.8Z"/><path d="M9.2 19.2a2.9 2.9 0 0 0 5.6 0"/></svg>
               <b>3</b>
             </button>
@@ -285,6 +285,12 @@
                 <button class="company-chip" data-open-details="EPA" style="--start: 7.3;">EPA</button>
                 <button class="company-chip" data-open-details="UNICEF" style="--start: 10.5;">UNICEF</button>
               </article>
+              <article>
+                <strong>Finance & Consulting</strong>
+                <button class="company-chip" data-open-details="Goldman Sachs" style="--start: 6.9;">Goldman</button>
+                <button class="company-chip" data-open-details="JPMorgan" style="--start: 7.4;">JPMorgan</button>
+                <button class="company-chip" data-open-details="Bain & Company" style="--start: 8.1;">Bain</button>
+              </article>
             </div>
           </div>
         </section>
@@ -304,7 +310,7 @@
               <h2>Alerts</h2>
               <label><span>Push notifications<small>Instant openings on your device</small></span><input type="checkbox" checked /></label>
               <label><span>Email alerts<small>Matched openings sent to your inbox</small></span><input type="checkbox" checked /></label>
-              <label><span>SMS alerts<small>Only for time-sensitive roles</small></span><input type="checkbox" /></label>
+              <label><span>Text alerts<small>Coming next with SMS setup</small></span><input type="checkbox" disabled /></label>
               <button class="primary-action" data-enable-push>Enable Phone Notifications</button>
               <button class="soft-action" data-send-test-push>Send Test Notification</button>
               <button class="soft-action" data-send-test-alert>Send Test Email</button>
@@ -351,7 +357,7 @@
       <div class="edit-grid">
         <label class="field-label">Name<input data-edit-name type="text" /></label>
         <label class="field-label">Email<input data-edit-email type="email" /></label>
-        <label class="field-label">School<input data-edit-school type="text" /></label>
+        <label class="field-label">School<input data-edit-school type="text" list="college-list" /></label>
         <label class="field-label">Graduation year<input data-edit-year type="text" inputmode="numeric" /></label>
         <label class="field-label wide">Major<input data-edit-major type="text" /></label>
         <label class="field-label wide">Goals and interests<textarea data-edit-interests></textarea></label>
@@ -359,6 +365,47 @@
       <div class="field-grid edit-fields" data-edit-field-grid></div>
       <button class="primary-action wide" data-save-profile-edits>Save Profile</button>
     </dialog>
+
+    <datalist id="college-list">
+      <option value="Amherst College"></option>
+      <option value="Arizona State University"></option>
+      <option value="Babson College"></option>
+      <option value="Boston College"></option>
+      <option value="Boston University"></option>
+      <option value="Brown University"></option>
+      <option value="Carnegie Mellon University"></option>
+      <option value="Columbia University"></option>
+      <option value="Cornell University"></option>
+      <option value="Dartmouth College"></option>
+      <option value="Duke University"></option>
+      <option value="Emory University"></option>
+      <option value="Florida A&M University"></option>
+      <option value="Georgia Institute of Technology"></option>
+      <option value="Georgia State University"></option>
+      <option value="Harvard University"></option>
+      <option value="Howard University"></option>
+      <option value="Massachusetts Institute of Technology"></option>
+      <option value="Michigan State University"></option>
+      <option value="Morehouse College"></option>
+      <option value="New York University"></option>
+      <option value="Northeastern University"></option>
+      <option value="Penn State University"></option>
+      <option value="Princeton University"></option>
+      <option value="Rutgers University"></option>
+      <option value="Stanford University"></option>
+      <option value="Trinity College"></option>
+      <option value="University of California, Berkeley"></option>
+      <option value="University of California, Los Angeles"></option>
+      <option value="University of Florida"></option>
+      <option value="University of Georgia"></option>
+      <option value="University of Michigan"></option>
+      <option value="University of North Carolina at Chapel Hill"></option>
+      <option value="University of Pennsylvania"></option>
+      <option value="University of Southern California"></option>
+      <option value="University of Texas at Austin"></option>
+      <option value="Vanderbilt University"></option>
+      <option value="Yale University"></option>
+    </datalist>
 
     <dialog class="details-modal">
       <button class="close-modal" aria-label="Close details">×</button>
