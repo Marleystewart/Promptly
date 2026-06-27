@@ -65,7 +65,7 @@ const COLLEGES = [
 ];
 
 const subFields = {
-  Finance: ["All Finance", "Investment Banking", "Asset Management", "Private Equity", "Hedge Fund"],
+  Finance: ["All Finance", "Investment Banking", "Asset Management", "Private Equity", "Hedge Fund", "Quant Trading", "Fintech"],
   Consulting: ["All Consulting", "MBB", "Big 4"],
 };
 

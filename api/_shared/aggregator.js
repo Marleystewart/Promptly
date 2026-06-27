@@ -68,6 +68,15 @@ async function fetchWorkday(src) {
   return out;
 }
 
+// ── Lever: public postings API ───────────────────────────────────────────
+async function fetchLever(src) {
+  const data = await fetchJson(`https://api.lever.co/v0/postings/${src.board}?mode=json`);
+  const jobs = Array.isArray(data) ? data : [];
+  return jobs
+    .filter((j) => isRelevant(j.text, (j.categories || {}).location))
+    .map((j) => normalize(src, j.text, j.hostedUrl, (j.categories || {}).location));
+}
+
 function normalize(src, title, url, location) {
   return {
     company: src.company,
@@ -86,8 +95,9 @@ function normalize(src, title, url, location) {
 }
 
 async function aggregateOpenings() {
+  const fetchers = { greenhouse: fetchGreenhouse, workday: fetchWorkday, lever: fetchLever };
   const results = await Promise.allSettled(
-    SOURCES.map((src) => (src.ats === "greenhouse" ? fetchGreenhouse(src) : fetchWorkday(src)))
+    SOURCES.map((src) => (fetchers[src.ats] || fetchGreenhouse)(src))
   );
 
   const seen = new Set();

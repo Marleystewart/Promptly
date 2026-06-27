@@ -990,7 +990,14 @@ body.launch-active .onboarding-brand {
   font-size: 16px;
   font-weight: 900;
   text-align: center;
+  background: linear-gradient(135deg, #4a4a6a, #2e2e44);
 }
+
+/* Field-tinted tiles for auto-pulled live listings */
+.logo.tech   { background: linear-gradient(135deg, #4f46e5, #7c3aed); }
+.logo.fin    { background: linear-gradient(135deg, #0f7a4d, #0b5c3a); }
+.logo.health { background: linear-gradient(135deg, #0d9488, #0f766e); }
+.logo.edu    { background: linear-gradient(135deg, #d97706, #b45309); }
 
 .logo img {
   max-width: 100%;
