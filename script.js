@@ -1598,20 +1598,17 @@ async function renderPeerPulse() {
   const el = document.querySelector("[data-peer-pulse]");
   if (!el) return;
   const textEl = el.querySelector("[data-pulse-text]");
-  const verified = openings.filter((o) => !o.awaiting).length;
-  const watched = openings.length;
-  const parts = [];
+  // Keep it simple until there's real activity: just students-on-today.
+  // The current viewer is a student on it today, so the floor is 1.
+  let active = 1;
   try {
     const r = await fetch("/api/stats", { headers: { Accept: "application/json" } });
     if (r.ok) {
       const s = await r.json();
-      if (s.activeToday > 0) parts.push(`${s.activeToday} student${s.activeToday > 1 ? "s" : ""} on Promptly today`);
-      if (s.applicationsToday > 0) parts.push(`${s.applicationsToday} application${s.applicationsToday > 1 ? "s" : ""} started today`);
-      if (s.newListingsThisWeek > 0) parts.push(`${s.newListingsThisWeek} new listing${s.newListingsThisWeek > 1 ? "s" : ""} this week`);
+      active = Math.max(Number(s.activeToday) || 0, 1);
     }
   } catch {}
-  parts.push(`${verified} live roles · ${watched} companies tracked`);
-  textEl.textContent = "🔥 " + parts.join(" · ");
+  textEl.textContent = `🔥 ${active} student${active > 1 ? "s" : ""} on Promptly today`;
   el.hidden = false;
 }
 renderPeerPulse();
