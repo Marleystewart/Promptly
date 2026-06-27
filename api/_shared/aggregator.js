@@ -78,10 +78,12 @@ async function fetchLever(src) {
 }
 
 function normalize(src, title, url, location) {
+  const slug = src.board || src.tenant;
   return {
     company: src.company,
     short: src.short,
     logoClass: src.logoClass,
+    logo: `assets/logos/${slug}.png`, // shows if the file exists, else tile fallback
     field: src.field,
     subField: src.subField,
     role: cleanRole(title),

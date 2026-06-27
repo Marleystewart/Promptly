@@ -539,9 +539,19 @@ const saved = new Map();
 const fallbackVapidPublicKey = "BIQfsqoTgEEQRYIM-YdEvr8-95V4xhNHKf9CwIRPIb3O0ZyIqABnNXUeuR-cSuoEl4wYkNptOd5aie8PU0e78o8";
 const profileStorageKey = "openingProfile";
 
+// If a logo image is missing, fall back to the colored initials tile — so a
+// company without a logo file still looks intentional (never a broken icon).
+function logoFallback(img) {
+  const el = img.closest(".logo");
+  if (!el) return;
+  el.classList.remove("logo-tile");
+  if (img.dataset.lc) el.classList.add(img.dataset.lc);
+  el.textContent = img.dataset.short || "";
+}
+
 function logoMarkup(item) {
   if (item.logo) {
-    return `<div class="logo logo-tile"><img src="${item.logo}" alt="${item.company} logo" loading="lazy" /></div>`;
+    return `<div class="logo logo-tile"><img src="${item.logo}" alt="${item.company} logo" loading="lazy" data-short="${item.short || ""}" data-lc="${item.logoClass || ""}" onerror="logoFallback(this)" /></div>`;
   }
   return `<div class="logo ${item.logoClass}">${item.short}</div>`;
 }

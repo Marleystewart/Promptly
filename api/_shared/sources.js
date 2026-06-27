@@ -84,6 +84,28 @@ const SOURCES = [
 
   // ═══ EDUCATION ═══════════════════════════════════════════════════════════
   { company: "Khan Academy", short: "KA", logoClass: "edu", field: "Education", ats: "greenhouse", board: "khanacademy" },
+  { company: "Duolingo", short: "DUO", logoClass: "edu", field: "Education", ats: "greenhouse", board: "duolingo" },
+
+  // ═══ ADDED: more verified feeds ══════════════════════════════════════════
+  // Finance — quant / hedge funds
+  { company: "Optiver", short: "OPTV", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "optiverus" },
+  { company: "Chicago Trading (CTC)", short: "CTC", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "chicagotrading" },
+  { company: "Schonfeld", short: "SCHF", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "schonfeld" },
+  { company: "Vatic Labs", short: "VATC", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "vaticlabs" },
+  { company: "Marshall Wace", short: "MW", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "marshallwace" },
+  // Finance — fintech
+  { company: "Nubank", short: "NU", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "nubank" },
+  // Technology
+  { company: "DoorDash", short: "DASH", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "doordashusa" },
+  { company: "Postman", short: "PSTM", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "postman" },
+  { company: "LaunchDarkly", short: "LD", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "launchdarkly" },
+  { company: "CockroachDB", short: "CRDB", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "cockroachlabs" },
+  { company: "Webflow", short: "WFLO", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "webflow" },
+  { company: "Checkr", short: "CHKR", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "checkr" },
+  { company: "Amplitude", short: "AMPL", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "amplitude" },
+  { company: "Mixpanel", short: "MIXP", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "mixpanel" },
+  // Healthcare / biotech
+  { company: "Flatiron Health", short: "FLAT", logoClass: "health", field: "Healthcare", ats: "greenhouse", board: "flatironhealth" },
 ];
 
 module.exports = { SOURCES };
