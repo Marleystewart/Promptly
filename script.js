@@ -1195,13 +1195,16 @@ async function sendTestAlert() {
       }),
     });
     const data = await response.json();
-    const setup = Array.isArray(data.setupRequired) && data.setupRequired.length ? `Setup needed: ${data.setupRequired.join(" ")}` : "";
-    const errors = Array.isArray(data.errors) && data.errors.length ? data.errors.join(" ") : "";
+    const uniqueErrors = [...new Set((data.errors || []).filter(Boolean))];
+    const setup = Array.isArray(data.setupRequired) && data.setupRequired.length ? `Setup needed: ${[...new Set(data.setupRequired)].join(" ")}` : "";
+    const domainIssue = uniqueErrors.some((e) => /verify a domain|own email address/i.test(e));
     const sentCount = (data.emailSent || 0) + (data.pushSent || 0);
     if (response.ok && sentCount > 0) {
-      setPushStatus(`Test sent to ${data.emailSent || 0} email inbox and ${data.pushSent || 0} phone.`);
+      setPushStatus(`✅ Test sent to ${data.emailSent || 0} email and ${data.pushSent || 0} phone.`);
+    } else if (domainIssue) {
+      setPushStatus("✅ Email works — but Resend only delivers to your own inbox until you verify a domain (resend.com/domains). Verify one to reach all students.");
     } else {
-      setPushStatus(data.error || setup || errors || "Test alert failed.");
+      setPushStatus(data.error || setup || uniqueErrors[0] || "Test alert failed.");
     }
   } catch {
     setPushStatus("Test alert failed. Add Resend and Redis keys in Vercel, then try again.");
