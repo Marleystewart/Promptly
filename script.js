@@ -1598,17 +1598,21 @@ async function renderPeerPulse() {
   const el = document.querySelector("[data-peer-pulse]");
   if (!el) return;
   const textEl = el.querySelector("[data-pulse-text]");
-  // Keep it simple until there's real activity: just students-on-today.
-  // The current viewer is a student on it today, so the floor is 1.
-  let active = 1;
+  const verified = openings.filter((o) => !o.awaiting).length;
+  const watched = openings.length;
+  const parts = [];
+  // Hold the live "students on today" count until the app is popping.
+  // Show real listing activity + directory size now (no fake numbers).
   try {
     const r = await fetch("/api/stats", { headers: { Accept: "application/json" } });
     if (r.ok) {
       const s = await r.json();
-      active = Math.max(Number(s.activeToday) || 0, 1);
+      if (s.newListingsThisWeek > 0) parts.push(`${s.newListingsThisWeek} new listing${s.newListingsThisWeek > 1 ? "s" : ""} this week`);
+      if (s.applicationsToday > 0) parts.push(`${s.applicationsToday} application${s.applicationsToday > 1 ? "s" : ""} started today`);
     }
   } catch {}
-  textEl.textContent = `🔥 ${active} student${active > 1 ? "s" : ""} on Promptly today`;
+  parts.push(`${verified} live roles · ${watched} companies tracked`);
+  textEl.textContent = "🔥 " + parts.join(" · ");
   el.hidden = false;
 }
 renderPeerPulse();

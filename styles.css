@@ -1013,8 +1013,8 @@ body.launch-active .onboarding-brand {
 .peer-pulse p {
   margin: 0;
   font-size: 14px;
-  font-weight: 600;
-  color: var(--text, #14141f);
+  font-weight: 700;
+  color: #ffffff;
 }
 
 /* Application status tracker (in the details modal) */
