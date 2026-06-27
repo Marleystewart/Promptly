@@ -65,7 +65,7 @@ const COLLEGES = [
 ];
 
 const subFields = {
-  Finance: ["All Finance", "Investment Banking", "Asset Management", "Private Equity", "Hedge Fund", "Quant Trading", "Fintech"],
+  Finance: ["All Finance", "Investment Banking", "Asset Management", "Private Equity", "Private Credit", "Hedge Fund", "Quant Trading", "Fintech", "Payments"],
   Consulting: ["All Consulting", "MBB", "Big 4", "Strategy", "Tech Consulting", "Economic Consulting"],
 };
 
@@ -529,6 +529,36 @@ const openings = [
   },
 ];
 
+// Watch-list directory: companies we track that have no live posting yet.
+// They render as "Awaiting 2027 posting" cards until the pipeline finds a real
+// listing, then the placeholder is replaced by the verified opening.
+const watchlist = (typeof window !== "undefined" && Array.isArray(window.WATCHLIST)) ? window.WATCHLIST : [];
+
+function rebuildPlaceholders() {
+  // remove old placeholders
+  for (let i = openings.length - 1; i >= 0; i--) if (openings[i].awaiting) openings.splice(i, 1);
+  // add a placeholder for any watched company that has no real opening
+  const have = new Set(openings.map((o) => o.company.toLowerCase()));
+  for (const c of watchlist) {
+    if (have.has(c.company.toLowerCase())) continue;
+    openings.push({
+      company: c.company,
+      short: c.short,
+      logoClass: c.logoClass || "fin",
+      logo: c.logo,
+      field: c.field,
+      subField: c.subField,
+      role: "2027 Summer Internship",
+      program: "Summer 2027",
+      deadline: "—",
+      opened: "Awaiting posting",
+      sourceLabel: null,
+      sourceUrl: null,
+      awaiting: true,
+    });
+  }
+}
+
 const profile = {
   name: "",
   email: "",
@@ -574,6 +604,24 @@ function logoMarkup(item) {
 function openingRow(item) {
   const match = openingMatch(item);
   const isSaved = saved.has(item.company);
+  if (item.awaiting) {
+    return `
+    <article class="opening-row awaiting" data-company="${item.company}" data-field="${item.field}" data-open-details="${item.company}" tabindex="0" role="button" aria-label="Track ${item.company} for 2027 postings">
+      ${logoMarkup(item)}
+      <div>
+        <span class="status-pill">${item.field}${item.subField ? " · " + item.subField : ""}</span>
+        <h3>${item.company}</h3>
+        <p>${item.role} · ${item.program}</p>
+        <small class="awaiting-line">⏳ Awaiting 2027 posting — we'll alert you the moment it opens</small>
+      </div>
+      <div class="row-actions">
+        <button class="round-btn save-btn ${isSaved ? "saved" : ""}" aria-label="${isSaved ? "Untrack" : "Track"} ${item.company}" data-save="${item.company}" aria-pressed="${isSaved}">
+          <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
+        </button>
+      </div>
+    </article>
+  `;
+  }
   return `
     <article class="opening-row" data-company="${item.company}" data-field="${item.field}" data-open-details="${item.company}" tabindex="0" role="button" aria-label="View alert details for ${item.company}">
       ${logoMarkup(item)}
@@ -598,7 +646,8 @@ function openingRow(item) {
 }
 
 function preferredOpenings() {
-  return [...openings].sort((a, b) => openingMatch(b).score - openingMatch(a).score);
+  // real (verified) listings first, awaiting placeholders after; then by fit
+  return [...openings].sort((a, b) => (a.awaiting ? 1 : 0) - (b.awaiting ? 1 : 0) || openingMatch(b).score - openingMatch(a).score);
 }
 
 function profileMatchText() {
@@ -1273,7 +1322,7 @@ document.addEventListener("click", (event) => {
       }
     }
 
-    const list = field === "All" ? preferredOpenings() : field === "Saved" ? [...saved.values()] : openings.filter((item) => item.field === field);
+    const list = field === "All" ? preferredOpenings() : field === "Saved" ? [...saved.values()] : openings.filter((item) => item.field === field).sort((a, b) => (a.awaiting ? 1 : 0) - (b.awaiting ? 1 : 0));
     const target = inSearchPanel ? document.querySelector(".full-list") : document.querySelector(".compact-list");
     target.innerHTML = list.map(openingRow).join("");
   }
@@ -1285,9 +1334,10 @@ document.addEventListener("click", (event) => {
     const subField = subFilterChip.dataset.subField;
     const activeMain = document.querySelector(".search-panel .filter-chip.active");
     const field = activeMain ? activeMain.textContent.trim() : "";
-    const list = subField.startsWith("All ")
+    const list = (subField.startsWith("All ")
       ? openings.filter((item) => item.field === field)
-      : openings.filter((item) => item.field === field && item.subField === subField);
+      : openings.filter((item) => item.field === field && item.subField === subField)
+    ).sort((a, b) => (a.awaiting ? 1 : 0) - (b.awaiting ? 1 : 0));
     document.querySelector(".full-list").innerHTML = list.map(openingRow).join("");
   }
 
@@ -1452,6 +1502,7 @@ async function loadLiveOpenings() {
     }
     if (!added) return;
 
+    rebuildPlaceholders();
     renderOpenings();
     updateAlertBadge();
     if (typeof renderPeerPulse === "function") renderPeerPulse();
@@ -1459,6 +1510,10 @@ async function loadLiveOpenings() {
     // Offline or API not configured — curated baseline already rendered.
   }
 }
+
+// Build "Awaiting posting" cards for the watch-list, then render everything.
+rebuildPlaceholders();
+renderOpenings();
 loadLiveOpenings();
 
 // --- Analytics (first-party, privacy-light) --------------------------------
@@ -1492,7 +1547,8 @@ async function renderPeerPulse() {
   const el = document.querySelector("[data-peer-pulse]");
   if (!el) return;
   const textEl = el.querySelector("[data-pulse-text]");
-  const total = openings.length;
+  const verified = openings.filter((o) => !o.awaiting).length;
+  const watched = openings.length;
   const parts = [];
   try {
     const r = await fetch("/api/stats", { headers: { Accept: "application/json" } });
@@ -1503,7 +1559,7 @@ async function renderPeerPulse() {
       if (s.newListingsThisWeek > 0) parts.push(`${s.newListingsThisWeek} new listing${s.newListingsThisWeek > 1 ? "s" : ""} this week`);
     }
   } catch {}
-  parts.push(`${total} verified roles tracked`);
+  parts.push(`${verified} live roles · ${watched} companies tracked`);
   textEl.textContent = "🔥 " + parts.join(" · ");
   el.hidden = false;
 }

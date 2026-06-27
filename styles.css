@@ -1017,6 +1017,19 @@ body.launch-active .onboarding-brand {
   color: var(--text, #14141f);
 }
 
+/* Awaiting-posting (watch-list) cards: clearly tracked, not yet live */
+.opening-row.awaiting { opacity: 0.82; }
+.opening-row.awaiting .logo { filter: grayscale(0.35); }
+.awaiting-line {
+  display: inline-block;
+  color: #b45309;
+  background: rgba(217,119,6,0.12);
+  border: 1px solid rgba(217,119,6,0.25);
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
 .logo img {
   max-width: 100%;
   max-height: 100%;
