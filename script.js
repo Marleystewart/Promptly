@@ -65,8 +65,8 @@ const COLLEGES = [
 ];
 
 const subFields = {
-  Finance: ["All Finance", "Investment Banking", "Asset Management", "Sales & Trading", "Private Equity"],
-  Consulting: ["All Consulting", "MBB", "Big 4", "Tech Consulting", "Government & Defense"],
+  Finance: ["All Finance", "Investment Banking", "Asset Management"],
+  Consulting: ["All Consulting", "MBB", "Big 4"],
 };
 
 const fieldOptions = [
@@ -122,81 +122,6 @@ const openings = [
     sourceLabel: "Google Careers – SWE Intern 2027",
     sourceUrl: "https://www.google.com/about/careers/applications/jobs/results/120997883141857990-software-engineering-intern/",
   },
-  // Microsoft: real university intern hub — applications open ~Aug 2026
-  {
-    company: "Microsoft",
-    short: "MSFT",
-    logoClass: "tech",
-    logo: "assets/logos/microsoft.jpeg",
-    field: "Technology",
-    role: "Explore Program Intern",
-    program: "Summer 2027",
-    deadline: "Opens ~Aug 2026",
-    opened: "Applications open Aug 2026",
-    sourceLabel: "Microsoft University Internships",
-    sourceUrl: "https://careers.microsoft.com/v2/global/en/universityinternship",
-  },
-  // Meta: real student programs hub — applications open Jul-Aug 2026
-  {
-    company: "Meta",
-    short: "META",
-    logoClass: "meta",
-    field: "Technology",
-    role: "Software Engineering Intern",
-    program: "Summer 2027",
-    deadline: "Opens ~Jul 2026",
-    opened: "Applications open Jul-Aug 2026",
-    sourceLabel: "Meta Student Programs",
-    sourceUrl: "https://www.metacareers.com/careerprograms/students",
-  },
-
-  // ── Science / Government ─────────────────────────────────────────────────
-
-  // NASA: real SIP program — app portal opens Fall 2026, deadline Feb 26 2027
-  {
-    company: "NASA",
-    short: "NASA",
-    logoClass: "science",
-    logo: "assets/logos/nasa.jpeg",
-    field: "Science",
-    role: "Summer Internship Program (SIP)",
-    program: "Summer 2027",
-    deadline: "Feb 26, 2027",
-    opened: "App opens Fall 2026",
-    sourceLabel: "NASA STEM Gateway",
-    sourceUrl: "https://stemgateway.nasa.gov/s/explore-opportunities?opportunitytype=internships",
-  },
-
-  // ── Healthcare ───────────────────────────────────────────────────────────
-
-  // NIH: real SIP — application opens mid-Nov 2026, closes mid-Feb 2027
-  {
-    company: "NIH",
-    short: "NIH",
-    logoClass: "health",
-    field: "Healthcare",
-    role: "Summer Internship Program in Biomedical Research",
-    program: "Summer 2027",
-    deadline: "Feb 2027",
-    opened: "App opens Nov 2026",
-    sourceLabel: "NIH Office of Intramural Training",
-    sourceUrl: "https://www.training.nih.gov/research-training/pb/sip/",
-  },
-  // Pfizer: Pfizer Futures dedicated program page — applications open Sep 2026
-  {
-    company: "Pfizer",
-    short: "PFE",
-    logoClass: "health",
-    logo: "assets/logos/pfizer.png",
-    field: "Healthcare",
-    role: "Pfizer Futures Internship",
-    program: "Summer 2027",
-    deadline: "Opens Sep 2026",
-    opened: "Applications open Sep 2026",
-    sourceLabel: "Pfizer Early Careers",
-    sourceUrl: "https://www.pfizer.com/en/about/careers/early-careers",
-  },
-
   // ── Finance — Investment Banking ─────────────────────────────────────────
 
   // Goldman Sachs: specific 2027 Americas Summer Analyst program page
@@ -324,12 +249,12 @@ const openings = [
     logoClass: "pwc",
     field: "Consulting",
     subField: "Big 4",
-    role: "Intern - Summer 2027",
+    role: "Audit Intern – Summer 2027 (Destination CPA)",
     program: "Summer 2027",
     deadline: "Rolling",
-    opened: "Opened 9 days ago",
-    sourceLabel: "PwC – Entry Level Positions",
-    sourceUrl: "https://jobs-us.pwc.com/us/en/entry-level",
+    opened: "Opened recently",
+    sourceLabel: "PwC – Audit Intern Summer 2027",
+    sourceUrl: "https://jobs.us.pwc.com/job/indianapolis/audit-intern-summer-2027-destination-cpa/932/85153914320",
   },
 ];
 
