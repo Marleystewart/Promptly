@@ -584,6 +584,51 @@ const saved = new Map();
 const fallbackVapidPublicKey = "BIQfsqoTgEEQRYIM-YdEvr8-95V4xhNHKf9CwIRPIb3O0ZyIqABnNXUeuR-cSuoEl4wYkNptOd5aie8PU0e78o8";
 const profileStorageKey = "openingProfile";
 
+// --- Application status tracker (Applied → OA → Interview → Offer) ----------
+// Gives students a reason to come back (track their progress) and feeds the
+// anonymous per-school pulse. Stored locally; also sent to /api/status.
+const statusStorageKey = "promptlyStatuses";
+const statuses = new Map();
+(function loadStatuses() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(statusStorageKey) || "{}");
+    Object.entries(raw).forEach(([k, v]) => statuses.set(k, v));
+  } catch {}
+})();
+function persistStatuses() {
+  try { localStorage.setItem(statusStorageKey, JSON.stringify(Object.fromEntries(statuses))); } catch {}
+}
+function setStatus(company, stage) {
+  const item = findOpening(company);
+  if (stage) statuses.set(company, stage); else statuses.delete(company);
+  persistStatuses();
+  if (stage && item) {
+    try {
+      fetch("/api/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({ company, stage, school: profile.school || "", field: item.field || "" }),
+      }).catch(() => {});
+    } catch {}
+  }
+  renderStatusTracker(company);
+  renderOpenings();
+  refreshSavedList();
+}
+function statusPill(company) {
+  const s = statuses.get(company);
+  return s ? `<span class="row-status status-${s.toLowerCase()}">${s}</span>` : "";
+}
+function renderStatusTracker(company) {
+  const tracker = modal.querySelector("[data-status-tracker]");
+  if (!tracker) return;
+  const current = statuses.get(company) || "";
+  tracker.querySelectorAll("[data-status]").forEach((b) => {
+    b.classList.toggle("active", b.dataset.status === current && current !== "");
+  });
+}
+
 // If a logo image is missing, fall back to the colored initials tile — so a
 // company without a logo file still looks intentional (never a broken icon).
 function logoFallback(img) {
@@ -609,7 +654,7 @@ function openingRow(item) {
     <article class="opening-row awaiting" data-company="${item.company}" data-field="${item.field}" data-open-details="${item.company}" tabindex="0" role="button" aria-label="Track ${item.company} for 2027 postings">
       ${logoMarkup(item)}
       <div>
-        <span class="status-pill">${item.field}${item.subField ? " · " + item.subField : ""}</span>
+        <span class="status-pill">${item.field}${item.subField ? " · " + item.subField : ""}</span>${statusPill(item.company)}
         <h3>${item.company}</h3>
         <p>${item.role} · ${item.program}</p>
         <small class="awaiting-line">⏳ Awaiting 2027 posting — we'll alert you the moment it opens</small>
@@ -626,7 +671,7 @@ function openingRow(item) {
     <article class="opening-row" data-company="${item.company}" data-field="${item.field}" data-open-details="${item.company}" tabindex="0" role="button" aria-label="View alert details for ${item.company}">
       ${logoMarkup(item)}
       <div>
-        <span class="status-pill">${item.field}</span>
+        <span class="status-pill">${item.field}</span>${statusPill(item.company)}
         <h3>${item.company}</h3>
         <p>${item.role} · ${item.program}</p>
         <small>Deadline: ${item.deadline} · ${item.opened}</small>
@@ -780,6 +825,7 @@ function openDetails(company) {
   const modalLogo = modal.querySelector(".modal-logo");
   modalLogo.className = `modal-logo ${item.logo ? "logo-tile" : item.logoClass}`;
   modalLogo.innerHTML = item.logo ? `<img src="${item.logo}" alt="${item.company} logo" />` : item.short;
+  renderStatusTracker(item.company);
   if (typeof modal.showModal === "function") modal.showModal();
 }
 
@@ -1539,6 +1585,11 @@ track("app_open");
 // Count clicks on a listing's real source link as an "application started".
 document.addEventListener("click", (e) => {
   if (e.target.closest("[data-modal-source-link]")) track("source_click");
+  const statusBtn = e.target.closest("[data-status]");
+  if (statusBtn) {
+    const company = modal.dataset.company;
+    if (company) setStatus(company, statusBtn.dataset.status);
+  }
 });
 
 // --- Peer pulse (REAL numbers only — never fabricated) ----------------------

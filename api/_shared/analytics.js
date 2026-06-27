@@ -77,4 +77,30 @@ async function recordNewListings(count) {
   await redis.expire(key, WEEK_TTL);
 }
 
-module.exports = { track, getStats, recordNewListings };
+const STAGES = new Set(["Applied", "OA", "Interview", "Offer"]);
+
+// Records a student's progress on a listing. Anonymous — we store the school +
+// company + stage (no name/email), which later powers the per-school pulse
+// ("students from your school are getting OAs at X"). This is the data moat.
+async function recordOutcome({ school, stage, company, field }) {
+  if (!STAGES.has(stage)) return { ok: false };
+  const redis = await getRedis();
+  if (!redis) return { ok: true, stored: false };
+
+  // global daily counter for the stage (drives admin + pulse)
+  const gk = `promptly:a:status_${stage}:${today()}`;
+  await redis.incr(gk);
+  await redis.expire(gk, WEEK_TTL);
+
+  const schoolKey = String(school || "").trim().toLowerCase();
+  if (schoolKey) {
+    await redis.incr(`promptly:school:${schoolKey}:${stage}`);
+    // capped recent feed per school for the future "people from your school" hook
+    const feedKey = `promptly:schoolfeed:${schoolKey}`;
+    await redis.lpush(feedKey, JSON.stringify({ company, stage, field, ts: Date.now() }));
+    await redis.ltrim(feedKey, 0, 49);
+  }
+  return { ok: true, stored: true };
+}
+
+module.exports = { track, getStats, recordNewListings, recordOutcome };

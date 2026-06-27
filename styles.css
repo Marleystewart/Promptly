@@ -1017,6 +1017,28 @@ body.launch-active .onboarding-brand {
   color: var(--text, #14141f);
 }
 
+/* Application status tracker (in the details modal) */
+.status-tracker { margin: 14px 0 6px; }
+.status-tracker-label { display: block; font-size: 12px; font-weight: 700; color: var(--muted, #6b6880); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+.status-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.status-options button {
+  flex: 1; min-width: 64px; padding: 9px 10px; border-radius: 12px;
+  border: 1px solid rgba(124,58,237,0.3); background: transparent;
+  color: var(--text, #14141f); font-weight: 700; font-size: 13px; cursor: pointer;
+}
+.status-options button.active { background: #6d5efc; color: #fff; border-color: #6d5efc; }
+.status-options .status-clear { flex: 0 0 auto; min-width: 0; border-color: rgba(0,0,0,0.15); color: var(--muted, #6b6880); font-weight: 600; }
+
+/* Status pill shown on listing rows */
+.row-status {
+  display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; vertical-align: middle; color: #fff;
+}
+.row-status.status-applied { background: #6d5efc; }
+.row-status.status-oa { background: #0ea5e9; }
+.row-status.status-interview { background: #d97706; }
+.row-status.status-offer { background: #0f7a4d; }
+
 /* Awaiting-posting (watch-list) cards: clearly tracked, not yet live */
 .opening-row.awaiting { opacity: 0.82; }
 .opening-row.awaiting .logo { filter: grayscale(0.35); }
