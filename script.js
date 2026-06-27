@@ -1401,3 +1401,34 @@ document.querySelectorAll(".profile-tab").forEach((tab) => {
 });
 
 registerServiceWorker();
+
+// --- Live openings feed -----------------------------------------------------
+// The curated `openings` above are the always-present baseline (the app is
+// never empty). On load we pull the auto-aggregated, link-verified live feed
+// from /api/openings and add any postings we don't already list, then re-render.
+// If the request fails, nothing changes and the curated list still shows.
+async function loadLiveOpenings() {
+  try {
+    const res = await fetch("/api/openings", { headers: { Accept: "application/json" } });
+    if (!res.ok) return;
+    const data = await res.json();
+    const live = Array.isArray(data.openings) ? data.openings : [];
+    if (!live.length) return;
+
+    const seen = new Set(openings.map((o) => o.sourceUrl));
+    let added = 0;
+    for (const item of live) {
+      if (!item || !item.sourceUrl || seen.has(item.sourceUrl)) continue;
+      seen.add(item.sourceUrl);
+      openings.push(item);
+      added += 1;
+    }
+    if (!added) return;
+
+    renderOpenings();
+    updateAlertBadge();
+  } catch (err) {
+    // Offline or API not configured — curated baseline already rendered.
+  }
+}
+loadLiveOpenings();
