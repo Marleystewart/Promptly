@@ -66,7 +66,7 @@ const COLLEGES = [
 
 const subFields = {
   Finance: ["All Finance", "Investment Banking", "Asset Management", "Private Equity", "Hedge Fund", "Quant Trading", "Fintech"],
-  Consulting: ["All Consulting", "MBB", "Big 4"],
+  Consulting: ["All Consulting", "MBB", "Big 4", "Strategy", "Tech Consulting", "Economic Consulting"],
 };
 
 const fieldOptions = [
@@ -255,6 +255,21 @@ const openings = [
     opened: "Opened recently",
     sourceLabel: "PwC – Audit Intern Summer 2027",
     sourceUrl: "https://jobs.us.pwc.com/job/indianapolis/audit-intern-summer-2027-destination-cpa/932/85153914320",
+  },
+  // Oliver Wyman: specific 2027 Summer Intern posting (Marsh McLennan ATS)
+  {
+    company: "Oliver Wyman",
+    short: "OW",
+    logoClass: "consult",
+    logo: "assets/logos/oliverwyman.png",
+    field: "Consulting",
+    subField: "Strategy",
+    role: "Oliver Wyman Summer 2027 Intern (US)",
+    program: "Summer 2027",
+    deadline: "See posting",
+    opened: "Opened recently",
+    sourceLabel: "Oliver Wyman – Summer 2027 Intern",
+    sourceUrl: "https://careers.marsh.com/global/en/job/MAMCGLOBALR342651EXTERNALENGLOBAL/Oliver-Wyman-Summer-2027-Intern-US",
   },
 
   // ── Finance — Investment Banking (verified specific 2027 postings) ─────────
@@ -699,6 +714,7 @@ function findOpening(company) {
 
 function openDetails(company) {
   const item = findOpening(company);
+  track("opening_view");
   const match = openingMatch(item);
   modal.dataset.company = item.company;
   modalCompany.textContent = item.company;
@@ -965,6 +981,7 @@ function enterApp() {
   mergeFields(inferFieldsFromText(typedInterests));
   saveProfile();
   saveSubscriber();
+  track("signup");
   applyProfileToUI();
   setView("home");
 }
@@ -1437,8 +1454,57 @@ async function loadLiveOpenings() {
 
     renderOpenings();
     updateAlertBadge();
+    if (typeof renderPeerPulse === "function") renderPeerPulse();
   } catch (err) {
     // Offline or API not configured — curated baseline already rendered.
   }
 }
 loadLiveOpenings();
+
+// --- Analytics (first-party, privacy-light) --------------------------------
+// Sends simple event counts so we can see what students actually do. No PII.
+function getSessionId() {
+  try {
+    let id = localStorage.getItem("promptlySession");
+    if (!id) { id = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)); localStorage.setItem("promptlySession", id); }
+    return id;
+  } catch { return "anon"; }
+}
+function track(event) {
+  try {
+    const body = JSON.stringify({ event, sessionId: getSessionId() });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon("/api/track", new Blob([body], { type: "application/json" }));
+    } else {
+      fetch("/api/track", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
+    }
+  } catch {}
+}
+track("app_open");
+// Count clicks on a listing's real source link as an "application started".
+document.addEventListener("click", (e) => {
+  if (e.target.closest("[data-modal-source-link]")) track("source_click");
+});
+
+// --- Peer pulse (REAL numbers only — never fabricated) ----------------------
+// Shows live, truthful activity so the dashboard feels alive and trustworthy.
+async function renderPeerPulse() {
+  const el = document.querySelector("[data-peer-pulse]");
+  if (!el) return;
+  const textEl = el.querySelector("[data-pulse-text]");
+  const total = openings.length;
+  const parts = [];
+  try {
+    const r = await fetch("/api/stats", { headers: { Accept: "application/json" } });
+    if (r.ok) {
+      const s = await r.json();
+      if (s.activeToday > 0) parts.push(`${s.activeToday} student${s.activeToday > 1 ? "s" : ""} on Promptly today`);
+      if (s.applicationsToday > 0) parts.push(`${s.applicationsToday} application${s.applicationsToday > 1 ? "s" : ""} started today`);
+      if (s.newListingsThisWeek > 0) parts.push(`${s.newListingsThisWeek} new listing${s.newListingsThisWeek > 1 ? "s" : ""} this week`);
+    }
+  } catch {}
+  parts.push(`${total} verified roles tracked`);
+  textEl.textContent = "🔥 " + parts.join(" · ");
+  el.hidden = false;
+}
+renderPeerPulse();

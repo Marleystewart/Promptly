@@ -78,6 +78,10 @@ const SOURCES = [
   { company: "Epic Games", short: "EPIC", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "epicgames" },
   { company: "Riot Games", short: "RIOT", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "riotgames" },
 
+  // ═══ CONSULTING ══════════════════════════════════════════════════════════
+  { company: "ThoughtWorks", short: "TW", logoClass: "consult", field: "Consulting", subField: "Tech Consulting", ats: "greenhouse", board: "thoughtworks" },
+  { company: "Charles River Associates", short: "CRA", logoClass: "consult", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "charlesriverassociates" },
+
   // ═══ HEALTHCARE / BIOTECH ════════════════════════════════════════════════
   { company: "Ginkgo Bioworks", short: "DNA", logoClass: "health", field: "Healthcare", ats: "greenhouse", board: "ginkgobioworks" },
   { company: "Recursion", short: "RXRX", logoClass: "health", field: "Healthcare", ats: "greenhouse", board: "recursionpharmaceuticals" },

@@ -10,6 +10,7 @@ const { aggregateOpenings } = require("./_shared/aggregator");
 const { saveLiveOpenings, getLiveOpenings } = require("./_shared/openings-store");
 const { listSubscribers } = require("./_shared/store");
 const { sendEmailAlert, sendPushAlert, matchesOpening } = require("./_shared/alerts");
+const { recordNewListings } = require("./_shared/analytics");
 
 // Don't blast more than this many alerts in a single run (safety valve).
 const MAX_NOTIFY_OPENINGS = 25;
@@ -67,6 +68,7 @@ module.exports = async function handler(req, res) {
 
     // On the very first run we seed silently (everything would look "new").
     const notify = isFirstRun ? { notified: 0, emailSent: 0, pushSent: 0, seeded: true } : await notifySubscribers(newOpenings);
+    if (!isFirstRun) await recordNewListings(newOpenings.length);
 
     return res.status(200).json({
       ok: true,
