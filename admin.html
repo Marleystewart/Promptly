@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex" />
+<title>Promptly · Founder Dashboard</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #0c0c16; color: #f1f0f7; padding: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: #9a97b5; font-size: 13px; margin-bottom: 20px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  input { flex: 1; min-width: 220px; padding: 12px 14px; border-radius: 12px; border: 1px solid #2a2a40; background: #16162a; color: #fff; font-size: 15px; }
+  button { padding: 12px 18px; border-radius: 12px; border: 0; background: #6d5efc; color: #fff; font-weight: 700; font-size: 15px; cursor: pointer; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .card { background: #16162a; border: 1px solid #25253c; border-radius: 16px; padding: 16px; }
+  .card .n { font-size: 30px; font-weight: 800; }
+  .card .l { color: #9a97b5; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; margin-top: 4px; }
+  h2 { font-size: 15px; margin: 22px 0 8px; color: #c9c6e6; }
+  table { width: 100%; border-collapse: collapse; background: #16162a; border-radius: 12px; overflow: hidden; }
+  td, th { text-align: left; padding: 9px 12px; border-bottom: 1px solid #23233a; font-size: 14px; }
+  th { color: #9a97b5; font-weight: 600; }
+  .err { color: #ff8080; font-size: 14px; margin: 8px 0; }
+  .muted { color: #9a97b5; }
+</style>
+</head>
+<body>
+  <h1>📊 Promptly — Founder Dashboard</h1>
+  <div class="sub">Private. Enter your admin secret (the ADMIN_SECRET you set in Vercel).</div>
+  <div class="row">
+    <input id="secret" type="password" placeholder="Admin secret…" />
+    <button id="load">Load</button>
+  </div>
+  <div id="err" class="err"></div>
+  <div id="out"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const saved = localStorage.getItem("promptlyAdminSecret");
+if (saved) $("secret").value = saved;
+
+function table(title, rows, cols) {
+  if (!rows || !rows.length) return `<h2>${title}</h2><p class="muted">No data yet.</p>`;
+  const head = cols.map(c => `<th>${c}</th>`).join("");
+  const body = rows.map(r => `<tr>${r.map(c => `<td>${c == null ? "—" : c}</td>`).join("")}</tr>`).join("");
+  return `<h2>${title}</h2><table><tr>${head}</tr>${body}</table>`;
+}
+
+async function load() {
+  const secret = $("secret").value.trim();
+  $("err").textContent = "";
+  if (!secret) { $("err").textContent = "Enter your admin secret."; return; }
+  localStorage.setItem("promptlyAdminSecret", secret);
+  try {
+    const r = await fetch("/api/admin-stats?secret=" + encodeURIComponent(secret));
+    const d = await r.json();
+    if (!r.ok) { $("err").textContent = d.error || "Failed."; $("out").innerHTML = ""; return; }
+    const live = d.live || {};
+    $("out").innerHTML = `
+      <div class="cards">
+        <div class="card"><div class="n">${d.totalAccounts}</div><div class="l">Accounts</div></div>
+        <div class="card"><div class="n">${d.withEmail}</div><div class="l">With email</div></div>
+        <div class="card"><div class="n">${d.withPush}</div><div class="l">Push enabled</div></div>
+        <div class="card"><div class="n">${live.activeToday || 0}</div><div class="l">Active today</div></div>
+        <div class="card"><div class="n">${live.signupsToday || 0}</div><div class="l">Signups today</div></div>
+        <div class="card"><div class="n">${live.applicationsToday || 0}</div><div class="l">Apps started today</div></div>
+        <div class="card"><div class="n">${live.newListingsThisWeek || 0}</div><div class="l">New listings / wk</div></div>
+      </div>
+      ${table("Accounts by school", d.bySchool, ["School", "#"])}
+      ${table("By graduation year", d.byGradYear, ["Grad year", "#"])}
+      ${table("By field interest", d.byField, ["Field", "#"])}
+      ${table("Recent signups", (d.recent||[]).map(x => [x.email, x.school, x.gradYear, x.when ? new Date(x.when).toLocaleString() : "—"]), ["Email", "School", "Grad", "When"])}
+      ${d.setupRequired ? `<p class="muted">${d.setupRequired}</p>` : ""}
+    `;
+  } catch (e) {
+    $("err").textContent = "Network error: " + e.message;
+  }
+}
+$("load").addEventListener("click", load);
+$("secret").addEventListener("keydown", (e) => { if (e.key === "Enter") load(); });
+if (saved) load();
+</script>
+</body>
+</html>
