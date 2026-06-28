@@ -581,7 +581,7 @@ const emptyState = document.querySelector(".empty-state");
 const fieldGrid = document.querySelector("[data-field-grid]");
 const pushStatus = document.querySelector("[data-push-status]");
 const saved = new Map();
-const fallbackVapidPublicKey = "BIQfsqoTgEEQRYIM-YdEvr8-95V4xhNHKf9CwIRPIb3O0ZyIqABnNXUeuR-cSuoEl4wYkNptOd5aie8PU0e78o8";
+const fallbackVapidPublicKey = "BCyh-h_0nZhnY6w4HNnvVD1HfCDG_cQfTwg-sLRIPO2yNAjwQdi5dckUS3NKNijENU5SI9uweHVga4ZlvZHlOB8";
 const profileStorageKey = "openingProfile";
 
 // --- Application status tracker (Applied → OA → Interview → Offer) ----------
