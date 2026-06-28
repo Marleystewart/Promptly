@@ -646,6 +646,25 @@ function logoMarkup(item) {
   return `<div class="logo ${item.logoClass}">${item.short}</div>`;
 }
 
+// Parse a deadline string like "Feb 15, 2026" -> timestamp. "Rolling",
+// "See posting", "Opens ..." etc. return null (treated as open).
+function parseDeadline(s) {
+  if (!s || /^(opens|rolling|see posting|—)/i.test(String(s).trim())) return null;
+  const m = String(s).match(/([A-Za-z]{3,9})\s+(\d{1,2}),\s*(20\d{2})/);
+  if (!m) return null;
+  const t = Date.parse(`${m[1]} ${m[2]}, ${m[3]}`);
+  return isNaN(t) ? null : t;
+}
+function listingStatus(item) {
+  if (item.awaiting) return "AWAITING";
+  const d = parseDeadline(item.deadline);
+  if (d && d < Date.now()) return "CLOSED";
+  return "OPEN";
+}
+function closedBadge(item) {
+  return listingStatus(item) === "CLOSED" ? `<span class="row-status status-closed">Closed</span>` : "";
+}
+
 function openingRow(item) {
   const match = openingMatch(item);
   const isSaved = saved.has(item.company);
@@ -671,10 +690,10 @@ function openingRow(item) {
     <article class="opening-row" data-company="${item.company}" data-field="${item.field}" data-open-details="${item.company}" tabindex="0" role="button" aria-label="View alert details for ${item.company}">
       ${logoMarkup(item)}
       <div>
-        <span class="status-pill">${item.field}</span>${statusPill(item.company)}
+        <span class="status-pill">${item.field}</span>${statusPill(item.company)}${closedBadge(item)}
         <h3>${item.company}</h3>
         <p>${item.role} · ${item.program}</p>
-        <small>Deadline: ${item.deadline} · ${item.opened}</small>
+        <small>Closes: ${item.deadline} · ${item.opened}</small>
         <small class="match-line">Student fit: ${match.label}</small>
         <small class="source-line">Verified source: ${item.sourceLabel || "Official careers page"}</small>
       </div>
@@ -814,7 +833,13 @@ function openDetails(company) {
   modalCompany.textContent = item.company;
   modal.querySelector("[data-modal-role]").textContent = `${item.role} · ${item.program}`;
   modal.querySelector("[data-modal-why]").textContent = `Why this alert: ${match.reasonText === "broad profile" ? "It fits your broader student alert profile." : `Matched ${match.reasonText} from your profile.`}`;
-  modal.querySelector("[data-modal-deadline]").textContent = item.deadline.replace(/, 20\d{2}/, "");
+  modal.querySelector("[data-modal-deadline]").textContent = item.deadline;
+  const statusEl = modal.querySelector("[data-modal-status]");
+  if (statusEl) {
+    const st = listingStatus(item);
+    statusEl.textContent = st;
+    statusEl.className = "status-pill" + (st === "CLOSED" ? " pill-closed" : st === "AWAITING" ? " pill-awaiting" : "");
+  }
   modal.querySelector("[data-modal-opened]").textContent = item.opened.replace("Opened ", "");
   modal.querySelector("[data-modal-field]").textContent = item.field;
   modal.querySelector("[data-modal-source]").textContent = item.sourceLabel || "Official source";
@@ -1615,6 +1640,8 @@ async function renderPeerPulse() {
     }
   } catch {}
   parts.push(`${verified} live roles · ${watched} companies tracked`);
+  const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  parts.push(`Updated ${today}`);
   textEl.textContent = "🔥 " + parts.join(" · ");
   el.hidden = false;
 }

@@ -1038,6 +1038,11 @@ body.launch-active .onboarding-brand {
 .row-status.status-oa { background: #0ea5e9; }
 .row-status.status-interview { background: #d97706; }
 .row-status.status-offer { background: #0f7a4d; }
+.row-status.status-closed { background: #6b7280; }
+
+/* Dynamic modal status pill */
+.status-pill.pill-closed { background: rgba(107,114,128,0.22); color: #9ca3af; }
+.status-pill.pill-awaiting { background: rgba(217,119,6,0.18); color: #d97706; }
 
 /* Awaiting-posting (watch-list) cards: clearly tracked, not yet live */
 .opening-row.awaiting { opacity: 0.82; }
