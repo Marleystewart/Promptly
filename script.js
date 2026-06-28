@@ -851,6 +851,7 @@ function openDetails(company) {
   const item = findOpening(company);
   track("opening_view");
   const match = openingMatch(item);
+  const awaitingLike = isAwaitingLike(item);
   modal.dataset.company = item.company;
   modalCompany.textContent = item.company;
   modal.querySelector("[data-modal-role]").textContent = `${item.role} · ${item.program}`;
@@ -865,7 +866,6 @@ function openDetails(company) {
   modal.querySelector("[data-modal-opened]").textContent = item.opened.replace("Opened ", "");
   modal.querySelector("[data-modal-field]").textContent = item.field;
   modal.querySelector("[data-modal-source]").textContent = item.sourceLabel || "Official source";
-  const awaitingLike = isAwaitingLike(item);
   const sourceLink = modal.querySelector("[data-modal-source-link]");
   sourceLink.href = item.sourceUrl || "#";
   sourceLink.hidden = !item.sourceUrl || awaitingLike;
