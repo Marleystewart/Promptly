@@ -69,34 +69,28 @@ const subFields = {
   Consulting: ["All Consulting", "MBB", "Big 4", "Strategy", "Tech Consulting", "Economic Consulting"],
 };
 
-const fieldOptions = [
-  "Technology",
-  "Healthcare",
-  "Design",
-  "Marketing",
-  "Education",
-  "Media",
-  "Science",
-  "Policy",
-  "Finance",
-  "Consulting",
-  "Sports",
-  "Startups",
+// Industry taxonomy — matches the data fields so a student's chosen interests
+// map directly onto the tabs they see.
+const FIELD_ORDER = [
+  "Technology", "Finance", "Consulting", "Healthcare", "Law", "Government",
+  "Media", "Marketing", "Consumer", "Engineering", "Science", "Nonprofit", "Education",
 ];
+const fieldOptions = [...FIELD_ORDER];
 
 const interestKeywords = {
-  Technology: ["tech", "software", "computer", "coding", "data", "ai", "product", "cyber", "engineering", "google", "microsoft"],
-  Healthcare: ["health", "hospital", "clinic", "medical", "medicine", "pre-med", "nursing", "research", "mayo", "pfizer"],
-  Design: ["design", "ux", "ui", "creative", "brand", "visual", "adobe"],
-  Marketing: ["marketing", "social", "growth", "brand", "advertising", "sports marketing"],
-  Education: ["education", "teaching", "learning", "school", "student", "duolingo"],
-  Media: ["media", "journalism", "music", "film", "news", "spotify", "content"],
-  Science: ["science", "lab", "biology", "chemistry", "climate", "space", "nasa", "environment"],
-  Policy: ["policy", "government", "law", "political", "public", "nonprofit", "epa", "unicef"],
-  Finance: ["finance", "investment", "banking", "accounting", "money"],
-  Consulting: ["consulting", "strategy", "operations", "business analyst", "mckinsey", "bain"],
-  Sports: ["sports", "athletics", "team", "league"],
-  Startups: ["startup", "founder", "venture", "entrepreneur"],
+  Technology: ["tech", "software", "computer", "coding", "data", "ai", "product", "cyber", "developer", "swe"],
+  Finance: ["finance", "investment", "banking", "accounting", "money", "trading", "equity", "wealth", "ib"],
+  Consulting: ["consulting", "strategy", "operations", "business analyst", "advisory"],
+  Healthcare: ["health", "hospital", "clinic", "medical", "medicine", "pre-med", "nursing", "pharma", "biotech"],
+  Law: ["law", "legal", "attorney", "pre-law", "justice", "litigation", "paralegal"],
+  Government: ["government", "policy", "political", "public", "foreign", "intelligence", "federal", "diplomacy", "civic"],
+  Media: ["media", "journalism", "music", "film", "news", "content", "entertainment", "broadcast", "writing"],
+  Marketing: ["marketing", "advertising", "brand", "social media", "pr", "communications", "growth"],
+  Consumer: ["consumer", "retail", "cpg", "merchandising", "fashion", "beauty", "supply chain"],
+  Engineering: ["engineering", "mechanical", "aerospace", "civil", "electrical", "manufacturing", "energy", "automotive"],
+  Science: ["science", "lab", "biology", "chemistry", "physics", "climate", "environment", "research"],
+  Nonprofit: ["nonprofit", "social impact", "ngo", "charity", "volunteer", "humanitarian"],
+  Education: ["education", "teaching", "learning", "school", "edtech", "tutoring"],
 };
 
 const openings = [
@@ -559,6 +553,27 @@ function rebuildPlaceholders() {
   }
 }
 
+// Industry tabs the student actually sees = the fields they picked in their
+// profile (intersected with fields we have data for). No profile yet -> show
+// all. So a finance student doesn't see Law/Media tabs, etc.
+function availableFields() {
+  const present = new Set(openings.map((o) => o.field));
+  return FIELD_ORDER.filter((f) => present.has(f));
+}
+function userFields() {
+  const avail = availableFields();
+  if (!Array.isArray(profile.fields) || !profile.fields.length) return avail;
+  const chosen = avail.filter((f) => profile.fields.includes(f));
+  return chosen.length ? chosen : avail;
+}
+function renderFilterChips() {
+  const fields = userFields();
+  const feed = document.querySelector(".search-panel .filter-row");
+  if (feed) feed.innerHTML = ["All", ...fields, "Saved"].map((f, i) => `<button class="filter-chip${i === 0 ? " active" : ""}">${f}</button>`).join("");
+  const dash = document.querySelector('.filter-row[aria-label="Industry filters"]');
+  if (dash) dash.innerHTML = fields.map((f) => `<button class="filter-chip">${f}</button>`).join("");
+}
+
 const profile = {
   name: "",
   email: "",
@@ -661,14 +676,21 @@ function listingStatus(item) {
   if (d && d < Date.now()) return "CLOSED";
   return "OPEN";
 }
-function closedBadge(item) {
-  return listingStatus(item) === "CLOSED" ? `<span class="row-status status-closed">Closed</span>` : "";
+// A listing behaves as "awaiting" if it's a watch-list placeholder OR a real
+// posting whose deadline has passed (closed -> we wait for it to reopen).
+function isAwaitingLike(item) {
+  return item.awaiting || listingStatus(item) === "CLOSED";
+}
+function awaitingLine(item) {
+  return item.awaiting
+    ? "⏳ Awaiting 2027 posting — we'll alert you the moment it opens"
+    : "⏳ Applications closed — we'll alert you when it reopens";
 }
 
 function openingRow(item) {
   const match = openingMatch(item);
   const isSaved = saved.has(item.company);
-  if (item.awaiting) {
+  if (isAwaitingLike(item)) {
     return `
     <article class="opening-row awaiting" data-company="${item.company}" data-field="${item.field}" data-open-details="${item.company}" tabindex="0" role="button" aria-label="Track ${item.company} for 2027 postings">
       ${logoMarkup(item)}
@@ -676,7 +698,7 @@ function openingRow(item) {
         <span class="status-pill">${item.field}${item.subField ? " · " + item.subField : ""}</span>${statusPill(item.company)}
         <h3>${item.company}</h3>
         <p>${item.role} · ${item.program}</p>
-        <small class="awaiting-line">⏳ Awaiting 2027 posting — we'll alert you the moment it opens</small>
+        <small class="awaiting-line">${awaitingLine(item)}</small>
       </div>
       <div class="row-actions">
         <button class="round-btn save-btn ${isSaved ? "saved" : ""}" aria-label="${isSaved ? "Untrack" : "Track"} ${item.company}" data-save="${item.company}" aria-pressed="${isSaved}">
@@ -690,7 +712,7 @@ function openingRow(item) {
     <article class="opening-row" data-company="${item.company}" data-field="${item.field}" data-open-details="${item.company}" tabindex="0" role="button" aria-label="View alert details for ${item.company}">
       ${logoMarkup(item)}
       <div>
-        <span class="status-pill">${item.field}</span>${statusPill(item.company)}${closedBadge(item)}
+        <span class="status-pill">${item.field}</span>${statusPill(item.company)}
         <h3>${item.company}</h3>
         <p>${item.role} · ${item.program}</p>
         <small>Closes: ${item.deadline} · ${item.opened}</small>
@@ -711,7 +733,7 @@ function openingRow(item) {
 
 function preferredOpenings() {
   // real (verified) listings first, awaiting placeholders after; then by fit
-  return [...openings].sort((a, b) => (a.awaiting ? 1 : 0) - (b.awaiting ? 1 : 0) || openingMatch(b).score - openingMatch(a).score);
+  return [...openings].sort((a, b) => (isAwaitingLike(a) ? 1 : 0) - (isAwaitingLike(b) ? 1 : 0) || openingMatch(b).score - openingMatch(a).score);
 }
 
 function profileMatchText() {
@@ -836,16 +858,17 @@ function openDetails(company) {
   modal.querySelector("[data-modal-deadline]").textContent = item.deadline;
   const statusEl = modal.querySelector("[data-modal-status]");
   if (statusEl) {
-    const st = listingStatus(item);
+    const st = awaitingLike ? "AWAITING" : "OPEN";
     statusEl.textContent = st;
-    statusEl.className = "status-pill" + (st === "CLOSED" ? " pill-closed" : st === "AWAITING" ? " pill-awaiting" : "");
+    statusEl.className = "status-pill" + (awaitingLike ? " pill-awaiting" : "");
   }
   modal.querySelector("[data-modal-opened]").textContent = item.opened.replace("Opened ", "");
   modal.querySelector("[data-modal-field]").textContent = item.field;
   modal.querySelector("[data-modal-source]").textContent = item.sourceLabel || "Official source";
+  const awaitingLike = isAwaitingLike(item);
   const sourceLink = modal.querySelector("[data-modal-source-link]");
   sourceLink.href = item.sourceUrl || "#";
-  sourceLink.hidden = !item.sourceUrl;
+  sourceLink.hidden = !item.sourceUrl || awaitingLike;
   modal.querySelector("[data-save-modal]").textContent = saved.has(item.company) ? "Unsave Alert" : "Save Alert";
   const modalLogo = modal.querySelector(".modal-logo");
   modalLogo.className = `modal-logo ${item.logo ? "logo-tile" : item.logoClass}`;
@@ -1014,6 +1037,7 @@ function updateDashboardGreeting() {
 
 function applyProfileToUI() {
   document.body.classList.remove("onboarding-active", "launch-active");
+  renderFilterChips();
   updateDashboardGreeting();
   updateProfilePhoto();
   document.querySelector("[data-profile-school]").textContent = profile.school || "Not set";
@@ -1408,7 +1432,7 @@ document.addEventListener("click", (event) => {
       }
     }
 
-    const list = field === "All" ? preferredOpenings() : field === "Saved" ? [...saved.values()] : openings.filter((item) => item.field === field).sort((a, b) => (a.awaiting ? 1 : 0) - (b.awaiting ? 1 : 0));
+    const list = field === "All" ? preferredOpenings() : field === "Saved" ? [...saved.values()] : openings.filter((item) => item.field === field).sort((a, b) => (isAwaitingLike(a) ? 1 : 0) - (isAwaitingLike(b) ? 1 : 0));
     const target = inSearchPanel ? document.querySelector(".full-list") : document.querySelector(".compact-list");
     target.innerHTML = list.map(openingRow).join("");
   }
@@ -1423,7 +1447,7 @@ document.addEventListener("click", (event) => {
     const list = (subField.startsWith("All ")
       ? openings.filter((item) => item.field === field)
       : openings.filter((item) => item.field === field && item.subField === subField)
-    ).sort((a, b) => (a.awaiting ? 1 : 0) - (b.awaiting ? 1 : 0));
+    ).sort((a, b) => (isAwaitingLike(a) ? 1 : 0) - (isAwaitingLike(b) ? 1 : 0));
     document.querySelector(".full-list").innerHTML = list.map(openingRow).join("");
   }
 
@@ -1589,6 +1613,7 @@ async function loadLiveOpenings() {
     if (!added) return;
 
     rebuildPlaceholders();
+    renderFilterChips();
     renderOpenings();
     updateAlertBadge();
     if (typeof renderPeerPulse === "function") renderPeerPulse();
@@ -1599,6 +1624,7 @@ async function loadLiveOpenings() {
 
 // Build "Awaiting posting" cards for the watch-list, then render everything.
 rebuildPlaceholders();
+renderFilterChips();
 renderOpenings();
 loadLiveOpenings();
 
