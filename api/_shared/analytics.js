@@ -77,7 +77,7 @@ async function recordNewListings(count) {
   await redis.expire(key, WEEK_TTL);
 }
 
-const STAGES = new Set(["Applied", "OA", "Interview", "Offer"]);
+const STAGES = new Set(["Applied", "Interview", "Offer"]);
 
 // Records a student's progress on a listing. Anonymous — we store the school +
 // company + stage (no name/email), which later powers the per-school pulse

@@ -1162,30 +1162,45 @@ async function saveSubscriber(subscription = null) {
 }
 
 async function enablePushAlerts() {
-  if (!("Notification" in window) || !("PushManager" in window)) {
-    setPushStatus("Push alerts are not supported here. On iPhone, add the site to Home Screen first.");
-    return;
+  if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+    setPushStatus("On iPhone, first add Promptly to your Home Screen (Share → Add to Home Screen), then open it from that icon to turn on alerts.");
+    return null;
+  }
+
+  // iOS needs the permission request triggered directly by the tap — do it first.
+  let permission;
+  try {
+    permission = await Notification.requestPermission();
+  } catch (e) {
+    setPushStatus("Couldn't ask for permission: " + (e.message || e));
+    return null;
+  }
+  if (permission !== "granted") {
+    setPushStatus(
+      permission === "denied"
+        ? "Notifications are blocked. Fix: iPhone Settings → Notifications → Promptly → Allow Notifications. (Or remove Promptly from your Home Screen and re-add it, then tap Allow.)"
+        : "Tap Allow when your phone asks, to turn on alerts."
+    );
+    return null;
   }
 
   const registration = await registerServiceWorker();
-  if (!registration) return;
+  if (!registration) return null;
 
-  const permission = await Notification.requestPermission();
-  if (permission !== "granted") {
-    setPushStatus("Notifications are off. Turn them on to receive opening alerts.");
-    return;
+  try {
+    const existing = await registration.pushManager.getSubscription();
+    const subscription = existing || await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(await getVapidPublicKey()),
+    });
+    localStorage.setItem("openingPushSubscription", JSON.stringify(subscription));
+    setPushStatus("✅ Phone alerts enabled. Tap Send Test Notification.");
+    await saveSubscriber(subscription);
+    return subscription;
+  } catch (e) {
+    setPushStatus("Couldn't turn on push: " + (e.message || e));
+    return null;
   }
-
-  const existing = await registration.pushManager.getSubscription();
-  const subscription = existing || await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(await getVapidPublicKey()),
-  });
-
-  localStorage.setItem("openingPushSubscription", JSON.stringify(subscription));
-  setPushStatus("Alerts are enabled. Tap Send Test to check your phone notification.");
-
-  await saveSubscriber(subscription);
 }
 
 function currentTestOpening() {
@@ -1239,13 +1254,10 @@ async function sendTestAlert() {
 async function sendTestPush() {
   let raw = localStorage.getItem("openingPushSubscription");
   if (!raw) {
-    setPushStatus("Setting up phone alerts first. Tap Allow if your device asks.");
-    await enablePushAlerts();
-    raw = localStorage.getItem("openingPushSubscription");
-    if (!raw) {
-      setPushStatus("Phone alerts are not enabled yet. On iPhone, open Promptly from the Home Screen app icon, then tap Enable Phone Notifications.");
-      return;
-    }
+    const sub = await enablePushAlerts();
+    // enablePushAlerts already showed the exact reason if it failed.
+    if (!sub) return;
+    raw = JSON.stringify(sub);
   }
 
   setPushStatus("Sending a real test notification...");
