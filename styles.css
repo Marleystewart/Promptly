@@ -1048,6 +1048,8 @@ body.launch-active .onboarding-brand {
 .row-status.status-offer { background: #0f7a4d; }
 .row-status.status-closed { background: #6b7280; }
 
+.list-note { text-align: center; color: var(--muted, #9a97b5); font-size: 13px; padding: 16px 8px 4px; }
+
 /* Dynamic modal status pill */
 .status-pill.pill-closed { background: rgba(107,114,128,0.22); color: #9ca3af; }
 .status-pill.pill-awaiting { background: rgba(217,119,6,0.18); color: #d97706; }

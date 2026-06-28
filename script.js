@@ -805,9 +805,20 @@ function updateAlertIntelligence() {
   document.querySelector("[data-next-window-copy]").textContent = next.copy;
 }
 
+// Cap how many rows render at once. 200+ image rows crashes mobile Safari
+// (out of memory). Show a hint to narrow with tabs/search for the rest.
+const MAX_ROWS = 60;
+function renderRows(list) {
+  let html = list.slice(0, MAX_ROWS).map(openingRow).join("");
+  if (list.length > MAX_ROWS) {
+    html += `<p class="list-note">Showing ${MAX_ROWS} of ${list.length}. Use the tabs or search to find a specific company.</p>`;
+  }
+  return html;
+}
+
 function renderOpenings(items = preferredOpenings()) {
   document.querySelector(".compact-list").innerHTML = items.slice(0, 5).map(openingRow).join("");
-  document.querySelector(".full-list").innerHTML = items.map(openingRow).join("");
+  document.querySelector(".full-list").innerHTML = renderRows(items);
 }
 
 function setFeatured() {
@@ -1434,7 +1445,7 @@ document.addEventListener("click", (event) => {
 
     const list = field === "All" ? preferredOpenings() : field === "Saved" ? [...saved.values()] : openings.filter((item) => item.field === field).sort((a, b) => (isAwaitingLike(a) ? 1 : 0) - (isAwaitingLike(b) ? 1 : 0));
     const target = inSearchPanel ? document.querySelector(".full-list") : document.querySelector(".compact-list");
-    target.innerHTML = list.map(openingRow).join("");
+    target.innerHTML = renderRows(list);
   }
 
   const subFilterChip = event.target.closest("[data-sub-field]");
@@ -1448,7 +1459,7 @@ document.addEventListener("click", (event) => {
       ? openings.filter((item) => item.field === field)
       : openings.filter((item) => item.field === field && item.subField === subField)
     ).sort((a, b) => (isAwaitingLike(a) ? 1 : 0) - (isAwaitingLike(b) ? 1 : 0));
-    document.querySelector(".full-list").innerHTML = list.map(openingRow).join("");
+    document.querySelector(".full-list").innerHTML = renderRows(list);
   }
 
   if (closeButton) {
@@ -1492,7 +1503,7 @@ document.querySelector("[data-photo-input]")?.addEventListener("change", (event)
 document.querySelector(".search-panel input")?.addEventListener("input", (event) => {
   const query = event.target.value.trim().toLowerCase();
   const matches = openings.filter((item) => `${item.company} ${item.role} ${item.field}`.toLowerCase().includes(query));
-  document.querySelector(".full-list").innerHTML = matches.map(openingRow).join("");
+  document.querySelector(".full-list").innerHTML = renderRows(matches);
 });
 
 // --- College Autocomplete ---
