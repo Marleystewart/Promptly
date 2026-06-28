@@ -284,8 +284,8 @@ const openings = [
     program: "Summer 2027",
     deadline: "Jun 27, 2026",
     opened: "Opened Dec 28, 2025",
-    sourceLabel: "J.P. Morgan – 2027 IB Summer Analyst",
-    sourceUrl: "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/job/210691542",
+    sourceLabel: "J.P. Morgan – IB Summer Analyst Program",
+    sourceUrl: "https://www.jpmorganchase.com/careers/explore-opportunities/programs/investment-banking-summer-analyst",
   },
   {
     company: "Morgan Stanley",
