@@ -1207,6 +1207,34 @@ async function sendPasswordReset() {
   document.querySelector("[data-auth-status]").textContent = error ? error.message : "Password reset email sent.";
 }
 
+async function restartDemo() {
+  const resetButton = document.querySelector("[data-reset-demo]");
+  if (resetButton) {
+    resetButton.disabled = true;
+    resetButton.textContent = "Restarting...";
+  }
+
+  if (authClient) {
+    const { error } = await authClient.auth.signOut();
+    if (error) {
+      if (resetButton) {
+        resetButton.disabled = false;
+        resetButton.textContent = "Restart demo";
+      }
+      updateAccountUI("Could not sign out. Please try again.");
+      return;
+    }
+  }
+
+  authUser = null;
+  localStorage.removeItem(profileStorageKey);
+  localStorage.removeItem(savedStorageKey);
+  localStorage.removeItem("openingPushSubscription");
+  localStorage.removeItem("promptlyPendingMigrationEmail");
+  sessionStorage.removeItem("promptlyMigrateLocal");
+  window.location.replace(`${window.location.origin}/`);
+}
+
 function isValidEmail(value) {
   const email = value.trim().toLowerCase();
   return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
@@ -1577,7 +1605,7 @@ if (!restoreProfile()) {
 }
 initializeAuth();
 
-document.addEventListener("click", (event) => {
+document.addEventListener("click", async (event) => {
   const nextButton = event.target.closest("[data-next-step]");
   const fieldButton = event.target.closest("[data-field-choice]");
   const editFieldButton = event.target.closest("[data-edit-field-choice]");
@@ -1665,11 +1693,8 @@ document.addEventListener("click", (event) => {
   }
 
   if (resetDemoButton) {
-    if (authClient) authClient.auth.signOut();
-    localStorage.removeItem(profileStorageKey);
-    localStorage.removeItem(savedStorageKey);
-    localStorage.removeItem("openingPushSubscription");
-    window.location.reload();
+    await restartDemo();
+    return;
   }
 
   if (photoButton) {
