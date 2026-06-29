@@ -38,23 +38,29 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
-const saved = localStorage.getItem("promptlyAdminSecret");
+const saved = sessionStorage.getItem("promptlyAdminSecret");
 if (saved) $("secret").value = saved;
 
+function escapeHtml(value) {
+  return String(value == null ? "" : value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[char]));
+}
+
 function table(title, rows, cols) {
-  if (!rows || !rows.length) return `<h2>${title}</h2><p class="muted">No data yet.</p>`;
-  const head = cols.map(c => `<th>${c}</th>`).join("");
-  const body = rows.map(r => `<tr>${r.map(c => `<td>${c == null ? "—" : c}</td>`).join("")}</tr>`).join("");
-  return `<h2>${title}</h2><table><tr>${head}</tr>${body}</table>`;
+  if (!rows || !rows.length) return `<h2>${escapeHtml(title)}</h2><p class="muted">No data yet.</p>`;
+  const head = cols.map(c => `<th>${escapeHtml(c)}</th>`).join("");
+  const body = rows.map(r => `<tr>${r.map(c => `<td>${escapeHtml(c == null ? "-" : c)}</td>`).join("")}</tr>`).join("");
+  return `<h2>${escapeHtml(title)}</h2><table><tr>${head}</tr>${body}</table>`;
 }
 
 async function load() {
   const secret = $("secret").value.trim();
   $("err").textContent = "";
   if (!secret) { $("err").textContent = "Enter your admin secret."; return; }
-  localStorage.setItem("promptlyAdminSecret", secret);
+  sessionStorage.setItem("promptlyAdminSecret", secret);
   try {
-    const r = await fetch("/api/admin-stats?secret=" + encodeURIComponent(secret));
+    const r = await fetch("/api/admin-stats", { headers: { Authorization: `Bearer ${secret}` } });
     const d = await r.json();
     if (!r.ok) { $("err").textContent = d.error || "Failed."; $("out").innerHTML = ""; return; }
     const live = d.live || {};
@@ -72,7 +78,7 @@ async function load() {
       ${table("By graduation year", d.byGradYear, ["Grad year", "#"])}
       ${table("By field interest", d.byField, ["Field", "#"])}
       ${table("Recent signups", (d.recent||[]).map(x => [x.email, x.school, x.gradYear, x.when ? new Date(x.when).toLocaleString() : "—"]), ["Email", "School", "Grad", "When"])}
-      ${d.setupRequired ? `<p class="muted">${d.setupRequired}</p>` : ""}
+      ${d.setupRequired ? `<p class="muted">${escapeHtml(d.setupRequired)}</p>` : ""}
     `;
   } catch (e) {
     $("err").textContent = "Network error: " + e.message;

@@ -11,7 +11,7 @@ module.exports = async function handler(req, res) {
     const profile = body.profile || {};
 
     if (!isValidEmail(profile.email)) {
-      return res.status(400).json({ error: "Use a valid Gmail, Yahoo, iCloud, Outlook, Hotmail, AOL, or .edu email." });
+      return res.status(400).json({ error: "Use a properly formatted email address." });
     }
 
     const result = await saveSubscriber(profile, body.subscription || null);

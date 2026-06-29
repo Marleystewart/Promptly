@@ -762,6 +762,11 @@ body.launch-active .onboarding-brand {
   border: 1px solid var(--line);
 }
 
+.soft-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .text-button {
   min-height: 38px;
   font-size: 14px;
@@ -1053,6 +1058,7 @@ body.launch-active .onboarding-brand {
 /* Dynamic modal status pill */
 .status-pill.pill-closed { background: rgba(107,114,128,0.22); color: #9ca3af; }
 .status-pill.pill-awaiting { background: rgba(217,119,6,0.18); color: #d97706; }
+.status-pill.pill-upcoming { background: rgba(14,165,233,0.18); color: #38bdf8; }
 
 /* Awaiting-posting (watch-list) cards: clearly tracked, not yet live */
 .opening-row.awaiting { opacity: 0.82; }

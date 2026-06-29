@@ -1,6 +1,6 @@
 const { isValidEmail } = require("./_shared/email-validator");
-const { readBody, saveSubscriber, listSubscribers, normalizeSubscriber } = require("./_shared/store");
-const { sendEmailAlert, sendPushAlert, matchesOpening } = require("./_shared/alerts");
+const { readBody, saveSubscriber, normalizeSubscriber, takeTestAlertSlot } = require("./_shared/store");
+const { sendEmailAlert } = require("./_shared/alerts");
 
 const fallbackOpening = {
   company: "Google",
@@ -10,22 +10,19 @@ const fallbackOpening = {
   field: "Technology",
 };
 
-async function settleAlert(opening, subscriber) {
-  const results = { email: null, push: null };
+function safeText(value, fallback, maxLength = 120) {
+  const text = String(value || "").replace(/[\r\n]+/g, " ").trim();
+  return (text || fallback).slice(0, maxLength);
+}
 
-  if (subscriber.emailNotifications !== false && subscriber.email) {
-    results.email = await sendEmailAlert(opening, subscriber);
-  }
-
-  if (subscriber.pushNotifications !== false && subscriber.pushSubscription) {
-    try {
-      results.push = await sendPushAlert(opening, subscriber);
-    } catch (error) {
-      results.push = { sent: false, error: error.message || "Push failed." };
-    }
-  }
-
-  return results;
+function normalizeTestOpening(value = {}) {
+  return {
+    company: safeText(value.company, fallbackOpening.company, 80),
+    role: safeText(value.role, fallbackOpening.role, 120),
+    program: safeText(value.program, fallbackOpening.program, 80),
+    deadline: safeText(value.deadline, fallbackOpening.deadline, 60),
+    field: safeText(value.field, fallbackOpening.field, 60),
+  };
 }
 
 module.exports = async function handler(req, res) {
@@ -35,41 +32,30 @@ module.exports = async function handler(req, res) {
 
   try {
     const body = readBody(req);
-    const opening = { ...fallbackOpening, ...(body.opening || {}) };
+    const opening = normalizeTestOpening(body.opening);
     const profile = body.profile || {};
     const directSubscriber = normalizeSubscriber(profile, body.subscription || null);
 
-    if (directSubscriber.email && !isValidEmail(directSubscriber.email)) {
-      return res.status(400).json({ error: "Use a valid Gmail, Yahoo, iCloud, Outlook, Hotmail, AOL, or .edu email." });
+    if (!isValidEmail(directSubscriber.email)) {
+      return res.status(400).json({ error: "Use a properly formatted email address." });
     }
 
-    if (directSubscriber.email) {
-      await saveSubscriber(profile, body.subscription || null);
+    const requester = req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || "unknown";
+    const rateLimit = await takeTestAlertSlot(directSubscriber.email, requester);
+    if (!rateLimit.allowed) {
+      return res.status(429).json({ error: "Please wait a moment before sending another test." });
     }
 
-    const stored = await listSubscribers();
-    const matched = stored.subscribers.length
-      ? stored.subscribers.filter((subscriber) => matchesOpening(opening, subscriber))
-      : directSubscriber.email
-        ? [directSubscriber]
-        : [];
-
-    if (!matched.length) {
-      return res.status(404).json({
-        error: "No matching subscribers found yet.",
-        setupRequired: stored.setupRequired,
-      });
-    }
-
-    const deliveries = await Promise.all(matched.map((subscriber) => settleAlert(opening, subscriber)));
-    const emailSent = deliveries.filter((item) => item.email && item.email.sent).length;
-    const pushSent = deliveries.filter((item) => item.push && item.push.sent).length;
-    const setupRequired = [stored.setupRequired, ...deliveries.flatMap((item) => [item.email && item.email.setupRequired, item.push && item.push.setupRequired])].filter(Boolean);
-    const errors = deliveries.flatMap((item) => [item.email && item.email.error, item.push && item.push.error]).filter(Boolean);
+    const stored = await saveSubscriber(profile, body.subscription || null);
+    const email = await sendEmailAlert(opening, directSubscriber);
+    const emailSent = email.sent ? 1 : 0;
+    const pushSent = 0;
+    const setupRequired = [stored.setupRequired, email.setupRequired].filter(Boolean);
+    const errors = [email.error].filter(Boolean);
 
     return res.status(emailSent || pushSent ? 200 : 202).json({
       ok: true,
-      matched: matched.length,
+      matched: 1,
       emailSent,
       pushSent,
       setupRequired: [...new Set(setupRequired)],

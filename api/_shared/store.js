@@ -75,4 +75,17 @@ async function listSubscribers() {
   return { subscribers };
 }
 
-module.exports = { readBody, saveSubscriber, listSubscribers, normalizeSubscriber, hasRedisEnv };
+async function takeTestAlertSlot(email, requester = "") {
+  const redis = await getRedis();
+  if (!redis) return { allowed: true, stored: false };
+
+  const normalizedEmail = String(email || "").trim().toLowerCase().slice(0, 254);
+  const normalizedRequester = String(requester || "unknown").trim().slice(0, 80);
+  const [emailSlot, requesterSlot] = await Promise.all([
+    redis.set(`promptly:test-email:${normalizedEmail}`, "1", { nx: true, ex: 60 }),
+    redis.set(`promptly:test-requester:${normalizedRequester}`, "1", { nx: true, ex: 10 }),
+  ]);
+  return { allowed: Boolean(emailSlot && requesterSlot), stored: true };
+}
+
+module.exports = { readBody, saveSubscriber, listSubscribers, normalizeSubscriber, hasRedisEnv, takeTestAlertSlot };

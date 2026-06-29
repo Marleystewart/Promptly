@@ -598,6 +598,7 @@ const pushStatus = document.querySelector("[data-push-status]");
 const saved = new Map();
 const fallbackVapidPublicKey = "BCyh-h_0nZhnY6w4HNnvVD1HfCDG_cQfTwg-sLRIPO2yNAjwQdi5dckUS3NKNijENU5SI9uweHVga4ZlvZHlOB8";
 const profileStorageKey = "openingProfile";
+const savedStorageKey = "promptlySavedCompanies";
 
 // --- Application status tracker (Applied → OA → Interview → Offer) ----------
 // Gives students a reason to come back (track their progress) and feeds the
@@ -663,15 +664,26 @@ function logoMarkup(item) {
 
 // Parse a deadline string like "Feb 15, 2026" -> timestamp. "Rolling",
 // "See posting", "Opens ..." etc. return null (treated as open).
-function parseDeadline(s) {
-  if (!s || /^(opens|rolling|see posting|—)/i.test(String(s).trim())) return null;
+function parseDateFromLabel(s) {
+  if (!s) return null;
   const m = String(s).match(/([A-Za-z]{3,9})\s+(\d{1,2}),\s*(20\d{2})/);
   if (!m) return null;
   const t = Date.parse(`${m[1]} ${m[2]}, ${m[3]}`);
   return isNaN(t) ? null : t;
 }
+function parseDeadline(s) {
+  if (!s || /^(opens|rolling|see posting|—)/i.test(String(s).trim())) return null;
+  return parseDateFromLabel(s);
+}
+function parseOpeningDate(item) {
+  const labels = [item.opensAt, item.deadline, item.opened].filter(Boolean);
+  const label = labels.find((value) => /^applications open|^opens/i.test(String(value).trim()));
+  return label ? parseDateFromLabel(label) : null;
+}
 function listingStatus(item) {
   if (item.awaiting) return "AWAITING";
+  const opens = parseOpeningDate(item);
+  if (opens && opens > Date.now()) return "UPCOMING";
   const d = parseDeadline(item.deadline);
   if (d && d < Date.now()) return "CLOSED";
   return "OPEN";
@@ -679,12 +691,13 @@ function listingStatus(item) {
 // A listing behaves as "awaiting" if it's a watch-list placeholder OR a real
 // posting whose deadline has passed (closed -> we wait for it to reopen).
 function isAwaitingLike(item) {
-  return item.awaiting || listingStatus(item) === "CLOSED";
+  return listingStatus(item) !== "OPEN";
 }
 function awaitingLine(item) {
-  return item.awaiting
-    ? "⏳ Awaiting 2027 posting — we'll alert you the moment it opens"
-    : "⏳ Applications closed — we'll alert you when it reopens";
+  const status = listingStatus(item);
+  if (status === "UPCOMING") return `Applications open ${new Date(parseOpeningDate(item)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. Promptly will alert you when it is live.`;
+  if (status === "CLOSED") return "Applications closed. Promptly will alert you when they reopen.";
+  return "Awaiting the 2027 posting. Promptly will alert you the moment it opens.";
 }
 
 function openingRow(item) {
@@ -797,10 +810,9 @@ function updateAlertIntelligence() {
   const school = profile.school || "your school";
   const fieldText = fields.length ? fields.join(", ") : "every field";
   const next = nextWindowText();
-  const resumeSignal = profile.resumeName ? " Your resume is also helping Promptly understand your experience." : "";
 
   document.querySelector("[data-alert-profile]").textContent = `Tracking ${fieldText} for ${major}.`;
-  document.querySelector("[data-alert-profile-copy]").textContent = `${school} context, ${profile.gradYear ? `Class of ${profile.gradYear}` : "class year"}, and your interests decide which alerts rise first.${resumeSignal}`;
+  document.querySelector("[data-alert-profile-copy]").textContent = `${school} context, ${profile.gradYear ? `Class of ${profile.gradYear}` : "class year"}, and your interests decide which alerts rise first.`;
   document.querySelector("[data-next-window]").textContent = next.title;
   document.querySelector("[data-next-window-copy]").textContent = next.copy;
 }
@@ -870,9 +882,9 @@ function openDetails(company) {
   modal.querySelector("[data-modal-deadline]").textContent = item.deadline;
   const statusEl = modal.querySelector("[data-modal-status]");
   if (statusEl) {
-    const st = awaitingLike ? "AWAITING" : "OPEN";
+    const st = listingStatus(item);
     statusEl.textContent = st;
-    statusEl.className = "status-pill" + (awaitingLike ? " pill-awaiting" : "");
+    statusEl.className = `status-pill${st === "OPEN" ? "" : ` pill-${st.toLowerCase()}`}`;
   }
   modal.querySelector("[data-modal-opened]").textContent = item.opened.replace("Opened ", "");
   modal.querySelector("[data-modal-field]").textContent = item.field;
@@ -895,9 +907,28 @@ function saveCompany(company) {
   } else {
     saved.set(item.company, item);
   }
+  persistSavedCompanies();
   renderOpenings();
   setFeatured();
   refreshSavedList();
+}
+
+function persistSavedCompanies() {
+  try {
+    localStorage.setItem(savedStorageKey, JSON.stringify([...saved.keys()]));
+  } catch {}
+}
+
+function restoreSavedCompanies() {
+  try {
+    const companies = JSON.parse(localStorage.getItem(savedStorageKey) || "[]");
+    saved.clear();
+    if (!Array.isArray(companies)) return;
+    companies.forEach((company) => {
+      const item = openings.find((opening) => opening.company === company);
+      if (item) saved.set(item.company, item);
+    });
+  } catch {}
 }
 
 function refreshSavedList() {
@@ -951,12 +982,7 @@ function saveProfile() {
 
 function isValidEmail(value) {
   const email = value.trim().toLowerCase();
-  const basicShape = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
-  if (!basicShape) return false;
-
-  const domain = email.split("@").pop();
-  const acceptedDomains = ["gmail.com", "yahoo.com", "icloud.com", "outlook.com", "hotmail.com", "aol.com"];
-  return acceptedDomains.includes(domain) || domain.endsWith(".edu");
+  return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
 }
 
 function setFormError(selector, message = "") {
@@ -987,7 +1013,7 @@ function validateSignup() {
   }
 
   if (!isValidEmail(typedEmail)) {
-    setSignupError("Use a real email like name@gmail.com, name@yahoo.com, or your school .edu email.");
+    setSignupError("Use a properly formatted email address.");
     emailInput.focus();
     return false;
   }
@@ -1116,7 +1142,7 @@ function restoreProfile() {
     document.querySelector("[data-grad-year-input]").value = profile.gradYear || "";
     document.querySelector("[data-major-input]").value = profile.major || "";
     document.querySelector("[data-interests-input]").value = profile.interests || "";
-    if (profile.resumeName) document.querySelector("[data-resume-status]").textContent = `${profile.resumeName} added. Promptly will use it only to improve matches and recruiting timeline signals.`;
+    if (profile.resumeName) document.querySelector("[data-resume-status]").textContent = "Resume matching is coming soon. Your current matches use your major, interests, goals, and alert fields.";
     applyProfileToUI();
     setView("home");
     return true;
@@ -1273,9 +1299,8 @@ async function sendTestAlert() {
     const uniqueErrors = [...new Set((data.errors || []).filter(Boolean))];
     const setup = Array.isArray(data.setupRequired) && data.setupRequired.length ? `Setup needed: ${[...new Set(data.setupRequired)].join(" ")}` : "";
     const domainIssue = uniqueErrors.some((e) => /verify a domain|own email address/i.test(e));
-    const sentCount = (data.emailSent || 0) + (data.pushSent || 0);
-    if (response.ok && sentCount > 0) {
-      setPushStatus(`✅ Test sent to ${data.emailSent || 0} email and ${data.pushSent || 0} phone.`);
+    if (response.ok && data.emailSent > 0) {
+      setPushStatus(`Test email sent to ${profile.email}. Check your inbox and spam folder.`);
     } else if (domainIssue) {
       setPushStatus("✅ Email works — but Resend only delivers to your own inbox until you verify a domain (resend.com/domains). Verify one to reach all students.");
     } else {
@@ -1316,8 +1341,11 @@ async function sendTestPush() {
 
 renderFieldChoices();
 updateDashboardGreeting();
+rebuildPlaceholders();
+restoreSavedCompanies();
 renderOpenings();
 setFeatured();
+refreshSavedList();
 
 if (!restoreProfile()) {
   window.setTimeout(() => setOnboardingStep(1), 1200);
@@ -1339,7 +1367,6 @@ document.addEventListener("click", (event) => {
   const saveModalButton = event.target.closest("[data-save-modal]");
   const resetDemoButton = event.target.closest("[data-reset-demo]");
   const photoButton = event.target.closest("[data-photo-button]");
-  const resumeButton = event.target.closest("[data-resume-button]");
   const editProfileButton = event.target.closest("[data-edit-profile]");
   const saveProfileButton = event.target.closest("[data-save-profile-edits]");
   const closeProfileButton = event.target.closest("[data-close-profile-modal]");
@@ -1391,6 +1418,7 @@ document.addEventListener("click", (event) => {
 
   if (resetDemoButton) {
     localStorage.removeItem(profileStorageKey);
+    localStorage.removeItem(savedStorageKey);
     localStorage.removeItem("openingPushSubscription");
     window.location.reload();
   }
@@ -1399,9 +1427,6 @@ document.addEventListener("click", (event) => {
     document.querySelector("[data-photo-input]").click();
   }
 
-  if (resumeButton) {
-    document.querySelector("[data-resume-input]").click();
-  }
 
   if (editProfileButton) {
     openProfileEditor();
@@ -1472,14 +1497,6 @@ document.querySelector("[data-name-input]")?.addEventListener("input", () => set
 document.querySelector("[data-school-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-grad-year-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-major-input]")?.addEventListener("input", () => setAcademicError());
-
-document.querySelector("[data-resume-input]")?.addEventListener("change", (event) => {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  profile.resumeName = file.name;
-  document.querySelector("[data-resume-status]").textContent = `${file.name} added. Promptly will use it only to improve matches and recruiting timeline signals.`;
-  saveProfile();
-});
 
 document.addEventListener("keydown", (event) => {
   const row = event.target.closest?.(".opening-row[data-open-details]");
@@ -1624,6 +1641,7 @@ async function loadLiveOpenings() {
     if (!added) return;
 
     rebuildPlaceholders();
+    restoreSavedCompanies();
     renderFilterChips();
     renderOpenings();
     updateAlertBadge();

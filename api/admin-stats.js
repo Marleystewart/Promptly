@@ -5,6 +5,7 @@
 
 const { listSubscribers } = require("./_shared/store");
 const { getStats } = require("./_shared/analytics");
+const crypto = require("crypto");
 
 function mask(email) {
   if (!email) return "—";
@@ -12,11 +13,18 @@ function mask(email) {
   return (u ? u[0] + "***" : "") + "@" + (d || "");
 }
 
+function secretsMatch(provided, expected) {
+  const left = Buffer.from(String(provided || ""));
+  const right = Buffer.from(String(expected || ""));
+  return left.length === right.length && crypto.timingSafeEqual(left, right);
+}
+
 module.exports = async function handler(req, res) {
   const secret = process.env.ADMIN_SECRET || process.env.CRON_SECRET;
-  const provided = (req.query && req.query.secret) || "";
+  const authorization = String(req.headers.authorization || "");
+  const provided = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
   if (!secret) return res.status(401).json({ error: "Set ADMIN_SECRET in Vercel to use this." });
-  if (provided !== secret) return res.status(401).json({ error: "Unauthorized" });
+  if (!secretsMatch(provided, secret)) return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const { subscribers = [], setupRequired } = await listSubscribers();
