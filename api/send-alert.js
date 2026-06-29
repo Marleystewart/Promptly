@@ -15,6 +15,15 @@ function safeText(value, fallback, maxLength = 120) {
   return (text || fallback).slice(0, maxLength);
 }
 
+function safeUrl(value) {
+  try {
+    const url = new URL(String(value || "").trim());
+    return url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
 function normalizeTestOpening(value = {}) {
   return {
     company: safeText(value.company, fallbackOpening.company, 80),
@@ -22,6 +31,7 @@ function normalizeTestOpening(value = {}) {
     program: safeText(value.program, fallbackOpening.program, 80),
     deadline: safeText(value.deadline, fallbackOpening.deadline, 60),
     field: safeText(value.field, fallbackOpening.field, 60),
+    sourceUrl: safeUrl(value.sourceUrl),
   };
 }
 

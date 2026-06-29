@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "python3 -m http.server 4173"
+    "start": "python3 -m http.server 4173",
+    "test": "node tests/alerts.test.js"
   },
   "dependencies": {
     "web-push": "^3.6.7",

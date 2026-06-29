@@ -10,6 +10,15 @@ function escapeHtml(value = "") {
   }[char]));
 }
 
+function safeOfficialUrl(value = "") {
+  try {
+    const url = new URL(String(value).trim());
+    return url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
 function openingHtml(opening, subscriber) {
   const name = escapeHtml(subscriber.name || "there");
   const company = escapeHtml(opening.company);
@@ -17,6 +26,10 @@ function openingHtml(opening, subscriber) {
   const field = escapeHtml(opening.field || "career");
   const program = escapeHtml(opening.program || "Internship");
   const deadline = escapeHtml(opening.deadline || "Check posting");
+  const sourceUrl = safeOfficialUrl(opening.sourceUrl);
+  const sourceAction = sourceUrl
+    ? `<a href="${escapeHtml(sourceUrl)}" style="display:inline-block;background:#6841ff;color:#fff;text-decoration:none;font-weight:700;border-radius:8px;padding:13px 18px;margin:0 0 18px">Open Official Posting</a>`
+    : `<p style="color:#5b5870">Promptly has not verified a direct posting link for this alert yet.</p>`;
 
   return `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#14141f;max-width:560px;margin:0 auto;padding:24px">
     <h1 style="margin:0 0 12px;font-size:28px">${company} ${role} just opened.</h1>
@@ -24,6 +37,8 @@ function openingHtml(opening, subscriber) {
     <div style="background:#f4f1ff;border:1px solid #ded6ff;border-radius:16px;padding:18px;margin:20px 0">
       <strong>${company}</strong><br />${role} · ${program}<br />Deadline: ${deadline}
     </div>
+    ${sourceAction}
+    <p style="margin-top:0">Promptly alerts you to openings. Applications happen on the employer's official site.</p>
     <p style="color:#5b5870">You are receiving this because you signed up for Promptly alerts.</p>
   </div>`;
 }
@@ -62,7 +77,7 @@ async function sendPushAlert(opening, subscriber) {
     JSON.stringify({
       title: "Promptly",
       body: `${opening.company} ${opening.role} just opened.`,
-      url: "/",
+      url: safeOfficialUrl(opening.sourceUrl) || "/",
     })
   );
 
@@ -75,4 +90,4 @@ function matchesOpening(opening, subscriber) {
   return subscriber.fields.includes(opening.field);
 }
 
-module.exports = { sendEmailAlert, sendPushAlert, matchesOpening };
+module.exports = { sendEmailAlert, sendPushAlert, matchesOpening, openingHtml, safeOfficialUrl };

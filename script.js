@@ -599,6 +599,11 @@ const saved = new Map();
 const fallbackVapidPublicKey = "BCyh-h_0nZhnY6w4HNnvVD1HfCDG_cQfTwg-sLRIPO2yNAjwQdi5dckUS3NKNijENU5SI9uweHVga4ZlvZHlOB8";
 const profileStorageKey = "openingProfile";
 const savedStorageKey = "promptlySavedCompanies";
+let authClient = null;
+let authUser = null;
+let authMode = "signup";
+let accountSyncTimer = null;
+let accountSyncPaused = false;
 
 // --- Application status tracker (Applied → OA → Interview → Offer) ----------
 // Gives students a reason to come back (track their progress) and feeds the
@@ -917,6 +922,7 @@ function persistSavedCompanies() {
   try {
     localStorage.setItem(savedStorageKey, JSON.stringify([...saved.keys()]));
   } catch {}
+  scheduleAccountSync();
 }
 
 function restoreSavedCompanies() {
@@ -978,6 +984,227 @@ function updateAcademicProfile() {
 
 function saveProfile() {
   localStorage.setItem(profileStorageKey, JSON.stringify(profile));
+  scheduleAccountSync();
+}
+
+function accountProfile() {
+  return {
+    name: profile.name,
+    email: profile.email,
+    school: profile.school,
+    gradYear: profile.gradYear,
+    major: profile.major,
+    interests: profile.interests,
+    fields: Array.isArray(profile.fields) ? profile.fields : [],
+  };
+}
+
+function scheduleAccountSync() {
+  if (!authClient || !authUser || accountSyncPaused) return;
+  window.clearTimeout(accountSyncTimer);
+  accountSyncTimer = window.setTimeout(syncAccountState, 250);
+}
+
+async function syncAccountState() {
+  if (!authClient || !authUser || accountSyncPaused) return;
+  const { data, error } = await authClient.auth.updateUser({
+    data: {
+      promptly_profile: accountProfile(),
+      promptly_saved: [...saved.keys()],
+    },
+  });
+  if (!error && data?.user) authUser = data.user;
+  updateAccountUI(error ? "Account sync needs attention" : "Synced across devices");
+}
+
+function fillProfileInputs() {
+  document.querySelector("[data-name-input]").value = profile.name || "";
+  document.querySelector("[data-email-input]").value = profile.email || "";
+  document.querySelector("[data-school-input]").value = profile.school || "";
+  document.querySelector("[data-grad-year-input]").value = profile.gradYear || "";
+  document.querySelector("[data-major-input]").value = profile.major || "";
+  document.querySelector("[data-interests-input]").value = profile.interests || "";
+}
+
+function updateAccountUI(message = "") {
+  const status = document.querySelector("[data-account-status]");
+  const connect = document.querySelector("[data-connect-account]");
+  const signOut = document.querySelector("[data-sign-out]");
+  if (status) status.textContent = authUser ? (message || authUser.email || "Connected") : "Local profile";
+  if (connect) connect.hidden = Boolean(authUser);
+  if (signOut) signOut.hidden = !authUser;
+}
+
+function setAuthMode(mode) {
+  authMode = mode === "signin" ? "signin" : "signup";
+  document.querySelectorAll("[data-auth-mode]").forEach((button) => button.classList.toggle("active", button.dataset.authMode === authMode));
+  document.querySelector("[data-auth-name-group]").hidden = authMode === "signin";
+  document.querySelector("[data-auth-submit]").textContent = authMode === "signin" ? "Sign In" : "Create Account";
+  document.querySelector("[data-forgot-password]").hidden = authMode !== "signin" || !authClient;
+  document.querySelector("[data-password-input]").autocomplete = authMode === "signin" ? "current-password" : "new-password";
+  setSignupError();
+}
+
+function accountProfileIsComplete() {
+  return Boolean(profile.name && profile.email && profile.school && profile.gradYear && profile.major);
+}
+
+function applyAccountUser(user) {
+  authUser = user;
+  const remoteProfile = user?.user_metadata?.promptly_profile;
+  const remoteSaved = user?.user_metadata?.promptly_saved;
+  const pendingMigrationEmail = localStorage.getItem("promptlyPendingMigrationEmail") || "";
+  const shouldMigrateLocal = sessionStorage.getItem("promptlyMigrateLocal") === "1"
+    || pendingMigrationEmail.toLowerCase() === String(user?.email || "").toLowerCase();
+  accountSyncPaused = true;
+  if (remoteProfile && typeof remoteProfile === "object") {
+    Object.assign(profile, remoteProfile);
+  } else if (!shouldMigrateLocal) {
+    Object.assign(profile, {
+      name: "",
+      email: "",
+      school: "",
+      gradYear: "",
+      major: "",
+      interests: "",
+      photoDataUrl: "",
+      resumeName: "",
+      fields: [],
+    });
+  }
+  profile.email = user?.email || profile.email;
+  profile.name = profile.name || user?.user_metadata?.full_name || user?.user_metadata?.name || "";
+  fillProfileInputs();
+  localStorage.setItem(profileStorageKey, JSON.stringify(profile));
+  if (Array.isArray(remoteSaved)) {
+    localStorage.setItem(savedStorageKey, JSON.stringify(remoteSaved));
+    restoreSavedCompanies();
+    refreshSavedList();
+  } else if (!shouldMigrateLocal) {
+    saved.clear();
+    localStorage.setItem(savedStorageKey, "[]");
+    refreshSavedList();
+  }
+  accountSyncPaused = false;
+  sessionStorage.removeItem("promptlyMigrateLocal");
+  localStorage.removeItem("promptlyPendingMigrationEmail");
+  if (shouldMigrateLocal && !remoteProfile) scheduleAccountSync();
+  updateAccountUI();
+}
+
+async function initializeAuth() {
+  const authStatus = document.querySelector("[data-auth-status]");
+  try {
+    const response = await fetch("/api/auth-config", { headers: { Accept: "application/json" } });
+    const config = response.ok ? await response.json() : { enabled: false };
+    if (!config.enabled || !window.supabase?.createClient) {
+      document.querySelector("[data-auth-password-group]").hidden = true;
+      document.querySelector("[data-google-auth]").hidden = true;
+      document.querySelector(".auth-tabs").hidden = true;
+      authStatus.textContent = "Secure accounts are not connected yet. You can continue with a profile on this device.";
+      document.querySelector("[data-auth-submit]").textContent = "Continue";
+      updateAccountUI();
+      return;
+    }
+
+    authClient = window.supabase.createClient(config.url, config.publishableKey);
+    authStatus.textContent = "Your account securely keeps your profile and saved alerts in sync.";
+    const { data } = await authClient.auth.getSession();
+    if (data?.session?.user) {
+      applyAccountUser(data.session.user);
+      if (accountProfileIsComplete()) {
+        applyProfileToUI();
+        setView("home");
+      } else {
+        document.body.classList.add("onboarding-active");
+        setOnboardingStep(2);
+      }
+    }
+    authClient.auth.onAuthStateChange((event, session) => {
+      window.setTimeout(() => {
+        if (session?.user) applyAccountUser(session.user);
+        if (event === "SIGNED_OUT") {
+          authUser = null;
+          updateAccountUI();
+        }
+      }, 0);
+    });
+  } catch {
+    authStatus.textContent = "Account setup could not load. You can continue on this device and try again later.";
+  }
+}
+
+async function handleAuthSubmit() {
+  const email = document.querySelector("[data-email-input]").value.trim();
+  const password = document.querySelector("[data-password-input]").value;
+  const name = document.querySelector("[data-name-input]").value.trim();
+  const status = document.querySelector("[data-auth-status]");
+
+  if (!authClient) {
+    if (!validateSignup()) return;
+    profile.name = name;
+    profile.email = email;
+    setOnboardingStep(2);
+    return;
+  }
+  if (!isValidEmail(email)) return setSignupError("Use a properly formatted email address.");
+  if (password.length < 8) return setSignupError("Use a password with at least 8 characters.");
+  if (authMode === "signup" && !name) return setSignupError("Add your name first.");
+
+  setSignupError();
+  status.textContent = authMode === "signin" ? "Signing you in..." : "Creating your account...";
+  if (authMode === "signup") {
+    sessionStorage.setItem("promptlyMigrateLocal", "1");
+    localStorage.setItem("promptlyPendingMigrationEmail", email);
+  }
+  else sessionStorage.removeItem("promptlyMigrateLocal");
+  const result = authMode === "signin"
+    ? await authClient.auth.signInWithPassword({ email, password })
+    : await authClient.auth.signUp({ email, password, options: { data: { name } } });
+  if (result.error) {
+    sessionStorage.removeItem("promptlyMigrateLocal");
+    localStorage.removeItem("promptlyPendingMigrationEmail");
+    setSignupError(result.error.message || "Account setup failed.");
+    status.textContent = "Check your details and try again.";
+    return;
+  }
+
+  profile.name = name || result.data.user?.user_metadata?.name || profile.name;
+  profile.email = result.data.user?.email || email;
+  if (result.data.session?.user) {
+    applyAccountUser(result.data.session.user);
+    if (accountProfileIsComplete()) {
+      applyProfileToUI();
+      setView("home");
+    } else {
+      setOnboardingStep(2);
+    }
+  } else {
+    saveProfile();
+    status.textContent = "Check your email to confirm your account, then return here and sign in.";
+  }
+}
+
+async function signInWithGoogle() {
+  if (!authClient) return;
+  if (authMode === "signup") sessionStorage.setItem("promptlyMigrateLocal", "1");
+  else sessionStorage.removeItem("promptlyMigrateLocal");
+  const { error } = await authClient.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: window.location.origin },
+  });
+  if (error) {
+    sessionStorage.removeItem("promptlyMigrateLocal");
+    setSignupError(error.message || "Google sign-in could not start.");
+  }
+}
+
+async function sendPasswordReset() {
+  if (!authClient) return;
+  const email = document.querySelector("[data-email-input]").value.trim();
+  if (!isValidEmail(email)) return setSignupError("Enter your email first.");
+  const { error } = await authClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+  document.querySelector("[data-auth-status]").textContent = error ? error.message : "Password reset email sent.";
 }
 
 function isValidEmail(value) {
@@ -1082,6 +1309,7 @@ function applyProfileToUI() {
   document.querySelector("[data-profile-major]").textContent = profile.major || "Undecided";
   document.querySelector("[data-profile-interests]").textContent = profile.interests || "Not set";
   document.querySelector("[data-profile-fields]").textContent = profile.fields.length ? profile.fields.join(", ") : "All fields";
+  updateAccountUI();
   document.querySelector("[data-home-school]").textContent = profile.school || "Your school";
   document.querySelector("[data-home-year]").textContent = profile.gradYear ? `Class of ${profile.gradYear}` : "Graduation year";
   document.querySelector("[data-home-major]").textContent = profile.major || "Your major";
@@ -1103,6 +1331,7 @@ function updateProfilePhoto() {
 function openProfileEditor() {
   document.querySelector("[data-edit-name]").value = profile.name || "";
   document.querySelector("[data-edit-email]").value = profile.email || "";
+  document.querySelector("[data-edit-email]").readOnly = Boolean(authUser);
   document.querySelector("[data-edit-school]").value = profile.school || "";
   document.querySelector("[data-edit-year]").value = profile.gradYear || "";
   document.querySelector("[data-edit-major]").value = profile.major || "";
@@ -1136,12 +1365,7 @@ function restoreProfile() {
     const savedProfile = JSON.parse(localStorage.getItem(profileStorageKey) || "null");
     if (!savedProfile) return false;
     Object.assign(profile, savedProfile);
-    document.querySelector("[data-name-input]").value = profile.name || "";
-    document.querySelector("[data-email-input]").value = profile.email || "";
-    document.querySelector("[data-school-input]").value = profile.school || "";
-    document.querySelector("[data-grad-year-input]").value = profile.gradYear || "";
-    document.querySelector("[data-major-input]").value = profile.major || "";
-    document.querySelector("[data-interests-input]").value = profile.interests || "";
+    fillProfileInputs();
     if (profile.resumeName) document.querySelector("[data-resume-status]").textContent = "Resume matching is coming soon. Your current matches use your major, interests, goals, and alert fields.";
     applyProfileToUI();
     setView("home");
@@ -1330,6 +1554,7 @@ async function sendTestPush() {
         subscription: JSON.parse(raw),
         title: "Promptly",
         body: `${preferredOpenings()[0].company} ${preferredOpenings()[0].role} just opened.`,
+        url: preferredOpenings()[0].sourceUrl || "/",
       }),
     });
     const data = await response.json();
@@ -1350,6 +1575,7 @@ refreshSavedList();
 if (!restoreProfile()) {
   window.setTimeout(() => setOnboardingStep(1), 1200);
 }
+initializeAuth();
 
 document.addEventListener("click", (event) => {
   const nextButton = event.target.closest("[data-next-step]");
@@ -1370,6 +1596,28 @@ document.addEventListener("click", (event) => {
   const editProfileButton = event.target.closest("[data-edit-profile]");
   const saveProfileButton = event.target.closest("[data-save-profile-edits]");
   const closeProfileButton = event.target.closest("[data-close-profile-modal]");
+  const authModeButton = event.target.closest("[data-auth-mode]");
+  const authSubmitButton = event.target.closest("[data-auth-submit]");
+  const googleAuthButton = event.target.closest("[data-google-auth]");
+  const forgotPasswordButton = event.target.closest("[data-forgot-password]");
+  const connectAccountButton = event.target.closest("[data-connect-account]");
+  const signOutButton = event.target.closest("[data-sign-out]");
+
+  if (authModeButton) setAuthMode(authModeButton.dataset.authMode);
+  if (authSubmitButton) handleAuthSubmit();
+  if (googleAuthButton) signInWithGoogle();
+  if (forgotPasswordButton) sendPasswordReset();
+  if (connectAccountButton) {
+    sessionStorage.setItem("promptlyMigrateLocal", "1");
+    document.body.classList.add("onboarding-active");
+    setOnboardingStep(1);
+  }
+  if (signOutButton && authClient) {
+    authClient.auth.signOut().then(() => {
+      authUser = null;
+      updateAccountUI();
+    });
+  }
 
   if (nextButton) {
     if (nextButton.dataset.nextStep === "2" && !validateSignup()) return;
@@ -1417,6 +1665,7 @@ document.addEventListener("click", (event) => {
   }
 
   if (resetDemoButton) {
+    if (authClient) authClient.auth.signOut();
     localStorage.removeItem(profileStorageKey);
     localStorage.removeItem(savedStorageKey);
     localStorage.removeItem("openingPushSubscription");

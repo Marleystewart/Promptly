@@ -5,6 +5,15 @@ function readBody(req) {
   return req.body || {};
 }
 
+function safeUrl(value) {
+  try {
+    const url = new URL(String(value || "").trim());
+    return url.protocol === "https:" ? url.toString() : "/";
+  } catch {
+    return "/";
+  }
+}
+
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -31,7 +40,7 @@ module.exports = async function handler(req, res) {
       JSON.stringify({
         title: body.title || "Opening",
         body: body.body || "A new internship opening is live.",
-        url: "/",
+        url: safeUrl(body.url),
       })
     );
 

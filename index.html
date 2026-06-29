@@ -24,13 +24,21 @@
       </div>
 
       <div class="signup-card onboard-step" data-step="1">
-        <p class="eyebrow">Start here</p>
-        <h1>Tell us what you study. We’ll track what fits.</h1>
-        <p>Promptly is for every major, not just finance. Use any email and we’ll connect your major to the right internship fields.</p>
-        <label class="field-label">Name<input data-name-input type="text" placeholder="Your name" autocomplete="name" /></label>
+        <p class="eyebrow">Your account</p>
+        <h1>Build alerts around you.</h1>
+        <p>Create an account so your profile and saved alerts follow you across devices.</p>
+        <div class="auth-tabs" role="tablist" aria-label="Account action">
+          <button class="active" type="button" data-auth-mode="signup">Sign up</button>
+          <button type="button" data-auth-mode="signin">Sign in</button>
+        </div>
+        <label class="field-label" data-auth-name-group>Name<input data-name-input type="text" placeholder="Your name" autocomplete="name" /></label>
         <label class="field-label">Email<input data-email-input type="email" placeholder="you@example.com" autocomplete="email" /></label>
+        <label class="field-label" data-auth-password-group>Password<input data-password-input type="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" /></label>
         <p class="form-error" data-signup-error hidden></p>
-        <button class="primary-action wide" data-next-step="2">Create Account</button>
+        <button class="primary-action wide" type="button" data-auth-submit>Create Account</button>
+        <button class="soft-action wide auth-google" type="button" data-google-auth>Continue with Google</button>
+        <button class="text-action" type="button" data-forgot-password hidden>Forgot password?</button>
+        <p class="auth-status" data-auth-status>Checking secure account setup...</p>
       </div>
 
       <div class="signup-card onboard-step" data-step="2">
@@ -344,8 +352,11 @@
                 <div class="profile-row"><span>Major</span><strong data-profile-major>Not set</strong></div>
                 <div class="profile-row"><span>Interests</span><strong data-profile-interests>Not set</strong></div>
                 <div class="profile-row"><span>Alert fields</span><strong data-profile-fields>Technology, Healthcare</strong></div>
+                <div class="profile-row"><span>Account</span><strong data-account-status>Local profile</strong></div>
                 <div class="profile-actions">
                   <button class="tiny-action" data-edit-profile>Edit profile</button>
+                  <button class="tiny-action" data-connect-account>Connect account</button>
+                  <button class="tiny-action" data-sign-out hidden>Sign out</button>
                   <button class="tiny-action" data-reset-demo>Restart demo</button>
                 </div>
               </article>
@@ -431,7 +442,8 @@
       <p class="modal-note">Promptly does not submit applications. Use this alert to move fast, then apply on the employer's official site.</p>
     </dialog>
 
-    <script src="watchlist.js?v=20260627b"></script>
-    <script src="script.js?v=20260627b"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+    <script src="watchlist.js?v=20260629a"></script>
+    <script src="script.js?v=20260629a"></script>
   </body>
 </html>
