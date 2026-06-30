@@ -67,6 +67,8 @@ const COLLEGES = [
 const subFields = {
   Finance: ["All Finance", "Investment Banking", "Asset Management", "Private Equity", "Private Credit", "Hedge Fund", "Quant Trading", "Fintech", "Payments"],
   Consulting: ["All Consulting", "MBB", "Big 4", "Strategy", "Tech Consulting", "Economic Consulting"],
+  Sports: ["All Sports", "Teams & Leagues", "Sports Media", "Sports Technology", "Sports Marketing"],
+  "Real Estate": ["All Real Estate", "Development", "Investment", "Brokerage", "Property Technology"],
 };
 
 // Industry taxonomy — matches the data fields so a student's chosen interests
@@ -74,6 +76,7 @@ const subFields = {
 const FIELD_ORDER = [
   "Technology", "Finance", "Consulting", "Healthcare", "Law", "Government",
   "Media", "Marketing", "Consumer", "Engineering", "Science", "Nonprofit", "Education",
+  "Sports", "Real Estate",
 ];
 const fieldOptions = [...FIELD_ORDER];
 
@@ -91,13 +94,15 @@ const interestKeywords = {
   Science: ["science", "lab", "biology", "chemistry", "physics", "climate", "environment", "research"],
   Nonprofit: ["nonprofit", "social impact", "ngo", "charity", "volunteer", "humanitarian"],
   Education: ["education", "teaching", "learning", "school", "edtech", "tutoring"],
+  Sports: ["sports", "athletics", "basketball", "football", "baseball", "soccer", "league", "team operations", "sports media"],
+  "Real Estate": ["real estate", "property", "development", "brokerage", "commercial real estate", "proptech", "urban planning"],
 };
 
 const openings = [
 
   // ─────────────────────────────────────────────────────────────────────────
-  // EVERY entry below links to a specific job posting or dedicated program
-  // page — not a generic careers homepage. Source verified Jun 26, 2026.
+  // Live entries link to a specific job posting or dedicated program page.
+  // Links are revalidated before release; closed roles become awaiting cards.
   // ─────────────────────────────────────────────────────────────────────────
 
   // ── Technology ────────────────────────────────────────────────────────────
@@ -130,6 +135,7 @@ const openings = [
     program: "Summer 2027",
     deadline: "Opens Aug 15, 2026",
     opened: "Applications open Aug 15, 2026",
+    upcoming: true,
     sourceLabel: "Goldman Sachs – 2027 Summer Analyst Americas",
     sourceUrl: "https://www.goldmansachs.com/careers/students/programs-and-internships/americas/2027-summer-analyst-program",
   },
@@ -219,7 +225,7 @@ const openings = [
     deadline: "Rolling",
     opened: "Opened Apr 14, 2026",
     sourceLabel: "BCG – Associate Internship US",
-    sourceUrl: "https://careers.bcg.com/global/en/job/57657/Associate-Internship-US-Offices-US-Campus",
+    sourceUrl: null,
   },
   // Bain: specific job posting (job ID 10402)
   {
@@ -248,7 +254,7 @@ const openings = [
     deadline: "Rolling",
     opened: "Opened recently",
     sourceLabel: "PwC – Audit Intern Summer 2027",
-    sourceUrl: "https://jobs.us.pwc.com/job/indianapolis/audit-intern-summer-2027-destination-cpa/932/85153914320",
+    sourceUrl: null,
   },
   // Oliver Wyman: specific 2027 Summer Intern posting (Marsh McLennan ATS)
   {
@@ -263,7 +269,7 @@ const openings = [
     deadline: "See posting",
     opened: "Opened recently",
     sourceLabel: "Oliver Wyman – Summer 2027 Intern",
-    sourceUrl: "https://careers.marsh.com/global/en/job/MAMCGLOBALR342651EXTERNALENGLOBAL/Oliver-Wyman-Summer-2027-Intern-US",
+    sourceUrl: null,
   },
 
   // ── Finance — Investment Banking (verified specific 2027 postings) ─────────
@@ -305,7 +311,7 @@ const openings = [
     deadline: "Mar 28, 2026",
     opened: "Opened Jan 14, 2026",
     sourceLabel: "Bank of America – Global IB Summer Analyst 2027",
-    sourceUrl: "https://careers.bankofamerica.com/en-us/students/job-detail/13953/global-investment-banking-summer-analyst-program-2027-multiple-locations",
+    sourceUrl: null,
   },
   {
     company: "Citi",
@@ -318,7 +324,7 @@ const openings = [
     deadline: "Rolling",
     opened: "Opened Dec 15, 2025",
     sourceLabel: "Citi – Investment Banking Summer Analyst 2027",
-    sourceUrl: "https://jobs.citi.com/job/new-york/banking-investment-banking-summer-analyst-new-york-city-us-2027/287/89623967312",
+    sourceUrl: null,
   },
   {
     company: "Barclays",
@@ -331,7 +337,7 @@ const openings = [
     deadline: "Mar 4, 2026",
     opened: "Opened Nov 30, 2025",
     sourceLabel: "Barclays – Banking Summer Internship 2027",
-    sourceUrl: "https://search.jobs.barclays/job/new-york/banking-analyst-coverage-m-and-a-summer-internship-program-2027-new-york-city/13015/89084599680",
+    sourceUrl: null,
   },
   {
     company: "Lazard",
@@ -370,7 +376,7 @@ const openings = [
     deadline: "Jan 30, 2026",
     opened: "Opened Nov 4, 2025",
     sourceLabel: "RBC – 2027 Global IB Summer Analyst",
-    sourceUrl: "https://jobs.rbc.com/ca/en/job/R-0000146919/2027-Capital-Markets-Global-Investment-Banking-Summer-Analyst",
+    sourceUrl: null,
   },
   {
     company: "Wells Fargo",
@@ -383,7 +389,7 @@ const openings = [
     deadline: "Apr 29, 2026",
     opened: "Opened Dec 31, 2025",
     sourceLabel: "Wells Fargo – 2027 IB Summer Internship",
-    sourceUrl: "https://www.wellsfargojobs.com/en/jobs/r-512552/2027-summer-internship-early-careers-investment-banking/",
+    sourceUrl: null,
   },
   {
     company: "Moelis & Company",
@@ -409,7 +415,7 @@ const openings = [
     deadline: "Rolling",
     opened: "Opened Jan 4, 2026",
     sourceLabel: "Guggenheim Securities – 2027 IB Summer Analyst",
-    sourceUrl: "https://guggenheim.wd1.myworkdayjobs.com/en-US/Guggenheim_Careers_Campus/job/XMLNAME-2027-Guggenheim-Securities-Investment-Banking-Summer-Analyst---New-York-Generalist-Program_14530-2",
+    sourceUrl: null,
   },
   {
     company: "PJT Partners",
@@ -422,7 +428,7 @@ const openings = [
     deadline: "May 24, 2026",
     opened: "Opened Jan 1, 2026",
     sourceLabel: "PJT Partners – 2027 Summer Analyst",
-    sourceUrl: "https://pjtpartners.wd1.myworkdayjobs.com/en-US/Students/job/XMLNAME-2027-Summer-Analyst---PJT-Camberview_R0003165",
+    sourceUrl: null,
   },
 
   // ── Finance — Private Equity (verified specific 2027 postings) ─────────────
@@ -438,7 +444,7 @@ const openings = [
     deadline: "May 24, 2026",
     opened: "Opened Jan 1, 2026",
     sourceLabel: "Bain Capital – 2027 PE Summer Analyst",
-    sourceUrl: "https://baincapital.wd1.myworkdayjobs.com/en-US/External_Public/job/XMLNAME-2027-Summer-Analyst--Path-into-Private-Equity_REQ_108108-1",
+    sourceUrl: null,
   },
   {
     company: "General Atlantic",
@@ -451,7 +457,7 @@ const openings = [
     deadline: "Rolling",
     opened: "Opened Jan 5, 2026",
     sourceLabel: "General Atlantic – 2027 Summer Analyst",
-    sourceUrl: "https://job-boards.greenhouse.io/generalatlantic/jobs/5748126004",
+    sourceUrl: null,
   },
   {
     company: "Ares Management",
@@ -464,7 +470,7 @@ const openings = [
     deadline: "Opens Aug 31, 2026",
     opened: "Applications open Aug 2026",
     sourceLabel: "Ares Management – 2027 Summer Intern",
-    sourceUrl: "https://aresmgmt.wd1.myworkdayjobs.com/en-US/external/job/New-York-NY/XMLNAME-2027-Summer-Intern_R7530",
+    sourceUrl: null,
   },
 
   // ── Finance — Hedge Funds & Asset Management (verified specific 2027) ──────
@@ -480,7 +486,7 @@ const openings = [
     deadline: "Rolling",
     opened: "Opened Nov 19, 2025",
     sourceLabel: "Point72 – 2027 Academy Investment Analyst",
-    sourceUrl: "https://job-boards.greenhouse.io/point72/jobs/8295501002",
+    sourceUrl: null,
   },
   {
     company: "D.E. Shaw",
@@ -519,9 +525,29 @@ const openings = [
     deadline: "Rolling",
     opened: "Opened Feb 26, 2026",
     sourceLabel: "Millennium – Investment Internship 2027",
-    sourceUrl: "https://campusjobs.mlp.com/careers/job/755954628827-millennium-investment-internship-2027-new-york-new-york-new-york-united-states-of-america?domain=mlp.com&microsite=campus-site",
+    sourceUrl: null,
   },
 ];
+
+// These postings were confirmed closed or redirected away from the role on
+// June 30, 2026. Keep the companies visible as watch targets, but never show
+// an official-posting button until a verified live feed replaces the card.
+const closedCuratedCompanies = new Set([
+  "BCG", "PwC", "Oliver Wyman", "Bank of America", "Citi", "Barclays",
+  "RBC Capital Markets", "Wells Fargo", "Guggenheim Securities", "PJT Partners",
+  "Bain Capital", "General Atlantic", "Ares Management", "Point72", "Millennium",
+]);
+for (const item of openings) {
+  if (!closedCuratedCompanies.has(item.company)) continue;
+  Object.assign(item, {
+    deadline: "—",
+    opened: "Awaiting posting",
+    sourceLabel: null,
+    sourceUrl: null,
+    awaiting: true,
+    curatedAwaiting: true,
+  });
+}
 
 // Watch-list directory: companies we track that have no live posting yet.
 // They render as "Awaiting 2027 posting" cards until the pipeline finds a real
@@ -530,7 +556,9 @@ const watchlist = (typeof window !== "undefined" && Array.isArray(window.WATCHLI
 
 function rebuildPlaceholders() {
   // remove old placeholders
-  for (let i = openings.length - 1; i >= 0; i--) if (openings[i].awaiting) openings.splice(i, 1);
+  for (let i = openings.length - 1; i >= 0; i--) {
+    if (openings[i].awaiting && !openings[i].curatedAwaiting) openings.splice(i, 1);
+  }
   // add a placeholder for any watched company that has no real opening
   const have = new Set(openings.map((o) => o.company.toLowerCase()));
   for (const c of watchlist) {
@@ -549,6 +577,7 @@ function rebuildPlaceholders() {
       sourceLabel: null,
       sourceUrl: null,
       awaiting: true,
+      generatedPlaceholder: true,
     });
   }
 }
@@ -587,6 +616,11 @@ const profile = {
   photoDataUrl: "",
   resumeName: "",
   fields: [],
+  savedAlerts: [],
+  emailNotifications: true,
+  pushNotifications: true,
+  weeklyRecap: true,
+  deadlineReminders: true,
 };
 
 const views = document.querySelectorAll(".view");
@@ -840,6 +874,60 @@ function updateAlertIntelligence() {
   document.querySelector("[data-alert-profile-copy]").textContent = `${school} context, ${profile.gradYear ? `Class of ${profile.gradYear}` : "class year"}, and your interests decide which alerts rise first.`;
   document.querySelector("[data-next-window]").textContent = next.title;
   document.querySelector("[data-next-window-copy]").textContent = next.copy;
+  updateAlertPulse();
+}
+
+const seenAlertsStorageKey = "promptlySeenAlerts";
+
+function alertIdentity(item) {
+  return item.sourceUrl || `${item.company}|${item.role}|${item.program}`;
+}
+
+function matchingLiveOpenings() {
+  return preferredOpenings().filter((item) => {
+    if (isAwaitingLike(item)) return false;
+    return !profile.fields.length || profile.fields.includes(item.field);
+  });
+}
+
+function readSeenAlerts() {
+  try {
+    const value = JSON.parse(localStorage.getItem(seenAlertsStorageKey) || "[]");
+    return new Set(Array.isArray(value) ? value : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function updateAlertPulse() {
+  const title = document.querySelector("[data-return-pulse]");
+  const copy = document.querySelector("[data-return-pulse-copy]");
+  if (!title || !copy) return;
+
+  const matches = matchingLiveOpenings();
+  const stored = localStorage.getItem(seenAlertsStorageKey);
+  if (!stored) {
+    localStorage.setItem(seenAlertsStorageKey, JSON.stringify(matches.map(alertIdentity)));
+    title.textContent = "Your watchlist is active.";
+    copy.textContent = `${matches.length} verified matches fit your current alert profile. New postings will appear here first.`;
+    return;
+  }
+
+  const seen = readSeenAlerts();
+  const unseen = matches.filter((item) => !seen.has(alertIdentity(item)));
+  title.textContent = unseen.length
+    ? `${unseen.length} new ${unseen.length === 1 ? "match" : "matches"} since your last review.`
+    : "You're caught up.";
+  copy.textContent = unseen.length
+    ? `Open Live Openings to review what changed across ${topFields().join(", ") || "your fields"}.`
+    : `Promptly is still monitoring ${matches.length} verified matches for your profile.`;
+}
+
+function markMatchingAlertsSeen() {
+  const seen = readSeenAlerts();
+  matchingLiveOpenings().forEach((item) => seen.add(alertIdentity(item)));
+  localStorage.setItem(seenAlertsStorageKey, JSON.stringify([...seen].slice(-500)));
+  updateAlertPulse();
 }
 
 // Cap how many rows render at once. 200+ image rows crashes mobile Safari
@@ -879,6 +967,8 @@ function setView(name) {
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
   title.textContent = name === "home" ? greetingText() : view.dataset.heading;
   window.scrollTo({ top: 0, behavior: "smooth" });
+
+  if (name === "openings") markMatchingAlertsSeen();
 
   if (name === "alerts") {
     const list = document.querySelector(".alerts-recent-list");
@@ -943,6 +1033,16 @@ function persistSavedCompanies() {
   try {
     localStorage.setItem(savedStorageKey, JSON.stringify([...saved.keys()]));
   } catch {}
+  profile.savedAlerts = [...saved.values()].map((item) => ({
+    company: item.company,
+    role: item.role,
+    program: item.program,
+    deadline: item.deadline,
+    field: item.field,
+    sourceUrl: item.sourceUrl,
+  }));
+  saveProfile();
+  saveSubscriber();
   scheduleAccountSync();
 }
 
@@ -955,6 +1055,14 @@ function restoreSavedCompanies() {
       const item = openings.find((opening) => opening.company === company);
       if (item) saved.set(item.company, item);
     });
+    profile.savedAlerts = [...saved.values()].map((item) => ({
+      company: item.company,
+      role: item.role,
+      program: item.program,
+      deadline: item.deadline,
+      field: item.field,
+      sourceUrl: item.sourceUrl,
+    }));
   } catch {}
 }
 
@@ -1023,6 +1131,10 @@ function accountProfile() {
     willingToRelocate: profile.willingToRelocate,
     interests: profile.interests,
     fields: Array.isArray(profile.fields) ? profile.fields : [],
+    emailNotifications: profile.emailNotifications !== false,
+    pushNotifications: profile.pushNotifications !== false,
+    weeklyRecap: profile.weeklyRecap !== false,
+    deadlineReminders: profile.deadlineReminders !== false,
   };
 }
 
@@ -1103,6 +1215,11 @@ function applyAccountUser(user) {
       photoDataUrl: "",
       resumeName: "",
       fields: [],
+      savedAlerts: [],
+      emailNotifications: true,
+      pushNotifications: true,
+      weeklyRecap: true,
+      deadlineReminders: true,
     });
   }
   profile.email = user?.email || profile.email;
@@ -1378,6 +1495,9 @@ function applyProfileToUI() {
   document.querySelector("[data-home-year]").textContent = profile.gradYear ? `Class of ${profile.gradYear}` : "Graduation year";
   document.querySelector("[data-home-major]").textContent = profile.major || "Your major";
   document.querySelector(".watch-card span").textContent = String(36 + profile.fields.length * 8);
+  document.querySelectorAll("[data-notification-pref]").forEach((input) => {
+    input.checked = profile[input.dataset.notificationPref] !== false;
+  });
   updateAlertIntelligence();
   setFeatured();
   renderOpenings();
@@ -1637,6 +1757,31 @@ async function sendTestPush() {
   }
 }
 
+async function sendTestWeeklyRecap() {
+  if (!validateSignup()) {
+    setView("home");
+    return;
+  }
+  setPushStatus("Sending your weekly recap test...");
+  try {
+    const raw = localStorage.getItem("openingPushSubscription");
+    const response = await fetch("/api/send-recap", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        profile,
+        subscription: raw ? JSON.parse(raw) : null,
+      }),
+    });
+    const data = await response.json();
+    setPushStatus(response.ok
+      ? `Weekly recap sent with ${data.count} matching alerts. Check your inbox.`
+      : data.error || data.setupRequired || "Weekly recap test failed.");
+  } catch {
+    setPushStatus("Weekly recap test failed. Redeploy Promptly, then try again.");
+  }
+}
+
 renderFieldChoices();
 updateDashboardGreeting();
 rebuildPlaceholders();
@@ -1663,6 +1808,7 @@ document.addEventListener("click", async (event) => {
   const enablePushButton = event.target.closest("[data-enable-push]");
   const sendTestButton = event.target.closest("[data-send-test-push]");
   const sendTestAlertButton = event.target.closest("[data-send-test-alert]");
+  const sendWeeklyRecapButton = event.target.closest("[data-send-weekly-recap]");
   const saveModalButton = event.target.closest("[data-save-modal]");
   const resetDemoButton = event.target.closest("[data-reset-demo]");
   const photoButton = event.target.closest("[data-photo-button]");
@@ -1724,6 +1870,10 @@ document.addEventListener("click", async (event) => {
 
   if (sendTestAlertButton) {
     sendTestAlert();
+  }
+
+  if (sendWeeklyRecapButton) {
+    sendTestWeeklyRecap();
   }
 
   if (saveModalButton && modal.dataset.company) {
@@ -1817,6 +1967,13 @@ document.querySelector("[data-school-input]")?.addEventListener("input", () => s
 document.querySelector("[data-grad-year-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-major-input]")?.addEventListener("input", () => setAcademicError());
 
+document.querySelectorAll("[data-notification-pref]").forEach((input) => {
+  input.addEventListener("change", () => {
+    profile[input.dataset.notificationPref] = input.checked;
+    saveProfile();
+    saveSubscriber();
+  });
+});
 document.addEventListener("keydown", (event) => {
   const row = event.target.closest?.(".opening-row[data-open-details]");
   if (!row || !["Enter", " "].includes(event.key)) return;
@@ -1953,6 +2110,11 @@ async function loadLiveOpenings() {
     let added = 0;
     for (const item of live) {
       if (!item || !item.sourceUrl || seen.has(item.sourceUrl)) continue;
+      for (let i = openings.length - 1; i >= 0; i--) {
+        if (openings[i].awaiting && openings[i].company.toLowerCase() === item.company.toLowerCase()) {
+          openings.splice(i, 1);
+        }
+      }
       seen.add(item.sourceUrl);
       openings.push(item);
       added += 1;
@@ -1964,6 +2126,7 @@ async function loadLiveOpenings() {
     renderFilterChips();
     renderOpenings();
     updateAlertBadge();
+    updateAlertPulse();
     if (typeof renderPeerPulse === "function") renderPeerPulse();
   } catch (err) {
     // Offline or API not configured — curated baseline already rendered.

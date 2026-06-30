@@ -243,4 +243,24 @@ window.WATCHLIST = [
   { company: "Coursera", short: "COUR", logoClass: "edu", field: "Education", logo: "assets/logos/coursera.png" },
   { company: "Pearson", short: "PSO", logoClass: "edu", field: "Education", logo: "assets/logos/pearson.png" },
   { company: "2U", short: "TWOU", logoClass: "edu", field: "Education", logo: "assets/logos/2u.png" },
+
+  // ── Sports ───────────────────────────────────────────────────────────────
+  { company: "The Athletic", short: "ATH", logoClass: "media", field: "Sports", subField: "Sports Media" },
+  { company: "ESPN", short: "ESPN", logoClass: "media", field: "Sports", subField: "Sports Media" },
+  { company: "NBA", short: "NBA", logoClass: "media", field: "Sports", subField: "Teams & Leagues" },
+  { company: "NFL", short: "NFL", logoClass: "media", field: "Sports", subField: "Teams & Leagues" },
+  { company: "MLB", short: "MLB", logoClass: "media", field: "Sports", subField: "Teams & Leagues" },
+  { company: "Fanatics", short: "FAN", logoClass: "consumer", field: "Sports", subField: "Sports Technology" },
+  { company: "DraftKings", short: "DK", logoClass: "tech", field: "Sports", subField: "Sports Technology" },
+  { company: "Wasserman", short: "WASS", logoClass: "mkt", field: "Sports", subField: "Sports Marketing" },
+
+  // ── Real Estate ──────────────────────────────────────────────────────────
+  { company: "VTS", short: "VTS", logoClass: "consumer", field: "Real Estate", subField: "Property Technology" },
+  { company: "CBRE", short: "CBRE", logoClass: "consumer", field: "Real Estate", subField: "Brokerage" },
+  { company: "JLL", short: "JLL", logoClass: "consumer", field: "Real Estate", subField: "Brokerage" },
+  { company: "Cushman & Wakefield", short: "C&W", logoClass: "consumer", field: "Real Estate", subField: "Brokerage" },
+  { company: "Prologis", short: "PLD", logoClass: "consumer", field: "Real Estate", subField: "Development" },
+  { company: "Related Companies", short: "REL", logoClass: "consumer", field: "Real Estate", subField: "Development" },
+  { company: "Zillow", short: "ZG", logoClass: "tech", field: "Real Estate", subField: "Property Technology" },
+  { company: "Blackstone Real Estate", short: "BXRE", logoClass: "fin", field: "Real Estate", subField: "Investment" },
 ];

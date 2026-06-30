@@ -1,10 +1,10 @@
 // Scheduled refresh: pulls live 2027 US internships from employer ATS feeds,
 // stores them in Redis, and notifies matching subscribers about any listing
 // that is NEW since the last run. Triggered by Vercel Cron (see vercel.json,
-// every 6 hours) and callable manually at /api/refresh-openings.
+// each morning) and callable manually at /api/refresh-openings.
 //
-// If CRON_SECRET is set, manual calls must pass ?secret=... (Vercel Cron is
-// always allowed via its x-vercel-cron header).
+// If CRON_SECRET is set, manual calls must pass ?secret=.... Vercel Cron
+// authenticates with the same secret in the Authorization header.
 
 const { aggregateOpenings } = require("./_shared/aggregator");
 const { saveLiveOpenings, getLiveOpenings } = require("./_shared/openings-store");
@@ -42,7 +42,7 @@ async function notifySubscribers(newOpenings) {
 
 module.exports = async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
-  const isVercelCron = Boolean(req.headers["x-vercel-cron"]);
+  const isVercelCron = Boolean(secret && req.headers.authorization === `Bearer ${secret}`);
   const provided = (req.query && req.query.secret) || "";
   if (secret && !isVercelCron && provided !== secret) {
     return res.status(401).json({ error: "Unauthorized" });

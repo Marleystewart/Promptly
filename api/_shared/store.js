@@ -27,6 +27,16 @@ async function getRedis() {
 
 function normalizeSubscriber(profile = {}, subscription = null) {
   const email = String(profile.email || "").trim().toLowerCase();
+  const savedAlerts = Array.isArray(profile.savedAlerts)
+    ? profile.savedAlerts.slice(0, 50).map((item) => ({
+      company: String(item.company || "").trim(),
+      role: String(item.role || "").trim(),
+      program: String(item.program || "").trim(),
+      deadline: String(item.deadline || "").trim(),
+      field: String(item.field || "").trim(),
+      sourceUrl: String(item.sourceUrl || "").trim(),
+    })).filter((item) => item.company && item.role)
+    : [];
   return {
     email,
     name: String(profile.name || "").trim() || "there",
@@ -41,6 +51,9 @@ function normalizeSubscriber(profile = {}, subscription = null) {
     pushSubscription: subscription || profile.pushSubscription || null,
     emailNotifications: profile.emailNotifications !== false,
     pushNotifications: profile.pushNotifications !== false,
+    weeklyRecap: profile.weeklyRecap !== false,
+    deadlineReminders: profile.deadlineReminders !== false,
+    savedAlerts,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -91,4 +104,29 @@ async function takeTestAlertSlot(email, requester = "") {
   return { allowed: Boolean(emailSlot && requesterSlot), stored: true };
 }
 
-module.exports = { readBody, saveSubscriber, listSubscribers, normalizeSubscriber, hasRedisEnv, takeTestAlertSlot };
+async function claimOnce(key, ttlSeconds) {
+  const redis = await getRedis();
+  if (!redis) return true;
+  const result = await redis.set(`promptly:delivery:${key}`, new Date().toISOString(), {
+    nx: true,
+    ex: ttlSeconds,
+  });
+  return result === "OK";
+}
+
+async function releaseClaim(key) {
+  const redis = await getRedis();
+  if (!redis) return;
+  await redis.del(`promptly:delivery:${key}`);
+}
+
+module.exports = {
+  readBody,
+  saveSubscriber,
+  listSubscribers,
+  normalizeSubscriber,
+  hasRedisEnv,
+  takeTestAlertSlot,
+  claimOnce,
+  releaseClaim,
+};

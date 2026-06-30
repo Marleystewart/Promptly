@@ -110,6 +110,17 @@ const SOURCES = [
   { company: "Mixpanel", short: "MIXP", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "mixpanel" },
   // Healthcare / biotech
   { company: "Flatiron Health", short: "FLAT", logoClass: "health", field: "Healthcare", ats: "greenhouse", board: "flatironhealth" },
+
+  // Broader student coverage across underrepresented fields
+  { company: "Anduril Industries", short: "AND", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "greenhouse", board: "andurilindustries" },
+  { company: "Zipline", short: "ZIP", logoClass: "eng", field: "Engineering", subField: "Robotics", ats: "greenhouse", board: "flyzipline" },
+  { company: "Vox Media", short: "VOX", logoClass: "media", field: "Media", subField: "Digital Media", ats: "greenhouse", board: "voxmedia" },
+  { company: "Wikimedia Foundation", short: "WIKI", logoClass: "npo", field: "Nonprofit", subField: "Technology & Knowledge", ats: "greenhouse", board: "wikimedia" },
+  { company: "Oscar Health", short: "OSCR", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "oscar" },
+  { company: "Glossier", short: "GLOS", logoClass: "consumer", field: "Consumer", subField: "Beauty", ats: "greenhouse", board: "glossier" },
+  { company: "Coursera", short: "COUR", logoClass: "edu", field: "Education", subField: "Education Technology", ats: "greenhouse", board: "coursera" },
+  { company: "The Athletic", short: "ATH", logoClass: "media", field: "Sports", subField: "Sports Media", ats: "lever", board: "theathletic" },
+  { company: "VTS", short: "VTS", logoClass: "consumer", field: "Real Estate", subField: "Property Technology", ats: "greenhouse", board: "vts" },
 ];
 
 module.exports = { SOURCES };

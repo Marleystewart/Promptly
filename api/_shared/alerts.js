@@ -44,24 +44,84 @@ function openingHtml(opening, subscriber) {
   </div>`;
 }
 
-async function sendEmailAlert(opening, subscriber) {
+function safeUrl(value = "") {
+  const url = safeOfficialUrl(value);
+  return url ? escapeHtml(url) : "";
+}
+
+function alertCard(opening) {
+  const company = escapeHtml(opening.company);
+  const role = escapeHtml(opening.role);
+  const program = escapeHtml(opening.program || "Internship");
+  const deadline = escapeHtml(opening.deadline || "Check posting");
+  const url = safeUrl(opening.sourceUrl);
+  return `<div style="background:#f4f1ff;border:1px solid #ded6ff;border-radius:14px;padding:16px;margin:12px 0">
+    <strong>${company}</strong><br />${role} · ${program}<br />
+    <span style="color:#5b5870">Deadline: ${deadline}</span>
+    ${url ? `<br /><a href="${url}" style="display:inline-block;margin-top:10px;color:#5b35e8;font-weight:700">View official posting</a>` : ""}
+  </div>`;
+}
+
+function weeklyRecapHtml(openings, subscriber) {
+  const name = escapeHtml(subscriber.name || "there");
+  const fields = Array.isArray(subscriber.fields) && subscriber.fields.length
+    ? escapeHtml(subscriber.fields.slice(0, 4).join(", "))
+    : "your interests";
+  return `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#14141f;max-width:600px;margin:0 auto;padding:24px">
+    <p style="color:#6d48ff;font-weight:800;margin:0 0 8px">YOUR PROMPTLY WEEKLY RECAP</p>
+    <h1 style="margin:0 0 12px;font-size:28px">${openings.length} matches worth reviewing.</h1>
+    <p>Hey ${name}, here are the strongest current alerts for ${fields}. Promptly only links to employer sources.</p>
+    ${openings.map(alertCard).join("")}
+    <p style="color:#5b5870">You can adjust recap and reminder settings from your Promptly profile.</p>
+  </div>`;
+}
+
+function deadlineReminderHtml(opening, subscriber, daysLeft) {
+  const name = escapeHtml(subscriber.name || "there");
+  const timing = daysLeft === 1 ? "tomorrow" : `in ${daysLeft} days`;
+  return `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#14141f;max-width:560px;margin:0 auto;padding:24px">
+    <p style="color:#6d48ff;font-weight:800;margin:0 0 8px">SAVED ALERT REMINDER</p>
+    <h1 style="margin:0 0 12px;font-size:28px">${escapeHtml(opening.company)} closes ${timing}.</h1>
+    <p>Hey ${name}, you saved this alert and asked Promptly to keep the deadline visible.</p>
+    ${alertCard(opening)}
+  </div>`;
+}
+
+async function sendEmail({ to, subject, html }) {
   if (!process.env.RESEND_API_KEY) {
     return { sent: false, setupRequired: "Add RESEND_API_KEY in Vercel." };
   }
-
   const { Resend } = await import("resend");
   const resend = new Resend(process.env.RESEND_API_KEY);
   const from = process.env.ALERT_FROM_EMAIL || "Promptly <onboarding@resend.dev>";
+  const { data, error } = await resend.emails.send({ from, to: [to], subject, html });
+  if (error) return { sent: false, error: error.message || "Email failed." };
+  return { sent: true, id: data && data.id };
+}
 
-  const { data, error } = await resend.emails.send({
-    from,
-    to: [subscriber.email],
+async function sendEmailAlert(opening, subscriber) {
+  return sendEmail({
+    to: subscriber.email,
     subject: `${opening.company} ${opening.role} just opened`,
     html: openingHtml(opening, subscriber),
   });
+}
 
-  if (error) return { sent: false, error: error.message || "Email failed." };
-  return { sent: true, id: data && data.id };
+async function sendWeeklyRecap(openings, subscriber) {
+  return sendEmail({
+    to: subscriber.email,
+    subject: `Your Promptly weekly recap: ${openings.length} matches`,
+    html: weeklyRecapHtml(openings, subscriber),
+  });
+}
+
+async function sendDeadlineReminder(opening, subscriber, daysLeft) {
+  const timing = daysLeft === 1 ? "tomorrow" : `in ${daysLeft} days`;
+  return sendEmail({
+    to: subscriber.email,
+    subject: `${opening.company} closes ${timing}`,
+    html: deadlineReminderHtml(opening, subscriber, daysLeft),
+  });
 }
 
 async function sendPushAlert(opening, subscriber) {
@@ -85,10 +145,35 @@ async function sendPushAlert(opening, subscriber) {
   return { sent: true };
 }
 
+async function sendDeadlinePush(opening, subscriber, daysLeft) {
+  const publicKey = process.env.VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  const subject = process.env.VAPID_SUBJECT || "mailto:hello@example.com";
+  if (!subscriber.pushSubscription) return { sent: false, skipped: "No phone subscription saved." };
+  if (!publicKey || !privateKey) return { sent: false, setupRequired: "Add VAPID push keys in Vercel." };
+  webpush.setVapidDetails(subject, publicKey, privateKey);
+  const timing = daysLeft === 1 ? "tomorrow" : `in ${daysLeft} days`;
+  await webpush.sendNotification(subscriber.pushSubscription, JSON.stringify({
+    title: "Promptly deadline reminder",
+    body: `${opening.company} ${opening.role} closes ${timing}.`,
+    url: safeOfficialUrl(opening.sourceUrl) || "/",
+  }));
+  return { sent: true };
+}
+
 function matchesOpening(opening, subscriber) {
   if (!opening.field) return true;
   if (!Array.isArray(subscriber.fields) || subscriber.fields.length === 0) return true;
   return subscriber.fields.includes(opening.field);
 }
 
-module.exports = { sendEmailAlert, sendPushAlert, matchesOpening, openingHtml, safeOfficialUrl };
+module.exports = {
+  sendEmailAlert,
+  sendPushAlert,
+  sendWeeklyRecap,
+  sendDeadlineReminder,
+  sendDeadlinePush,
+  matchesOpening,
+  openingHtml,
+  safeOfficialUrl,
+};

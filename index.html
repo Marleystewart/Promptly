@@ -181,6 +181,11 @@
               <h3>After an alert lands</h3>
               <p>Open the official source, save the deadline, and apply on the employer's site when the role fits.</p>
             </article>
+            <article>
+              <span class="status-pill">ALERT PULSE</span>
+              <h3 data-return-pulse>Your watchlist is active.</h3>
+              <p data-return-pulse-copy>Promptly will show what changed since your last review.</p>
+            </article>
           </section>
 
           <div class="home-grid">
@@ -226,6 +231,8 @@
             <button class="filter-chip">Science</button>
             <button class="filter-chip">Nonprofit</button>
             <button class="filter-chip">Education</button>
+            <button class="filter-chip">Sports</button>
+            <button class="filter-chip">Real Estate</button>
           </div>
 
           <div class="section-head">
@@ -375,13 +382,16 @@
                 <span class="status-pill">PHONE ALERTS</span>
                 <h2>Push Notifications</h2>
                 <p style="color:var(--muted);font-size:14px;margin:10px 0 16px;">Get instant lock-screen alerts when a matching internship drops. Add Promptly to your Home Screen first on iPhone.</p>
-                <label><span>Push notifications<small>Instant openings on your device</small></span><input type="checkbox" checked /></label>
-                <label><span>Email alerts<small>Matched openings sent to your inbox</small></span><input type="checkbox" checked /></label>
+                <label><span>Push notifications<small>Instant openings on your device</small></span><input type="checkbox" data-notification-pref="pushNotifications" checked /></label>
+                <label><span>Email alerts<small>Matched openings sent to your inbox</small></span><input type="checkbox" data-notification-pref="emailNotifications" checked /></label>
+                <label><span>Weekly recap<small>Your strongest matches every Monday</small></span><input type="checkbox" data-notification-pref="weeklyRecap" checked /></label>
+                <label><span>Deadline reminders<small>Seven days and one day before saved alerts close</small></span><input type="checkbox" data-notification-pref="deadlineReminders" checked /></label>
                 <label><span>Text alerts<small>Coming next with SMS setup</small></span><input type="checkbox" disabled /></label>
                 <div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
                   <button class="primary-action wide" data-enable-push>Enable Phone Notifications</button>
                   <button class="soft-action wide" data-send-test-push>Send Test Notification</button>
                   <button class="soft-action wide" data-send-test-alert>Send Test Email</button>
+                  <button class="soft-action wide" data-send-weekly-recap>Send Test Weekly Recap</button>
                 </div>
                 <p class="alert-status" data-push-status>Tap Enable Phone Notifications first. If you are on iPhone, open Promptly from the Home Screen app icon.</p>
               </article>
