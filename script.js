@@ -1191,6 +1191,19 @@ function accountProfileIsComplete() {
   return Boolean(profile.name && profile.email && profile.school && profile.gradYear && profile.major);
 }
 
+const routeAuthenticatedUser = window.PromptlyAuthRouting.createAuthenticatedUserRouter({
+  applyUser: applyAccountUser,
+  isComplete: accountProfileIsComplete,
+  showComplete() {
+    applyProfileToUI();
+    setView("home");
+  },
+  showIncomplete() {
+    document.body.classList.add("onboarding-active");
+    setOnboardingStep(2);
+  },
+});
+
 function applyAccountUser(user) {
   authUser = user;
   const remoteProfile = user?.user_metadata?.promptly_profile;
@@ -1259,26 +1272,18 @@ async function initializeAuth() {
 
     authClient = window.supabase.createClient(config.url, config.publishableKey);
     authStatus.textContent = "Your account securely keeps your profile and saved alerts in sync.";
-    const { data } = await authClient.auth.getSession();
-    if (data?.session?.user) {
-      applyAccountUser(data.session.user);
-      if (accountProfileIsComplete()) {
-        applyProfileToUI();
-        setView("home");
-      } else {
-        document.body.classList.add("onboarding-active");
-        setOnboardingStep(2);
-      }
-    }
     authClient.auth.onAuthStateChange((event, session) => {
       window.setTimeout(() => {
-        if (session?.user) applyAccountUser(session.user);
+        if (["SIGNED_IN", "INITIAL_SESSION"].includes(event)) routeAuthenticatedUser(session?.user);
         if (event === "SIGNED_OUT") {
+          routeAuthenticatedUser.reset();
           authUser = null;
           updateAccountUI();
         }
       }, 0);
     });
+    const { data } = await authClient.auth.getSession();
+    routeAuthenticatedUser(data?.session?.user);
   } catch {
     authStatus.textContent = "Account setup could not load. You can continue on this device and try again later.";
   }
@@ -1322,13 +1327,7 @@ async function handleAuthSubmit() {
   profile.name = name || result.data.user?.user_metadata?.name || profile.name;
   profile.email = result.data.user?.email || email;
   if (result.data.session?.user) {
-    applyAccountUser(result.data.session.user);
-    if (accountProfileIsComplete()) {
-      applyProfileToUI();
-      setView("home");
-    } else {
-      setOnboardingStep(2);
-    }
+    routeAuthenticatedUser(result.data.session.user);
   } else {
     saveProfile();
     status.textContent = "Check your email to confirm your account, then return here and sign in.";
