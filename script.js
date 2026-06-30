@@ -580,6 +580,9 @@ const profile = {
   school: "",
   gradYear: "",
   major: "",
+  preferredLocation: "",
+  remoteOkay: true,
+  willingToRelocate: false,
   interests: "",
   photoDataUrl: "",
   resumeName: "",
@@ -734,6 +737,7 @@ function openingRow(item) {
         <h3>${item.company}</h3>
         <p>${item.role} · ${item.program}</p>
         <small>Closes: ${item.deadline} · ${item.opened}</small>
+        ${item.location ? `<small class="location-line">Location: ${item.location}</small>` : ""}
         <small class="match-line">Student fit: ${match.label}</small>
         <small class="source-line">Verified source: ${item.sourceLabel || "Official careers page"}</small>
       </div>
@@ -755,7 +759,20 @@ function preferredOpenings() {
 }
 
 function profileMatchText() {
-  return [profile.major, profile.interests, profile.school, profile.fields.join(" ")].join(" ").toLowerCase();
+  return [profile.major, profile.interests, profile.school, profile.preferredLocation, profile.fields.join(" ")].join(" ").toLowerCase();
+}
+
+function locationPreferenceMatch(item) {
+  const listingLocation = String(item.location || "").toLowerCase();
+  const preferred = String(profile.preferredLocation || "").toLowerCase().trim();
+  if (!listingLocation) return { score: 0, reason: "" };
+  if (profile.remoteOkay && (item.remote || listingLocation.includes("remote"))) return { score: 14, reason: "Remote" };
+  if (!preferred || preferred === "no preference") return { score: 0, reason: "" };
+
+  const tokens = preferred.split(/[^a-z0-9]+/).filter((token) => token.length > 2);
+  if (tokens.some((token) => listingLocation.includes(token))) return { score: 14, reason: profile.preferredLocation };
+  if (profile.willingToRelocate) return { score: 3, reason: "Relocation" };
+  return { score: -8, reason: "" };
 }
 
 function openingMatch(item) {
@@ -788,7 +805,10 @@ function openingMatch(item) {
   }
 
   if (profile.major && searchable.includes(profile.major.toLowerCase().split(" ")[0])) score += 6;
-  score = Math.min(score, 98);
+  const locationMatch = locationPreferenceMatch(item);
+  score += locationMatch.score;
+  if (locationMatch.reason) reasons.push(locationMatch.reason);
+  score = Math.max(20, Math.min(score, 98));
 
   const reasonText = reasons.length ? reasons.slice(0, 2).join(" + ") : "broad profile";
   return { score, reasonText, label: `AI match ${score}% · ${reasonText}` };
@@ -842,7 +862,7 @@ function setFeatured() {
   const item = preferredOpenings()[0];
   const isSaved = saved.has(item.company);
   document.querySelector("[data-feature-title]").textContent = `${item.company} ${item.role} just opened.`;
-  document.querySelector("[data-feature-copy]").textContent = `${item.field} student alert · Deadline ${item.deadline}. ${item.opened}.`;
+  document.querySelector("[data-feature-copy]").textContent = `${item.field} student alert · ${item.location ? `${item.location} · ` : ""}Deadline ${item.deadline}. ${item.opened}.`;
   const featureLogo = document.querySelector("[data-feature-logo]");
   featureLogo.className = `mega-logo ${item.logo ? "logo-tile" : item.logoClass}`;
   featureLogo.innerHTML = item.logo ? `<img src="${item.logo}" alt="${item.company} logo" />` : item.short;
@@ -892,6 +912,7 @@ function openDetails(company) {
     statusEl.className = `status-pill${st === "OPEN" ? "" : ` pill-${st.toLowerCase()}`}`;
   }
   modal.querySelector("[data-modal-opened]").textContent = item.opened.replace("Opened ", "");
+  modal.querySelector("[data-modal-location]").textContent = item.location || "See posting";
   modal.querySelector("[data-modal-field]").textContent = item.field;
   modal.querySelector("[data-modal-source]").textContent = item.sourceLabel || "Official source";
   const sourceLink = modal.querySelector("[data-modal-source-link]");
@@ -979,6 +1000,9 @@ function updateAcademicProfile() {
   profile.school = document.querySelector("[data-school-input]").value.trim();
   profile.gradYear = document.querySelector("[data-grad-year-input]").value.trim();
   profile.major = document.querySelector("[data-major-input]").value.trim();
+  profile.preferredLocation = document.querySelector("[data-location-input]").value.trim();
+  profile.remoteOkay = document.querySelector("[data-remote-input]").checked;
+  profile.willingToRelocate = document.querySelector("[data-relocate-input]").checked;
   mergeFields(inferFieldsFromText(profile.major));
 }
 
@@ -994,6 +1018,9 @@ function accountProfile() {
     school: profile.school,
     gradYear: profile.gradYear,
     major: profile.major,
+    preferredLocation: profile.preferredLocation,
+    remoteOkay: profile.remoteOkay,
+    willingToRelocate: profile.willingToRelocate,
     interests: profile.interests,
     fields: Array.isArray(profile.fields) ? profile.fields : [],
   };
@@ -1023,6 +1050,9 @@ function fillProfileInputs() {
   document.querySelector("[data-school-input]").value = profile.school || "";
   document.querySelector("[data-grad-year-input]").value = profile.gradYear || "";
   document.querySelector("[data-major-input]").value = profile.major || "";
+  document.querySelector("[data-location-input]").value = profile.preferredLocation || "";
+  document.querySelector("[data-remote-input]").checked = profile.remoteOkay !== false;
+  document.querySelector("[data-relocate-input]").checked = profile.willingToRelocate === true;
   document.querySelector("[data-interests-input]").value = profile.interests || "";
 }
 
@@ -1066,6 +1096,9 @@ function applyAccountUser(user) {
       school: "",
       gradYear: "",
       major: "",
+      preferredLocation: "",
+      remoteOkay: true,
+      willingToRelocate: false,
       interests: "",
       photoDataUrl: "",
       resumeName: "",
@@ -1335,6 +1368,9 @@ function applyProfileToUI() {
   document.querySelector("[data-profile-school]").textContent = profile.school || "Not set";
   document.querySelector("[data-profile-year]").textContent = profile.gradYear || "Not set";
   document.querySelector("[data-profile-major]").textContent = profile.major || "Undecided";
+  document.querySelector("[data-profile-location]").textContent = profile.preferredLocation || "No preference";
+  const flexibility = [profile.remoteOkay !== false ? "Remote" : "", profile.willingToRelocate ? "Relocation" : ""].filter(Boolean);
+  document.querySelector("[data-profile-flexibility]").textContent = flexibility.length ? flexibility.join(" and ") : "Local only";
   document.querySelector("[data-profile-interests]").textContent = profile.interests || "Not set";
   document.querySelector("[data-profile-fields]").textContent = profile.fields.length ? profile.fields.join(", ") : "All fields";
   updateAccountUI();
@@ -1363,6 +1399,9 @@ function openProfileEditor() {
   document.querySelector("[data-edit-school]").value = profile.school || "";
   document.querySelector("[data-edit-year]").value = profile.gradYear || "";
   document.querySelector("[data-edit-major]").value = profile.major || "";
+  document.querySelector("[data-edit-location]").value = profile.preferredLocation || "";
+  document.querySelector("[data-edit-remote]").checked = profile.remoteOkay !== false;
+  document.querySelector("[data-edit-relocate]").checked = profile.willingToRelocate === true;
   document.querySelector("[data-edit-interests]").value = profile.interests || "";
   updateFieldButtons();
   if (typeof profileModal.showModal === "function") profileModal.showModal();
@@ -1374,12 +1413,18 @@ function saveProfileEdits() {
   profile.school = document.querySelector("[data-edit-school]").value.trim();
   profile.gradYear = document.querySelector("[data-edit-year]").value.trim();
   profile.major = document.querySelector("[data-edit-major]").value.trim();
+  profile.preferredLocation = document.querySelector("[data-edit-location]").value.trim();
+  profile.remoteOkay = document.querySelector("[data-edit-remote]").checked;
+  profile.willingToRelocate = document.querySelector("[data-edit-relocate]").checked;
   profile.interests = document.querySelector("[data-edit-interests]").value.trim();
   document.querySelector("[data-name-input]").value = profile.name;
   document.querySelector("[data-email-input]").value = profile.email;
   document.querySelector("[data-school-input]").value = profile.school;
   document.querySelector("[data-grad-year-input]").value = profile.gradYear;
   document.querySelector("[data-major-input]").value = profile.major;
+  document.querySelector("[data-location-input]").value = profile.preferredLocation;
+  document.querySelector("[data-remote-input]").checked = profile.remoteOkay;
+  document.querySelector("[data-relocate-input]").checked = profile.willingToRelocate;
   document.querySelector("[data-interests-input]").value = profile.interests;
   mergeFields(inferFieldsFromText(`${profile.major} ${profile.interests}`));
   saveProfile();

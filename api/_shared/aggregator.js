@@ -90,6 +90,8 @@ function normalize(src, title, url, location) {
     program: "Summer 2027",
     deadline: "See posting",
     opened: location ? `Live • ${String(location).split(",")[0].trim()}` : "Live posting",
+    location: location ? String(location).replace(/\s+/g, " ").trim().slice(0, 120) : "",
+    remote: /remote/i.test(String(location || "")),
     sourceLabel: `${src.company} – verified live posting`,
     sourceUrl: url,
     live: true,

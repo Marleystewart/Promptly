@@ -55,6 +55,11 @@
           <label class="field-label">Graduation year<input data-grad-year-input type="text" inputmode="numeric" placeholder="Example: 2028" /></label>
         </div>
         <label class="field-label">Major or program<input data-major-input type="text" placeholder="Example: Environmental Science" /></label>
+        <label class="field-label">Preferred location<input data-location-input type="text" placeholder="Example: New York, NY or No preference" autocomplete="address-level2" /></label>
+        <div class="preference-options" aria-label="Location flexibility">
+          <label><input data-remote-input type="checkbox" checked /> Open to remote roles</label>
+          <label><input data-relocate-input type="checkbox" /> Willing to relocate</label>
+        </div>
         <div class="resume-upload">
           <button class="soft-action wide" type="button" disabled>Resume Matching Coming Soon</button>
           <p data-resume-status>Promptly currently uses your major, interests, goals, and alert fields. Resume analysis will return only when the document can be evaluated securely and accurately.</p>
@@ -350,6 +355,8 @@
                 <div class="profile-row"><span>School</span><strong data-profile-school>Not set</strong></div>
                 <div class="profile-row"><span>Graduation year</span><strong data-profile-year>Not set</strong></div>
                 <div class="profile-row"><span>Major</span><strong data-profile-major>Not set</strong></div>
+                <div class="profile-row"><span>Preferred location</span><strong data-profile-location>No preference</strong></div>
+                <div class="profile-row"><span>Location flexibility</span><strong data-profile-flexibility>Remote</strong></div>
                 <div class="profile-row"><span>Interests</span><strong data-profile-interests>Not set</strong></div>
                 <div class="profile-row"><span>Alert fields</span><strong data-profile-fields>Technology, Healthcare</strong></div>
                 <div class="profile-row"><span>Account</span><strong data-account-status>Local profile</strong></div>
@@ -409,6 +416,11 @@
         </label>
         <label class="field-label">Graduation year<input data-edit-year type="text" inputmode="numeric" /></label>
         <label class="field-label wide">Major<input data-edit-major type="text" /></label>
+        <label class="field-label wide">Preferred location<input data-edit-location type="text" placeholder="Example: New York, NY or No preference" /></label>
+        <div class="preference-options wide" aria-label="Edit location flexibility">
+          <label><input data-edit-remote type="checkbox" /> Open to remote roles</label>
+          <label><input data-edit-relocate type="checkbox" /> Willing to relocate</label>
+        </div>
         <label class="field-label wide">Goals and interests<textarea data-edit-interests></textarea></label>
       </div>
       <div class="field-grid edit-fields" data-edit-field-grid></div>
@@ -425,6 +437,7 @@
       <div class="modal-grid">
         <span>Deadline<strong data-modal-deadline>Jul 12</strong></span>
         <span>Opened<strong data-modal-opened>18 min ago</strong></span>
+        <span>Location<strong data-modal-location>See posting</strong></span>
         <span>Student field<strong data-modal-field>Technology</strong></span>
         <span>Source<strong data-modal-source>Official careers page</strong></span>
       </div>
@@ -443,7 +456,7 @@
     </dialog>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
-    <script src="watchlist.js?v=20260629b"></script>
-    <script src="script.js?v=20260629b"></script>
+    <script src="watchlist.js?v=20260629c"></script>
+    <script src="script.js?v=20260629c"></script>
   </body>
 </html>

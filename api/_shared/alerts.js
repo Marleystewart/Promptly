@@ -26,6 +26,7 @@ function openingHtml(opening, subscriber) {
   const field = escapeHtml(opening.field || "career");
   const program = escapeHtml(opening.program || "Internship");
   const deadline = escapeHtml(opening.deadline || "Check posting");
+  const location = escapeHtml(opening.location || "See posting");
   const sourceUrl = safeOfficialUrl(opening.sourceUrl);
   const sourceAction = sourceUrl
     ? `<a href="${escapeHtml(sourceUrl)}" style="display:inline-block;background:#6841ff;color:#fff;text-decoration:none;font-weight:700;border-radius:8px;padding:13px 18px;margin:0 0 18px">Open Official Posting</a>`
@@ -35,7 +36,7 @@ function openingHtml(opening, subscriber) {
     <h1 style="margin:0 0 12px;font-size:28px">${company} ${role} just opened.</h1>
     <p>Hey ${name}, Promptly matched this opening to your ${field} alerts.</p>
     <div style="background:#f4f1ff;border:1px solid #ded6ff;border-radius:16px;padding:18px;margin:20px 0">
-      <strong>${company}</strong><br />${role} · ${program}<br />Deadline: ${deadline}
+      <strong>${company}</strong><br />${role} · ${program}<br />Location: ${location}<br />Deadline: ${deadline}
     </div>
     ${sourceAction}
     <p style="margin-top:0">Promptly alerts you to openings. Applications happen on the employer's official site.</p>
