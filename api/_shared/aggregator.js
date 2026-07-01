@@ -77,6 +77,41 @@ async function fetchLever(src) {
     .map((j) => normalize(src, j.text, j.hostedUrl, (j.categories || {}).location));
 }
 
+// ── Ashby: public posting-api, no auth ───────────────────────────────────
+// { ats:"ashby", board:"<token>" } (jobs.ashbyhq.com/<token>)
+async function fetchAshby(src) {
+  const data = await fetchJson(`https://api.ashbyhq.com/posting-api/job-board/${src.board}`);
+  const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+  return jobs
+    .filter((j) => j.isListed !== false && isRelevant(j.title, j.location))
+    .map((j) => normalize(src, j.title, j.jobUrl, j.location));
+}
+
+// ── SmartRecruiters: public postings API, paginated ──────────────────────
+// { ats:"smartrecruiters", board:"<CompanyIdentifier>" }
+// Public posting page: jobs.smartrecruiters.com/<CompanyIdentifier>/<id>
+async function fetchSmartRecruiters(src) {
+  const out = [];
+  for (let offset = 0; offset < 500; offset += 100) {
+    const data = await fetchJson(
+      `https://api.smartrecruiters.com/v1/companies/${src.board}/postings?limit=100&offset=${offset}`
+    );
+    const postings = Array.isArray(data.content) ? data.content : [];
+    for (const p of postings) {
+      // The API includes a structured country code — use it (the title/location
+      // regex filter still applies afterwards as a second pass).
+      const country = String(p.location?.country || "").toLowerCase();
+      if (country && country !== "us") continue;
+      const location = p.location?.fullLocation
+        || [p.location?.city, p.location?.region].filter(Boolean).join(", ");
+      if (!isRelevant(p.name, location)) continue;
+      out.push(normalize(src, p.name, `https://jobs.smartrecruiters.com/${src.board}/${p.id}`, location));
+    }
+    if (postings.length < 100) break;
+  }
+  return out;
+}
+
 function normalize(src, title, url, location) {
   const slug = src.board || src.tenant;
   return {
@@ -99,7 +134,13 @@ function normalize(src, title, url, location) {
 }
 
 async function aggregateOpenings() {
-  const fetchers = { greenhouse: fetchGreenhouse, workday: fetchWorkday, lever: fetchLever };
+  const fetchers = {
+    greenhouse: fetchGreenhouse,
+    workday: fetchWorkday,
+    lever: fetchLever,
+    ashby: fetchAshby,
+    smartrecruiters: fetchSmartRecruiters,
+  };
   const results = await Promise.allSettled(
     SOURCES.map((src) => (fetchers[src.ats] || fetchGreenhouse)(src))
   );

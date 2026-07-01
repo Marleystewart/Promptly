@@ -1,6 +1,9 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "functions": {
+    "api/refresh-openings.js": { "maxDuration": 60 }
+  },
   "crons": [
     { "path": "/api/refresh-openings", "schedule": "0 7 * * *" },
     { "path": "/api/retention", "schedule": "0 14 * * *" }

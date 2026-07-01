@@ -10,6 +10,9 @@
 // Lever:      { ats:"lever", board:"<company>" }      (jobs.lever.co/<company>)
 // Workday:    { ats:"workday", tenant, dc, site }     (from a posting URL:
 //             https://<tenant>.<dc>.myworkdayjobs.com/en-US/<site>/job/...)
+// Ashby:      { ats:"ashby", board:"<token>" }        (jobs.ashbyhq.com/<token>)
+// SmartRecruiters: { ats:"smartrecruiters", board:"<CompanyIdentifier>" }
+//             (jobs.smartrecruiters.com/<CompanyIdentifier>/...)
 //
 // All boards below were probed and confirmed responding. Field-tinted logo
 // tiles (tech/fin/health/edu) are used for auto-pulled listings.
@@ -131,6 +134,29 @@ const SOURCES = [
   { company: "Komodo Health", short: "KMDO", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "komodohealth" },
   { company: "Sweetgreen", short: "SG", logoClass: "consumer", field: "Consumer", subField: "Food & Beverage", ats: "greenhouse", board: "sweetgreen" },
   { company: "Code for America", short: "CFA", logoClass: "npo", field: "Nonprofit", subField: "Civic Technology", ats: "greenhouse", board: "codeforamerica" },
+
+  // ═══ ADDED Jul 2026: Ashby boards (probed + identity-verified) ═══════════
+  { company: "OpenAI", short: "OAI", logoClass: "tech", field: "Technology", subField: "AI", ats: "ashby", board: "openai" },
+  { company: "Ramp", short: "RAMP", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "ashby", board: "ramp" },
+  { company: "Notion", short: "NTN", logoClass: "tech", field: "Technology", ats: "ashby", board: "notion" },
+  { company: "Linear", short: "LNR", logoClass: "tech", field: "Technology", ats: "ashby", board: "linear" },
+  { company: "Vanta", short: "VNTA", logoClass: "tech", field: "Technology", ats: "ashby", board: "vanta" },
+  { company: "Replit", short: "RPLT", logoClass: "tech", field: "Technology", subField: "AI", ats: "ashby", board: "replit" },
+  { company: "Cohere", short: "CO", logoClass: "tech", field: "Technology", subField: "AI", ats: "ashby", board: "cohere" },
+  { company: "Modal", short: "MODL", logoClass: "tech", field: "Technology", subField: "AI", ats: "ashby", board: "modal" },
+  { company: "Supabase", short: "SUPA", logoClass: "tech", field: "Technology", ats: "ashby", board: "supabase" },
+  { company: "ElevenLabs", short: "11L", logoClass: "tech", field: "Technology", subField: "AI", ats: "ashby", board: "elevenlabs" },
+  { company: "Cursor (Anysphere)", short: "CURS", logoClass: "tech", field: "Technology", subField: "AI", ats: "ashby", board: "cursor" },
+  { company: "Sierra", short: "SIRA", logoClass: "tech", field: "Technology", subField: "AI", ats: "ashby", board: "sierra" },
+  { company: "Harvey", short: "HRVY", logoClass: "law", field: "Law", subField: "Legal Technology", ats: "ashby", board: "harvey" },
+  { company: "Writer", short: "WRTR", logoClass: "tech", field: "Technology", subField: "AI", ats: "ashby", board: "writer" },
+
+  // ═══ ADDED Jul 2026: SmartRecruiters boards (probed + identity-verified) ═
+  { company: "Visa", short: "V", logoClass: "fin", field: "Finance", subField: "Payments", ats: "smartrecruiters", board: "Visa" },
+  { company: "ServiceNow", short: "NOW", logoClass: "tech", field: "Technology", ats: "smartrecruiters", board: "ServiceNow" },
+  { company: "Experian", short: "EXPN", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "smartrecruiters", board: "Experian" },
+  { company: "Ubisoft", short: "UBI", logoClass: "tech", field: "Technology", subField: "Gaming", ats: "smartrecruiters", board: "Ubisoft2" },
+  { company: "Continental", short: "CONTI", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "smartrecruiters", board: "Continental" },
 ];
 
 module.exports = { SOURCES };
