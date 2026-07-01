@@ -263,4 +263,26 @@ window.WATCHLIST = [
   { company: "Related Companies", short: "REL", logoClass: "consumer", field: "Real Estate", subField: "Development" },
   { company: "Zillow", short: "ZG", logoClass: "tech", field: "Real Estate", subField: "Property Technology" },
   { company: "Blackstone Real Estate", short: "BXRE", logoClass: "fin", field: "Real Estate", subField: "Investment" },
+
+  // ── Live-feed companies (Ashby/SmartRecruiters, added Jul 2026) ──────────
+  // These have verified live pipelines; cards show as awaiting until their
+  // 2027 postings appear, then flip to the real listing automatically.
+  { company: "OpenAI", short: "OAI", logoClass: "tech", field: "Technology", subField: "AI" },
+  { company: "Ramp", short: "RAMP", logoClass: "fin", field: "Finance", subField: "Fintech" },
+  { company: "Notion", short: "NTN", logoClass: "tech", field: "Technology" },
+  { company: "Linear", short: "LNR", logoClass: "tech", field: "Technology" },
+  { company: "Vanta", short: "VNTA", logoClass: "tech", field: "Technology" },
+  { company: "Replit", short: "RPLT", logoClass: "tech", field: "Technology", subField: "AI" },
+  { company: "Cohere", short: "CO", logoClass: "tech", field: "Technology", subField: "AI" },
+  { company: "Modal", short: "MODL", logoClass: "tech", field: "Technology", subField: "AI" },
+  { company: "Supabase", short: "SUPA", logoClass: "tech", field: "Technology" },
+  { company: "ElevenLabs", short: "11L", logoClass: "tech", field: "Technology", subField: "AI" },
+  { company: "Cursor (Anysphere)", short: "CURS", logoClass: "tech", field: "Technology", subField: "AI" },
+  { company: "Sierra", short: "SIRA", logoClass: "tech", field: "Technology", subField: "AI" },
+  { company: "Harvey", short: "HRVY", logoClass: "law", field: "Law", subField: "Legal Technology" },
+  { company: "Writer", short: "WRTR", logoClass: "tech", field: "Technology", subField: "AI" },
+  { company: "ServiceNow", short: "NOW", logoClass: "tech", field: "Technology" },
+  { company: "Experian", short: "EXPN", logoClass: "fin", field: "Finance", subField: "Fintech" },
+  { company: "Ubisoft", short: "UBI", logoClass: "tech", field: "Technology", subField: "Gaming" },
+  { company: "Continental", short: "CONTI", logoClass: "eng", field: "Engineering", subField: "Automotive" },
 ];
