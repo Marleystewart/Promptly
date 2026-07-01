@@ -1457,6 +1457,31 @@ body.launch-active .onboarding-brand {
   line-height: 1.45;
 }
 
+.danger-zone {
+  align-content: start;
+  border: 1px solid rgba(255, 112, 112, 0.25);
+  background: rgba(80, 15, 25, 0.16);
+}
+
+.danger-zone p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.danger-action {
+  justify-self: start;
+  border: 1px solid rgba(255, 112, 112, 0.55);
+  border-radius: 12px;
+  padding: 11px 15px;
+  color: #ffb4b4;
+  background: transparent;
+  font-weight: 800;
+}
+
+.danger-action:disabled {
+  opacity: 0.55;
+}
+
 input[type="checkbox"] {
   width: 43px;
   height: 24px;

@@ -3,8 +3,25 @@ const {
   parseOAuthCallback,
   cleanOAuthCallbackUrl,
   establishAuthSession,
+  isAccountDeletionConfirmed,
+  clearPromptlyClientState,
   createAuthenticatedUserRouter,
 } = require("../auth-routing");
+
+assert.equal(isAccountDeletionConfirmed("DELETE"), true);
+assert.equal(isAccountDeletionConfirmed("delete"), false);
+assert.equal(isAccountDeletionConfirmed(null), false);
+
+{
+  let localCleared = 0;
+  let sessionCleared = 0;
+  clearPromptlyClientState(
+    { clear() { localCleared += 1; } },
+    { clear() { sessionCleared += 1; } }
+  );
+  assert.equal(localCleared, 1);
+  assert.equal(sessionCleared, 1);
+}
 
 function scenario(complete) {
   const events = [];

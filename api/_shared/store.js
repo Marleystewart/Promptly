@@ -91,6 +91,17 @@ async function listSubscribers() {
   return { subscribers };
 }
 
+async function deleteSubscriber(email) {
+  const redis = await getRedis();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!redis || !normalizedEmail) return { removed: false };
+  await Promise.all([
+    redis.del(`promptly:subscriber:${normalizedEmail}`),
+    redis.srem("promptly:subscribers", normalizedEmail),
+  ]);
+  return { removed: true };
+}
+
 async function takeTestAlertSlot(email, requester = "") {
   const redis = await getRedis();
   if (!redis) return { allowed: true, stored: false };
@@ -124,6 +135,7 @@ module.exports = {
   readBody,
   saveSubscriber,
   listSubscribers,
+  deleteSubscriber,
   normalizeSubscriber,
   hasRedisEnv,
   takeTestAlertSlot,

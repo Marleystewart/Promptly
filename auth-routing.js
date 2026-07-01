@@ -51,6 +51,15 @@
     return result?.data?.session || null;
   }
 
+  function isAccountDeletionConfirmed(value) {
+    return String(value || "").trim() === "DELETE";
+  }
+
+  function clearPromptlyClientState(local, session) {
+    local.clear();
+    session.clear();
+  }
+
   function createAuthenticatedUserRouter({ applyUser, isComplete, showComplete, showIncomplete }) {
     let routedUserKey = null;
 
@@ -72,5 +81,12 @@
     return routeAuthenticatedUser;
   }
 
-  return { parseOAuthCallback, cleanOAuthCallbackUrl, establishAuthSession, createAuthenticatedUserRouter };
+  return {
+    parseOAuthCallback,
+    cleanOAuthCallbackUrl,
+    establishAuthSession,
+    isAccountDeletionConfirmed,
+    clearPromptlyClientState,
+    createAuthenticatedUserRouter,
+  };
 }));

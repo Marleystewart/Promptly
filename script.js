@@ -1392,6 +1392,44 @@ async function restartDemo() {
   window.location.replace(`${window.location.origin}/`);
 }
 
+async function deleteAccount() {
+  const button = document.querySelector("[data-delete-account]");
+  const status = document.querySelector("[data-delete-account-status]");
+  const setStatus = (message) => {
+    status.hidden = false;
+    status.textContent = message;
+  };
+  if (!authClient || !authUser) return setStatus("Sign in to delete your account.");
+
+  const confirmation = window.prompt("This permanently deletes your Promptly account. Type DELETE to confirm.");
+  if (!window.PromptlyAuthRouting.isAccountDeletionConfirmed(confirmation)) {
+    if (confirmation !== null) setStatus("Account deletion canceled. Type DELETE exactly to confirm.");
+    return;
+  }
+
+  button.disabled = true;
+  setStatus("Deleting your account…");
+  try {
+    const { data } = await authClient.auth.getSession();
+    const token = data?.session?.access_token;
+    if (!token) throw new Error("Your session expired. Sign in and try again.");
+    const response = await fetch("/api/subscribe", {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.setupRequired || result.error || "Account deletion failed.");
+
+    routeAuthenticatedUser.reset();
+    authUser = null;
+    window.PromptlyAuthRouting.clearPromptlyClientState(localStorage, sessionStorage);
+    window.location.replace(`${window.location.origin}/`);
+  } catch (error) {
+    button.disabled = false;
+    setStatus(error.message || "Account deletion failed.");
+  }
+}
+
 function isValidEmail(value) {
   const email = value.trim().toLowerCase();
   return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
@@ -1828,6 +1866,7 @@ document.addEventListener("click", async (event) => {
   const forgotPasswordButton = event.target.closest("[data-forgot-password]");
   const connectAccountButton = event.target.closest("[data-connect-account]");
   const signOutButton = event.target.closest("[data-sign-out]");
+  const deleteAccountButton = event.target.closest("[data-delete-account]");
 
   if (authModeButton) setAuthMode(authModeButton.dataset.authMode);
   if (authSubmitButton) handleAuthSubmit();
@@ -1843,6 +1882,10 @@ document.addEventListener("click", async (event) => {
       authUser = null;
       updateAccountUI();
     });
+  }
+  if (deleteAccountButton) {
+    await deleteAccount();
+    return;
   }
 
   if (nextButton) {
