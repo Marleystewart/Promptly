@@ -639,6 +639,11 @@ const savedStorageKey = "promptlySavedCompanies";
 let authClient = null;
 let authUser = null;
 let authMode = "signup";
+// True while an OAuth redirect (e.g. Google) is being exchanged for a session.
+// The onboarding fallback timer must not flip the screen back to sign-up
+// while this is in flight — that caused a post-Google-login glitch where the
+// user was bounced from the school/grade form back to the sign-in page.
+let pendingOAuthCallback = false;
 let accountSyncTimer = null;
 let accountSyncPaused = false;
 
@@ -1263,10 +1268,18 @@ function applyAccountUser(user) {
   updateAccountUI();
 }
 
+// After a failed or empty OAuth exchange, land the user on the sign-up step
+// (only if they're still stuck on the onboarding launch screen).
+function showAuthEntryFallback() {
+  if (authUser || !document.body.classList.contains("onboarding-active")) return;
+  setOnboardingStep(1);
+}
+
 async function initializeAuth() {
   const authStatus = document.querySelector("[data-auth-status]");
   const callbackUrl = window.location.href;
   const oauthCallback = window.PromptlyAuthRouting.parseOAuthCallback(callbackUrl);
+  pendingOAuthCallback = Boolean(oauthCallback);
   if (oauthCallback) {
     const cleanUrl = window.PromptlyAuthRouting.cleanOAuthCallbackUrl(callbackUrl);
     window.history.replaceState(window.history.state, "", cleanUrl);
@@ -1275,6 +1288,7 @@ async function initializeAuth() {
     const response = await fetch("/api/auth-config", { headers: { Accept: "application/json" } });
     const config = response.ok ? await response.json() : { enabled: false };
     if (!config.enabled || !window.supabase?.createClient) {
+      pendingOAuthCallback = false;
       document.querySelector("[data-auth-password-group]").hidden = true;
       document.querySelector("[data-google-auth]").hidden = true;
       document.querySelector(".auth-tabs").hidden = true;
@@ -1307,8 +1321,17 @@ async function initializeAuth() {
     // password has NOT changed yet — they must set a new one now.
     if (session?.user && oauthCallback?.recovery) await completePasswordReset();
     routeAuthenticatedUser(session?.user);
+    pendingOAuthCallback = false;
+    // OAuth round-trip produced no session (revoked/expired code) — show the
+    // sign-up step instead of leaving the user stranded on the launch screen.
+    if (!session?.user && oauthCallback) {
+      setSignupError("Google sign-in did not complete. Please try again.");
+      showAuthEntryFallback();
+    }
   } catch {
+    pendingOAuthCallback = false;
     authStatus.textContent = "Account setup could not load. You can continue on this device and try again later.";
+    showAuthEntryFallback();
   }
 }
 
@@ -1890,7 +1913,12 @@ setFeatured();
 refreshSavedList();
 
 if (!restoreProfile()) {
-  window.setTimeout(() => setOnboardingStep(1), 1200);
+  window.setTimeout(() => {
+    // A signed-in user has already been routed (or is mid-OAuth exchange) —
+    // never drag them back to the sign-up screen.
+    if (authUser || pendingOAuthCallback) return;
+    setOnboardingStep(1);
+  }, 1200);
 }
 initializeAuth();
 
