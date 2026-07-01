@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "python3 -m http.server 4173",
-    "test": "node tests/alerts.test.js && node tests/auth-routing.test.js"
+    "test": "node tests/alerts.test.js && node tests/auth-routing.test.js && node tests/api-functions.test.js"
   },
   "dependencies": {
     "web-push": "^3.6.7",

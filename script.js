@@ -644,7 +644,7 @@ let accountSyncPaused = false;
 
 // --- Application status tracker (Applied → OA → Interview → Offer) ----------
 // Gives students a reason to come back (track their progress) and feeds the
-// anonymous per-school pulse. Stored locally; also sent to /api/status.
+// anonymous per-school pulse. Stored locally; also sent to /api/stats.
 const statusStorageKey = "promptlyStatuses";
 const statuses = new Map();
 (function loadStatuses() {
@@ -662,7 +662,7 @@ function setStatus(company, stage) {
   persistStatuses();
   if (stage && item) {
     try {
-      fetch("/api/status", {
+      fetch("/api/stats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         keepalive: true,
