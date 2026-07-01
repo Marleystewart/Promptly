@@ -102,6 +102,19 @@ async function deleteSubscriber(email) {
   return { removed: true };
 }
 
+// Remove a dead push subscription (endpoint returned 404/410) so we stop
+// sending to it. Keeps the rest of the subscriber profile intact.
+async function clearPushSubscription(email) {
+  const redis = await getRedis();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!redis || !normalizedEmail) return { cleared: false };
+  const key = "promptly:subscriber:" + normalizedEmail;
+  const existing = await redis.get(key);
+  if (!existing || !existing.pushSubscription) return { cleared: false };
+  await redis.set(key, { ...existing, pushSubscription: null });
+  return { cleared: true };
+}
+
 async function takeTestAlertSlot(email, requester = "") {
   const redis = await getRedis();
   if (!redis) return { allowed: true, stored: false };
@@ -136,6 +149,7 @@ module.exports = {
   saveSubscriber,
   listSubscribers,
   deleteSubscriber,
+  clearPushSubscription,
   normalizeSubscriber,
   hasRedisEnv,
   takeTestAlertSlot,

@@ -7,7 +7,7 @@
 // authenticates with the same secret in the Authorization header.
 
 const { aggregateOpenings } = require("./_shared/aggregator");
-const { saveLiveOpenings, getLiveOpenings } = require("./_shared/openings-store");
+const { saveLiveOpenings, getLiveOpenings, filterNeverAlerted, markAlerted } = require("./_shared/openings-store");
 const { listSubscribers } = require("./_shared/store");
 const { sendEmailAlert, sendPushAlert, matchesOpening } = require("./_shared/alerts");
 const { recordNewListings } = require("./_shared/analytics");
@@ -56,6 +56,14 @@ module.exports = async function handler(req, res) {
 
     // Pull the current live set.
     const result = await aggregateOpenings();
+
+    // Stamp when each listing was first seen (carried over between runs) so
+    // the app can honestly show what's recent.
+    const previousFirstSeen = new Map((previous.openings || []).map((o) => [o.sourceUrl, o.firstSeen]));
+    for (const o of result.openings) {
+      o.firstSeen = previousFirstSeen.get(o.sourceUrl) || result.updatedAt;
+    }
+
     const payload = {
       openings: result.openings,
       updatedAt: result.updatedAt,
@@ -63,8 +71,13 @@ module.exports = async function handler(req, res) {
     };
     const saved = await saveLiveOpenings(payload);
 
-    // Anything present now that wasn't before is a new listing.
-    const newOpenings = result.openings.filter((o) => !knownUrls.has(o.sourceUrl));
+    // A listing is "new" only if it wasn't in the last run AND we've never
+    // alerted on it before (protects against a source blipping out for a day
+    // and re-triggering alerts for every listing when it recovers).
+    const candidates = result.openings.filter((o) => !knownUrls.has(o.sourceUrl));
+    const neverAlertedUrls = new Set(await filterNeverAlerted(candidates.map((o) => o.sourceUrl)));
+    const newOpenings = candidates.filter((o) => neverAlertedUrls.has(o.sourceUrl));
+    await markAlerted(result.openings.map((o) => o.sourceUrl));
 
     // On the very first run we seed silently (everything would look "new").
     const notify = isFirstRun ? { notified: 0, emailSent: 0, pushSent: 0, seeded: true } : await notifySubscribers(newOpenings);

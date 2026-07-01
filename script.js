@@ -697,11 +697,19 @@ function logoFallback(img) {
   el.textContent = img.dataset.short || "";
 }
 
+// Escape untrusted text before it goes into innerHTML. Live listings come
+// from external ATS feeds — a job title must never be able to inject markup.
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[char]));
+}
+
 function logoMarkup(item) {
   if (item.logo) {
-    return `<div class="logo logo-tile"><img src="${item.logo}" alt="${item.company} logo" loading="lazy" data-short="${item.short || ""}" data-lc="${item.logoClass || ""}" onerror="logoFallback(this)" /></div>`;
+    return `<div class="logo logo-tile"><img src="${esc(item.logo)}" alt="${esc(item.company)} logo" loading="lazy" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" onerror="logoFallback(this)" /></div>`;
   }
-  return `<div class="logo ${item.logoClass}">${item.short}</div>`;
+  return `<div class="logo ${esc(item.logoClass)}">${esc(item.short)}</div>`;
 }
 
 // Parse a deadline string like "Feb 15, 2026" -> timestamp. "Rolling",
@@ -747,16 +755,16 @@ function openingRow(item) {
   const isSaved = saved.has(item.company);
   if (isAwaitingLike(item)) {
     return `
-    <article class="opening-row awaiting" data-company="${item.company}" data-field="${item.field}" data-open-details="${item.company}" tabindex="0" role="button" aria-label="Track ${item.company} for 2027 postings">
+    <article class="opening-row awaiting" data-company="${esc(item.company)}" data-field="${esc(item.field)}" data-open-details="${esc(item.company)}" tabindex="0" role="button" aria-label="Track ${esc(item.company)} for 2027 postings">
       ${logoMarkup(item)}
       <div>
-        <span class="status-pill">${item.field}${item.subField ? " · " + item.subField : ""}</span>${statusPill(item.company)}
-        <h3>${item.company}</h3>
-        <p>${item.role} · ${item.program}</p>
+        <span class="status-pill">${esc(item.field)}${item.subField ? " · " + esc(item.subField) : ""}</span>${statusPill(item.company)}
+        <h3>${esc(item.company)}</h3>
+        <p>${esc(item.role)} · ${esc(item.program)}</p>
         <small class="awaiting-line">${awaitingLine(item)}</small>
       </div>
       <div class="row-actions">
-        <button class="round-btn save-btn ${isSaved ? "saved" : ""}" aria-label="${isSaved ? "Untrack" : "Track"} ${item.company}" data-save="${item.company}" aria-pressed="${isSaved}">
+        <button class="round-btn save-btn ${isSaved ? "saved" : ""}" aria-label="${isSaved ? "Untrack" : "Track"} ${esc(item.company)}" data-save="${esc(item.company)}" aria-pressed="${isSaved}">
           <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
         </button>
       </div>
@@ -764,22 +772,22 @@ function openingRow(item) {
   `;
   }
   return `
-    <article class="opening-row" data-company="${item.company}" data-field="${item.field}" data-open-details="${item.company}" tabindex="0" role="button" aria-label="View alert details for ${item.company}">
+    <article class="opening-row" data-company="${esc(item.company)}" data-field="${esc(item.field)}" data-open-details="${esc(item.company)}" tabindex="0" role="button" aria-label="View alert details for ${esc(item.company)}">
       ${logoMarkup(item)}
       <div>
-        <span class="status-pill">${item.field}</span>${statusPill(item.company)}
-        <h3>${item.company}</h3>
-        <p>${item.role} · ${item.program}</p>
-        <small>Closes: ${item.deadline} · ${item.opened}</small>
-        ${item.location ? `<small class="location-line">Location: ${item.location}</small>` : ""}
-        <small class="match-line">Student fit: ${match.label}</small>
-        <small class="source-line">Verified source: ${item.sourceLabel || "Official careers page"}</small>
+        <span class="status-pill">${esc(item.field)}</span>${statusPill(item.company)}
+        <h3>${esc(item.company)}</h3>
+        <p>${esc(item.role)} · ${esc(item.program)}</p>
+        <small>Closes: ${esc(item.deadline)} · ${esc(item.opened)}</small>
+        ${item.location ? `<small class="location-line">Location: ${esc(item.location)}</small>` : ""}
+        <small class="match-line">Student fit: ${esc(match.label)}</small>
+        <small class="source-line">Verified source: ${esc(item.sourceLabel || "Official careers page")}</small>
       </div>
       <div class="row-actions">
-        <button class="round-btn save-btn ${isSaved ? "saved" : ""}" aria-label="${isSaved ? "Unsave" : "Save"} ${item.company}" data-save="${item.company}" aria-pressed="${isSaved}">
+        <button class="round-btn save-btn ${isSaved ? "saved" : ""}" aria-label="${isSaved ? "Unsave" : "Save"} ${esc(item.company)}" data-save="${esc(item.company)}" aria-pressed="${isSaved}">
           <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
         </button>
-        <button class="round-btn primary" aria-label="View alert details for ${item.company}" data-open-details-button="${item.company}">
+        <button class="round-btn primary" aria-label="View alert details for ${esc(item.company)}" data-open-details-button="${esc(item.company)}">
           <svg viewBox="0 0 24 24"><path d="M8 5h11v11"/><path d="M19 5 7 17"/><path d="M5 9v10h10"/></svg>
         </button>
       </div>
@@ -850,7 +858,7 @@ function openingMatch(item) {
 
 function topFields() {
   if (profile.fields.length) return profile.fields.slice(0, 3);
-  return preferredOpenings().slice(0, 3).map((item) => item.field);
+  return [...new Set(preferredOpenings().map((item) => item.field))].slice(0, 3);
 }
 
 function nextWindowText() {
@@ -1282,6 +1290,10 @@ async function initializeAuth() {
     authStatus.textContent = "Your account securely keeps your profile and saved alerts in sync.";
     authClient.auth.onAuthStateChange((event, session) => {
       window.setTimeout(() => {
+        if (event === "PASSWORD_RECOVERY") {
+          completePasswordReset();
+          return;
+        }
         if (["SIGNED_IN", "INITIAL_SESSION"].includes(event)) routeAuthenticatedUser(session?.user);
         if (event === "SIGNED_OUT") {
           routeAuthenticatedUser.reset();
@@ -1291,6 +1303,9 @@ async function initializeAuth() {
       }, 0);
     });
     const session = await window.PromptlyAuthRouting.establishAuthSession(authClient.auth, oauthCallback);
+    // Recovery link: the user is signed in via the emailed token, but their
+    // password has NOT changed yet — they must set a new one now.
+    if (session?.user && oauthCallback?.recovery) await completePasswordReset();
     routeAuthenticatedUser(session?.user);
   } catch {
     authStatus.textContent = "Account setup could not load. You can continue on this device and try again later.";
@@ -1353,6 +1368,34 @@ async function signInWithGoogle() {
   if (error) {
     sessionStorage.removeItem("promptlyMigrateLocal");
     setSignupError(error.message || "Google sign-in could not start.");
+  }
+}
+
+// Finish the password-reset flow: the recovery link signs the user in, then
+// we prompt for the new password and save it. Without this step the "reset"
+// never actually changes the password.
+let passwordResetInFlight = false;
+async function completePasswordReset() {
+  if (!authClient || passwordResetInFlight) return;
+  passwordResetInFlight = true;
+  try {
+    let password = "";
+    while (true) {
+      password = window.prompt("Set your new Promptly password (at least 8 characters):") || "";
+      if (!password) return; // user canceled — they stay signed in via the recovery link
+      if (password.length >= 8) break;
+      window.alert("Use at least 8 characters.");
+    }
+    const { error } = await authClient.auth.updateUser({ password });
+    const status = document.querySelector("[data-auth-status]");
+    if (error) {
+      if (status) status.textContent = error.message || "Could not update your password. Try the reset link again.";
+      window.alert(error.message || "Could not update your password. Request a new reset link and try again.");
+    } else {
+      if (status) status.textContent = "Password updated. You're signed in.";
+    }
+  } finally {
+    passwordResetInFlight = false;
   }
 }
 
@@ -1711,10 +1754,21 @@ async function enablePushAlerts() {
   if (!registration) return null;
 
   try {
-    const existing = await registration.pushManager.getSubscription();
+    const serverKey = urlBase64ToUint8Array(await getVapidPublicKey());
+    let existing = await registration.pushManager.getSubscription();
+    // If the subscription was created under a different (old/rotated) VAPID
+    // key, every push to it fails. Drop it and re-subscribe with the current key.
+    if (existing && existing.options?.applicationServerKey) {
+      const existingKey = new Uint8Array(existing.options.applicationServerKey);
+      const sameKey = existingKey.length === serverKey.length && existingKey.every((b, i) => b === serverKey[i]);
+      if (!sameKey) {
+        try { await existing.unsubscribe(); } catch {}
+        existing = null;
+      }
+    }
     const subscription = existing || await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(await getVapidPublicKey()),
+      applicationServerKey: serverKey,
     });
     localStorage.setItem("openingPushSubscription", JSON.stringify(subscription));
     setPushStatus("✅ Phone alerts enabled. Tap Send Test Notification.");
@@ -2114,7 +2168,14 @@ setupCollegeAutocomplete("[data-edit-school]", "[data-college-dropdown-edit]");
 
 // --- Alert badge (recent = opened within last 7 days) ---
 function recentOpenings() {
+  const weekAgo = Date.now() - 7 * 86400000;
   return openings.filter((o) => {
+    // Live pipeline listings carry firstSeen (stamped on the refresh run that
+    // first found them) — the honest signal for "new this week".
+    if (o.firstSeen) {
+      const t = Date.parse(o.firstSeen);
+      return Number.isFinite(t) && t >= weekAgo;
+    }
     if (!o.opened) return false;
     const t = o.opened.toLowerCase();
     if (t.includes("min") || t.includes("hour")) return true;

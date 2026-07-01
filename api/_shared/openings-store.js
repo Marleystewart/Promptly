@@ -32,4 +32,22 @@ async function getLiveOpenings() {
   return payload;
 }
 
-module.exports = { saveLiveOpenings, getLiveOpenings };
+// Persistent record of every listing URL we've already alerted on. A source
+// that fails one refresh and recovers the next would otherwise make all its
+// listings look "new" again and re-alert every subscriber.
+const ALERTED_KEY = "promptly:openings:alerted";
+
+async function filterNeverAlerted(urls) {
+  const redis = await getRedis();
+  if (!redis || !urls.length) return urls;
+  const membership = await redis.smismember(ALERTED_KEY, urls);
+  return urls.filter((_, i) => !membership[i]);
+}
+
+async function markAlerted(urls) {
+  const redis = await getRedis();
+  if (!redis || !urls.length) return;
+  await redis.sadd(ALERTED_KEY, ...urls);
+}
+
+module.exports = { saveLiveOpenings, getLiveOpenings, filterNeverAlerted, markAlerted };

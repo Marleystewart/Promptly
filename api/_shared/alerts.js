@@ -1,4 +1,21 @@
 const webpush = require("web-push");
+const { clearPushSubscription } = require("./store");
+
+// Send a push and, if the endpoint is permanently gone (404/410 — the phone
+// unsubscribed or the browser rotated the endpoint), drop the dead
+// subscription so future runs stop wasting sends on it.
+async function pushWithPruning(subscriber, payload) {
+  try {
+    await webpush.sendNotification(subscriber.pushSubscription, JSON.stringify(payload));
+    return { sent: true };
+  } catch (error) {
+    if ([404, 410].includes(error.statusCode)) {
+      try { await clearPushSubscription(subscriber.email); } catch {}
+      return { sent: false, pruned: true };
+    }
+    throw error;
+  }
+}
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -133,16 +150,11 @@ async function sendPushAlert(opening, subscriber) {
   if (!publicKey || !privateKey) return { sent: false, setupRequired: "Add VAPID push keys in Vercel." };
 
   webpush.setVapidDetails(subject, publicKey, privateKey);
-  await webpush.sendNotification(
-    subscriber.pushSubscription,
-    JSON.stringify({
-      title: "Promptly",
-      body: `${opening.company} ${opening.role} just opened.`,
-      url: safeOfficialUrl(opening.sourceUrl) || "/",
-    })
-  );
-
-  return { sent: true };
+  return pushWithPruning(subscriber, {
+    title: "Promptly",
+    body: `${opening.company} ${opening.role} just opened.`,
+    url: safeOfficialUrl(opening.sourceUrl) || "/",
+  });
 }
 
 async function sendDeadlinePush(opening, subscriber, daysLeft) {
@@ -153,12 +165,11 @@ async function sendDeadlinePush(opening, subscriber, daysLeft) {
   if (!publicKey || !privateKey) return { sent: false, setupRequired: "Add VAPID push keys in Vercel." };
   webpush.setVapidDetails(subject, publicKey, privateKey);
   const timing = daysLeft === 1 ? "tomorrow" : `in ${daysLeft} days`;
-  await webpush.sendNotification(subscriber.pushSubscription, JSON.stringify({
+  return pushWithPruning(subscriber, {
     title: "Promptly deadline reminder",
     body: `${opening.company} ${opening.role} closes ${timing}.`,
     url: safeOfficialUrl(opening.sourceUrl) || "/",
-  }));
-  return { sent: true };
+  });
 }
 
 function matchesOpening(opening, subscriber) {

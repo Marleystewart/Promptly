@@ -42,8 +42,9 @@ module.exports = async function handler(req, res) {
     }
     const sortDesc = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]);
 
-    const recent = subscribers
-      .slice(-20).reverse()
+    const recent = [...subscribers]
+      .sort((a, b) => Date.parse(b.updatedAt || b.createdAt || 0) - Date.parse(a.updatedAt || a.createdAt || 0))
+      .slice(0, 20)
       .map((s) => ({ email: mask(s.email), school: s.school || "—", gradYear: s.gradYear || "—", when: s.updatedAt || s.createdAt || null }));
 
     const live = await getStats();

@@ -121,6 +121,16 @@ const SOURCES = [
   { company: "Coursera", short: "COUR", logoClass: "edu", field: "Education", subField: "Education Technology", ats: "greenhouse", board: "coursera" },
   { company: "The Athletic", short: "ATH", logoClass: "media", field: "Sports", subField: "Sports Media", ats: "lever", board: "theathletic" },
   { company: "VTS", short: "VTS", logoClass: "consumer", field: "Real Estate", subField: "Property Technology", ats: "greenhouse", board: "vts" },
+
+  // ═══ ADDED Jul 2026: probed + identity-verified boards ═══════════════════
+  { company: "SpaceX", short: "SPX", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "greenhouse", board: "spacex" },
+  { company: "Relativity Space", short: "RLTY", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "greenhouse", board: "relativity" },
+  { company: "Airbnb", short: "ABNB", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "airbnb" },
+  { company: "Spotify", short: "SPOT", logoClass: "media", field: "Media", subField: "Digital Media", ats: "lever", board: "spotify" },
+  { company: "Zocdoc", short: "ZD", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "zocdoc" },
+  { company: "Komodo Health", short: "KMDO", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "komodohealth" },
+  { company: "Sweetgreen", short: "SG", logoClass: "consumer", field: "Consumer", subField: "Food & Beverage", ats: "greenhouse", board: "sweetgreen" },
+  { company: "Code for America", short: "CFA", logoClass: "npo", field: "Nonprofit", subField: "Civic Technology", ats: "greenhouse", board: "codeforamerica" },
 ];
 
 module.exports = { SOURCES };

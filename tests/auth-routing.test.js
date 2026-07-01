@@ -45,7 +45,7 @@ function scenario(complete) {
 
 {
   const callback = parseOAuthCallback("https://promptly.example/#access_token=secret-access&refresh_token=secret-refresh&expires_in=3600");
-  assert.deepEqual(callback, { type: "tokens", accessToken: "secret-access", refreshToken: "secret-refresh" });
+  assert.deepEqual(callback, { type: "tokens", accessToken: "secret-access", refreshToken: "secret-refresh", recovery: false });
   const clean = cleanOAuthCallbackUrl("https://promptly.example/?campaign=summer#access_token=secret-access&refresh_token=secret-refresh&keep=yes");
   assert.equal(clean, "/?campaign=summer#keep=yes");
   assert.doesNotMatch(clean, /secret|access_token|refresh_token/);
@@ -53,11 +53,21 @@ function scenario(complete) {
 
 {
   const callback = parseOAuthCallback("https://promptly.example/callback?code=pkce-code&campaign=summer#details");
-  assert.deepEqual(callback, { type: "code", code: "pkce-code" });
+  assert.deepEqual(callback, { type: "code", code: "pkce-code", recovery: false });
   assert.equal(
     cleanOAuthCallbackUrl("https://promptly.example/callback?code=pkce-code&campaign=summer#details"),
     "/callback?campaign=summer#details"
   );
+}
+
+{
+  // Password-recovery links must be flagged so the app prompts for a new password.
+  const hashRecovery = parseOAuthCallback("https://promptly.example/#access_token=a&refresh_token=r&type=recovery");
+  assert.equal(hashRecovery.recovery, true, "hash recovery link should flag recovery");
+  const pkceRecovery = parseOAuthCallback("https://promptly.example/?code=pkce-code&type=recovery");
+  assert.deepEqual(pkceRecovery, { type: "code", code: "pkce-code", recovery: true });
+  const cleaned = cleanOAuthCallbackUrl("https://promptly.example/?code=pkce-code&type=recovery#type=recovery&access_token=a");
+  assert.doesNotMatch(cleaned, /type=recovery|access_token/);
 }
 
 async function sessionScenarios() {

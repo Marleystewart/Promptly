@@ -1,5 +1,5 @@
 const { isValidEmail } = require("./_shared/email-validator");
-const { readBody, saveSubscriber, normalizeSubscriber } = require("./_shared/store");
+const { readBody, saveSubscriber, normalizeSubscriber, takeTestAlertSlot } = require("./_shared/store");
 const { getLiveOpenings } = require("./_shared/openings-store");
 const { sendWeeklyRecap, matchesOpening } = require("./_shared/alerts");
 
@@ -10,6 +10,13 @@ module.exports = async function handler(req, res) {
     const profile = body.profile || {};
     if (!isValidEmail(profile.email)) return res.status(400).json({ error: "Add a valid email first." });
     const subscriber = normalizeSubscriber(profile, body.subscription || null);
+
+    const requester = req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || "unknown";
+    const rateLimit = await takeTestAlertSlot(subscriber.email, requester);
+    if (!rateLimit.allowed) {
+      return res.status(429).json({ error: "Please wait a moment before sending another recap." });
+    }
+
     await saveSubscriber(profile, body.subscription || null);
     const payload = await getLiveOpenings();
     const live = (payload.openings || []).filter((opening) => matchesOpening(opening, subscriber));

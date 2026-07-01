@@ -3,7 +3,7 @@
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.PromptlyAuthRouting = api;
 }(typeof globalThis !== "undefined" ? globalThis : this, function createAuthRoutingApi() {
-  const AUTH_QUERY_PARAMS = ["code", "error", "error_code", "error_description"];
+  const AUTH_QUERY_PARAMS = ["code", "type", "error", "error_code", "error_description"];
   const AUTH_HASH_PARAMS = [
     "access_token", "refresh_token", "expires_in", "expires_at", "token_type", "type",
     "provider_token", "provider_refresh_token", "error", "error_code", "error_description",
@@ -12,12 +12,15 @@
   function parseOAuthCallback(locationLike) {
     const url = new URL(locationLike.href || String(locationLike), "https://promptly.local");
     const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
+    // Password-recovery links carry type=recovery (hash for implicit flow,
+    // query for PKCE) — the app must prompt for a new password after sign-in.
+    const recovery = hash.get("type") === "recovery" || url.searchParams.get("type") === "recovery";
     const accessToken = hash.get("access_token");
     const refreshToken = hash.get("refresh_token");
-    if (accessToken && refreshToken) return { type: "tokens", accessToken, refreshToken };
+    if (accessToken && refreshToken) return { type: "tokens", accessToken, refreshToken, recovery };
 
     const code = url.searchParams.get("code");
-    if (code) return { type: "code", code };
+    if (code) return { type: "code", code, recovery };
     return null;
   }
 
