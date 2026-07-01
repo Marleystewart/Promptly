@@ -1257,6 +1257,12 @@ function applyAccountUser(user) {
 
 async function initializeAuth() {
   const authStatus = document.querySelector("[data-auth-status]");
+  const callbackUrl = window.location.href;
+  const oauthCallback = window.PromptlyAuthRouting.parseOAuthCallback(callbackUrl);
+  if (oauthCallback) {
+    const cleanUrl = window.PromptlyAuthRouting.cleanOAuthCallbackUrl(callbackUrl);
+    window.history.replaceState(window.history.state, "", cleanUrl);
+  }
   try {
     const response = await fetch("/api/auth-config", { headers: { Accept: "application/json" } });
     const config = response.ok ? await response.json() : { enabled: false };
@@ -1270,7 +1276,9 @@ async function initializeAuth() {
       return;
     }
 
-    authClient = window.supabase.createClient(config.url, config.publishableKey);
+    authClient = window.supabase.createClient(config.url, config.publishableKey, {
+      auth: { detectSessionInUrl: false, flowType: "pkce" },
+    });
     authStatus.textContent = "Your account securely keeps your profile and saved alerts in sync.";
     authClient.auth.onAuthStateChange((event, session) => {
       window.setTimeout(() => {
@@ -1282,8 +1290,8 @@ async function initializeAuth() {
         }
       }, 0);
     });
-    const { data } = await authClient.auth.getSession();
-    routeAuthenticatedUser(data?.session?.user);
+    const session = await window.PromptlyAuthRouting.establishAuthSession(authClient.auth, oauthCallback);
+    routeAuthenticatedUser(session?.user);
   } catch {
     authStatus.textContent = "Account setup could not load. You can continue on this device and try again later.";
   }

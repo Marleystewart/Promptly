@@ -1,5 +1,10 @@
 const assert = require("node:assert/strict");
-const { createAuthenticatedUserRouter } = require("../auth-routing");
+const {
+  parseOAuthCallback,
+  cleanOAuthCallbackUrl,
+  establishAuthSession,
+  createAuthenticatedUserRouter,
+} = require("../auth-routing");
 
 function scenario(complete) {
   const events = [];
@@ -22,6 +27,65 @@ function scenario(complete) {
 }
 
 {
+  const callback = parseOAuthCallback("https://promptly.example/#access_token=secret-access&refresh_token=secret-refresh&expires_in=3600");
+  assert.deepEqual(callback, { type: "tokens", accessToken: "secret-access", refreshToken: "secret-refresh" });
+  const clean = cleanOAuthCallbackUrl("https://promptly.example/?campaign=summer#access_token=secret-access&refresh_token=secret-refresh&keep=yes");
+  assert.equal(clean, "/?campaign=summer#keep=yes");
+  assert.doesNotMatch(clean, /secret|access_token|refresh_token/);
+}
+
+{
+  const callback = parseOAuthCallback("https://promptly.example/callback?code=pkce-code&campaign=summer#details");
+  assert.deepEqual(callback, { type: "code", code: "pkce-code" });
+  assert.equal(
+    cleanOAuthCallbackUrl("https://promptly.example/callback?code=pkce-code&campaign=summer#details"),
+    "/callback?campaign=summer#details"
+  );
+}
+
+async function sessionScenarios() {
+  const user = { id: "callback-user" };
+  const tokenCalls = [];
+  const tokenSession = await establishAuthSession({
+    async setSession(value) {
+      tokenCalls.push(value);
+      return { data: { session: { user } }, error: null };
+    },
+  }, { type: "tokens", accessToken: "access", refreshToken: "refresh" });
+  assert.equal(tokenSession.user, user);
+  assert.deepEqual(tokenCalls, [{ access_token: "access", refresh_token: "refresh" }]);
+  const routed = [];
+  const route = createAuthenticatedUserRouter({
+    applyUser(value) { routed.push(`apply:${value.id}`); },
+    isComplete() { return false; },
+    showComplete() { routed.push("home"); },
+    showIncomplete() { routed.push("onboarding:2"); },
+  });
+  route(tokenSession.user);
+  assert.deepEqual(routed, ["apply:callback-user", "onboarding:2"]);
+
+  const codeCalls = [];
+  const codeSession = await establishAuthSession({
+    async exchangeCodeForSession(code) {
+      codeCalls.push(code);
+      return { data: { session: { user } }, error: null };
+    },
+  }, { type: "code", code: "pkce-code" });
+  assert.equal(codeSession.user, user);
+  assert.deepEqual(codeCalls, ["pkce-code"]);
+
+  let fallbackCalls = 0;
+  const fallbackSession = await establishAuthSession({
+    async getSession() {
+      fallbackCalls += 1;
+      return { data: { session: { user } }, error: null };
+    },
+  }, null);
+  assert.equal(fallbackSession.user, user);
+  assert.equal(fallbackCalls, 1);
+}
+
+{
   const { events, route } = scenario(true);
   route({ id: "existing-user" });
   assert.deepEqual(events, ["apply:existing-user", "home"]);
@@ -35,4 +99,9 @@ function scenario(complete) {
   assert.equal(route({ id: "new-user" }), true, "sign-out should allow a later session to route");
 }
 
-console.log("Auth routing tests passed.");
+sessionScenarios().then(() => {
+  console.log("Auth routing tests passed.");
+}).catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
