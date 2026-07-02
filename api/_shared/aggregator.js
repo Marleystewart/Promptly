@@ -112,6 +112,53 @@ async function fetchSmartRecruiters(src) {
   return out;
 }
 
+// ── USAJOBS: official federal jobs API (all agencies at once) ─────────────
+// { ats:"usajobs", field:"Government", query:"internship" }
+// Requires a FREE API key: developer.usajobs.gov → set USAJOBS_API_KEY and
+// USAJOBS_EMAIL in Vercel. Returns [] safely when unconfigured, so the build
+// never breaks. Government intern titles rarely carry a cycle year, so this
+// path intentionally does NOT apply the 2027 title rule — it filters by the
+// student/intern hiring path instead. NOTE: not yet verifiable end-to-end
+// without the key; shape follows the documented SearchResultItems schema.
+const GOV_INCLUDE = /intern|pathways|fellow|student|recent graduate/i;
+const GOV_EXCLUDE = /experienced|senior|supervisor|director/i;
+
+async function fetchUsaJobs(src) {
+  const key = process.env.USAJOBS_API_KEY;
+  const email = process.env.USAJOBS_EMAIL;
+  if (!key || !email) return []; // unconfigured — no-op, never throws
+
+  const query = encodeURIComponent(src.query || "internship");
+  const res = await fetch(
+    `https://data.usajobs.gov/api/search?Keyword=${query}&ResultsPerPage=250&WhoMayApply=student`,
+    {
+      headers: { Host: "data.usajobs.gov", "User-Agent": email, "Authorization-Key": key },
+      signal: AbortSignal.timeout(12000),
+    }
+  );
+  if (!res.ok) throw new Error(`${res.status} usajobs`);
+  const data = await res.json();
+  const items = data?.SearchResult?.SearchResultItems || [];
+  const out = [];
+  for (const it of items) {
+    const d = it.MatchedObjectDescriptor || {};
+    const title = d.PositionTitle || "";
+    if (!GOV_INCLUDE.test(title) || GOV_EXCLUDE.test(title)) continue;
+    const url = d.PositionURI || (d.ApplyURI && d.ApplyURI[0]);
+    if (!url) continue;
+    const location = d.PositionLocationDisplay || "";
+    const agency = d.OrganizationName || d.DepartmentName || "U.S. Federal Government";
+    out.push({
+      ...normalize(src, title, url, location),
+      company: agency.slice(0, 60),
+      short: "GOV",
+      deadline: d.ApplicationCloseDate ? String(d.ApplicationCloseDate).slice(0, 10) : "See posting",
+      sourceLabel: `${agency} — USAJOBS verified listing`,
+    });
+  }
+  return out;
+}
+
 function normalize(src, title, url, location) {
   const slug = src.board || src.tenant;
   return {
@@ -140,6 +187,7 @@ async function aggregateOpenings() {
     lever: fetchLever,
     ashby: fetchAshby,
     smartrecruiters: fetchSmartRecruiters,
+    usajobs: fetchUsaJobs,
   };
   const results = await Promise.allSettled(
     SOURCES.map((src) => (fetchers[src.ats] || fetchGreenhouse)(src))

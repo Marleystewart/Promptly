@@ -570,6 +570,10 @@ const browseCareers = {
   "Moelis & Company": "https://www.moelis.com/careers/",
   "D.E. Shaw": "https://www.deshaw.com/careers",
   "AQR Capital Management": "https://careers.aqr.com/",
+  // Stable official program landing pages (not job-ID deep links) — kept as
+  // the destination but relabeled honestly (program overviews, not one req).
+  "Goldman Sachs": "https://www.goldmansachs.com/careers/students/programs-and-internships/americas/2027-summer-analyst-program",
+  "J.P. Morgan": "https://www.jpmorganchase.com/careers/explore-opportunities/programs/investment-banking-summer-analyst",
 };
 for (const item of openings) {
   const url = browseCareers[item.company];
@@ -645,6 +649,7 @@ const profile = {
   interests: "",
   photoDataUrl: "",
   resumeName: "",
+  resumeText: "",
   fields: [],
   savedAlerts: [],
   emailNotifications: true,
@@ -836,7 +841,7 @@ function preferredOpenings() {
 }
 
 function profileMatchText() {
-  return [profile.major, profile.interests, profile.school, profile.preferredLocation, profile.fields.join(" ")].join(" ").toLowerCase();
+  return [profile.major, profile.interests, profile.school, profile.preferredLocation, profile.fields.join(" "), profile.resumeText].join(" ").toLowerCase();
 }
 
 function locationPreferenceMatch(item) {
@@ -875,7 +880,7 @@ function openingMatch(item) {
     reasons.push(roleHits[0]);
   }
 
-  const fieldHits = (interestKeywords[item.field] || []).filter((keyword) => text.includes(keyword));
+  const fieldHits = (interestKeywords[item.field] || []).filter((keyword) => keywordInText(keyword, text));
   if (fieldHits.length) {
     score += Math.min(fieldHits.length * 6, 20);
     if (!reasons.includes(item.field)) reasons.push(item.field);
@@ -1141,9 +1146,20 @@ function setOnboardingStep(step) {
   });
 }
 
+// Match a keyword in free text. Short keywords (<= 3 chars like "pr", "ib",
+// "ai") must match a whole word, or they false-positive inside longer words
+// ("pr" inside "pre-med"). Longer keywords match as substrings so phrases
+// like "software engineering" still hit "software".
+function keywordInText(keyword, text) {
+  if (keyword.length <= 3) {
+    return new RegExp(`(^|[^a-z])${keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z]|$)`, "i").test(text);
+  }
+  return text.includes(keyword);
+}
+
 function inferFieldsFromText(value) {
   const text = String(value || "").toLowerCase();
-  return fieldOptions.filter((field) => interestKeywords[field].some((keyword) => text.includes(keyword)));
+  return fieldOptions.filter((field) => interestKeywords[field].some((keyword) => keywordInText(keyword, text)));
 }
 
 function mergeFields(fields) {
@@ -1213,6 +1229,8 @@ function fillProfileInputs() {
   document.querySelector("[data-remote-input]").checked = profile.remoteOkay !== false;
   document.querySelector("[data-relocate-input]").checked = profile.willingToRelocate === true;
   document.querySelector("[data-interests-input]").value = profile.interests || "";
+  const resumeInput = document.querySelector("[data-resume-input]");
+  if (resumeInput) resumeInput.value = profile.resumeText || "";
 }
 
 function updateAccountUI(message = "") {
@@ -1274,6 +1292,7 @@ function applyAccountUser(user) {
       interests: "",
       photoDataUrl: "",
       resumeName: "",
+  resumeText: "",
       fields: [],
       savedAlerts: [],
       emailNotifications: true,
@@ -1717,11 +1736,13 @@ function enterApp() {
   const typedName = document.querySelector("[data-name-input]").value.trim();
   const typedEmail = document.querySelector("[data-email-input]").value.trim();
   const typedInterests = document.querySelector("[data-interests-input]").value.trim();
+  const typedResume = document.querySelector("[data-resume-input]")?.value.trim() || "";
   if (!validateSignup() || !validateAcademicProfile()) return;
   if (typedName) profile.name = typedName;
   if (typedEmail) profile.email = typedEmail;
   profile.interests = typedInterests;
-  mergeFields(inferFieldsFromText(typedInterests));
+  profile.resumeText = typedResume.slice(0, 8000);
+  mergeFields(inferFieldsFromText(`${typedInterests} ${typedResume}`));
   saveProfile();
   saveSubscriber();
   track("signup");

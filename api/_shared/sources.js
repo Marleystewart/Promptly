@@ -157,6 +157,13 @@ const SOURCES = [
   { company: "Experian", short: "EXPN", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "smartrecruiters", board: "Experian" },
   { company: "Ubisoft", short: "UBI", logoClass: "tech", field: "Technology", subField: "Gaming", ats: "smartrecruiters", board: "Ubisoft2" },
   { company: "Continental", short: "CONTI", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "smartrecruiters", board: "Continental" },
+
+  // ═══ GOVERNMENT: USAJOBS (all federal agencies, one adapter) ═════════════
+  // Needs free USAJOBS_API_KEY + USAJOBS_EMAIL in Vercel. No-ops until set.
+  // Each query surfaces the actual hiring agency (NASA, State, NIH…) as the
+  // company. Two queries widen coverage across student hiring paths.
+  { company: "U.S. Federal Government", short: "GOV", logoClass: "gov", field: "Government", subField: "Federal", ats: "usajobs", query: "internship" },
+  { company: "U.S. Federal Government", short: "GOV", logoClass: "gov", field: "Government", subField: "Federal", ats: "usajobs", query: "pathways student" },
 ];
 
 module.exports = { SOURCES };
