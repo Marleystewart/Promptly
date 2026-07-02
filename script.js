@@ -549,6 +549,36 @@ for (const item of openings) {
   });
 }
 
+// ── Honest "Browse careers" treatment ────────────────────────────────────
+// Marquee employers on custom/SPA career sites (Google, Apple, McKinsey…)
+// can't be deep-linked reliably: a specific job-ID URL returns HTTP 200 but
+// renders "job not found" once the req expires. Rather than show a broken
+// "Open Official Posting" button, we point these at the company's STABLE
+// careers/search page and label the button honestly as "Browse … careers".
+// The pipeline (live ATS feeds) remains the ONLY source of verified deep
+// links. Careers roots below were probed live (2026-07).
+const browseCareers = {
+  "Google": "https://www.google.com/about/careers/applications/jobs/results/?q=intern%202027",
+  "Apple": "https://jobs.apple.com/en-us/search?search=intern",
+  "Amazon": "https://www.amazon.jobs/en/search?base_query=2027%20intern",
+  "BlackRock": "https://careers.blackrock.com/",
+  "Bain & Company": "https://www.bain.com/careers/",
+  "McKinsey & Company": "https://www.mckinsey.com/careers",
+  "Morgan Stanley": "https://www.morganstanley.com/careers",
+  "Lazard": "https://www.lazard.com/careers/",
+  "Jefferies": "https://www.jefferies.com/careers/",
+  "Moelis & Company": "https://www.moelis.com/careers/",
+  "D.E. Shaw": "https://www.deshaw.com/careers",
+  "AQR Capital Management": "https://careers.aqr.com/",
+};
+for (const item of openings) {
+  const url = browseCareers[item.company];
+  if (!url || item.curatedAwaiting) continue;
+  item.sourceUrl = url;
+  item.browse = true;
+  item.sourceLabel = `${item.company} Careers — browse ${item.program || "2027"} roles`;
+}
+
 // Watch-list directory: companies we track that have no live posting yet.
 // They render as "Awaiting 2027 posting" cards until the pipeline finds a real
 // listing, then the placeholder is replaced by the verified opening.
@@ -1021,6 +1051,8 @@ function openDetails(company) {
   const sourceLink = modal.querySelector("[data-modal-source-link]");
   sourceLink.href = item.sourceUrl || "#";
   sourceLink.hidden = !item.sourceUrl || awaitingLike;
+  // Honest labeling: verified deep link vs. "browse their careers page".
+  sourceLink.textContent = item.browse ? `Browse ${item.company} Careers` : "Open Official Posting";
   modal.querySelector("[data-save-modal]").textContent = saved.has(item.company) ? "Unsave Alert" : "Save Alert";
   const modalLogo = modal.querySelector(".modal-logo");
   modalLogo.className = `modal-logo ${item.logo ? "logo-tile" : item.logoClass}`;
@@ -1053,6 +1085,7 @@ function persistSavedCompanies() {
     deadline: item.deadline,
     field: item.field,
     sourceUrl: item.sourceUrl,
+    browse: item.browse,
   }));
   saveProfile();
   saveSubscriber();
@@ -1075,6 +1108,7 @@ function restoreSavedCompanies() {
       deadline: item.deadline,
       field: item.field,
       sourceUrl: item.sourceUrl,
+      browse: item.browse,
     }));
   } catch {}
 }
@@ -1812,6 +1846,7 @@ function currentTestOpening() {
     deadline: item.deadline,
     field: item.field,
     sourceUrl: item.sourceUrl,
+    browse: item.browse,
   };
 }
 

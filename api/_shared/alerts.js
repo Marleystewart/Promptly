@@ -45,8 +45,9 @@ function openingHtml(opening, subscriber) {
   const deadline = escapeHtml(opening.deadline || "Check posting");
   const location = escapeHtml(opening.location || "See posting");
   const sourceUrl = safeOfficialUrl(opening.sourceUrl);
+  const buttonLabel = opening.browse ? `Browse ${company} Careers` : "Open Official Posting";
   const sourceAction = sourceUrl
-    ? `<a href="${escapeHtml(sourceUrl)}" style="display:inline-block;background:#6841ff;color:#fff;text-decoration:none;font-weight:700;border-radius:8px;padding:13px 18px;margin:0 0 18px">Open Official Posting</a>`
+    ? `<a href="${escapeHtml(sourceUrl)}" style="display:inline-block;background:#6841ff;color:#fff;text-decoration:none;font-weight:700;border-radius:8px;padding:13px 18px;margin:0 0 18px">${buttonLabel}</a>`
     : `<p style="color:#5b5870">Promptly has not verified a direct posting link for this alert yet.</p>`;
 
   return `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#14141f;max-width:560px;margin:0 auto;padding:24px">
@@ -72,10 +73,11 @@ function alertCard(opening) {
   const program = escapeHtml(opening.program || "Internship");
   const deadline = escapeHtml(opening.deadline || "Check posting");
   const url = safeUrl(opening.sourceUrl);
+  const linkLabel = opening.browse ? `Browse ${company} careers` : "View official posting";
   return `<div style="background:#f4f1ff;border:1px solid #ded6ff;border-radius:14px;padding:16px;margin:12px 0">
     <strong>${company}</strong><br />${role} · ${program}<br />
     <span style="color:#5b5870">Deadline: ${deadline}</span>
-    ${url ? `<br /><a href="${url}" style="display:inline-block;margin-top:10px;color:#5b35e8;font-weight:700">View official posting</a>` : ""}
+    ${url ? `<br /><a href="${url}" style="display:inline-block;margin-top:10px;color:#5b35e8;font-weight:700">${linkLabel}</a>` : ""}
   </div>`;
 }
 

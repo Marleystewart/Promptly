@@ -35,6 +35,7 @@ function normalizeSubscriber(profile = {}, subscription = null) {
       deadline: String(item.deadline || "").trim(),
       field: String(item.field || "").trim(),
       sourceUrl: String(item.sourceUrl || "").trim(),
+      browse: item.browse === true,
     })).filter((item) => item.company && item.role)
     : [];
   return {
