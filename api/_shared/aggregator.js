@@ -203,8 +203,11 @@ async function fetchUsaJobs(src) {
     // HiringPath already scoped this to student/recent-grad; just drop the
     // occasional senior/management title that sneaks into those paths.
     if (GOV_EXCLUDE.test(title)) continue;
-    const url = d.PositionURI || (d.ApplyURI && d.ApplyURI[0]);
-    if (!url) continue;
+    // PositionURI comes back as "https://www.usajobs.gov:443/job/..." — drop
+    // the explicit default port so the link is clean.
+    const rawUrl = d.PositionURI || (d.ApplyURI && d.ApplyURI[0]);
+    if (!rawUrl) continue;
+    const url = String(rawUrl).replace(":443/", "/");
     const location = d.PositionLocationDisplay
       || (Array.isArray(d.PositionLocation) && d.PositionLocation[0]?.LocationName)
       || "";
