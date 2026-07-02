@@ -8,17 +8,41 @@
 
 const { SOURCES } = require("./sources");
 
-const INTERNATIONAL = /london|hong ?kong|singapore|japan|munich|germany|india|toronto|calgary|montr|amsterdam|shanghai|sydney|paris|zurich|dublin|tokyo|seoul|\bhk\b|\buk\b|tel aviv|madrid|milan|frankfurt/i;
-const EXCLUDE_TITLE = /experienced|full[- ]?time|upcoming graduates|new analyst program|off[- ]?cycle|\b2024\b|\b2025\b|\b2026\b/i;
-const INCLUDE_TITLE = /intern|summer|co-?op/i;
+const INTERNATIONAL = /london|hong ?kong|singapore|japan|munich|germany|india|toronto|calgary|montr|amsterdam|shanghai|sydney|paris|zurich|dublin|tokyo|seoul|\bhk\b|\buk\b|tel aviv|madrid|milan|frankfurt|warsaw|poland|bangalore|bengaluru|mumbai|manila|jakarta|shenzhen|beijing|dubai|abu dhabi|vancouver|berlin|stockholm|oslo|copenhagen|vienna|prague|budapest|geneva|brussels|edinburgh|manchester|glasgow|são paulo|sao paulo|mexico city|bogot/i;
+// Seniority / staleness / non-student gate — keeps experienced roles, past
+// cycles, and internal hiring roles out of BOTH the intern and new-grad paths.
+// "recruiter/recruiting" excludes "Campus Recruiter"-type staff jobs that
+// otherwise false-match on "early careers".
+const EXCLUDE_TITLE = /experienced|senior|staff|principal|\blead\b|manager|director|\bvp\b|vice president|\bii+\b|\b[3-9]\+?\s*years|off[- ]?cycle|recruit(er|ing)|\b2023\b|\b2024\b|\b2025\b/i;
+const INTERN_TITLE = /intern|summer analyst|co-?op/i;
+const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|early career|entry[ -]?level|campus hire|rotational program|analyst program/i;
+const CYCLE_YEAR = /\b(2026|2027|2028)\b/;
 
+// Detect which recruiting cycle a posting belongs to, or null if it's not a
+// student-relevant role. Internships require an explicit target year (keeps
+// quality tight); new-grad/full-time entry roles are matched by explicit
+// early-career markers. Pass allowUndatedIntern for feeds (e.g. USAJOBS)
+// where a live listing is inherently current even without a year in the title.
+function detectCycle(title, location, allowUndatedIntern = false) {
+  if (!title) return null;
+  // Check both title and location for international cues — some feeds put the
+  // city in the title ("2026 Warsaw Data Internship") and leave location blank.
+  if (INTERNATIONAL.test(`${title} ${location || ""}`)) return null; // US-focused audience
+  if (EXCLUDE_TITLE.test(title)) return null;                 // not experienced / past cycles
+  const yearMatch = title.match(CYCLE_YEAR);
+  if (INTERN_TITLE.test(title)) {
+    if (yearMatch) return `Summer ${yearMatch[1]}`;
+    return allowUndatedIntern ? "Internship" : null;
+  }
+  if (NEWGRAD_TITLE.test(title)) {
+    return yearMatch ? `New Grad ${yearMatch[1]}` : "New Grad";
+  }
+  return null;
+}
+
+// Back-compat: the original single-cycle gate, kept for existing callers/tests.
 function isRelevant(title, location) {
-  if (!title) return false;
-  if (!/\b2027\b/.test(title)) return false;          // must be the 2027 cycle
-  if (!INCLUDE_TITLE.test(title)) return false;        // must be an internship/summer role
-  if (EXCLUDE_TITLE.test(title)) return false;         // not experienced / past cycles
-  if (location && INTERNATIONAL.test(location)) return false; // US-focused audience
-  return true;
+  return detectCycle(title, location) !== null;
 }
 
 function cleanRole(title) {
@@ -35,9 +59,13 @@ async function fetchJson(url, options) {
 async function fetchGreenhouse(src) {
   const data = await fetchJson(`https://boards-api.greenhouse.io/v1/boards/${src.board}/jobs`);
   const jobs = Array.isArray(data.jobs) ? data.jobs : [];
-  return jobs
-    .filter((j) => isRelevant(j.title, (j.location || {}).name))
-    .map((j) => normalize(src, j.title, j.absolute_url, (j.location || {}).name));
+  const out = [];
+  for (const j of jobs) {
+    const loc = (j.location || {}).name;
+    const cycle = detectCycle(j.title, loc);
+    if (cycle) out.push(normalize(src, j.title, j.absolute_url, loc, cycle));
+  }
+  return out;
 }
 
 // ── Workday: public cxs jobs endpoint, paginated ─────────────────────────
@@ -59,9 +87,10 @@ async function fetchWorkday(src) {
     const postings = Array.isArray(data.jobPostings) ? data.jobPostings : [];
     if (!postings.length) break;
     for (const p of postings) {
-      if (!isRelevant(p.title, p.locationsText)) continue;
+      const cycle = detectCycle(p.title, p.locationsText);
+      if (!cycle) continue;
       const url = `${base}/en-US/${src.site}${p.externalPath}`;
-      out.push(normalize(src, p.title, url, p.locationsText));
+      out.push(normalize(src, p.title, url, p.locationsText, cycle));
     }
     if (postings.length < 20) break;
   }
@@ -72,9 +101,13 @@ async function fetchWorkday(src) {
 async function fetchLever(src) {
   const data = await fetchJson(`https://api.lever.co/v0/postings/${src.board}?mode=json`);
   const jobs = Array.isArray(data) ? data : [];
-  return jobs
-    .filter((j) => isRelevant(j.text, (j.categories || {}).location))
-    .map((j) => normalize(src, j.text, j.hostedUrl, (j.categories || {}).location));
+  const out = [];
+  for (const j of jobs) {
+    const loc = (j.categories || {}).location;
+    const cycle = detectCycle(j.text, loc);
+    if (cycle) out.push(normalize(src, j.text, j.hostedUrl, loc, cycle));
+  }
+  return out;
 }
 
 // ── Ashby: public posting-api, no auth ───────────────────────────────────
@@ -82,9 +115,13 @@ async function fetchLever(src) {
 async function fetchAshby(src) {
   const data = await fetchJson(`https://api.ashbyhq.com/posting-api/job-board/${src.board}`);
   const jobs = Array.isArray(data.jobs) ? data.jobs : [];
-  return jobs
-    .filter((j) => j.isListed !== false && isRelevant(j.title, j.location))
-    .map((j) => normalize(src, j.title, j.jobUrl, j.location));
+  const out = [];
+  for (const j of jobs) {
+    if (j.isListed === false) continue;
+    const cycle = detectCycle(j.title, j.location);
+    if (cycle) out.push(normalize(src, j.title, j.jobUrl, j.location, cycle));
+  }
+  return out;
 }
 
 // ── SmartRecruiters: public postings API, paginated ──────────────────────
@@ -104,8 +141,9 @@ async function fetchSmartRecruiters(src) {
       if (country && country !== "us") continue;
       const location = p.location?.fullLocation
         || [p.location?.city, p.location?.region].filter(Boolean).join(", ");
-      if (!isRelevant(p.name, location)) continue;
-      out.push(normalize(src, p.name, `https://jobs.smartrecruiters.com/${src.board}/${p.id}`, location));
+      const cycle = detectCycle(p.name, location);
+      if (!cycle) continue;
+      out.push(normalize(src, p.name, `https://jobs.smartrecruiters.com/${src.board}/${p.id}`, location, cycle));
     }
     if (postings.length < 100) break;
   }
@@ -148,8 +186,12 @@ async function fetchUsaJobs(src) {
     if (!url) continue;
     const location = d.PositionLocationDisplay || "";
     const agency = d.OrganizationName || d.DepartmentName || "U.S. Federal Government";
+    // Gov listings are inherently current (live + close date), so allow
+    // undated internships here; fall back to a New Grad / Internship label.
+    const cycle = detectCycle(title, location, true)
+      || (/intern|pathways|student/i.test(title) ? "Internship" : "New Grad");
     out.push({
-      ...normalize(src, title, url, location),
+      ...normalize(src, title, url, location, cycle),
       company: agency.slice(0, 60),
       short: "GOV",
       deadline: d.ApplicationCloseDate ? String(d.ApplicationCloseDate).slice(0, 10) : "See posting",
@@ -159,7 +201,7 @@ async function fetchUsaJobs(src) {
   return out;
 }
 
-function normalize(src, title, url, location) {
+function normalize(src, title, url, location, cycle = "Summer 2027") {
   const slug = src.board || src.tenant;
   return {
     company: src.company,
@@ -169,7 +211,8 @@ function normalize(src, title, url, location) {
     field: src.field,
     subField: src.subField,
     role: cleanRole(title),
-    program: "Summer 2027",
+    program: cycle,
+    cycle,
     deadline: "See posting",
     opened: location ? `Live • ${String(location).split(",")[0].trim()}` : "Live posting",
     location: location ? String(location).replace(/\s+/g, " ").trim().slice(0, 120) : "",
@@ -216,4 +259,4 @@ async function aggregateOpenings() {
   return { openings, sourceStatus, updatedAt: new Date().toISOString() };
 }
 
-module.exports = { aggregateOpenings, isRelevant };
+module.exports = { aggregateOpenings, isRelevant, detectCycle };

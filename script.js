@@ -583,6 +583,28 @@ for (const item of openings) {
   item.sourceLabel = `${item.company} Careers — browse ${item.program || "2027"} roles`;
 }
 
+// Every curated opening carries a cycle (derived from its program label) so
+// the whole app can reason about recruiting cycles uniformly with live data.
+for (const item of openings) {
+  if (!item.cycle) item.cycle = item.program || "Summer 2027";
+}
+
+// Which recruiting cycles matter to a student, from their graduation year:
+// juniors/sophomores → the summer internships 1–2 years out; seniors/recent
+// grads → New Grad full-time. Returns null (no filter) when year is unknown.
+function relevantCycles(gradYear) {
+  const gy = parseInt(gradYear, 10);
+  if (!gy) return null;
+  const set = new Set(["New Grad", "Internship", `New Grad ${gy}`]);
+  [gy - 2, gy - 1].forEach((y) => { if (y >= 2026 && y <= 2028) set.add(`Summer ${y}`); });
+  return set;
+}
+function cycleMatchesProfile(item) {
+  const cycles = relevantCycles(profile.gradYear);
+  if (!cycles || !item.cycle) return true;
+  return cycles.has(item.cycle);
+}
+
 // Watch-list directory: companies we track that have no live posting yet.
 // They render as "Awaiting 2027 posting" cards until the pipeline finds a real
 // listing, then the placeholder is replaced by the verified opening.
@@ -887,6 +909,11 @@ function openingMatch(item) {
   }
 
   if (profile.major && searchable.includes(profile.major.toLowerCase().split(" ")[0])) score += 6;
+  // Cycle fit: a role in the student's own recruiting cycle rises to the top.
+  if (cycleMatchesProfile(item) && item.cycle && relevantCycles(profile.gradYear)) {
+    score += 26;
+    reasons.push(item.cycle);
+  }
   const locationMatch = locationPreferenceMatch(item);
   score += locationMatch.score;
   if (locationMatch.reason) reasons.push(locationMatch.reason);
@@ -1017,6 +1044,7 @@ function setView(name) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 
   if (name === "openings") markMatchingAlertsSeen();
+  if (name === "cycles") renderCyclesView();
 
   if (name === "alerts") {
     const list = document.querySelector(".alerts-recent-list");
@@ -1027,6 +1055,52 @@ function setView(name) {
         : "<p style='color:var(--muted);padding:16px 0'>No new openings in the last 7 days.</p>";
     }
   }
+}
+
+// Data-driven Cycles view: replaces the old hardcoded 3-industry timeline.
+// Groups the student's real (verified, non-awaiting) openings by recruiting
+// cycle, the student's own cycles first, so a senior sees New Grad roles and
+// a sophomore sees Summer 2027/2028 — driven entirely by live data.
+const CYCLE_ORDER = ["Summer 2026", "Summer 2027", "Summer 2028", "New Grad 2026", "New Grad 2027", "New Grad", "Internship"];
+function renderCyclesView() {
+  const timeline = document.querySelector("#view-cycles .timeline");
+  const note = document.querySelector("#view-cycles .cycle-note p");
+  if (!timeline) return;
+  const months = document.querySelector("#view-cycles .months");
+  if (months) months.hidden = true; // grouped by cycle now, not by month
+
+  const mine = relevantCycles(profile.gradYear);
+  if (note) {
+    const label = profile.gradYear ? `Class of ${profile.gradYear}` : "your profile";
+    const list = mine ? [...mine].filter((c) => !["New Grad", "Internship"].includes(c) || mine.size <= 2).join(", ") : "every cycle";
+    note.textContent = `Based on ${label}, Promptly highlights: ${list || "New Grad roles"}. Verified openings are grouped by cycle below — yours first.`;
+  }
+
+  const live = openings.filter((o) => !isAwaitingLike(o) && o.cycle);
+  const byCycle = {};
+  live.forEach((o) => { (byCycle[o.cycle] = byCycle[o.cycle] || []).push(o); });
+
+  const present = Object.keys(byCycle).sort((a, b) => {
+    const am = mine?.has(a) ? 0 : 1, bm = mine?.has(b) ? 0 : 1;
+    if (am !== bm) return am - bm;
+    return CYCLE_ORDER.indexOf(a) - CYCLE_ORDER.indexOf(b);
+  });
+
+  if (!present.length) {
+    timeline.innerHTML = `<article><p style="color:var(--muted)">No verified live openings yet — watch-list companies will appear here as their postings go live.</p></article>`;
+    return;
+  }
+
+  timeline.innerHTML = present.map((cycle) => {
+    const items = byCycle[cycle]
+      .sort((a, b) => openingMatch(b).score - openingMatch(a).score)
+      .slice(0, 10);
+    const mineTag = mine?.has(cycle) ? ` <span class="status-pill">for you</span>` : "";
+    const chips = items.map((o) =>
+      `<button class="company-chip" data-open-details="${esc(o.company)}">${esc(o.company)}</button>`
+    ).join("");
+    return `<article><strong>${esc(cycle)} · ${byCycle[cycle].length}${mineTag}</strong>${chips}</article>`;
+  }).join("");
 }
 
 function findOpening(company) {
