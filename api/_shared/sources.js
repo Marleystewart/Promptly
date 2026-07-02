@@ -160,10 +160,10 @@ const SOURCES = [
 
   // ═══ GOVERNMENT: USAJOBS (all federal agencies, one adapter) ═════════════
   // Needs free USAJOBS_API_KEY + USAJOBS_EMAIL in Vercel. No-ops until set.
-  // Each query surfaces the actual hiring agency (NASA, State, NIH…) as the
-  // company. Two queries widen coverage across student hiring paths.
-  { company: "U.S. Federal Government", short: "GOV", logoClass: "gov", field: "Government", subField: "Federal", ats: "usajobs", query: "internship" },
-  { company: "U.S. Federal Government", short: "GOV", logoClass: "gov", field: "Government", subField: "Federal", ats: "usajobs", query: "pathways student" },
+  // The HiringPath filter scopes to student + recent-graduate roles across
+  // every agency; each result surfaces the real hiring agency (NASA, State,
+  // NIH…) as the company.
+  { company: "U.S. Federal Government", short: "GOV", logoClass: "gov", field: "Government", subField: "Federal", ats: "usajobs", hiringPath: "student;recent-graduates" },
 ];
 
 module.exports = { SOURCES };

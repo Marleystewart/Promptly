@@ -168,29 +168,31 @@ async function fetchSmartRecruiters(src) {
 }
 
 // ── USAJOBS: official federal jobs API (all agencies at once) ─────────────
-// { ats:"usajobs", field:"Government", query:"internship" }
+// { ats:"usajobs", field:"Government", hiringPath:"student;recent-graduates" }
 // Requires a FREE API key: developer.usajobs.gov → set USAJOBS_API_KEY and
 // USAJOBS_EMAIL in Vercel. Returns [] safely when unconfigured, so the build
-// never breaks. Government intern titles rarely carry a cycle year, so this
-// path intentionally does NOT apply the 2027 title rule — it filters by the
-// student/intern hiring path instead. NOTE: not yet verifiable end-to-end
-// without the key; shape follows the documented SearchResultItems schema.
-const GOV_INCLUDE = /intern|pathways|fellow|student|recent graduate/i;
-const GOV_EXCLUDE = /experienced|senior|supervisor|director/i;
+// never throws. The HiringPath filter (NOT WhoMayApply) is the API's official
+// way to scope to student + recent-graduate roles, so those two paths already
+// gate the results — we only add a light seniority guard and drop anything
+// clearly not entry-level. NOTE: verify live against the API once the key
+// exists; response shape follows the documented SearchResultItems schema.
+const GOV_EXCLUDE = /\bsenior\b|supervisor|\bchief\b|\bdirector\b|manager|\blead\b/i;
 
 async function fetchUsaJobs(src) {
   const key = process.env.USAJOBS_API_KEY;
   const email = process.env.USAJOBS_EMAIL;
   if (!key || !email) return []; // unconfigured — no-op, never throws
 
-  const query = encodeURIComponent(src.query || "internship");
-  const res = await fetch(
-    `https://data.usajobs.gov/api/search?Keyword=${query}&ResultsPerPage=250&WhoMayApply=student`,
-    {
-      headers: { Host: "data.usajobs.gov", "User-Agent": email, "Authorization-Key": key },
-      signal: AbortSignal.timeout(12000),
-    }
-  );
+  const hiringPath = src.hiringPath || "student;recent-graduates";
+  const params = new URLSearchParams({
+    ResultsPerPage: "500",
+    HiringPath: hiringPath,
+  });
+  if (src.query) params.set("Keyword", src.query);
+  const res = await fetch(`https://data.usajobs.gov/api/search?${params.toString()}`, {
+    headers: { Host: "data.usajobs.gov", "User-Agent": email, "Authorization-Key": key },
+    signal: AbortSignal.timeout(12000),
+  });
   if (!res.ok) throw new Error(`${res.status} usajobs`);
   const data = await res.json();
   const items = data?.SearchResult?.SearchResultItems || [];
@@ -198,10 +200,14 @@ async function fetchUsaJobs(src) {
   for (const it of items) {
     const d = it.MatchedObjectDescriptor || {};
     const title = d.PositionTitle || "";
-    if (!GOV_INCLUDE.test(title) || GOV_EXCLUDE.test(title)) continue;
+    // HiringPath already scoped this to student/recent-grad; just drop the
+    // occasional senior/management title that sneaks into those paths.
+    if (GOV_EXCLUDE.test(title)) continue;
     const url = d.PositionURI || (d.ApplyURI && d.ApplyURI[0]);
     if (!url) continue;
-    const location = d.PositionLocationDisplay || "";
+    const location = d.PositionLocationDisplay
+      || (Array.isArray(d.PositionLocation) && d.PositionLocation[0]?.LocationName)
+      || "";
     const agency = d.OrganizationName || d.DepartmentName || "U.S. Federal Government";
     // Gov listings are inherently current (live + close date), so allow
     // undated internships here; fall back to a New Grad / Internship label.
