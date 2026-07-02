@@ -17,6 +17,15 @@ const EXCLUDE_TITLE = /experienced|senior|staff|principal|\blead\b|manager|direc
 const INTERN_TITLE = /intern|summer analyst|co-?op/i;
 const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|early career|entry[ -]?level|campus hire|rotational program|analyst program/i;
 const CYCLE_YEAR = /\b(2026|2027|2028)\b/;
+const SEASON = /\b(spring|summer|fall|autumn|winter)\b/i;
+// Not a real, student-relevant job req: talent pools, mailing lists, general
+// "expression of interest" pages, and hourly production/technician roles that
+// aren't the college-intern/new-grad audience.
+const NON_ROLE = /mailing list|talent (community|network|pool)|future opportunit|join our|expression of interest|general application|prospective|production technician|assembly technician|\btemporary\b/i;
+
+function titleCase(s) {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
 
 // Detect which recruiting cycle a posting belongs to, or null if it's not a
 // student-relevant role. Internships require an explicit target year (keeps
@@ -29,9 +38,17 @@ function detectCycle(title, location, allowUndatedIntern = false) {
   // city in the title ("2026 Warsaw Data Internship") and leave location blank.
   if (INTERNATIONAL.test(`${title} ${location || ""}`)) return null; // US-focused audience
   if (EXCLUDE_TITLE.test(title)) return null;                 // not experienced / past cycles
+  if (NON_ROLE.test(title)) return null;                       // talent pools / non-reqs
   const yearMatch = title.match(CYCLE_YEAR);
   if (INTERN_TITLE.test(title)) {
-    if (yearMatch) return `Summer ${yearMatch[1]}`;
+    if (yearMatch) {
+      // Use the actual season when stated ("Fall 2026" ≠ "Summer 2026"),
+      // defaulting to Summer only when no season is named.
+      const seasonMatch = title.match(SEASON);
+      let season = seasonMatch ? titleCase(seasonMatch[1]) : "Summer";
+      if (season === "Autumn") season = "Fall";
+      return `${season} ${yearMatch[1]}`;
+    }
     return allowUndatedIntern ? "Internship" : null;
   }
   if (NEWGRAD_TITLE.test(title)) {
@@ -236,7 +253,12 @@ async function aggregateOpenings() {
     SOURCES.map((src) => (fetchers[src.ats] || fetchGreenhouse)(src))
   );
 
-  const seen = new Set();
+  // Keep the feed balanced and clean: no single employer floods it, and the
+  // same role posted across multiple offices collapses to one card.
+  const MAX_PER_COMPANY = 12;
+  const seen = new Set();            // dedupe by exact posting URL
+  const seenRole = new Set();        // dedupe identical company+role+cycle
+  const perCompany = {};
   const openings = [];
   const sourceStatus = [];
 
@@ -246,7 +268,12 @@ async function aggregateOpenings() {
       let added = 0;
       for (const o of r.value) {
         if (!o.sourceUrl || seen.has(o.sourceUrl)) continue;
+        const roleKey = `${o.company}|${o.role}|${o.cycle}`.toLowerCase();
+        if (seenRole.has(roleKey)) continue;                 // same role, another office
+        if ((perCompany[o.company] || 0) >= MAX_PER_COMPANY) continue; // no flooding
         seen.add(o.sourceUrl);
+        seenRole.add(roleKey);
+        perCompany[o.company] = (perCompany[o.company] || 0) + 1;
         openings.push(o);
         added += 1;
       }

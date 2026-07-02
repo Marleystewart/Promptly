@@ -590,19 +590,31 @@ for (const item of openings) {
 }
 
 // Which recruiting cycles matter to a student, from their graduation year:
-// juniors/sophomores → the summer internships 1–2 years out; seniors/recent
-// grads → New Grad full-time. Returns null (no filter) when year is unknown.
-function relevantCycles(gradYear) {
+// juniors/sophomores → internships 1–2 years out (any season); seniors/recent
+// grads → New Grad full-time. Year-based so "Fall 2026" and "Summer 2026"
+// both count for a student eligible for the 2026 cycle.
+function eligibleInternYears(gradYear) {
   const gy = parseInt(gradYear, 10);
   if (!gy) return null;
-  const set = new Set(["New Grad", "Internship", `New Grad ${gy}`]);
-  [gy - 2, gy - 1].forEach((y) => { if (y >= 2026 && y <= 2028) set.add(`Summer ${y}`); });
-  return set;
+  return [gy - 2, gy - 1].filter((y) => y >= 2026 && y <= 2028);
 }
 function cycleMatchesProfile(item) {
-  const cycles = relevantCycles(profile.gradYear);
-  if (!cycles || !item.cycle) return true;
-  return cycles.has(item.cycle);
+  const gy = parseInt(profile.gradYear, 10);
+  if (!gy || !item.cycle) return true;
+  const yearMatch = String(item.cycle).match(/20\d\d/);
+  const year = yearMatch ? parseInt(yearMatch[0], 10) : null;
+  const isNewGrad = /new grad/i.test(item.cycle);
+  if (!year) return true; // undated "New Grad" / "Internship" — always plausible
+  if (isNewGrad) return year === gy;
+  return (eligibleInternYears(gy) || []).includes(year); // internship (any season)
+}
+// Human-readable list of the cycles a student is targeting (for the note).
+function relevantCycleLabels(gradYear) {
+  const gy = parseInt(gradYear, 10);
+  if (!gy) return null;
+  const labels = (eligibleInternYears(gy) || []).map((y) => `${y} internships`);
+  labels.push(`New Grad ${gy}`);
+  return labels;
 }
 
 // Watch-list directory: companies we track that have no live posting yet.
@@ -910,7 +922,7 @@ function openingMatch(item) {
 
   if (profile.major && searchable.includes(profile.major.toLowerCase().split(" ")[0])) score += 6;
   // Cycle fit: a role in the student's own recruiting cycle rises to the top.
-  if (cycleMatchesProfile(item) && item.cycle && relevantCycles(profile.gradYear)) {
+  if (profile.gradYear && item.cycle && cycleMatchesProfile(item)) {
     score += 26;
     reasons.push(item.cycle);
   }
@@ -1061,7 +1073,16 @@ function setView(name) {
 // Groups the student's real (verified, non-awaiting) openings by recruiting
 // cycle, the student's own cycles first, so a senior sees New Grad roles and
 // a sophomore sees Summer 2027/2028 — driven entirely by live data.
-const CYCLE_ORDER = ["Summer 2026", "Summer 2027", "Summer 2028", "New Grad 2026", "New Grad 2027", "New Grad", "Internship"];
+// Sort key for a cycle label: earlier year first, seasons in calendar order,
+// undated buckets last. Works for any "<Season> <Year>" / "New Grad <Year>".
+const SEASON_RANK = { spring: 1, summer: 2, fall: 3, winter: 4 };
+function cycleSortKey(cycle) {
+  const yearMatch = String(cycle).match(/20\d\d/);
+  const year = yearMatch ? parseInt(yearMatch[0], 10) : 9999;
+  const seasonMatch = String(cycle).toLowerCase().match(/spring|summer|fall|winter/);
+  const season = seasonMatch ? SEASON_RANK[seasonMatch[0]] : (/new grad/i.test(cycle) ? 6 : 5);
+  return year * 10 + season;
+}
 function renderCyclesView() {
   const timeline = document.querySelector("#view-cycles .timeline");
   const note = document.querySelector("#view-cycles .cycle-note p");
@@ -1069,11 +1090,12 @@ function renderCyclesView() {
   const months = document.querySelector("#view-cycles .months");
   if (months) months.hidden = true; // grouped by cycle now, not by month
 
-  const mine = relevantCycles(profile.gradYear);
+  const isMine = (cycle) => cycleMatchesProfile({ cycle });
   if (note) {
     const label = profile.gradYear ? `Class of ${profile.gradYear}` : "your profile";
-    const list = mine ? [...mine].filter((c) => !["New Grad", "Internship"].includes(c) || mine.size <= 2).join(", ") : "every cycle";
-    note.textContent = `Based on ${label}, Promptly highlights: ${list || "New Grad roles"}. Verified openings are grouped by cycle below — yours first.`;
+    const labels = relevantCycleLabels(profile.gradYear);
+    const list = labels ? labels.join(", ") : "every cycle";
+    note.textContent = `Based on ${label}, Promptly highlights: ${list}. Verified openings are grouped by cycle below — yours first.`;
   }
 
   const live = openings.filter((o) => !isAwaitingLike(o) && o.cycle);
@@ -1081,9 +1103,9 @@ function renderCyclesView() {
   live.forEach((o) => { (byCycle[o.cycle] = byCycle[o.cycle] || []).push(o); });
 
   const present = Object.keys(byCycle).sort((a, b) => {
-    const am = mine?.has(a) ? 0 : 1, bm = mine?.has(b) ? 0 : 1;
+    const am = isMine(a) ? 0 : 1, bm = isMine(b) ? 0 : 1;
     if (am !== bm) return am - bm;
-    return CYCLE_ORDER.indexOf(a) - CYCLE_ORDER.indexOf(b);
+    return cycleSortKey(a) - cycleSortKey(b);
   });
 
   if (!present.length) {
@@ -1095,7 +1117,7 @@ function renderCyclesView() {
     const items = byCycle[cycle]
       .sort((a, b) => openingMatch(b).score - openingMatch(a).score)
       .slice(0, 10);
-    const mineTag = mine?.has(cycle) ? ` <span class="status-pill">for you</span>` : "";
+    const mineTag = isMine(cycle) ? ` <span class="status-pill">for you</span>` : "";
     const chips = items.map((o) =>
       `<button class="company-chip" data-open-details="${esc(o.company)}">${esc(o.company)}</button>`
     ).join("");
