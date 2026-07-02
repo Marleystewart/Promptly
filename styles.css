@@ -1350,37 +1350,33 @@ body.launch-active .onboarding-brand {
   margin-top: 18px;
 }
 
+/* Cycle groups: each article is one recruiting cycle — a heading row (cycle
+   name + count + "for you" pill) above a wrapped row of company chips. */
 .timeline article {
-  position: relative;
-  min-height: 76px;
-  display: grid;
-  grid-template-columns: 160px 1fr;
-  align-items: center;
+  display: block;
+  padding: 16px 18px 18px;
   border-radius: 20px;
   background: rgba(0,0,0,0.18);
   border: 1px solid var(--line);
-  overflow: hidden;
-}
-
-.timeline article::after {
-  content: "";
-  grid-column: 2;
-  height: 1px;
-  width: 100%;
-  background: linear-gradient(90deg, rgba(255,255,255,0.11) 1px, transparent 1px);
-  background-size: calc(100% / 12) 1px;
 }
 
 .timeline strong {
-  padding-left: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+
+.timeline strong .status-pill {
+  margin: 0;
 }
 
 .company-chip {
-  position: absolute;
-  left: calc(160px + ((100% - 170px) / 12 * var(--start)));
-  top: 50%;
-  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
   min-height: 33px;
+  margin: 0 8px 8px 0;
   border-radius: 999px;
   padding: 0 13px;
   color: #fff;
@@ -1388,6 +1384,13 @@ body.launch-active .onboarding-brand {
   box-shadow: 0 12px 30px rgba(0,0,0,0.28);
   font-size: 12px;
   font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.company-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 34px rgba(104,65,255,0.35);
 }
 
 .bain-chip {
@@ -1881,21 +1884,7 @@ input[type="checkbox"] {
   }
 
   .timeline article {
-    min-height: 138px;
-    grid-template-columns: 1fr;
-    align-content: start;
-    padding-top: 18px;
-  }
-
-  .timeline article::after {
-    display: none;
-  }
-
-  .company-chip {
-    position: static;
-    transform: none;
-    margin: 12px 0 0 18px;
-    width: max-content;
+    padding: 14px 14px 16px;
   }
 
   .modal-grid {

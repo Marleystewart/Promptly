@@ -1114,8 +1114,10 @@ function renderCyclesView() {
   }
 
   timeline.innerHTML = present.map((cycle) => {
+    const companiesSeen = new Set();
     const items = byCycle[cycle]
       .sort((a, b) => openingMatch(b).score - openingMatch(a).score)
+      .filter((o) => !companiesSeen.has(o.company) && companiesSeen.add(o.company))
       .slice(0, 10);
     const mineTag = isMine(cycle) ? ` <span class="status-pill">for you</span>` : "";
     const chips = items.map((o) =>
