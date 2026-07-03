@@ -829,6 +829,16 @@ body.launch-active .onboarding-brand {
   gap: 18px;
 }
 
+/* Consistent vertical rhythm so no two cards ever touch. Block margins
+   collapse, so this won't double up where a section-head (margin-top) follows. */
+.home-grid,
+.peer-pulse,
+.soon-grid,
+.timeline-card,
+.notification-setup {
+  margin-bottom: 18px;
+}
+
 .featured-card,
 .pulse-panel,
 .search-panel,
@@ -1184,7 +1194,7 @@ body.launch-active .onboarding-brand {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  margin: 8px 0 4px;
+  margin: 8px 0 18px;
   border-radius: 14px;
   background: linear-gradient(135deg, rgba(124,58,237,0.16), rgba(79,70,229,0.10));
   border: 1px solid rgba(124,58,237,0.28);
