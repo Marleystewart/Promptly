@@ -959,8 +959,12 @@ function updateAlertIntelligence() {
 
   document.querySelector("[data-alert-profile]").textContent = `Tracking ${fieldText} for ${major}.`;
   document.querySelector("[data-alert-profile-copy]").textContent = `${school} context, ${profile.gradYear ? `Class of ${profile.gradYear}` : "class year"}, and your interests decide which alerts rise first.`;
-  document.querySelector("[data-next-window]").textContent = next.title;
-  document.querySelector("[data-next-window-copy]").textContent = next.copy;
+  // Next-window elements were merged into the Alert Pulse box; guard in case
+  // a cached shell still has them.
+  const nextWindow = document.querySelector("[data-next-window]");
+  if (nextWindow) nextWindow.textContent = next.title;
+  const nextWindowCopy = document.querySelector("[data-next-window-copy]");
+  if (nextWindowCopy) nextWindowCopy.textContent = next.copy;
   updateAlertPulse();
 }
 
@@ -1004,10 +1008,10 @@ function updateAlertPulse() {
   const unseen = matches.filter((item) => !seen.has(alertIdentity(item)));
   title.textContent = unseen.length
     ? `${unseen.length} new ${unseen.length === 1 ? "match" : "matches"} since your last review.`
-    : "You're caught up.";
+    : "You're all caught up!";
   copy.textContent = unseen.length
     ? `Open Live Openings to review what changed across ${topFields().join(", ") || "your fields"}.`
-    : `Promptly is still monitoring ${matches.length} verified matches for your profile.`;
+    : `Promptly is monitoring ${matches.length} verified matches for your profile.`;
 }
 
 function markMatchingAlertsSeen() {
@@ -1730,7 +1734,7 @@ function timeGreeting() {
 }
 
 function greetingText() {
-  return `${timeGreeting()} ${displayName()}`;
+  return `${timeGreeting()}, ${displayName()}`;
 }
 
 function updateDashboardGreeting() {

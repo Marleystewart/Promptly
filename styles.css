@@ -698,19 +698,86 @@ body.launch-active .onboarding-brand {
 
 .alert-intelligence {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
   margin-bottom: 18px;
 }
 
 .alert-intelligence article {
   min-width: 0;
-  padding: 18px;
+  min-height: 200px;
+  padding: 24px;
   border: 1px solid var(--line);
   border-radius: 22px;
   background:
     radial-gradient(circle at 92% 12%, rgba(102,220,255,0.12), transparent 32%),
     rgba(255,255,255,0.07);
+}
+
+/* Alert Pulse primary line — bold red per design spec */
+.pulse-alert-title {
+  color: #ff4d5e;
+  font-weight: 900;
+}
+
+/* Profile facts embedded in the Alert Profile box */
+.profile-facts {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 8px;
+}
+
+.profile-facts li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.profile-facts span {
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-facts strong {
+  font-size: 14px;
+  text-align: right;
+}
+
+/* System Status box: centered pulsing bell + watching line */
+.alert-intelligence article.system-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.system-status .pulse-ring {
+  margin: auto 0 12px;
+}
+
+.system-status .status-pill {
+  align-self: flex-start;
+}
+
+.system-status-copy {
+  margin: 0 0 auto;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.emph-student {
+  font-style: normal;
+  font-weight: 800;
+  color: var(--ink, #fff);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
 }
 
 .alert-intelligence h3 {
@@ -727,7 +794,7 @@ body.launch-active .onboarding-brand {
 
 .home-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr); /* featured card spans full width */
   gap: 18px;
 }
 
