@@ -761,10 +761,32 @@ function renderStatusTracker(company) {
   });
 }
 
-// If a logo image is missing, fall back to the colored initials tile — so a
-// company without a logo file still looks intentional (never a broken icon).
+// Real-logo pipeline: curated asset file → domain-keyed logo service → colored
+// initials tile. The domain map lives in watchlist.js (COMPANY_DOMAINS), so
+// live-feed companies get real logos too. Swappable provider, keyless.
+function logoServiceUrl(domain) {
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+}
+
+function companyDomain(item) {
+  return item.domain || (window.COMPANY_DOMAINS || {})[item.company] || "";
+}
+
+function companyLogoUrl(item) {
+  if (item.logo) return item.logo; // curated file first (best quality)
+  const domain = companyDomain(item);
+  return domain ? logoServiceUrl(domain) : "";
+}
+
+// If a logo image fails, try the domain logo service once, then fall back to
+// the colored initials tile — a broken icon is never shown.
 function logoFallback(img) {
-  const el = img.closest(".logo");
+  const cdn = img.dataset.cdn;
+  if (cdn && img.src !== cdn) {
+    img.src = cdn;
+    return;
+  }
+  const el = img.closest(".logo, .modal-logo, .mega-logo");
   if (!el) return;
   el.classList.remove("logo-tile");
   if (img.dataset.lc) el.classList.add(img.dataset.lc);
@@ -780,8 +802,11 @@ function esc(value) {
 }
 
 function logoMarkup(item) {
-  if (item.logo) {
-    return `<div class="logo logo-tile"><img src="${esc(item.logo)}" alt="${esc(item.company)} logo" loading="lazy" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" onerror="logoFallback(this)" /></div>`;
+  const url = companyLogoUrl(item);
+  if (url) {
+    const domain = companyDomain(item);
+    const cdn = domain ? logoServiceUrl(domain) : "";
+    return `<div class="logo logo-tile"><img src="${esc(url)}" alt="${esc(item.company)} logo" loading="lazy" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" ${cdn && cdn !== url ? `data-cdn="${esc(cdn)}"` : ""} onerror="logoFallback(this)" /></div>`;
   }
   return `<div class="logo ${esc(item.logoClass)}">${esc(item.short)}</div>`;
 }
@@ -958,7 +983,9 @@ function updateAlertIntelligence() {
   const next = nextWindowText();
 
   document.querySelector("[data-alert-profile]").textContent = `Tracking ${fieldText} for ${major}.`;
-  document.querySelector("[data-alert-profile-copy]").textContent = `${school} context, ${profile.gradYear ? `Class of ${profile.gradYear}` : "class year"}, and your interests decide which alerts rise first.`;
+  // Alert Profile copy line was removed from the dashboard; guard for cached shells.
+  const profileCopy = document.querySelector("[data-alert-profile-copy]");
+  if (profileCopy) profileCopy.textContent = `${school} context, ${profile.gradYear ? `Class of ${profile.gradYear}` : "class year"}, and your interests decide which alerts rise first.`;
   // Next-window elements were merged into the Alert Pulse box; guard in case
   // a cached shell still has them.
   const nextWindow = document.querySelector("[data-next-window]");
@@ -1043,8 +1070,11 @@ function setFeatured() {
   document.querySelector("[data-feature-title]").textContent = `${item.company} ${item.role} just opened.`;
   document.querySelector("[data-feature-copy]").textContent = `${item.field} student alert · ${item.location ? `${item.location} · ` : ""}Deadline ${item.deadline}. ${item.opened}.`;
   const featureLogo = document.querySelector("[data-feature-logo]");
-  featureLogo.className = `mega-logo ${item.logo ? "logo-tile" : item.logoClass}`;
-  featureLogo.innerHTML = item.logo ? `<img src="${item.logo}" alt="${item.company} logo" />` : item.short;
+  const featureLogoUrl = companyLogoUrl(item);
+  featureLogo.className = `mega-logo ${featureLogoUrl ? "logo-tile" : item.logoClass}`;
+  featureLogo.innerHTML = featureLogoUrl
+    ? `<img src="${esc(featureLogoUrl)}" alt="${esc(item.company)} logo" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" onerror="logoFallback(this)" />`
+    : esc(item.short);
   document.querySelector("[data-feature-details]").dataset.openDetails = item.company;
   document.querySelector("[data-feature-save]").dataset.save = item.company;
   document.querySelector("[data-feature-save]").textContent = isSaved ? "Unsave Alert" : "Save Alert";
@@ -1162,8 +1192,11 @@ function openDetails(company) {
   sourceLink.textContent = item.browse ? `Browse ${item.company} Careers` : "Open Official Posting";
   modal.querySelector("[data-save-modal]").textContent = saved.has(item.company) ? "Unsave Alert" : "Save Alert";
   const modalLogo = modal.querySelector(".modal-logo");
-  modalLogo.className = `modal-logo ${item.logo ? "logo-tile" : item.logoClass}`;
-  modalLogo.innerHTML = item.logo ? `<img src="${item.logo}" alt="${item.company} logo" />` : item.short;
+  const modalLogoUrl = companyLogoUrl(item);
+  modalLogo.className = `modal-logo ${modalLogoUrl ? "logo-tile" : item.logoClass}`;
+  modalLogo.innerHTML = modalLogoUrl
+    ? `<img src="${esc(modalLogoUrl)}" alt="${esc(item.company)} logo" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" onerror="logoFallback(this)" />`
+    : esc(item.short);
   renderStatusTracker(item.company);
   if (typeof modal.showModal === "function") modal.showModal();
 }
