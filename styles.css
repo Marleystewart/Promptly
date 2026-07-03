@@ -714,10 +714,39 @@ body.launch-active .onboarding-brand {
     rgba(255,255,255,0.07);
 }
 
-/* Alert Pulse primary line — bold red per design spec */
+/* Alert Pulse primary line — bold accent (co-founder: anything but red) */
 .pulse-alert-title {
-  color: #ff4d5e;
+  color: #7ea2ff;
   font-weight: 900;
+}
+
+/* Most recent alerts inside the Alert Pulse box */
+.pulse-recent {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 8px;
+}
+
+.pulse-recent li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.pulse-recent strong {
+  white-space: nowrap;
+}
+
+.pulse-recent span {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Profile facts embedded in the Alert Profile box */

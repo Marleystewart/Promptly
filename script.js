@@ -1017,6 +1017,17 @@ function readSeenAlerts() {
   }
 }
 
+// Show the student's most recent alert-worthy openings inside the pulse box:
+// newest matches first (unseen ones lead), capped at 3 lines.
+function renderPulseRecent(matches, unseen) {
+  const list = document.querySelector("[data-pulse-recent]");
+  if (!list) return;
+  const pool = [...(unseen || []), ...matches.filter((m) => !(unseen || []).includes(m))];
+  const items = pool.filter((o) => !isAwaitingLike(o)).slice(0, 3);
+  list.hidden = !items.length;
+  list.innerHTML = items.map((o) => `<li><strong>${esc(o.company)}</strong><span>${esc(o.role)}</span></li>`).join("");
+}
+
 function updateAlertPulse() {
   const title = document.querySelector("[data-return-pulse]");
   const copy = document.querySelector("[data-return-pulse-copy]");
@@ -1028,6 +1039,7 @@ function updateAlertPulse() {
     localStorage.setItem(seenAlertsStorageKey, JSON.stringify(matches.map(alertIdentity)));
     title.textContent = "Your watchlist is active.";
     copy.textContent = `${matches.length} verified matches fit your current alert profile. New postings will appear here first.`;
+    renderPulseRecent(matches, []);
     return;
   }
 
@@ -1039,6 +1051,7 @@ function updateAlertPulse() {
   copy.textContent = unseen.length
     ? `Open Live Openings to review what changed across ${topFields().join(", ") || "your fields"}.`
     : `Promptly is monitoring ${matches.length} verified matches for your profile.`;
+  renderPulseRecent(matches, unseen);
 }
 
 function markMatchingAlertsSeen() {

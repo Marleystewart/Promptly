@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="assets/app-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=20260703a" />
+    <link rel="stylesheet" href="styles.css?v=20260703b" />
   </head>
   <body class="onboarding-active launch-active">
     <section class="onboarding-shell" aria-label="Promptly sign up">
@@ -163,6 +163,7 @@
               <span class="status-pill">ALERT PULSE</span>
               <h3 class="pulse-alert-title" data-return-pulse>You're all caught up!</h3>
               <p data-return-pulse-copy>Promptly is monitoring your verified matches.</p>
+              <ul class="pulse-recent" data-pulse-recent hidden></ul>
             </article>
             <article class="system-status">
               <span class="status-pill">SYSTEM STATUS</span>
@@ -170,9 +171,22 @@
                 <span></span>
                 <svg viewBox="0 0 24 24"><path d="M18 9.8c0-3.4-2.1-6-5-6.7V2h-2v1.1c-2.9.7-5 3.3-5 6.7v3.9l-1.8 3h15.6l-1.8-3V9.8Z"/></svg>
               </div>
-              <p class="system-status-copy">Always watching only live, <em class="emph-student">student-relevant</em> openings make it.</p>
+              <p class="system-status-copy">Always watching, <em class="emph-student">student-focused</em> openings.</p>
             </article>
           </section>
+
+          <article class="notification-setup">
+            <div>
+              <span class="status-pill">PHONE ALERTS</span>
+              <h2>Test real lock-screen alerts.</h2>
+              <p data-push-status>Add Promptly to your phone Home Screen, then enable alerts and send a test notification.</p>
+            </div>
+            <div class="notify-actions">
+              <button class="primary-action" data-enable-push>Enable Phone Notifications</button>
+              <button class="soft-action" data-send-test-push>Send Test Notification</button>
+              <button class="soft-action" data-send-test-alert>Send Test Email</button>
+            </div>
+          </article>
 
           <div class="home-grid">
             <article class="featured-card">
@@ -257,19 +271,6 @@
             <article><span></span><strong>Tech internships</strong><p>August and September 2026 campus wave</p></article>
             <article><span></span><strong>Consulting cases</strong><p>Spring–summer 2026 application windows</p></article>
           </div>
-
-          <article class="notification-setup">
-            <div>
-              <span class="status-pill">PHONE ALERTS</span>
-              <h2>Test real lock-screen alerts.</h2>
-              <p data-push-status>Add Promptly to your phone Home Screen, then enable alerts and send a test notification.</p>
-            </div>
-            <div class="notify-actions">
-              <button class="primary-action" data-enable-push>Enable Phone Notifications</button>
-              <button class="soft-action" data-send-test-push>Send Test Notification</button>
-              <button class="soft-action" data-send-test-alert>Send Test Email</button>
-            </div>
-          </article>
 
           <div class="timeline-card">
             <div class="cycle-note">
@@ -452,6 +453,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
     <script src="watchlist.js?v=20260703a"></script>
     <script src="auth-routing.js?v=20260701b"></script>
-    <script src="script.js?v=20260703b"></script>
+    <script src="script.js?v=20260703c"></script>
   </body>
 </html>
