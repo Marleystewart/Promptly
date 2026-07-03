@@ -3,7 +3,7 @@
    ----------------------------------------------------------------------------
    A guardrailed, 100%-controlled Q&A widget. It answers ONLY from:
      • the live `openings` array (real deadlines / real links / real counts)
-     • a curated, hand-written tips library (interviews + résumés)
+     • a curated, hand-written interview tips library
      • a static FAQ about how Promptly works
    Anything off-script routes the student to a real support email.
    No AI, no network calls, no hallucination risk, works offline.
@@ -103,14 +103,6 @@
     "Send a short thank-you note after — it’s low effort and remembered.",
   ];
 
-  const RESUME_TIPS = [
-    "One page, reverse-chronological, PDF — clean and skimmable in 6 seconds.",
-    "Start bullets with action verbs and quantify impact (“raised $4k”, “cut load time 30%”).",
-    "Tailor it to the role — lead with the most relevant experience and skills.",
-    "Include relevant coursework/skills; list GPA if it’s strong.",
-    "Proofread twice — a single typo can cost you the interview.",
-  ];
-
   function tipsForCompany(companyName) {
     const list = liveOpenings();
     const o = list.find((x) => x.company === companyName);
@@ -158,7 +150,7 @@
 
     // greeting
     if (/^(hi|hey|hello|yo|sup|hiya|howdy)\b/.test(low) && low.length < 12) {
-      return { html: "Hey! I can help with internship deadlines, interview tips, résumé advice, and how Promptly works. What do you need?" };
+      return { html: "Hey! I can help with internship deadlines, interview tips, and how Promptly works. What do you need?" };
     }
     if (/\b(thank|thanks|thx|ty|appreciate)\b/.test(low)) {
       return { html: "Anytime — go get that offer. 👊" };
@@ -167,20 +159,9 @@
     const company = matchCompany(low);
     const wantsDeadline = /\b(deadline|when|open|opens|close|closes|due|apply by|application)\b/.test(low);
     const wantsInterview = /\b(interview|prep|prepare|prepping|questions|technical|case)\b/.test(low);
-    const wantsResume = /\b(r[eé]sum[eé]|resume|cv)\b/.test(low);
     const wantsBrowse = /\b(show|see|browse|what\s|which|list|open(ings)?|available|any )\b/.test(low);
 
-    // 1) résumé tips
-    if (wantsResume) {
-      return {
-        html:
-          "<b>Résumé tips:</b><ul>" +
-          RESUME_TIPS.map((t) => `<li>${t}</li>`).join("") +
-          "</ul>Want to tailor it to a specific role? Tell me the field.",
-      };
-    }
-
-    // 2) interview tips (company- or industry-specific when possible)
+    // 1) interview tips (company- or industry-specific when possible)
     if (wantsInterview) {
       let tips = null;
       let label = "";
@@ -252,7 +233,7 @@
     // 6) off-script — guardrail fallback to a real human
     return {
       html:
-        "I can only help with <b>internship deadlines, interview tips, résumé advice, and how Promptly works</b> right now. " +
+        "I can only help with <b>internship deadlines, interview tips, and how Promptly works</b> right now. " +
         `For anything else, email us at <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a> and a human will get back to you.`,
       offscript: true,
     };
@@ -263,7 +244,7 @@
     "How do I use Promptly?",
     "When does Goldman Sachs open?",
     "Interview tips for investment banking",
-    "Résumé tips",
+    "What internships are open?",
   ];
 
   // --- UI --------------------------------------------------------------------
@@ -294,7 +275,7 @@
       <div class="ap-chips"></div>
       <form class="ap-form">
         <input class="ap-input" type="text" autocomplete="off"
-          placeholder="Ask about deadlines, interviews, résumés…" aria-label="Your question" />
+          placeholder="Ask about deadlines, interviews, openings…" aria-label="Your question" />
         <button class="ap-send" type="submit" aria-label="Send">↑</button>
       </form>`);
     panel.hidden = true;
@@ -351,7 +332,7 @@
       launcher.classList.add("ap-open");
       requestAnimationFrame(() => panel.classList.add("ap-visible"));
       if (!greeted) {
-        addMsg("bot", "Hi! I’m the Promptly helper. Ask me about internship deadlines, interview prep, résumés, or how the app works.");
+        addMsg("bot", "Hi! I’m the Promptly helper. Ask me about internship deadlines, interview prep, or how the app works.");
         renderChips();
         greeted = true;
       }
