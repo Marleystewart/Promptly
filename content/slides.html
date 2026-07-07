@@ -138,6 +138,13 @@
   }
   .slide [contenteditable]:focus { outline: 3px dashed rgba(128,87,255,0.5); outline-offset: 8px; }
   .noti.hidden, .pill.hiddenpill { display: none; }
+
+  /* slides with a notification card carry more content — tighten the rhythm so nothing clips */
+  .slide.has-noti .pill { margin-top: 56px; }
+  .slide.has-noti .headline { margin-top: 36px; }
+  .slide.has-noti .body { margin-top: 40px; }
+  .slide.has-noti .noti { margin-top: 44px; }
+  .slide.has-noti.big .headline { font-size: 108px; }
 </style>
 </head>
 <body>
@@ -196,7 +203,7 @@ function slideEl(s) {
   const noti = s.noti || { title: "Company just opened", body: "Role name — apply now", time: "now" };
   wrap.innerHTML = `
     <div class="slide-view">
-      <div class="slide${s.big ? " big" : ""}">
+      <div class="slide${s.big ? " big" : ""}${s.noti ? " has-noti" : ""}">
         <div class="brandbar">
           <div class="brandtag"><span class="bolt">${LOGO}</span><span contenteditable>promptly</span></div>
           <span class="count" contenteditable>${s.count || ""}</span>
@@ -240,7 +247,11 @@ function addSlide() {
   }));
 }
 
-function toggleNoti(btn) { btn.closest(".slide-wrap").querySelector(".noti").classList.toggle("hidden"); }
+function toggleNoti(btn) {
+  const slide = btn.closest(".slide-wrap").querySelector(".slide");
+  const hidden = slide.querySelector(".noti").classList.toggle("hidden");
+  slide.classList.toggle("has-noti", !hidden);
+}
 function toggleSize(btn) { btn.closest(".slide-wrap").querySelector(".slide").classList.toggle("big"); }
 function toggleCta(btn) {
   const f = btn.closest(".slide-wrap").querySelector(".foot span:last-child");
