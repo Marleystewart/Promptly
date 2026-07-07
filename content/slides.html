@@ -152,6 +152,8 @@
 <h1>Promptly Slide Studio</h1>
 <p class="sub">Your look, not anyone else's: space-purple, glow, and the lock-screen notification as the signature. Click any text to edit. <b>⬇ PNG</b> exports at 1080×1350 for TikTok/IG carousels. <b>🔔 Noti</b> toggles the notification card on a slide.</p>
 
+<div class="toolbar" id="decksBar"></div>
+
 <div class="toolbar">
   <button class="primary" onclick="addSlide()">+ New slide</button>
   <button onclick="downloadAll()">Download all PNGs</button>
@@ -163,34 +165,158 @@
 <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
 <script>
 // ── Carousel A: "The recruiting timeline no one shows you" — Promptly style ──
-const SLIDES = [
-  { big: true, count: "1/6", pill: "⚡ Heads up",
-    head: 'The internship timeline <span class="hl">no one shows you.</span>',
-    body: "Save this before recruiting season sneaks up on you.",
-    noti: { title: "Goldman Sachs just opened", body: "2027 Summer Analyst Program. Apply now.", time: "now" },
-    footR: "swipe →" },
-  { count: "2/6", pill: "The timeline",
-    head: 'Summer <span class="hl">2027</span> applications are already opening.',
-    body: "The biggest firms recruit about 15 months early.\n\nThat is not a typo. Fifteen months.",
-    footR: "swipe →" },
-  { count: "3/6", pill: "August to September",
-    head: 'Banks and big tech open <span class="hl">first.</span>',
-    body: "Goldman’s 2027 Summer Analyst Program opens August 15, 2026.\n\nYes, for summer 2027.",
-    footR: "swipe →" },
-  { count: "4/6", pill: "October to January",
-    head: 'Rolling means <span class="hl">first come, first served.</span>',
-    body: "Consulting and more banks open next.\n\nApplying late means applying to a closed door.",
-    footR: "swipe →" },
-  { count: "5/6", pill: "The trap",
-    head: 'Most students find out <span class="hl">after it closed.</span>',
-    body: "From a friend. In a group chat. Three weeks too late.\n\nYou can’t apply to a deadline you never saw.",
-    footR: "swipe →" },
-  { big: true, count: "6/6", pill: "✅ Fix it", pillGreen: true,
-    head: 'Never miss <span class="hl">another one.</span>',
-    body: "Promptly alerts you the second internships open. Free for students.",
-    noti: { title: "McKinsey just opened", body: "Summer Business Analyst role. You’re early.", time: "now" },
-    footR: "joinpromptly.co", cta: true },
-];
+const DECKS = {
+
+  "The timeline": [
+    { big: true, count: "1/6", pill: "⚡ Heads up",
+      head: 'The internship timeline <span class="hl">no one shows you.</span>',
+      body: "Save this before recruiting season sneaks up on you.",
+      noti: { title: "Goldman Sachs just opened", body: "2027 Summer Analyst Program. Apply now.", time: "now" },
+      footR: "swipe →" },
+    { count: "2/6", pill: "The timeline",
+      head: 'Summer <span class="hl">2027</span> applications are already opening.',
+      body: "The biggest firms recruit about 15 months early.\n\nThat is not a typo. Fifteen months.",
+      footR: "swipe →" },
+    { count: "3/6", pill: "August to September",
+      head: 'Banks and big tech open <span class="hl">first.</span>',
+      body: "Goldman’s 2027 Summer Analyst Program opens August 15, 2026.\n\nYes, for summer 2027.",
+      footR: "swipe →" },
+    { count: "4/6", pill: "October to January",
+      head: 'Rolling means <span class="hl">first come, first served.</span>',
+      body: "Consulting and more banks open next.\n\nApplying late means applying to a closed door.",
+      footR: "swipe →" },
+    { count: "5/6", pill: "The trap",
+      head: 'Most students find out <span class="hl">after it closed.</span>',
+      body: "From a friend. In a group chat. Three weeks too late.\n\nYou can’t apply to a deadline you never saw.",
+      footR: "swipe →" },
+    { big: true, count: "6/6", pill: "✅ Fix it", pillGreen: true,
+      head: 'Never miss <span class="hl">another one.</span>',
+      body: "Promptly alerts you the second internships open. Free for students.",
+      noti: { title: "McKinsey just opened", body: "Summer Business Analyst role. You’re early.", time: "now" },
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Recruit early": [
+    { big: true, count: "1/5", pill: "The list",
+      head: 'Companies that recruit <span class="hl">a full year early.</span>',
+      body: "If you are waiting until senior year, you are already late.\n\nSave this.",
+      footR: "swipe →" },
+    { count: "2/5", pill: "Finance",
+      head: 'Goldman, JPMorgan, <span class="hl">Morgan Stanley.</span>',
+      body: "Summer analyst programs open 12 to 15 months ahead. Many are rolling.",
+      footR: "swipe →" },
+    { count: "3/5", pill: "Consulting",
+      head: 'McKinsey, Bain, <span class="hl">BCG.</span>',
+      body: "Applications open in the fall for the following summer.",
+      footR: "swipe →" },
+    { count: "4/5", pill: "Tech",
+      head: 'Google, Microsoft, <span class="hl">Amazon.</span>',
+      body: "Rolling all year. The best roles fill up in early fall.",
+      footR: "swipe →" },
+    { big: true, count: "5/5", pill: "✅ Stay ahead", pillGreen: true,
+      head: 'Never track this <span class="hl">by hand again.</span>',
+      body: "Promptly watches all of them and alerts you the moment they open.",
+      noti: { title: "J.P. Morgan just opened", body: "2027 Summer Analyst. Applications are live.", time: "now" },
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Founder story": [
+    { big: true, count: "1/4", pill: "Real talk",
+      head: 'I missed two internship deadlines <span class="hl">my sophomore year.</span>',
+      body: "I found out from a friend. Weeks after they had already closed.",
+      footR: "swipe →" },
+    { count: "2/4", pill: "The problem",
+      head: 'The openings were <span class="hl">everywhere and nowhere.</span>',
+      body: "Spread across a hundred career pages. No single place to watch them.",
+      footR: "swipe →" },
+    { count: "3/4", pill: "So I built it",
+      head: 'A tool that watches <span class="hl">all of them for me.</span>',
+      body: "The second something opens in my field, I get an alert.",
+      noti: { title: "Promptly", body: "A new role just opened in Finance. You are early.", time: "now" },
+      footR: "swipe →" },
+    { big: true, count: "4/4", pill: "✅ For you too", pillGreen: true,
+      head: 'Now it is free <span class="hl">for every student.</span>',
+      body: "Because no one should miss a shot they never saw coming.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "5 mistakes": [
+    { big: true, count: "1/6", pill: "Read this",
+      head: '5 mistakes that cost students <span class="hl">the internship.</span>',
+      body: "Number three gets almost everyone.",
+      footR: "swipe →" },
+    { count: "2/6", pill: "Mistake 1",
+      head: 'Waiting until <span class="hl">the spring.</span>',
+      body: "Most summer roles open the fall before. By spring you are applying to closed doors.",
+      footR: "swipe →" },
+    { count: "3/6", pill: "Mistake 2",
+      head: 'Only checking <span class="hl">one job board.</span>',
+      body: "The best openings live on company career pages, not big aggregators.",
+      footR: "swipe →" },
+    { count: "4/6", pill: "Mistake 3",
+      head: 'Not knowing when things <span class="hl">actually open.</span>',
+      body: "You cannot apply first if you find out last.",
+      footR: "swipe →" },
+    { count: "5/6", pill: "Mistake 4",
+      head: 'Applying to <span class="hl">everything.</span>',
+      body: "Spraying applications wastes the early window on roles you do not even want.",
+      footR: "swipe →" },
+    { big: true, count: "6/6", pill: "✅ Fix all five", pillGreen: true,
+      head: 'Let Promptly <span class="hl">watch for you.</span>',
+      body: "Free alerts the second internships open in your field.",
+      noti: { title: "Bain & Company just opened", body: "Associate Consultant Intern. Apply now.", time: "now" },
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "How it works": [
+    { big: true, count: "1/5", pill: "60 seconds",
+      head: 'How Promptly <span class="hl">actually works.</span>',
+      body: "No endless job hunting. Just alerts when it counts.",
+      footR: "swipe →" },
+    { count: "2/5", pill: "Step 1",
+      head: 'Tell us your <span class="hl">field and year.</span>',
+      body: "Finance, tech, consulting, whatever you are chasing.",
+      footR: "swipe →" },
+    { count: "3/5", pill: "Step 2",
+      head: 'We watch <span class="hl">the internet for you.</span>',
+      body: "Over a hundred company career pages, all day, every day.",
+      footR: "swipe →" },
+    { count: "4/5", pill: "Step 3",
+      head: 'You get pinged <span class="hl">the second it opens.</span>',
+      body: "Then you apply first, straight on the company site.",
+      noti: { title: "Morgan Stanley just opened", body: "2027 Summer Analyst. You are first in line.", time: "now" },
+      footR: "swipe →" },
+    { big: true, count: "5/5", pill: "✅ That is it", pillGreen: true,
+      head: 'Apply first. <span class="hl">Every time.</span>',
+      body: "Free for students. Join the waitlist.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Season is now": [
+    { big: true, count: "1/5", pill: "⚡ Right now",
+      head: 'Recruiting season <span class="hl">starts now.</span>',
+      body: "The next few weeks decide your whole summer. Here is the plan.",
+      footR: "swipe →" },
+    { count: "2/5", pill: "This week",
+      head: 'Lock in <span class="hl">your target list.</span>',
+      body: "Pick the companies you actually want before they open.",
+      footR: "swipe →" },
+    { count: "3/5", pill: "This month",
+      head: 'Get your <span class="hl">résumé ready.</span>',
+      body: "The early window is short. Do not scramble the day it opens.",
+      footR: "swipe →" },
+    { count: "4/5", pill: "The whole time",
+      head: 'Never miss <span class="hl">an opening.</span>',
+      body: "This is the part people mess up. Promptly handles it for you.",
+      noti: { title: "Goldman Sachs just opened", body: "2027 Summer Analyst Program. Apply now.", time: "now" },
+      footR: "swipe →" },
+    { big: true, count: "5/5", pill: "✅ Get ahead", pillGreen: true,
+      head: 'Beat the rush <span class="hl">this year.</span>',
+      body: "Free alerts the moment internships open. Join the waitlist.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+};
 
 const deck = document.getElementById("deck");
 
@@ -235,7 +361,27 @@ function slideEl(s) {
   return wrap;
 }
 
-SLIDES.forEach((s) => deck.appendChild(slideEl(s)));
+// Deck switcher — one button per carousel.
+const DECK_NAMES = Object.keys(DECKS);
+const decksBar = document.getElementById("decksBar");
+DECK_NAMES.forEach((name, i) => {
+  const b = document.createElement("button");
+  b.textContent = name;
+  if (i === 0) b.classList.add("primary");
+  b.onclick = () => {
+    loadDeck(name);
+    [...decksBar.children].forEach((c) => c.classList.remove("primary"));
+    b.classList.add("primary");
+  };
+  decksBar.appendChild(b);
+});
+
+function loadDeck(name) {
+  deck.innerHTML = "";
+  DECKS[name].forEach((s) => deck.appendChild(slideEl(s)));
+}
+
+loadDeck(DECK_NAMES[0]);
 
 function addSlide() {
   const n = deck.children.length + 1;
