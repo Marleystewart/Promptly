@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Promptly Slide Studio</title>
+<style>
+  :root {
+    --purple: #8057ff;
+    --purple-2: #5d38f2;
+    --blue: #52a9ff;
+    --green: #61e8aa;
+    --ink: #fafaff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Inter, "Segoe UI", sans-serif;
+    background: #17151f;
+    color: #eee;
+    min-height: 100vh;
+    padding: 28px 32px 80px;
+  }
+  h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: #999; font-size: 13px; margin: 6px 0 22px; max-width: 640px; line-height: 1.5; }
+  .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 26px; align-items: center; }
+  .toolbar button {
+    background: #26233a; color: #eee; border: 1px solid #3c3860;
+    border-radius: 8px; padding: 9px 15px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  .toolbar button:hover { border-color: var(--purple); }
+  .toolbar button.primary { background: linear-gradient(135deg, var(--purple), var(--purple-2)); border: none; }
+  .hint { font-size: 12px; color: #777; }
+
+  .deck { display: flex; flex-wrap: wrap; gap: 28px; }
+  .slide-wrap { display: flex; flex-direction: column; gap: 8px; }
+  .slide-actions { display: flex; gap: 8px; }
+  .slide-actions button {
+    background: #26233a; color: #ccc; border: 1px solid #3c3860; border-radius: 6px;
+    padding: 5px 10px; font-size: 11.5px; cursor: pointer; font-family: inherit;
+  }
+  .slide-actions button:hover { border-color: var(--purple); color: #fff; }
+
+  /* ── Slide: authored at 1080×1350, previewed at 1/3 scale ── */
+  .slide-view {
+    width: 360px; height: 450px; overflow: hidden; border-radius: 10px;
+    box-shadow: 0 12px 44px rgba(0,0,0,0.5);
+  }
+  .slide {
+    width: 1080px; height: 1350px;
+    transform: scale(0.3333); transform-origin: top left;
+    display: flex; flex-direction: column;
+    padding: 96px 92px;
+    position: relative;
+    overflow: hidden;
+    background: #060815;
+    color: var(--ink);
+  }
+  /* signature glow blobs — the Promptly nebula */
+  .slide::before, .slide::after {
+    content: ""; position: absolute; border-radius: 50%; pointer-events: none;
+  }
+  .slide::before {
+    width: 900px; height: 900px; left: -320px; top: -380px;
+    background: radial-gradient(circle, rgba(128,87,255,0.38), transparent 65%);
+  }
+  .slide::after {
+    width: 800px; height: 800px; right: -300px; bottom: -320px;
+    background: radial-gradient(circle, rgba(82,169,255,0.22), transparent 65%);
+  }
+  .slide > * { position: relative; z-index: 1; }
+
+  .brandbar { display: flex; justify-content: space-between; align-items: center; }
+  .brandtag {
+    display: inline-flex; align-items: center; gap: 14px;
+    font-size: 30px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .bolt {
+    width: 52px; height: 52px; border-radius: 16px; flex: 0 0 52px;
+    background: linear-gradient(135deg, var(--purple), var(--purple-2));
+    box-shadow: 0 0 34px rgba(128,87,255,0.65);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px;
+  }
+  .count { font-size: 28px; font-weight: 700; color: rgba(250,250,255,0.5); letter-spacing: 0.18em; }
+
+  .pill {
+    align-self: flex-start; margin-top: 96px;
+    padding: 16px 34px; border-radius: 999px;
+    background: rgba(128,87,255,0.18); border: 2px solid rgba(128,87,255,0.55);
+    color: #c7b3ff; font-size: 32px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  .pill.green { background: rgba(97,232,170,0.14); border-color: rgba(97,232,170,0.5); color: var(--green); }
+
+  .headline {
+    font-size: 100px; font-weight: 800; line-height: 1.07; letter-spacing: -0.025em;
+    margin-top: 48px; white-space: pre-wrap;
+  }
+  .slide.big .headline { font-size: 122px; }
+  .headline .hl {
+    background: linear-gradient(100deg, #a88bff, var(--blue));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .body {
+    font-size: 44px; line-height: 1.45; margin-top: 56px; font-weight: 500;
+    color: rgba(250,250,255,0.78); white-space: pre-wrap; max-width: 870px;
+  }
+
+  /* ── the signature: lock-screen notification card ── */
+  .noti {
+    margin-top: 64px;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.18);
+    border-radius: 36px;
+    padding: 40px 44px;
+    display: flex; gap: 32px; align-items: flex-start;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+  }
+  .noti .bolt { width: 88px; height: 88px; flex: 0 0 88px; border-radius: 24px; font-size: 48px; }
+  .noti-main { flex: 1; min-width: 0; }
+  .noti-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .noti-app { font-size: 30px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(250,250,255,0.6); }
+  .noti-time { font-size: 28px; color: rgba(250,250,255,0.45); font-weight: 600; }
+  .noti-title { font-size: 42px; font-weight: 800; margin-top: 10px; line-height: 1.2; }
+  .noti-body { font-size: 36px; color: rgba(250,250,255,0.72); margin-top: 8px; line-height: 1.35; font-weight: 500; }
+
+  .foot {
+    margin-top: auto; padding-top: 40px;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 30px; font-weight: 700; color: rgba(250,250,255,0.55); letter-spacing: 0.05em;
+    border-top: 2px solid rgba(255,255,255,0.12);
+  }
+  .foot .cta {
+    color: #060815; background: linear-gradient(135deg, var(--purple), var(--blue));
+    padding: 18px 36px; border-radius: 999px; font-weight: 800; letter-spacing: 0.02em;
+    box-shadow: 0 0 44px rgba(128,87,255,0.5);
+  }
+  .slide [contenteditable]:focus { outline: 3px dashed rgba(128,87,255,0.5); outline-offset: 8px; }
+  .noti.hidden, .pill.hiddenpill { display: none; }
+</style>
+</head>
+<body>
+
+<h1>Promptly Slide Studio</h1>
+<p class="sub">Your look, not anyone else's: space-purple, glow, and the lock-screen notification as the signature. Click any text to edit. <b>⬇ PNG</b> exports at 1080×1350 for TikTok/IG carousels. <b>🔔 Noti</b> toggles the notification card on a slide.</p>
+
+<div class="toolbar">
+  <button class="primary" onclick="addSlide()">+ New slide</button>
+  <button onclick="downloadAll()">Download all PNGs</button>
+  <span class="hint">Line breaks work — press Enter while editing.</span>
+</div>
+
+<div class="deck" id="deck"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js"></script>
+<script>
+// ── Carousel A: "The recruiting timeline no one shows you" — Promptly style ──
+const SLIDES = [
+  { big: true, count: "1/6", pill: "⚡ heads up",
+    head: 'the internship timeline <span class="hl">no one shows you.</span>',
+    body: "save this before recruiting season eats you alive →",
+    noti: { title: "Goldman Sachs just opened", body: "2027 Summer Analyst Program — apply now", time: "now" },
+    footR: "swipe →" },
+  { count: "2/6", pill: "the timeline",
+    head: 'summer <span class="hl">2027</span> apps are already opening.',
+    body: "the biggest firms recruit ~15 months early.\n\nnot a typo. fifteen months.",
+    footR: "swipe →" },
+  { count: "3/6", pill: "aug – sep",
+    head: 'banks + big tech open <span class="hl">first.</span>',
+    body: "Goldman’s 2027 summer analyst program opens Aug 15, 2026.\n\nyes — for summer 2027. 💀",
+    footR: "swipe →" },
+  { count: "4/6", pill: "oct – jan",
+    head: 'rolling = <span class="hl">first come, first served.</span>',
+    body: "consulting + more banks open next.\n\napplying late is applying to a closed door.",
+    footR: "swipe →" },
+  { count: "5/6", pill: "the trap",
+    head: 'most students find out <span class="hl">after it closed.</span>',
+    body: "from a friend. in a group chat. three weeks too late.\n\nyou can’t apply to a deadline you never saw.",
+    footR: "swipe →" },
+  { big: true, count: "6/6", pill: "✅ fix it", pillGreen: true,
+    head: 'never miss <span class="hl">another one.</span>',
+    body: "Promptly pings you the second internships open. free for students.",
+    noti: { title: "McKinsey just opened", body: "Summer Business Analyst Intern — you're early 🎯", time: "now" },
+    footR: "joinpromptly.co", cta: true },
+];
+
+const deck = document.getElementById("deck");
+
+function slideEl(s) {
+  const wrap = document.createElement("div");
+  wrap.className = "slide-wrap";
+  const noti = s.noti || { title: "Company just opened", body: "Role name — apply now", time: "now" };
+  wrap.innerHTML = `
+    <div class="slide-view">
+      <div class="slide${s.big ? " big" : ""}">
+        <div class="brandbar">
+          <div class="brandtag"><span class="bolt">⚡</span><span contenteditable>promptly</span></div>
+          <span class="count" contenteditable>${s.count || ""}</span>
+        </div>
+        <div class="pill${s.pillGreen ? " green" : ""}${s.pill ? "" : " hiddenpill"}" contenteditable>${s.pill || "label"}</div>
+        <div class="headline" contenteditable>${s.head}</div>
+        <div class="body" contenteditable>${s.body}</div>
+        <div class="noti${s.noti ? "" : " hidden"}">
+          <span class="bolt">⚡</span>
+          <div class="noti-main">
+            <div class="noti-top"><span class="noti-app" contenteditable>promptly</span><span class="noti-time" contenteditable>${noti.time}</span></div>
+            <div class="noti-title" contenteditable>${noti.title}</div>
+            <div class="noti-body" contenteditable>${noti.body}</div>
+          </div>
+        </div>
+        <div class="foot">
+          <span contenteditable>@joinpromptly</span>
+          <span class="${s.cta ? "cta" : ""}" contenteditable>${s.footR}</span>
+        </div>
+      </div>
+    </div>
+    <div class="slide-actions">
+      <button onclick="downloadSlide(this)">⬇ PNG</button>
+      <button onclick="toggleNoti(this)">🔔 Noti</button>
+      <button onclick="toggleSize(this)">Aa Size</button>
+      <button onclick="toggleCta(this)">🟣 CTA</button>
+      <button onclick="removeSlide(this)">✕</button>
+    </div>`;
+  return wrap;
+}
+
+SLIDES.forEach((s) => deck.appendChild(slideEl(s)));
+
+function addSlide() {
+  const n = deck.children.length + 1;
+  deck.appendChild(slideEl({
+    count: n + "/" + n, pill: "label",
+    head: 'your headline <span class="hl">here.</span>',
+    body: "supporting line goes here.",
+    footR: "swipe →",
+  }));
+}
+
+function toggleNoti(btn) { btn.closest(".slide-wrap").querySelector(".noti").classList.toggle("hidden"); }
+function toggleSize(btn) { btn.closest(".slide-wrap").querySelector(".slide").classList.toggle("big"); }
+function toggleCta(btn) {
+  const f = btn.closest(".slide-wrap").querySelector(".foot span:last-child");
+  f.classList.toggle("cta");
+}
+function removeSlide(btn) { btn.closest(".slide-wrap").remove(); }
+
+async function renderPng(slide) {
+  const clone = slide.cloneNode(true);
+  clone.style.transform = "none";
+  const holder = document.createElement("div");
+  holder.style.cssText = "position:absolute;left:-99999px;top:0;";
+  holder.appendChild(clone);
+  document.body.appendChild(holder);
+  try {
+    return await htmlToImage.toPng(clone, { width: 1080, height: 1350, pixelRatio: 1 });
+  } finally {
+    holder.remove();
+  }
+}
+
+async function downloadSlide(btn) {
+  const slide = btn.closest(".slide-wrap").querySelector(".slide");
+  btn.textContent = "…";
+  const url = await renderPng(slide);
+  const idx = [...deck.children].indexOf(btn.closest(".slide-wrap")) + 1;
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `promptly-slide-${String(idx).padStart(2, "0")}.png`;
+  a.click();
+  btn.textContent = "⬇ PNG";
+}
+
+async function downloadAll() {
+  const slides = deck.querySelectorAll(".slide");
+  let i = 1;
+  for (const s of slides) {
+    const url = await renderPng(s);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `promptly-slide-${String(i).padStart(2, "0")}.png`;
+    a.click();
+    i++;
+    await new Promise((r) => setTimeout(r, 400));
+  }
+}
+</script>
+</body>
+</html>
