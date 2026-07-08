@@ -147,6 +147,7 @@ async function releaseClaim(key) {
 
 module.exports = {
   readBody,
+  getRedis,
   saveSubscriber,
   listSubscribers,
   deleteSubscriber,

@@ -145,6 +145,11 @@
   .slide.has-noti .body { margin-top: 40px; }
   .slide.has-noti .noti { margin-top: 44px; }
   .slide.has-noti.big .headline { font-size: 108px; }
+
+  .sync-status { font-size: 12.5px; color: #888; }
+  .sync-status.ok { color: #6fe3a3; }
+  .sync-status.warn { color: #e3b46f; }
+  .sync-row { display: flex; align-items: center; gap: 12px; margin: -10px 0 20px; }
 </style>
 </head>
 <body>
@@ -154,10 +159,15 @@
 
 <div class="toolbar" id="decksBar"></div>
 
+<div class="sync-row">
+  <span class="sync-status" id="syncStatus">Loading shared edits…</span>
+  <button onclick="promptForKey()" style="font-size:12px;padding:5px 10px;">🔑 Key</button>
+</div>
+
 <div class="toolbar">
   <button class="primary" onclick="addSlide()">+ New slide</button>
   <button onclick="downloadAll()">Download all PNGs</button>
-  <span class="hint">Line breaks work — press Enter while editing.</span>
+  <span class="hint">Line breaks work — press Enter while editing. Edits save automatically for both of you.</span>
 </div>
 
 <div class="deck" id="deck"></div>
@@ -364,11 +374,15 @@ function slideEl(s) {
 // Deck switcher — one button per carousel.
 const DECK_NAMES = Object.keys(DECKS);
 const decksBar = document.getElementById("decksBar");
+let currentDeckName = DECK_NAMES[0];
+
 DECK_NAMES.forEach((name, i) => {
   const b = document.createElement("button");
   b.textContent = name;
   if (i === 0) b.classList.add("primary");
   b.onclick = () => {
+    syncCurrentDeckFromDom();
+    currentDeckName = name;
     loadDeck(name);
     [...decksBar.children].forEach((c) => c.classList.remove("primary"));
     b.classList.add("primary");
@@ -381,8 +395,6 @@ function loadDeck(name) {
   DECKS[name].forEach((s) => deck.appendChild(slideEl(s)));
 }
 
-loadDeck(DECK_NAMES[0]);
-
 function addSlide() {
   const n = deck.children.length + 1;
   deck.appendChild(slideEl({
@@ -391,19 +403,128 @@ function addSlide() {
     body: "supporting line goes here.",
     footR: "swipe →",
   }));
+  syncCurrentDeckFromDom();
+  scheduleSave();
 }
 
 function toggleNoti(btn) {
   const slide = btn.closest(".slide-wrap").querySelector(".slide");
   const hidden = slide.querySelector(".noti").classList.toggle("hidden");
   slide.classList.toggle("has-noti", !hidden);
+  syncCurrentDeckFromDom();
+  scheduleSave();
 }
-function toggleSize(btn) { btn.closest(".slide-wrap").querySelector(".slide").classList.toggle("big"); }
+function toggleSize(btn) {
+  btn.closest(".slide-wrap").querySelector(".slide").classList.toggle("big");
+  syncCurrentDeckFromDom();
+  scheduleSave();
+}
 function toggleCta(btn) {
   const f = btn.closest(".slide-wrap").querySelector(".foot span:last-child");
   f.classList.toggle("cta");
+  syncCurrentDeckFromDom();
+  scheduleSave();
 }
-function removeSlide(btn) { btn.closest(".slide-wrap").remove(); }
+function removeSlide(btn) {
+  btn.closest(".slide-wrap").remove();
+  syncCurrentDeckFromDom();
+  scheduleSave();
+}
+
+// ── Reads the live DOM back into a plain-data slide array, so edits made by
+// typing (or the toggle buttons) are captured before a deck switch or save.
+function serializeDeckFromDom() {
+  return [...deck.querySelectorAll(".slide-wrap")].map((wrap) => {
+    const slide = wrap.querySelector(".slide");
+    const pillEl = slide.querySelector(".pill");
+    const notiEl = slide.querySelector(".noti");
+    const footSpans = slide.querySelectorAll(".foot span");
+    const obj = {
+      big: slide.classList.contains("big"),
+      count: slide.querySelector(".count").innerText.trim(),
+      pill: pillEl.classList.contains("hiddenpill") ? "" : pillEl.innerText.trim(),
+      pillGreen: pillEl.classList.contains("green"),
+      head: slide.querySelector(".headline").innerHTML,
+      body: slide.querySelector(".body").innerText,
+      footR: footSpans[1] ? footSpans[1].innerText.trim() : "swipe →",
+      cta: footSpans[1] ? footSpans[1].classList.contains("cta") : false,
+    };
+    if (!notiEl.classList.contains("hidden")) {
+      obj.noti = {
+        title: notiEl.querySelector(".noti-title").innerText.trim(),
+        body: notiEl.querySelector(".noti-body").innerText.trim(),
+        time: notiEl.querySelector(".noti-time").innerText.trim(),
+      };
+    }
+    return obj;
+  });
+}
+function syncCurrentDeckFromDom() {
+  DECKS[currentDeckName] = serializeDeckFromDom();
+}
+// Any typing inside a slide (headline, body, pill, notification text) syncs + saves.
+deck.addEventListener("input", () => {
+  syncCurrentDeckFromDom();
+  scheduleSave();
+});
+
+// ── Shared save/load so Cam's edits show up here too, and vice versa. ──
+const EDIT_KEY_STORAGE = "promptlySlidesEditKey";
+function getEditKey() { return localStorage.getItem(EDIT_KEY_STORAGE) || "promptly2027"; }
+function setEditKey(k) { localStorage.setItem(EDIT_KEY_STORAGE, k); }
+function promptForKey() {
+  const next = prompt("Shared edit key (ask Marley or Cam if you don't have it):", getEditKey());
+  if (next !== null && next.trim()) setEditKey(next.trim());
+}
+
+const statusEl = document.getElementById("syncStatus");
+function setStatus(text, cls) {
+  statusEl.textContent = text;
+  statusEl.className = "sync-status" + (cls ? " " + cls : "");
+}
+
+let saveTimer = null;
+function scheduleSave() {
+  setStatus("Saving…");
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 900);
+}
+
+async function saveNow() {
+  try {
+    const res = await fetch("/api/slides", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decks: DECKS, editKey: getEditKey() }),
+    });
+    const data = await res.json();
+    if (data.ok) setStatus("Saved ✓ visible to everyone", "ok");
+    else if (res.status === 401) setStatus("🔒 wrong key — click Key to fix", "warn");
+    else setStatus("Not saved: " + (data.error || "try again"), "warn");
+  } catch {
+    setStatus("Offline — not shared yet", "warn");
+  }
+}
+
+async function loadRemote() {
+  try {
+    const res = await fetch("/api/slides");
+    const data = await res.json();
+    if (data.ok && data.decks) {
+      DECK_NAMES.forEach((name) => { if (data.decks[name]) DECKS[name] = data.decks[name]; });
+      setStatus("Loaded shared edits ✓", "ok");
+    } else {
+      setStatus("Starting deck — no shared edits yet", "");
+    }
+  } catch {
+    setStatus("Offline — showing local slides", "warn");
+  }
+}
+
+(async function init() {
+  await loadRemote();
+  loadDeck(currentDeckName);
+})();
 
 async function renderPng(slide) {
   const clone = slide.cloneNode(true);

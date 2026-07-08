@@ -2495,9 +2495,9 @@ function track(event) {
   try {
     const body = JSON.stringify({ event, sessionId: getSessionId() });
     if (navigator.sendBeacon) {
-      navigator.sendBeacon("/api/track", new Blob([body], { type: "application/json" }));
+      navigator.sendBeacon("/api/stats", new Blob([body], { type: "application/json" }));
     } else {
-      fetch("/api/track", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
+      fetch("/api/stats", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
     }
   } catch {}
 }
