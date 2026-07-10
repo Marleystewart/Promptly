@@ -146,6 +146,15 @@
   .slide.has-noti .noti { margin-top: 44px; }
   .slide.has-noti.big .headline { font-size: 108px; }
 
+  /* founder photo slides */
+  .f-photo { width: 600px; height: 640px; margin: 36px auto 0; border-radius: 40px; overflow: hidden; border: 3px solid rgba(255,255,255,0.18); box-shadow: 0 30px 80px rgba(0,0,0,0.5); }
+  .f-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; display: block; }
+  .slide.photo-slide { text-align: center; }
+  .slide.photo-slide .pill { align-self: center; margin-top: 48px; }
+  .slide.photo-slide .headline { font-size: 76px; margin-top: 40px; }
+  .slide.photo-slide .body { font-size: 42px; color: rgba(250,250,255,0.72); margin-top: 14px; }
+  .slide.photo-slide .foot { justify-content: center; gap: 44px; }
+
   .sync-status { font-size: 12.5px; color: #888; }
   .sync-status.ok { color: #6fe3a3; }
   .sync-status.warn { color: #e3b46f; }
@@ -326,6 +335,29 @@ const DECKS = {
       footR: "joinpromptly.co", cta: true },
   ],
 
+  "Meet the founders": [
+    { big: true, count: "1/5", pill: "The team",
+      head: 'Meet the <span class="hl">founders.</span>',
+      body: "The students building Promptly.",
+      footR: "swipe →" },
+    { count: "2/5", pill: "Founder", photo: "/assets/founders/marley.jpg",
+      head: "Marley Stewart",
+      body: "Founder · Building Promptly",
+      footR: "swipe →" },
+    { count: "3/5", pill: "Co-Founder", photo: "/assets/founders/cameron.jpg",
+      head: "Cameron Hicks",
+      body: "Co-Founder · Works at ______",
+      footR: "swipe →" },
+    { count: "4/5", pill: "Co-Founder", photo: "/assets/founders/trey.jpg",
+      head: "Trey",
+      body: "Co-Founder · Works at ______",
+      footR: "swipe →" },
+    { big: true, count: "5/5", pill: "✅ Join us", pillGreen: true,
+      head: 'Building for <span class="hl">students like you.</span>',
+      body: "Free internship alerts. Join the waitlist.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
 };
 
 const deck = document.getElementById("deck");
@@ -339,12 +371,13 @@ function slideEl(s) {
   const noti = s.noti || { title: "Company just opened", body: "Role name — apply now", time: "now" };
   wrap.innerHTML = `
     <div class="slide-view">
-      <div class="slide${s.big ? " big" : ""}${s.noti ? " has-noti" : ""}">
+      <div class="slide${s.big ? " big" : ""}${s.noti ? " has-noti" : ""}${s.photo ? " photo-slide" : ""}">
         <div class="brandbar">
           <div class="brandtag"><span class="bolt">${LOGO}</span><span contenteditable>promptly</span></div>
           <span class="count" contenteditable>${s.count || ""}</span>
         </div>
         <div class="pill${s.pillGreen ? " green" : ""}${s.pill ? "" : " hiddenpill"}" contenteditable>${s.pill || "label"}</div>
+        ${s.photo ? `<div class="f-photo"><img data-photo="${s.photo}" src="${s.photo}" alt=""></div>` : ""}
         <div class="headline" contenteditable>${s.head}</div>
         <div class="body" contenteditable>${s.body}</div>
         <div class="noti${s.noti ? "" : " hidden"}">
@@ -449,6 +482,8 @@ function serializeDeckFromDom() {
       footR: footSpans[1] ? footSpans[1].innerText.trim() : "swipe →",
       cta: footSpans[1] ? footSpans[1].classList.contains("cta") : false,
     };
+    const photoImg = slide.querySelector(".f-photo img");
+    if (photoImg) obj.photo = photoImg.getAttribute("data-photo");
     if (!notiEl.classList.contains("hidden")) {
       obj.noti = {
         title: notiEl.querySelector(".noti-title").innerText.trim(),
