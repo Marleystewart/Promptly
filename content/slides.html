@@ -91,6 +91,11 @@
     color: #c7b3ff; font-size: 32px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase;
   }
   .pill.green { background: rgba(97,232,170,0.14); border-color: rgba(97,232,170,0.5); color: var(--green); }
+  .pill.hot { background: rgba(255,79,107,0.16); border-color: rgba(255,79,107,0.55); color: #ff8fa3; }
+
+  /* punchier cover hook: bigger, tighter, so the first line stops the scroll */
+  .slide.big.hook .headline { font-size: 132px; line-height: 1.0; letter-spacing: -0.03em; }
+  .slide.hook .body { font-size: 46px; font-weight: 600; color: rgba(250,250,255,0.85); }
 
   .headline {
     font-size: 100px; font-weight: 800; line-height: 1.07; letter-spacing: -0.025em;
@@ -644,6 +649,122 @@ const DECKS = {
       footR: "joinpromptly.co", cta: true },
   ],
 
+  "The ATS filter": [
+    { big: true, hook: true, count: "1/5", pill: "🔓 Insider", pillHot: true,
+      head: 'Most résumés never <span class="hl">reach a human.</span>',
+      body: "Software reads it first. Here is what it is actually scanning for.",
+      footR: "swipe →" },
+    { count: "2/5", pill: "Step 1",
+      head: 'Match the <span class="hl">job title.</span>',
+      body: "If the posting says “Analyst Intern,” your résumé should say it too, word for word.",
+      footR: "swipe →" },
+    { count: "3/5", pill: "Step 2",
+      head: 'Skip the <span class="hl">fancy formatting.</span>',
+      body: "No tables, columns, or graphics. The scanner cannot read them. Plain text wins.",
+      footR: "swipe →" },
+    { count: "4/5", pill: "Step 3",
+      head: 'Use the <span class="hl">exact keywords.</span>',
+      body: "Pull skills straight from the posting. “Data analysis” beats “analytical thinker.”",
+      footR: "swipe →" },
+    { big: true, count: "5/5", pill: "✅ Get through", pillGreen: true,
+      head: 'Beat the filter. <span class="hl">Then apply first.</span>',
+      body: "Promptly gets you there before the flood. Free for students.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Steal this email": [
+    { big: true, hook: true, count: "1/5", pill: "📋 Copy paste ready", pillHot: true,
+      head: 'Steal this exact <span class="hl">cold email.</span>',
+      body: "The one that actually gets a reply. Word for word.",
+      footR: "swipe →" },
+    { count: "2/5", pill: "Subject",
+      head: '“Quick question <span class="hl">from a fellow [school]”</span>',
+      body: "Specific and low pressure. People open it because it is not a pitch.",
+      footR: "swipe →" },
+    { count: "3/5", pill: "Line 1",
+      head: '“I saw you work on <span class="hl">[team/project].”</span>',
+      body: "Proves you did five minutes of homework. Most students skip this.",
+      footR: "swipe →" },
+    { count: "4/5", pill: "Line 2",
+      head: '“Would you have 15 minutes <span class="hl">to share your path?”</span>',
+      body: "Ask for advice, not a job. It is a smaller ask and people say yes more.",
+      footR: "swipe →" },
+    { big: true, count: "5/5", pill: "✅ Send it", pillGreen: true,
+      head: 'Three lines. <span class="hl">That is it.</span>',
+      body: "Promptly handles your timing. This handles your network. Free.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Where openings hide": [
+    { big: true, hook: true, count: "1/5", pill: "🔓 Insider", pillHot: true,
+      head: 'The job board <span class="hl">you are not checking.</span>',
+      body: "It is not Indeed. It is not LinkedIn. Here is where roles actually post first.",
+      footR: "swipe →" },
+    { count: "2/5", pill: "The truth",
+      head: 'Aggregators are <span class="hl">always behind.</span>',
+      body: "By the time a role hits a big job board, it has often been live for days.",
+      footR: "swipe →" },
+    { count: "3/5", pill: "Where it starts",
+      head: 'It posts on the <span class="hl">company career page first.</span>',
+      body: "That is the source. Everything else is a copy, delayed.",
+      footR: "swipe →" },
+    { count: "4/5", pill: "The catch",
+      head: 'You cannot check <span class="hl">100 pages a day.</span>',
+      body: "No student has time to refresh a hundred career sites every morning.",
+      footR: "swipe →" },
+    { big: true, count: "5/5", pill: "✅ We do it for you", pillGreen: true,
+      head: 'We watch the <span class="hl">source, not the copy.</span>',
+      body: "Promptly checks the real career pages so you see it first. Free.",
+      noti: { title: "Deloitte just opened", body: "2027 Audit Intern. Straight from the source.", time: "now" },
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Recruiting by industry": [
+    { big: true, count: "1/5", pill: "Save this",
+      head: 'When each industry <span class="hl">actually recruits.</span>',
+      body: "The timeline is different for every field. Know yours.",
+      footR: "swipe →" },
+    { count: "2/5", pill: "Finance",
+      head: 'Earliest of <span class="hl">all, by far.</span>',
+      body: "Investment banks and asset managers often open a full year ahead. Rolling.",
+      footR: "swipe →" },
+    { count: "3/5", pill: "Consulting",
+      head: 'Right behind <span class="hl">finance.</span>',
+      body: "MBB and the rest typically open in early fall for the following summer.",
+      footR: "swipe →" },
+    { count: "4/5", pill: "Tech",
+      head: 'Spread out, <span class="hl">mostly rolling.</span>',
+      body: "Big tech posts year round, but the strongest roles still fill up early.",
+      footR: "swipe →" },
+    { big: true, count: "5/5", pill: "✅ Know your window", pillGreen: true,
+      head: 'Different field, <span class="hl">same rule: apply first.</span>',
+      body: "Promptly tracks the timeline for every field so you do not have to. Free.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Cut these words": [
+    { big: true, hook: true, count: "1/5", pill: "🔓 Insider", pillHot: true,
+      head: 'Words that make recruiters <span class="hl">skim past you.</span>',
+      body: "Cut these from your résumé today.",
+      footR: "swipe →" },
+    { count: "2/5", pill: "Cut this",
+      head: '“Hardworking” and <span class="hl">“team player.”</span>',
+      body: "Everyone writes this. It says nothing. Show it with a result instead.",
+      footR: "swipe →" },
+    { count: "3/5", pill: "Cut this",
+      head: '“Responsible for <span class="hl">X.”</span>',
+      body: "Passive and vague. Say what you did and what happened because of it.",
+      footR: "swipe →" },
+    { count: "4/5", pill: "Cut this",
+      head: '“References available <span class="hl">upon request.”</span>',
+      body: "A wasted line. Recruiters know how to ask. Use the space for real experience.",
+      footR: "swipe →" },
+    { big: true, count: "5/5", pill: "✅ Say more, use less", pillGreen: true,
+      head: 'Sharper résumé. <span class="hl">Faster apply.</span>',
+      body: "Promptly gets you to the front of the line. Free for students.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
 };
 
 const deck = document.getElementById("deck");
@@ -657,12 +778,12 @@ function slideEl(s) {
   const noti = s.noti || { title: "Company just opened", body: "Role name — apply now", time: "now" };
   wrap.innerHTML = `
     <div class="slide-view">
-      <div class="slide${s.big ? " big" : ""}${s.noti ? " has-noti" : ""}${s.photo ? " photo-slide" : ""}">
+      <div class="slide${s.big ? " big" : ""}${s.noti ? " has-noti" : ""}${s.photo ? " photo-slide" : ""}${s.hook ? " hook" : ""}">
         <div class="brandbar">
           <div class="brandtag"><span class="bolt">${LOGO}</span><span contenteditable>promptly</span></div>
           <span class="count" contenteditable>${s.count || ""}</span>
         </div>
-        <div class="pill${s.pillGreen ? " green" : ""}${s.pill ? "" : " hiddenpill"}" contenteditable>${s.pill || "label"}</div>
+        <div class="pill${s.pillGreen ? " green" : ""}${s.pillHot ? " hot" : ""}${s.pill ? "" : " hiddenpill"}" contenteditable>${s.pill || "label"}</div>
         ${s.photo ? `<div class="f-photo"><img data-photo="${s.photo}" src="${s.photo}" alt=""></div>` : ""}
         <div class="headline" contenteditable>${s.head}</div>
         <div class="body" contenteditable>${s.body}</div>
@@ -760,9 +881,11 @@ function serializeDeckFromDom() {
     const footSpans = slide.querySelectorAll(".foot span");
     const obj = {
       big: slide.classList.contains("big"),
+      hook: slide.classList.contains("hook"),
       count: slide.querySelector(".count").innerText.trim(),
       pill: pillEl.classList.contains("hiddenpill") ? "" : pillEl.innerText.trim(),
       pillGreen: pillEl.classList.contains("green"),
+      pillHot: pillEl.classList.contains("hot"),
       head: slide.querySelector(".headline").innerHTML,
       body: slide.querySelector(".body").innerText,
       footR: footSpans[1] ? footSpans[1].innerText.trim() : "swipe →",
