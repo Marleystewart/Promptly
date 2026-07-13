@@ -1666,7 +1666,17 @@ async function deleteAccount() {
     status.hidden = false;
     status.textContent = message;
   };
-  if (!authClient || !authUser) return setStatus("Sign in to delete your account.");
+  // No signed-in account (auth off or local profile): wipe on-device data instead.
+  if (!authClient || !authUser) {
+    const confirmation = window.prompt("This erases your Promptly profile and saved alerts from this device. Type DELETE to confirm.");
+    if (!window.PromptlyAuthRouting.isAccountDeletionConfirmed(confirmation)) {
+      if (confirmation !== null) setStatus("Nothing deleted. Type DELETE exactly to confirm.");
+      return;
+    }
+    window.PromptlyAuthRouting.clearPromptlyClientState(localStorage, sessionStorage);
+    window.location.replace(`${window.location.origin}/`);
+    return;
+  }
 
   const confirmation = window.prompt("This permanently deletes your Promptly account. Type DELETE to confirm.");
   if (!window.PromptlyAuthRouting.isAccountDeletionConfirmed(confirmation)) {

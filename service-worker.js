@@ -1,4 +1,4 @@
-const cacheName = "opening-v10";
+const cacheName = "opening-v11";
 const appShell = [
   "/",
   "/index.html",
