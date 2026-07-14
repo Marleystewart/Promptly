@@ -97,6 +97,64 @@
   .slide.big.hook .headline { font-size: 132px; line-height: 1.0; letter-spacing: -0.03em; }
   .slide.hook .body { font-size: 46px; font-weight: 600; color: rgba(250,250,255,0.85); }
 
+  /* ═══ THEME: mono — light editorial, serif headline, one accent stripe ═══ */
+  .slide.theme-mono {
+    background: #f4f1ea; color: #14121c;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+  .slide.theme-mono::before, .slide.theme-mono::after { display: none; }
+  .slide.theme-mono::before {
+    display: block; content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 18px; background: linear-gradient(180deg, var(--purple), var(--blue));
+  }
+  .slide.theme-mono .brandtag { color: #14121c; font-family: -apple-system, sans-serif; }
+  .slide.theme-mono .count { color: rgba(20,18,28,0.4); }
+  .slide.theme-mono .pill {
+    background: transparent; border: 2px solid #14121c; color: #14121c;
+    font-family: -apple-system, sans-serif;
+  }
+  .slide.theme-mono .pill.hot { background: #14121c; border-color: #14121c; color: #f4f1ea; }
+  .slide.theme-mono .headline { color: #14121c; font-weight: 700; }
+  .slide.theme-mono .headline .hl { -webkit-text-fill-color: initial; background: none; color: var(--purple-2); font-style: italic; }
+  .slide.theme-mono .body { color: rgba(20,18,28,0.72); font-family: -apple-system, sans-serif; font-weight: 500; }
+  .slide.theme-mono .foot { border-top-color: rgba(20,18,28,0.16); color: rgba(20,18,28,0.55); font-family: -apple-system, sans-serif; }
+  .slide.theme-mono .foot .cta { color: #f4f1ea; }
+  .slide.theme-mono .noti { background: rgba(20,18,28,0.05); border-color: rgba(20,18,28,0.14); }
+  .slide.theme-mono .noti-app, .slide.theme-mono .noti-time { color: rgba(20,18,28,0.5); }
+  .slide.theme-mono .noti-title { color: #14121c; }
+  .slide.theme-mono .noti-body { color: rgba(20,18,28,0.68); }
+
+  /* ═══ THEME: punch — solid saturated block, huge white type ═══ */
+  .slide.theme-punch {
+    background: linear-gradient(150deg, #3d1f8f 0%, #6b2fb3 55%, #b93b8f 100%);
+    color: #fff;
+  }
+  .slide.theme-punch::before, .slide.theme-punch::after { opacity: 0.5; }
+  .slide.theme-punch .pill { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.5); color: #fff; }
+  .slide.theme-punch .pill.hot { background: #fff; border-color: #fff; color: #b93b8f; }
+  .slide.theme-punch .headline { color: #fff; }
+  .slide.theme-punch .headline .hl { -webkit-text-fill-color: initial; background: none; color: #ffe873; }
+  .slide.theme-punch .body { color: rgba(255,255,255,0.88); }
+  .slide.theme-punch .foot { border-top-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.75); }
+  .slide.theme-punch .foot .cta { background: #fff; color: #6b2fb3; box-shadow: none; }
+  .slide.theme-punch .noti { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.4); }
+  .slide.theme-punch .noti-app, .slide.theme-punch .noti-time { color: rgba(255,255,255,0.7); }
+  .slide.theme-punch .noti-title, .slide.theme-punch .noti-body { color: #fff; }
+  .slide.theme-punch .count { color: rgba(255,255,255,0.6); }
+
+  /* ═══ Numeral layout: giant number badge for listicle slides (the format
+     that won). Works inside any theme. ═══ */
+  .num-badge {
+    font-size: 220px; font-weight: 900; line-height: 0.8; margin-top: 56px;
+    background: linear-gradient(100deg, #a88bff, var(--blue));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    letter-spacing: -0.04em;
+  }
+  .slide.theme-mono .num-badge { background: none; -webkit-text-fill-color: initial; color: var(--purple-2); }
+  .slide.theme-punch .num-badge { background: none; -webkit-text-fill-color: initial; color: #ffe873; }
+  .slide.numeral .headline { margin-top: 16px; font-size: 84px; }
+  .slide.numeral .body { margin-top: 32px; }
+
   .headline {
     font-size: 100px; font-weight: 800; line-height: 1.07; letter-spacing: -0.025em;
     margin-top: 48px; white-space: pre-wrap;
@@ -765,6 +823,126 @@ const DECKS = {
       footR: "joinpromptly.co", cta: true },
   ],
 
+  "5 email mistakes": [
+    { big: true, hook: true, count: "1/6", pill: "Read this", pillHot: true,
+      head: '5 mistakes that make <span class="hl">recruiters ignore you.</span>',
+      body: "Number two happens in almost every student email.",
+      footR: "swipe →" },
+    { numeral: "01", count: "2/6", pill: "Mistake",
+      head: 'No subject line <span class="hl">that means anything.</span>',
+      body: "“Hi” or “Question” gets skipped. Be specific enough to open.",
+      footR: "swipe →" },
+    { numeral: "02", count: "3/6", pill: "Mistake",
+      head: 'Asking for a job <span class="hl">in the first line.</span>',
+      body: "It reads as a pitch, not a conversation. Ask for advice instead.",
+      footR: "swipe →" },
+    { numeral: "03", count: "4/6", pill: "Mistake",
+      head: 'Writing a <span class="hl">wall of text.</span>',
+      body: "Three sentences max. Busy people reply to short emails first.",
+      footR: "swipe →" },
+    { numeral: "04", count: "5/6", pill: "Mistake",
+      head: 'Forgetting to say <span class="hl">why them.</span>',
+      body: "One line proving you did research beats ten lines about yourself.",
+      footR: "swipe →" },
+    { big: true, count: "6/6", pill: "✅ Fix it", pillGreen: true,
+      head: 'Short, specific, <span class="hl">and easy to say yes to.</span>',
+      body: "Promptly handles your timing. This handles your network. Free.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "5 interview red flags": [
+    { big: true, hook: true, count: "1/6", pill: "Save this", pillHot: true,
+      head: '5 red flags to watch <span class="hl">in your interview.</span>',
+      body: "Number four is the one people ignore the most.",
+      footR: "swipe →" },
+    { numeral: "01", count: "2/6", pill: "Red flag",
+      head: 'They cannot describe <span class="hl">a normal day.</span>',
+      body: "Vague answers about the role usually mean the role itself is unclear.",
+      footR: "swipe →" },
+    { numeral: "02", count: "3/6", pill: "Red flag",
+      head: 'Every intern <span class="hl">leaves early.</span>',
+      body: "Ask directly what past interns are doing now. Silence is an answer.",
+      footR: "swipe →" },
+    { numeral: "03", count: "4/6", pill: "Red flag",
+      head: 'No one can explain <span class="hl">mentorship.</span>',
+      body: "If there is no real answer to “who will I learn from,” that is the answer.",
+      footR: "swipe →" },
+    { numeral: "04", count: "5/6", pill: "Red flag",
+      head: 'The offer pressures you <span class="hl">to decide fast.</span>',
+      body: "A good offer survives you taking a few days. Rushed pressure rarely does.",
+      footR: "swipe →" },
+    { big: true, count: "6/6", pill: "✅ Choose well", pillGreen: true,
+      head: 'Apply first. <span class="hl">Choose carefully.</span>',
+      body: "Promptly gets you in the room early enough to actually choose. Free.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "The real timeline": [
+    { big: true, theme: "mono", count: "1/5", pill: "Read this",
+      head: 'The real internship <span class="hl">timeline.</span>',
+      body: "Not the one your career center tells you about.",
+      footR: "swipe →" },
+    { theme: "mono", count: "2/5", pill: "Fall",
+      head: 'Finance and consulting <span class="hl">open first.</span>',
+      body: "Most of the earliest, highest-volume recruiting happens here.",
+      footR: "swipe →" },
+    { theme: "mono", count: "3/5", pill: "Winter",
+      head: 'The window <span class="hl">narrows fast.</span>',
+      body: "Rolling deadlines mean spots close quietly, with no announcement.",
+      footR: "swipe →" },
+    { theme: "mono", count: "4/5", pill: "Spring",
+      head: 'Most students <span class="hl">start looking here.</span>',
+      body: "By spring, the strongest roles in the earliest fields are long gone.",
+      footR: "swipe →" },
+    { big: true, theme: "mono", count: "5/5", pill: "✅ Start earlier", pillGreen: true,
+      head: 'Now you know <span class="hl">the real clock.</span>',
+      body: "Promptly tracks it for every field. Free for students.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Offer or no offer": [
+    { big: true, theme: "punch", hook: true, count: "1/5", pill: "Think about this",
+      head: 'How to know if the offer <span class="hl">is actually good.</span>',
+      body: "Beyond the logo on your résumé.",
+      footR: "swipe →" },
+    { theme: "punch", count: "2/5", pill: "Ask",
+      head: 'What will I actually <span class="hl">be doing?</span>',
+      body: "Get specifics. “Supporting the team” is not an answer.",
+      footR: "swipe →" },
+    { theme: "punch", count: "3/5", pill: "Ask",
+      head: 'Who is my <span class="hl">manager?</span>',
+      body: "A great manager teaches you more than a great brand name does.",
+      footR: "swipe →" },
+    { theme: "punch", count: "4/5", pill: "Ask",
+      head: 'What happens <span class="hl">after the internship?</span>',
+      body: "Ask the return-offer rate directly. A real number, not a vibe.",
+      footR: "swipe →" },
+    { big: true, theme: "punch", count: "5/5", pill: "✅ Choose smart", pillGreen: true,
+      head: 'The best offer is not <span class="hl">always the biggest name.</span>',
+      body: "Promptly helps you see more options, faster. Free for students.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Why we built this": [
+    { big: true, theme: "mono", count: "1/4", pill: "Real talk",
+      head: 'We built Promptly because <span class="hl">recruiting felt unfair.</span>',
+      body: "Not because we had connections. Because we did not.",
+      footR: "swipe →" },
+    { theme: "mono", count: "2/4", pill: "The gap",
+      head: 'Some students always <span class="hl">knew first.</span>',
+      body: "Usually through a family friend, a club, or an older sibling. Not skill.",
+      footR: "swipe →" },
+    { theme: "mono", count: "3/4", pill: "The fix",
+      head: 'Everyone should find out <span class="hl">at the same time.</span>',
+      body: "So we built the tool that watches for you, for free.",
+      noti: { title: "SpaceX just opened", body: "2027 Finance Intern. You are on time.", time: "now" },
+      footR: "swipe →" },
+    { big: true, theme: "mono", count: "4/4", pill: "✅ Join us", pillGreen: true,
+      head: 'Recruiting, made <span class="hl">a little more fair.</span>',
+      body: "Free for every student. Join the waitlist.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
 };
 
 const deck = document.getElementById("deck");
@@ -778,12 +956,13 @@ function slideEl(s) {
   const noti = s.noti || { title: "Company just opened", body: "Role name — apply now", time: "now" };
   wrap.innerHTML = `
     <div class="slide-view">
-      <div class="slide${s.big ? " big" : ""}${s.noti ? " has-noti" : ""}${s.photo ? " photo-slide" : ""}${s.hook ? " hook" : ""}">
+      <div class="slide${s.big ? " big" : ""}${s.noti ? " has-noti" : ""}${s.photo ? " photo-slide" : ""}${s.hook ? " hook" : ""}${s.theme ? " theme-" + s.theme : ""}${s.numeral ? " numeral" : ""}">
         <div class="brandbar">
           <div class="brandtag"><span class="bolt">${LOGO}</span><span contenteditable>promptly</span></div>
           <span class="count" contenteditable>${s.count || ""}</span>
         </div>
         <div class="pill${s.pillGreen ? " green" : ""}${s.pillHot ? " hot" : ""}${s.pill ? "" : " hiddenpill"}" contenteditable>${s.pill || "label"}</div>
+        ${s.numeral ? `<div class="num-badge" contenteditable>${s.numeral}</div>` : ""}
         ${s.photo ? `<div class="f-photo"><img data-photo="${s.photo}" src="${s.photo}" alt=""></div>` : ""}
         <div class="headline" contenteditable>${s.head}</div>
         <div class="body" contenteditable>${s.body}</div>
@@ -806,9 +985,21 @@ function slideEl(s) {
       <button onclick="toggleNoti(this)">🔔 Noti</button>
       <button onclick="toggleSize(this)">Aa Size</button>
       <button onclick="toggleCta(this)">🟣 CTA</button>
+      <button onclick="cycleTheme(this)">🎨 Theme</button>
       <button onclick="removeSlide(this)">✕</button>
     </div>`;
   return wrap;
+}
+
+const THEMES = ["nebula", "mono", "punch"];
+function cycleTheme(btn) {
+  const slide = btn.closest(".slide-wrap").querySelector(".slide");
+  const current = THEMES.find((t) => slide.classList.contains("theme-" + t)) || "nebula";
+  slide.classList.remove(...THEMES.map((t) => "theme-" + t));
+  const next = THEMES[(THEMES.indexOf(current) + 1) % THEMES.length];
+  if (next !== "nebula") slide.classList.add("theme-" + next);
+  syncCurrentDeckFromDom();
+  scheduleSave();
 }
 
 // Deck switcher — one button per carousel.
@@ -879,6 +1070,8 @@ function serializeDeckFromDom() {
     const pillEl = slide.querySelector(".pill");
     const notiEl = slide.querySelector(".noti");
     const footSpans = slide.querySelectorAll(".foot span");
+    const themeMatch = [...slide.classList].find((c) => c.startsWith("theme-"));
+    const numBadge = slide.querySelector(".num-badge");
     const obj = {
       big: slide.classList.contains("big"),
       hook: slide.classList.contains("hook"),
@@ -891,6 +1084,8 @@ function serializeDeckFromDom() {
       footR: footSpans[1] ? footSpans[1].innerText.trim() : "swipe →",
       cta: footSpans[1] ? footSpans[1].classList.contains("cta") : false,
     };
+    if (themeMatch) obj.theme = themeMatch.replace("theme-", "");
+    if (numBadge) obj.numeral = numBadge.innerText.trim();
     const photoImg = slide.querySelector(".f-photo img");
     if (photoImg) obj.photo = photoImg.getAttribute("data-photo");
     if (!notiEl.classList.contains("hidden")) {
