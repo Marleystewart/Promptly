@@ -142,6 +142,43 @@
   .slide.theme-punch .noti-title, .slide.theme-punch .noti-body { color: #fff; }
   .slide.theme-punch .count { color: rgba(255,255,255,0.6); }
 
+  /* ═══ THEME: sky — deep blue block, cyan accent, cooler and calmer ═══ */
+  .slide.theme-sky {
+    background: linear-gradient(160deg, #051428 0%, #0a2e52 55%, #0f4c75 100%);
+    color: #fff;
+  }
+  .slide.theme-sky::before { background: radial-gradient(circle, rgba(82,169,255,0.4), transparent 65%); }
+  .slide.theme-sky::after { background: radial-gradient(circle, rgba(97,232,170,0.18), transparent 65%); }
+  .slide.theme-sky .pill { background: rgba(82,169,255,0.18); border-color: rgba(82,169,255,0.55); color: #9fd3ff; }
+  .slide.theme-sky .pill.hot { background: rgba(255,255,255,0.9); border-color: #fff; color: #0a2e52; }
+  .slide.theme-sky .headline { color: #fff; }
+  .slide.theme-sky .headline .hl { -webkit-text-fill-color: initial; background: none; color: #6fe3a3; }
+  .slide.theme-sky .body { color: rgba(255,255,255,0.82); }
+  .slide.theme-sky .foot { border-top-color: rgba(255,255,255,0.22); color: rgba(255,255,255,0.6); }
+  .slide.theme-sky .foot .cta { background: linear-gradient(135deg, #52a9ff, #61e8aa); color: #051428; box-shadow: none; }
+  .slide.theme-sky .noti { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.22); }
+  .slide.theme-sky .noti-app, .slide.theme-sky .noti-time { color: rgba(255,255,255,0.55); }
+  .slide.theme-sky .noti-title, .slide.theme-sky .noti-body { color: rgba(255,255,255,0.92); }
+  .slide.theme-sky .num-badge { background: none; -webkit-text-fill-color: initial; color: #6fe3a3; }
+
+  /* ═══ THEME: coral — warm, energetic, off-white with coral/amber accent ═══ */
+  .slide.theme-coral {
+    background: #1c120f; color: #fdece0;
+  }
+  .slide.theme-coral::before { background: radial-gradient(circle, rgba(255,138,101,0.35), transparent 65%); }
+  .slide.theme-coral::after { background: radial-gradient(circle, rgba(255,196,90,0.22), transparent 65%); }
+  .slide.theme-coral .pill { background: rgba(255,138,101,0.18); border-color: rgba(255,138,101,0.55); color: #ffb08a; }
+  .slide.theme-coral .pill.hot { background: #ff6b4a; border-color: #ff6b4a; color: #1c120f; }
+  .slide.theme-coral .headline { color: #fdece0; }
+  .slide.theme-coral .headline .hl { -webkit-text-fill-color: initial; background: none; color: #ffc45a; }
+  .slide.theme-coral .body { color: rgba(253,236,224,0.78); }
+  .slide.theme-coral .foot { border-top-color: rgba(253,236,224,0.2); color: rgba(253,236,224,0.6); }
+  .slide.theme-coral .foot .cta { background: linear-gradient(135deg, #ff6b4a, #ffc45a); color: #1c120f; box-shadow: none; }
+  .slide.theme-coral .noti { background: rgba(253,236,224,0.06); border-color: rgba(253,236,224,0.2); }
+  .slide.theme-coral .noti-app, .slide.theme-coral .noti-time { color: rgba(253,236,224,0.55); }
+  .slide.theme-coral .noti-title, .slide.theme-coral .noti-body { color: #fdece0; }
+  .slide.theme-coral .num-badge { background: none; -webkit-text-fill-color: initial; color: #ffc45a; }
+
   /* ═══ Numeral layout: giant number badge for listicle slides (the format
      that won). Works inside any theme. ═══ */
   .num-badge {
@@ -943,6 +980,288 @@ const DECKS = {
       footR: "joinpromptly.co", cta: true },
   ],
 
+  "Deadline math": [
+    { big: true, hook: true, count: "1/6", pill: "🔓 Insider", pillHot: true,
+      head: 'The deadline math <span class="hl">no one explains.</span>',
+      body: "Rolling admissions work differently than you think.",
+      footR: "swipe →" },
+    { numeral: "01", count: "2/6", pill: "The trap",
+      head: '“Deadline: rolling” <span class="hl">is not one date.</span>',
+      body: "It means spots close as they fill. There is no single day to circle.",
+      footR: "swipe →" },
+    { numeral: "02", count: "3/6", pill: "What it means",
+      head: 'Week one and <span class="hl">week six are different.</span>',
+      body: "The same posting has far more open spots on day one than day forty.",
+      footR: "swipe →" },
+    { numeral: "03", count: "4/6", pill: "The move",
+      head: 'Apply within <span class="hl">48 hours of posting.</span>',
+      body: "That is the single biggest lever you control in the whole process.",
+      footR: "swipe →" },
+    { numeral: "04", count: "5/6", pill: "The catch",
+      head: 'You cannot do that <span class="hl">if you never see it.</span>',
+      body: "This is the entire reason alerts matter more than a perfect résumé.",
+      footR: "swipe →" },
+    { big: true, count: "6/6", pill: "✅ Be in week one", pillGreen: true,
+      head: 'Never be the <span class="hl">week six applicant.</span>',
+      body: "Promptly tells you the moment it opens. Free for students.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "What recruiters see": [
+    { big: true, hook: true, count: "1/5", pill: "🔓 Insider", pillHot: true,
+      head: 'What a recruiter actually <span class="hl">sees first.</span>',
+      body: "It is not your GPA. Here is the real order.",
+      footR: "swipe →" },
+    { numeral: "01", count: "2/5", pill: "First",
+      head: 'The <span class="hl">job title match.</span>',
+      body: "The system checks if your résumé even matches the role before a human opens it.",
+      footR: "swipe →" },
+    { numeral: "02", count: "3/5", pill: "Second",
+      head: 'The <span class="hl">top third of the page.</span>',
+      body: "Most recruiters give a résumé about six seconds. The top third decides everything.",
+      footR: "swipe →" },
+    { numeral: "03", count: "4/5", pill: "Third",
+      head: 'One or two <span class="hl">real numbers.</span>',
+      body: "A specific result stands out fast against a page of vague duties.",
+      footR: "swipe →" },
+    { big: true, count: "5/5", pill: "✅ Now optimize", pillGreen: true,
+      head: 'Get seen. <span class="hl">Then apply first.</span>',
+      body: "Promptly handles the timing. Free for students.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "The 3am rule": [
+    { big: true, count: "1/5", pill: "Real talk",
+      head: 'The recruiting rule <span class="hl">nobody says out loud.</span>',
+      body: "Speed beats perfect almost every time.",
+      footR: "swipe →" },
+    { count: "2/5", pill: "The rule",
+      head: 'A good application <span class="hl">today beats a perfect one</span> next week.',
+      body: "Rolling roles do not wait for your best draft.",
+      footR: "swipe →" },
+    { count: "3/5", pill: "Why",
+      head: 'Early applicants get <span class="hl">more attention.</span>',
+      body: "Fewer resumes in the pile means more time on yours.",
+      footR: "swipe →" },
+    { count: "4/5", pill: "So",
+      head: 'Have a base résumé <span class="hl">ready before you need it.</span>',
+      body: "Tweak the top third per role. Do not start from zero every time.",
+      footR: "swipe →" },
+    { big: true, count: "5/5", pill: "✅ Move fast", pillGreen: true,
+      head: 'Speed is <span class="hl">a strategy.</span>',
+      body: "Promptly gives you the head start. Free for students.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Old vs new resume": [
+    { big: true, theme: "mono", count: "1/5", pill: "Before and after",
+      head: 'Your résumé, <span class="hl">rewritten.</span>',
+      body: "Small changes, real difference.",
+      footR: "swipe →" },
+    { theme: "mono", count: "2/5", pill: "Before",
+      head: '“Responsible for <span class="hl">social media.”</span>',
+      body: "Vague. Passive. Forgettable.",
+      footR: "swipe →" },
+    { theme: "mono", count: "3/5", pill: "After",
+      head: '“Grew Instagram <span class="hl">40 percent in 8 weeks.”</span>',
+      body: "Specific. Active. A number a recruiter remembers.",
+      footR: "swipe →" },
+    { theme: "mono", count: "4/5", pill: "The pattern",
+      head: 'Duty <span class="hl">becomes result.</span>',
+      body: "Every bullet should answer “so what happened.”",
+      footR: "swipe →" },
+    { big: true, theme: "mono", count: "5/5", pill: "✅ Rewrite yours", pillGreen: true,
+      head: 'Small edit. <span class="hl">Big difference.</span>',
+      body: "Promptly gets the sharper résumé to the front of the line. Free.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Words that build trust": [
+    { big: true, theme: "mono", count: "1/5", pill: "In interviews",
+      head: 'Phrases that make <span class="hl">recruiters trust you.</span>',
+      body: "Small language shifts, real impact.",
+      footR: "swipe →" },
+    { theme: "mono", count: "2/5", pill: "Say this",
+      head: '“Here is what <span class="hl">I would do differently.”</span>',
+      body: "Owning a mistake reads as maturity, not weakness.",
+      footR: "swipe →" },
+    { theme: "mono", count: "3/5", pill: "Say this",
+      head: '“I do not know, <span class="hl">but here is how I would find out.”</span>',
+      body: "Honesty plus a plan beats a confident guess every time.",
+      footR: "swipe →" },
+    { theme: "mono", count: "4/5", pill: "Say this",
+      head: '“That is a <span class="hl">great question.”</span>',
+      body: "One second to think beats a rushed, messy answer.",
+      footR: "swipe →" },
+    { big: true, theme: "mono", count: "5/5", pill: "✅ Sound ready", pillGreen: true,
+      head: 'Small words. <span class="hl">Real trust.</span>',
+      body: "Promptly gets you to the interview. This gets you through it. Free.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Rejection is normal": [
+    { big: true, theme: "mono", count: "1/4", pill: "Real talk",
+      head: 'Rejection is <span class="hl">part of the process.</span>',
+      body: "Not a verdict on you. A numbers game.",
+      footR: "swipe →" },
+    { theme: "mono", count: "2/4", pill: "The math",
+      head: 'Most students apply <span class="hl">to dozens of roles.</span>',
+      body: "One yes matters more than twenty nos. The nos are not the story.",
+      footR: "swipe →" },
+    { theme: "mono", count: "3/4", pill: "The fix",
+      head: 'Apply to more roles, <span class="hl">earlier.</span>',
+      body: "Volume plus timing beats waiting for the one perfect posting.",
+      footR: "swipe →" },
+    { big: true, theme: "mono", count: "4/4", pill: "✅ Keep going", pillGreen: true,
+      head: 'One yes is <span class="hl">all it takes.</span>',
+      body: "Promptly keeps new chances coming. Free for students.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Calm before you apply": [
+    { big: true, theme: "sky", count: "1/5", pill: "Take a breath",
+      head: 'Before you apply, <span class="hl">read this.</span>',
+      body: "Recruiting is a long game. Play it that way.",
+      footR: "swipe →" },
+    { theme: "sky", count: "2/5", pill: "Reframe",
+      head: 'One rejection is <span class="hl">one data point.</span>',
+      body: "Not a pattern. Not a verdict. Just one outcome.",
+      footR: "swipe →" },
+    { theme: "sky", count: "3/5", pill: "Reframe",
+      head: 'You are not behind. <span class="hl">You are early.</span>',
+      body: "Most students have not even started looking yet.",
+      footR: "swipe →" },
+    { theme: "sky", count: "4/5", pill: "Reframe",
+      head: 'Perfect timing <span class="hl">does not exist.</span>',
+      body: "Good enough, sent today, beats perfect, sent never.",
+      footR: "swipe →" },
+    { big: true, theme: "sky", count: "5/5", pill: "✅ Now go", pillGreen: true,
+      head: 'Steady wins. <span class="hl">Start today.</span>',
+      body: "Promptly keeps watch so you do not have to. Free.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "The waiting game": [
+    { big: true, theme: "sky", count: "1/4", pill: "Applied",
+      head: 'You applied. <span class="hl">Now what.</span>',
+      body: "What to do while you wait, instead of refreshing your inbox.",
+      footR: "swipe →" },
+    { theme: "sky", count: "2/4", pill: "Do this",
+      head: 'Keep applying <span class="hl">to other roles.</span>',
+      body: "Waiting on one answer should never pause the search.",
+      footR: "swipe →" },
+    { theme: "sky", count: "3/4", pill: "Do this",
+      head: 'Follow up once, <span class="hl">politely, after a week.</span>',
+      body: "Silence is normal. A short nudge is fine. More than that is not.",
+      footR: "swipe →" },
+    { big: true, theme: "sky", count: "4/4", pill: "✅ Stay in motion", pillGreen: true,
+      head: 'Momentum beats <span class="hl">a refreshed inbox.</span>',
+      body: "Promptly keeps new chances coming while you wait. Free.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Energy check": [
+    { big: true, theme: "coral", hook: true, count: "1/5", pill: "🔥 Hype", pillHot: true,
+      head: 'Your sign to <span class="hl">actually apply today.</span>',
+      body: "Not tomorrow. Not after you fix your résumé. Today.",
+      footR: "swipe →" },
+    { theme: "coral", count: "2/5", pill: "Truth",
+      head: 'Done beats <span class="hl">perfect, every time.</span>',
+      body: "A submitted application beats a flawless one still sitting in drafts.",
+      footR: "swipe →" },
+    { theme: "coral", count: "3/5", pill: "Truth",
+      head: 'The role will not <span class="hl">wait for your motivation.</span>',
+      body: "Rolling deadlines move whether you feel ready or not.",
+      footR: "swipe →" },
+    { theme: "coral", count: "4/5", pill: "Truth",
+      head: 'Future you is counting <span class="hl">on today you.</span>',
+      body: "This is the version of the story you get to write right now.",
+      footR: "swipe →" },
+    { big: true, theme: "coral", count: "5/5", pill: "✅ Go apply", pillGreen: true,
+      head: 'Stop scrolling. <span class="hl">Go apply.</span>',
+      body: "Promptly makes sure you never miss the next one. Free.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Why we built this v2": [
+    { big: true, theme: "coral", count: "1/4", pill: "Origin story",
+      head: 'We were tired of <span class="hl">finding out too late.</span>',
+      body: "So we stopped waiting and built the thing ourselves.",
+      footR: "swipe →" },
+    { theme: "coral", count: "2/4", pill: "The build",
+      head: 'A tool that watches <span class="hl">career pages for you.</span>',
+      body: "The same ones we used to refresh by hand, every single morning.",
+      footR: "swipe →" },
+    { theme: "coral", count: "3/4", pill: "The result",
+      head: 'Now we get pinged <span class="hl">the second something opens.</span>',
+      body: "No more finding out from a friend, three weeks too late.",
+      noti: { title: "Robinhood just opened", body: "2027 Summer Finance Intern. You are early.", time: "now" },
+      footR: "swipe →" },
+    { big: true, theme: "coral", count: "4/4", pill: "✅ It is free", pillGreen: true,
+      head: 'Built for us. <span class="hl">Free for you too.</span>',
+      body: "Join the waitlist and never miss another one.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
+  "Story ideas": [
+    { count: "", pill: "Save this", pillHot: true,
+      head: 'The internship you want <span class="hl">is probably already posted.</span>',
+      body: "Most students just have not seen it yet.",
+      footR: "joinpromptly.co" },
+    { theme: "mono", count: "", pill: "Reminder",
+      head: 'You are not behind. <span class="hl">Most students have not started.</span>',
+      body: "The early ones just look louder.",
+      footR: "joinpromptly.co" },
+    { theme: "punch", count: "", pill: "Be honest", pillHot: true,
+      head: 'Would you take an offer <span class="hl">just for the logo?</span>',
+      body: "The name looks good on a résumé. It does not always feel good at 9am.",
+      footR: "joinpromptly.co" },
+    { theme: "sky", count: "", pill: "Myth",
+      head: 'Myth: you need a 4.0 <span class="hl">to get noticed.</span>',
+      body: "Reality: recruiters care more about what you have actually built.",
+      footR: "joinpromptly.co" },
+    { theme: "coral", count: "", pill: "🔥 Truth", pillHot: true,
+      head: 'One rejection is not <span class="hl">a verdict on you.</span>',
+      body: "It is one outcome, one time, from one company.",
+      footR: "joinpromptly.co" },
+    { count: "", pill: "Tip", pillGreen: true,
+      head: 'Turn on notifications. <span class="hl">The first applicant usually wins.</span>',
+      body: "Rolling deadlines reward speed more than almost anything else.",
+      footR: "joinpromptly.co" },
+    { theme: "punch", count: "", pill: "POV", pillHot: true,
+      head: 'POV: it opened 3 weeks ago <span class="hl">and you just found out.</span>',
+      body: "This is the exact feeling Promptly exists to kill.",
+      footR: "joinpromptly.co" },
+    { theme: "mono", count: "", pill: "Insight",
+      head: 'Most students do not miss out <span class="hl">because they are unqualified.</span>',
+      body: "They miss out because they found out too late.",
+      footR: "joinpromptly.co" },
+    { theme: "sky", count: "", pill: "Free", pillGreen: true,
+      head: 'Free. <span class="hl">No catch.</span>',
+      body: "Just alerts, the moment internships open.",
+      footR: "joinpromptly.co", cta: true },
+    { theme: "coral", count: "", pill: "Real talk",
+      head: 'You do not need <span class="hl">10 internships.</span>',
+      body: "You need one that actually teaches you something.",
+      footR: "joinpromptly.co" },
+    { count: "", pill: "Tip", pillGreen: true,
+      head: 'Save the role you are <span class="hl">not ready for yet.</span>',
+      body: "You will be, by the time it opens again next cycle.",
+      footR: "joinpromptly.co" },
+    { theme: "punch", count: "", pill: "Question", pillHot: true,
+      head: 'What would you do <span class="hl">with a 48 hour head start?</span>',
+      body: "That is what an alert actually buys you.",
+      footR: "joinpromptly.co" },
+    { theme: "mono", count: "", pill: "Reminder",
+      head: 'Done beats <span class="hl">perfect.</span>',
+      body: "A submitted application beats a flawless one still sitting in drafts.",
+      footR: "joinpromptly.co" },
+    { theme: "sky", count: "", pill: "Us",
+      head: 'We built this because <span class="hl">we were tired of missing out.</span>',
+      body: "Now it is free for every student.",
+      footR: "joinpromptly.co", cta: true },
+  ],
+
 };
 
 const deck = document.getElementById("deck");
@@ -991,7 +1310,7 @@ function slideEl(s) {
   return wrap;
 }
 
-const THEMES = ["nebula", "mono", "punch"];
+const THEMES = ["nebula", "mono", "punch", "sky", "coral"];
 function cycleTheme(btn) {
   const slide = btn.closest(".slide-wrap").querySelector(".slide");
   const current = THEMES.find((t) => slide.classList.contains("theme-" + t)) || "nebula";
