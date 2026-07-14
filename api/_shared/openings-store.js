@@ -50,4 +50,44 @@ async function markAlerted(urls) {
   await redis.sadd(ALERTED_KEY, ...urls);
 }
 
-module.exports = { saveLiveOpenings, getLiveOpenings, filterNeverAlerted, markAlerted };
+// ── Daily email digest queue ────────────────────────────────────────────────
+// Instead of emailing subscribers once per new listing (flooding), the hourly
+// refresh queues matches here and the daily retention cron flushes each
+// subscriber's queue as ONE digest email. Push alerts stay instant.
+
+const DIGEST_TTL = 60 * 60 * 24 * 3; // unsent items expire after 3 days
+
+function digestKey(email) {
+  return `promptly:digest:${String(email || "").trim().toLowerCase()}`;
+}
+
+async function queueDigestItems(email, openings) {
+  const redis = await getRedis();
+  if (!redis || !email || !openings.length) return { queued: 0 };
+  const key = digestKey(email);
+  await redis.rpush(key, ...openings.map((o) => JSON.stringify(o)));
+  await redis.expire(key, DIGEST_TTL);
+  return { queued: openings.length };
+}
+
+async function takeDigestItems(email) {
+  const redis = await getRedis();
+  if (!redis || !email) return [];
+  const key = digestKey(email);
+  const raw = (await redis.lrange(key, 0, -1)) || [];
+  await redis.del(key);
+  const seen = new Set();
+  const items = [];
+  for (const entry of raw) {
+    try {
+      const opening = typeof entry === "string" ? JSON.parse(entry) : entry;
+      const id = opening.sourceUrl || `${opening.company}|${opening.role}`;
+      if (!opening.company || seen.has(id)) continue;
+      seen.add(id);
+      items.push(opening);
+    } catch {}
+  }
+  return items;
+}
+
+module.exports = { saveLiveOpenings, getLiveOpenings, filterNeverAlerted, markAlerted, queueDigestItems, takeDigestItems };

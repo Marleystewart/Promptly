@@ -126,6 +126,28 @@ async function sendEmailAlert(opening, subscriber) {
   });
 }
 
+function dailyDigestHtml(openings, subscriber) {
+  const name = escapeHtml(subscriber.name || "there");
+  const shown = openings.slice(0, 12);
+  const extra = openings.length - shown.length;
+  return `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#14141f;max-width:600px;margin:0 auto;padding:24px">
+    <p style="color:#6d48ff;font-weight:800;margin:0 0 8px">YOUR PROMPTLY DAILY DIGEST</p>
+    <h1 style="margin:0 0 12px;font-size:28px">${openings.length} new opening${openings.length === 1 ? "" : "s"} matched your alerts.</h1>
+    <p>Hey ${name}, these opened in the last day. Rolling deadlines fill fast, so the earlier you apply, the better.</p>
+    ${shown.map(alertCard).join("")}
+    ${extra > 0 ? `<p style="color:#5b5870">+ ${extra} more matches are waiting in your Promptly feed.</p>` : ""}
+    <p style="color:#5b5870">One email a day, only when there is something new. Adjust alerts from your Promptly profile.</p>
+  </div>`;
+}
+
+async function sendDailyDigest(openings, subscriber) {
+  return sendEmail({
+    to: subscriber.email,
+    subject: `${openings.length} new internship${openings.length === 1 ? "" : "s"} just opened in your field`,
+    html: dailyDigestHtml(openings, subscriber),
+  });
+}
+
 async function sendWeeklyRecap(openings, subscriber) {
   return sendEmail({
     to: subscriber.email,
@@ -183,6 +205,7 @@ function matchesOpening(opening, subscriber) {
 module.exports = {
   sendEmailAlert,
   sendPushAlert,
+  sendDailyDigest,
   sendWeeklyRecap,
   sendDeadlineReminder,
   sendDeadlinePush,

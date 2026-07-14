@@ -1,6 +1,6 @@
 const { listSubscribers, claimOnce, releaseClaim } = require("./_shared/store");
-const { getLiveOpenings } = require("./_shared/openings-store");
-const { sendWeeklyRecap, sendDeadlineReminder, sendDeadlinePush, matchesOpening } = require("./_shared/alerts");
+const { getLiveOpenings, takeDigestItems, queueDigestItems } = require("./_shared/openings-store");
+const { sendDailyDigest, sendWeeklyRecap, sendDeadlineReminder, sendDeadlinePush, matchesOpening } = require("./_shared/alerts");
 
 function daysUntil(deadline, now = new Date()) {
   const target = Date.parse(deadline);
@@ -44,9 +44,34 @@ module.exports = async function handler(req, res) {
     const stored = await listSubscribers();
     const livePayload = await getLiveOpenings();
     const live = livePayload.openings || [];
-    const stats = { subscribers: stored.subscribers.length, weeklySent: 0, reminderEmails: 0, reminderPushes: 0 };
+    const stats = { subscribers: stored.subscribers.length, digestsSent: 0, weeklySent: 0, reminderEmails: 0, reminderPushes: 0 };
 
     for (const subscriber of stored.subscribers) {
+      // Daily digest: flush this subscriber's queued matches (filled by the
+      // hourly refresh) as one email. Claim key stops double-sends if the
+      // cron ever runs twice; on failure the items are re-queued.
+      if (subscriber.emailNotifications !== false && subscriber.email) {
+        const queued = await takeDigestItems(subscriber.email);
+        if (queued.length) {
+          const dayKey = now.toISOString().slice(0, 10);
+          const deliveryKey = `digest:${subscriber.email}:${dayKey}`;
+          const claimed = await claimOnce(deliveryKey, 2 * 86400);
+          if (claimed) {
+            let delivered = false;
+            try {
+              delivered = Boolean((await sendDailyDigest(queued, subscriber)).sent);
+              if (delivered) stats.digestsSent += 1;
+            } catch {}
+            if (!delivered) {
+              await releaseClaim(deliveryKey);
+              try { await queueDigestItems(subscriber.email, queued); } catch {}
+            }
+          } else {
+            try { await queueDigestItems(subscriber.email, queued); } catch {}
+          }
+        }
+      }
+
       if (shouldSendWeekly && subscriber.weeklyRecap !== false && subscriber.emailNotifications !== false && subscriber.email) {
         const recap = recapOpenings(live, subscriber);
         const deliveryKey = `weekly:${subscriber.email}:${weekKey(now)}`;

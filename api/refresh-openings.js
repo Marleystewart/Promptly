@@ -7,37 +7,45 @@
 // authenticates with the same secret in the Authorization header.
 
 const { aggregateOpenings } = require("./_shared/aggregator");
-const { saveLiveOpenings, getLiveOpenings, filterNeverAlerted, markAlerted } = require("./_shared/openings-store");
+const { saveLiveOpenings, getLiveOpenings, filterNeverAlerted, markAlerted, queueDigestItems } = require("./_shared/openings-store");
 const { listSubscribers } = require("./_shared/store");
-const { sendEmailAlert, sendPushAlert, matchesOpening } = require("./_shared/alerts");
+const { sendPushAlert, matchesOpening } = require("./_shared/alerts");
 const { recordNewListings } = require("./_shared/analytics");
 
 // Don't blast more than this many alerts in a single run (safety valve).
 const MAX_NOTIFY_OPENINGS = 25;
 
+// Push alerts go out instantly ("be first" is the product). Email matches are
+// QUEUED per subscriber instead of sent — the daily retention cron flushes
+// each queue as one digest email, so nobody's inbox gets flooded.
 async function notifySubscribers(newOpenings) {
-  if (!newOpenings.length) return { notified: 0, emailSent: 0, pushSent: 0 };
+  if (!newOpenings.length) return { notified: 0, emailQueued: 0, pushSent: 0 };
 
   const stored = await listSubscribers();
   const subscribers = stored.subscribers || [];
-  if (!subscribers.length) return { notified: 0, emailSent: 0, pushSent: 0 };
+  if (!subscribers.length) return { notified: 0, emailQueued: 0, pushSent: 0 };
 
-  let emailSent = 0;
+  let emailQueued = 0;
   let pushSent = 0;
   const batch = newOpenings.slice(0, MAX_NOTIFY_OPENINGS);
 
-  for (const opening of batch) {
-    const matched = subscribers.filter((sub) => matchesOpening(opening, sub));
-    for (const sub of matched) {
-      if (sub.emailNotifications !== false && sub.email) {
-        try { if ((await sendEmailAlert(opening, sub)).sent) emailSent += 1; } catch {}
-      }
-      if (sub.pushNotifications !== false && sub.pushSubscription) {
+  for (const sub of subscribers) {
+    const matched = batch.filter((opening) => matchesOpening(opening, sub));
+    if (!matched.length) continue;
+
+    if (sub.emailNotifications !== false && sub.email) {
+      try {
+        const { queued } = await queueDigestItems(sub.email, matched);
+        emailQueued += queued;
+      } catch {}
+    }
+    if (sub.pushNotifications !== false && sub.pushSubscription) {
+      for (const opening of matched) {
         try { if ((await sendPushAlert(opening, sub)).sent) pushSent += 1; } catch {}
       }
     }
   }
-  return { notified: batch.length, emailSent, pushSent };
+  return { notified: batch.length, emailQueued, pushSent };
 }
 
 module.exports = async function handler(req, res) {
@@ -80,7 +88,7 @@ module.exports = async function handler(req, res) {
     await markAlerted(result.openings.map((o) => o.sourceUrl));
 
     // On the very first run we seed silently (everything would look "new").
-    const notify = isFirstRun ? { notified: 0, emailSent: 0, pushSent: 0, seeded: true } : await notifySubscribers(newOpenings);
+    const notify = isFirstRun ? { notified: 0, emailQueued: 0, pushSent: 0, seeded: true } : await notifySubscribers(newOpenings);
     if (!isFirstRun) await recordNewListings(newOpenings.length);
 
     return res.status(200).json({

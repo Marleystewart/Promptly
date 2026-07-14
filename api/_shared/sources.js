@@ -164,6 +164,12 @@ const SOURCES = [
   // every agency; each result surfaces the real hiring agency (NASA, State,
   // NIH…) as the company.
   { company: "U.S. Federal Government", short: "GOV", logoClass: "gov", field: "Government", subField: "Federal", ats: "usajobs", hiringPath: "student;recent-graduates" },
+
+  // ═══ COVERAGE EXPANSION ═══════════════════════════════════════════════════
+  // Probed live before shipping. (A source returning 0 matches today is fine —
+  // it activates the moment that employer posts a student role.)
+  { company: "Keystone Strategy", short: "KEY", logoClass: "fin", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "keystonestrategy" },
+  { company: "Peloton", short: "PTON", logoClass: "consumer", field: "Consumer", subField: "Fitness", ats: "greenhouse", board: "peloton" },
 ];
 
 module.exports = { SOURCES };
