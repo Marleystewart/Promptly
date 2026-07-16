@@ -686,6 +686,7 @@ const profile = {
   resumeText: "",
   fields: [],
   savedAlerts: [],
+  watches: [],
   emailNotifications: true,
   pushNotifications: true,
   weeklyRecap: true,
@@ -1001,9 +1002,17 @@ function alertIdentity(item) {
   return item.sourceUrl || `${item.company}|${item.role}|${item.program}`;
 }
 
+function isWatchedCompany(item) {
+  const company = String(item.company || "").trim().toLowerCase();
+  return Boolean(company) && watchList().some((w) => String(w.company || "").trim().toLowerCase() === company);
+}
+
 function matchingLiveOpenings() {
   return preferredOpenings().filter((item) => {
     if (isAwaitingLike(item)) return false;
+    // A company the student explicitly watches always shows in their feed,
+    // regardless of field filters — mirrors the server-side alert rule.
+    if (isWatchedCompany(item)) return true;
     return !profile.fields.length || profile.fields.includes(item.field);
   });
 }
@@ -1831,7 +1840,109 @@ function applyProfileToUI() {
   });
   updateAlertIntelligence();
   setFeatured();
+  renderWatchList();
   renderOpenings();
+}
+
+// ── Watch any company ───────────────────────────────────────────────────────
+// Paste a careers link; if it's a supported ATS board, Promptly adds it to the
+// same live pipeline that powers every other alert. No fake watching: an
+// unreadable page is logged as a request and told to the user plainly.
+function watchList() {
+  return Array.isArray(profile.watches) ? profile.watches : (profile.watches = []);
+}
+
+function setWatchStatus(message, tone = "") {
+  const el = document.querySelector("[data-watch-status]");
+  if (!el) return;
+  el.textContent = message || "";
+  el.hidden = !message;
+  el.classList.toggle("is-good", tone === "good");
+  el.classList.toggle("is-bad", tone === "bad");
+}
+
+function escapeHtml(value = "") {
+  return String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function renderWatchList() {
+  const list = document.querySelector("[data-watch-list]");
+  if (!list) return;
+  const watches = watchList();
+  if (!watches.length) {
+    list.innerHTML = `<p class="watch-empty">You're not watching any companies yet. Paste a careers link above and Promptly will watch it for you.</p>`;
+    return;
+  }
+  list.innerHTML = watches.map((w) => {
+    const initials = escapeHtml((w.company || "?").trim().split(/\s+/).slice(0, 2).map((s) => s[0] || "").join("").toUpperCase() || "•");
+    const company = escapeHtml(w.company || "This company");
+    return `<div class="watch-item">
+      <span class="watch-badge">${initials}</span>
+      <span class="watch-meta"><strong>${company}</strong><small>Watching for 2027 internships</small></span>
+      <button class="watch-remove" data-watch-remove="${escapeHtml(w.id || "")}" type="button">Stop</button>
+    </div>`;
+  }).join("");
+}
+
+async function submitWatch() {
+  const urlInput = document.querySelector("[data-watch-url]");
+  const companyInput = document.querySelector("[data-watch-company]");
+  const button = document.querySelector("[data-watch-submit]");
+  if (!urlInput) return;
+  const url = urlInput.value.trim();
+  const company = companyInput ? companyInput.value.trim() : "";
+  if (!url) { setWatchStatus("Paste a company careers link first.", "bad"); return; }
+  if (!profile.email) { setWatchStatus("Add your email in your profile first, so we know where to send the alert.", "bad"); return; }
+
+  button.disabled = true;
+  setWatchStatus("Checking that link…");
+  try {
+    const response = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "watch", url, company, profile: { email: profile.email } }),
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (data.status === "watching") {
+      profile.watches = Array.isArray(data.watches) && data.watches.length
+        ? data.watches
+        : [...watchList().filter((w) => w.id !== data.id), { id: data.id, company: data.company, url, ats: data.ats }];
+      localStorage.setItem(profileStorageKey, JSON.stringify(profile));
+      const openLine = data.openNow > 0
+        ? `${data.openNow} matching role${data.openNow === 1 ? "" : "s"} are open right now — check your feed.`
+        : `Nothing matching is posted yet. You'll get an alert the moment a 2027 role opens.`;
+      setWatchStatus(`✅ Now watching ${data.company}. ${openLine}`, "good");
+      urlInput.value = "";
+      if (companyInput) companyInput.value = "";
+      renderWatchList();
+    } else if (data.status === "logged") {
+      setWatchStatus(data.reason || "We logged that page for our team to review.", "");
+      urlInput.value = "";
+      if (companyInput) companyInput.value = "";
+    } else {
+      setWatchStatus(data.reason || data.error || "Couldn't watch that link. Double-check it and try again.", "bad");
+    }
+  } catch {
+    setWatchStatus("Network hiccup — try again in a moment.", "bad");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function removeWatch(id) {
+  profile.watches = watchList().filter((w) => w.id !== id);
+  localStorage.setItem(profileStorageKey, JSON.stringify(profile));
+  renderWatchList();
+  setWatchStatus("Stopped watching.", "");
+  if (!profile.email) return;
+  try {
+    await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "unwatch", id, profile: { email: profile.email } }),
+    });
+  } catch {}
 }
 
 function updateProfilePhoto() {
@@ -2148,6 +2259,11 @@ if (!restoreProfile()) {
 initializeAuth();
 
 document.addEventListener("click", async (event) => {
+  const watchSubmitButton = event.target.closest("[data-watch-submit]");
+  if (watchSubmitButton) { event.preventDefault(); await submitWatch(); return; }
+  const watchRemoveButton = event.target.closest("[data-watch-remove]");
+  if (watchRemoveButton) { event.preventDefault(); await removeWatch(watchRemoveButton.dataset.watchRemove); return; }
+
   const nextButton = event.target.closest("[data-next-step]");
   const fieldButton = event.target.closest("[data-field-choice]");
   const editFieldButton = event.target.closest("[data-edit-field-choice]");
@@ -2560,3 +2676,12 @@ async function renderPeerPulse() {
   el.hidden = false;
 }
 renderPeerPulse();
+
+// Enter key in either watch input submits the watch.
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  if (event.target.closest("[data-watch-url], [data-watch-company]")) {
+    event.preventDefault();
+    submitWatch();
+  }
+});

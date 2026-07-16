@@ -249,17 +249,35 @@ function normalize(src, title, url, location, cycle = "Summer 2027") {
   };
 }
 
+const FETCHERS = {
+  greenhouse: fetchGreenhouse,
+  workday: fetchWorkday,
+  lever: fetchLever,
+  ashby: fetchAshby,
+  smartrecruiters: fetchSmartRecruiters,
+  usajobs: fetchUsaJobs,
+};
+
+// Run a single source's real ATS fetcher. Used both by the aggregate loop and
+// by the "watch" flow to probe that a pasted board actually resolves.
+async function fetchOne(src) {
+  return (FETCHERS[src.ats] || fetchGreenhouse)(src);
+}
+
 async function aggregateOpenings() {
-  const fetchers = {
-    greenhouse: fetchGreenhouse,
-    workday: fetchWorkday,
-    lever: fetchLever,
-    ashby: fetchAshby,
-    smartrecruiters: fetchSmartRecruiters,
-    usajobs: fetchUsaJobs,
-  };
+  // Static curated registry + any user-watched boards. Watched sources feed
+  // the exact same pipeline (dedupe, per-company cap, alerts), so watching is
+  // real, not a promise. Loaded defensively — a Redis hiccup must never blank
+  // the curated feed.
+  let watched = [];
+  try {
+    const { listWatchedSources } = require("./watched-store");
+    watched = await listWatchedSources();
+  } catch {}
+  const allSources = SOURCES.concat(Array.isArray(watched) ? watched : []);
+
   const results = await Promise.allSettled(
-    SOURCES.map((src) => (fetchers[src.ats] || fetchGreenhouse)(src))
+    allSources.map((src) => fetchOne(src))
   );
 
   // Keep the feed balanced and clean: no single employer floods it, and the
@@ -272,7 +290,7 @@ async function aggregateOpenings() {
   const sourceStatus = [];
 
   results.forEach((r, i) => {
-    const src = SOURCES[i];
+    const src = allSources[i];
     if (r.status === "fulfilled") {
       let added = 0;
       for (const o of r.value) {
@@ -295,4 +313,4 @@ async function aggregateOpenings() {
   return { openings, sourceStatus, updatedAt: new Date().toISOString() };
 }
 
-module.exports = { aggregateOpenings, isRelevant, detectCycle };
+module.exports = { aggregateOpenings, isRelevant, detectCycle, fetchOne };

@@ -2334,3 +2334,69 @@ input[type="checkbox"] {
 }
 body.onboarding-active .ap-launcher,
 body.onboarding-active .ap-panel { display: none; }
+
+/* ── Watch any company ─────────────────────────────────────────────────── */
+.watch-any-card { margin-bottom: 18px; }
+.watch-input-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.watch-input-row input {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 15px;
+  font-family: var(--font);
+}
+.watch-input-row input::placeholder { color: var(--faint); }
+.watch-input-row input:focus {
+  outline: none;
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(128, 87, 255, 0.22);
+}
+.watch-input-row .primary-action { white-space: nowrap; }
+@media (min-width: 620px) {
+  .watch-input-row {
+    grid-template-columns: 1.6fr 1fr auto;
+    align-items: center;
+  }
+}
+.watch-status.is-good { color: var(--green); }
+.watch-status.is-bad { color: var(--danger); }
+.watch-list { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+.watch-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.watch-item .watch-badge {
+  width: 40px; height: 40px; flex: 0 0 40px;
+  border-radius: 10px;
+  display: grid; place-items: center;
+  font-weight: 800; font-size: 14px;
+  background: linear-gradient(135deg, var(--purple), var(--purple-2));
+  color: #fff;
+}
+.watch-item .watch-meta { flex: 1 1 auto; min-width: 0; }
+.watch-item .watch-meta strong { display: block; font-size: 15px; }
+.watch-item .watch-meta small { color: var(--muted); font-size: 12.5px; }
+.watch-item .watch-remove {
+  flex: 0 0 auto;
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: 9px;
+  padding: 7px 11px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.watch-item .watch-remove:hover { color: var(--danger); border-color: var(--danger); }
+.watch-empty { color: var(--faint); font-size: 13.5px; margin-top: 14px; }

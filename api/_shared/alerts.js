@@ -197,6 +197,15 @@ async function sendDeadlinePush(opening, subscriber, daysLeft) {
 }
 
 function matchesOpening(opening, subscriber) {
+  // A company the subscriber explicitly asked Promptly to watch always
+  // matches, regardless of their field filters — that's the whole point of a
+  // watch. Compare case-insensitively on company name.
+  if (Array.isArray(subscriber.watches) && subscriber.watches.length) {
+    const company = String(opening.company || "").trim().toLowerCase();
+    if (company && subscriber.watches.some((w) => String(w.company || "").trim().toLowerCase() === company)) {
+      return true;
+    }
+  }
   if (!opening.field) return true;
   if (!Array.isArray(subscriber.fields) || subscriber.fields.length === 0) return true;
   return subscriber.fields.includes(opening.field);

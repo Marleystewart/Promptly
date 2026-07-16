@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="assets/app-icon.png" />
-    <link rel="stylesheet" href="styles.css?v=20260703e" />
+    <link rel="stylesheet" href="styles.css?v=20260716a" />
   </head>
   <body class="onboarding-active launch-active">
     <section class="onboarding-shell" aria-label="Promptly sign up">
@@ -313,6 +313,18 @@
         </section>
 
         <section class="view" id="view-alerts" data-heading="Alerts">
+          <article class="settings-card watch-any-card">
+            <span class="status-pill">WATCH ANY COMPANY</span>
+            <h2>Don't see a company? Watch it.</h2>
+            <p style="color:var(--muted);font-size:14px;margin:8px 0 14px;">Paste a company's careers link. If it runs on a supported hiring platform, Promptly starts watching it and alerts you the moment a 2027 internship posts — same as every other alert.</p>
+            <div class="watch-input-row">
+              <input data-watch-url type="url" inputmode="url" placeholder="Paste a careers link, e.g. jobs.lever.co/company" autocomplete="off" />
+              <input data-watch-company type="text" placeholder="Company name (optional)" autocomplete="off" />
+              <button class="primary-action" data-watch-submit>Watch</button>
+            </div>
+            <p class="alert-status" data-watch-status hidden></p>
+            <div class="watch-list" data-watch-list></div>
+          </article>
           <article class="purpose-bar">
             <span class="purpose-dot"></span>
             <p><strong>New this week.</strong> Internships that just opened — matched to your profile.</p>
@@ -453,7 +465,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
     <script src="watchlist.js?v=20260703a"></script>
     <script src="auth-routing.js?v=20260701b"></script>
-    <script src="script.js?v=20260711a"></script>
+    <script src="script.js?v=20260716a"></script>
     <script src="assistant.js?v=20260703b"></script>
   </body>
 </html>

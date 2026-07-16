@@ -38,8 +38,17 @@ function normalizeSubscriber(profile = {}, subscription = null) {
       browse: item.browse === true,
     })).filter((item) => item.company && item.role)
     : [];
+  const watches = Array.isArray(profile.watches)
+    ? profile.watches.slice(0, 100).map((w) => ({
+      id: String(w.id || "").trim(),
+      company: String(w.company || "").trim(),
+      url: String(w.url || "").trim().slice(0, 300),
+      ats: String(w.ats || "").trim(),
+    })).filter((w) => w.company)
+    : [];
   return {
     email,
+    watches,
     name: String(profile.name || "").trim() || "there",
     school: String(profile.school || "").trim(),
     gradYear: String(profile.gradYear || "").trim(),
@@ -90,6 +99,42 @@ async function listSubscribers() {
 
   const subscribers = (await Promise.all(emails.map((email) => redis.get("promptly:subscriber:" + email)))).filter(Boolean);
   return { subscribers };
+}
+
+// Attach a watched company to a subscriber's record so the alert pipeline
+// (matchesOpening) sends them that company's postings. Creates a lightweight
+// subscriber if one doesn't exist yet, so a watch never silently fails to
+// alert. Returns the subscriber's full watch list.
+async function addSubscriberWatch(email, watch) {
+  const redis = await getRedis();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!redis || !normalizedEmail) return { saved: false, watches: [] };
+  const key = "promptly:subscriber:" + normalizedEmail;
+  const existing = (await redis.get(key)) || { email: normalizedEmail, createdAt: new Date().toISOString() };
+  const clean = {
+    id: String(watch.id || "").trim(),
+    company: String(watch.company || "").trim(),
+    url: String(watch.url || "").trim().slice(0, 300),
+    ats: String(watch.ats || "").trim(),
+  };
+  const watches = Array.isArray(existing.watches) ? existing.watches.filter((w) => w.id !== clean.id) : [];
+  watches.push(clean);
+  const merged = { ...existing, email: normalizedEmail, watches: watches.slice(0, 100), updatedAt: new Date().toISOString() };
+  await redis.set(key, merged);
+  await redis.sadd("promptly:subscribers", normalizedEmail);
+  return { saved: true, watches: merged.watches };
+}
+
+async function removeSubscriberWatch(email, id) {
+  const redis = await getRedis();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!redis || !normalizedEmail) return { saved: false, watches: [] };
+  const key = "promptly:subscriber:" + normalizedEmail;
+  const existing = await redis.get(key);
+  if (!existing) return { saved: false, watches: [] };
+  const watches = (Array.isArray(existing.watches) ? existing.watches : []).filter((w) => w.id !== String(id || "").trim());
+  await redis.set(key, { ...existing, watches, updatedAt: new Date().toISOString() });
+  return { saved: true, watches };
 }
 
 async function deleteSubscriber(email) {
@@ -151,6 +196,8 @@ module.exports = {
   saveSubscriber,
   listSubscribers,
   deleteSubscriber,
+  addSubscriberWatch,
+  removeSubscriberWatch,
   clearPushSubscription,
   normalizeSubscriber,
   hasRedisEnv,

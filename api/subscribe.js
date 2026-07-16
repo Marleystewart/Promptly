@@ -1,5 +1,6 @@
 const { isValidEmail } = require("./_shared/email-validator");
-const { readBody, saveSubscriber, deleteSubscriber } = require("./_shared/store");
+const { readBody, saveSubscriber, deleteSubscriber, addSubscriberWatch, removeSubscriberWatch } = require("./_shared/store");
+const { watchCompany, unwatchCompany } = require("./_shared/watch");
 
 function bearerToken(req) {
   const authorization = String(req.headers?.authorization || "");
@@ -51,6 +52,32 @@ module.exports = async function handler(req, res) {
   try {
     const body = readBody(req);
     const profile = body.profile || {};
+
+    // ── Watch any company ────────────────────────────────────────────────
+    // Same endpoint (we're at Vercel's 12-function limit) — an `action`
+    // routes to the watch flow instead of the normal subscriber save.
+    if (body.action === "watch" || body.action === "unwatch") {
+      const email = String(profile.email || body.email || "").trim().toLowerCase();
+      if (!isValidEmail(email)) {
+        return res.status(400).json({ error: "Add your email first so we know where to send the alert." });
+      }
+
+      if (body.action === "unwatch") {
+        await unwatchCompany({ id: body.id, email }).catch(() => {});
+        const { watches } = await removeSubscriberWatch(email, body.id);
+        return res.status(200).json({ ok: true, watches });
+      }
+
+      const outcome = await watchCompany({ url: body.url, company: body.company || "", email });
+      if (outcome.status === "watching") {
+        const { watches } = await addSubscriberWatch(email, {
+          id: outcome.id, company: outcome.company, url: String(body.url || "").trim(), ats: outcome.ats,
+        });
+        return res.status(200).json({ ok: true, ...outcome, watches });
+      }
+      // logged / invalid / unreachable / at_capacity — report honestly.
+      return res.status(outcome.status === "logged" ? 200 : 422).json({ ok: outcome.status === "logged", ...outcome });
+    }
 
     if (!isValidEmail(profile.email)) {
       return res.status(400).json({ error: "Use a properly formatted email address." });
