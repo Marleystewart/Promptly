@@ -73,10 +73,14 @@ async function load() {
         <div class="card"><div class="n">${live.signupsToday || 0}</div><div class="l">Signups today</div></div>
         <div class="card"><div class="n">${live.applicationsToday || 0}</div><div class="l">Apps started today</div></div>
         <div class="card"><div class="n">${live.newListingsThisWeek || 0}</div><div class="l">New listings / wk</div></div>
+        <div class="card"><div class="n">${d.watchedCount || 0}</div><div class="l">Companies watched</div></div>
+        <div class="card"><div class="n">${d.coverageCount || 0}</div><div class="l">Coverage requests</div></div>
       </div>
       ${table("Accounts by school", d.bySchool, ["School", "#"])}
       ${table("By graduation year", d.byGradYear, ["Grad year", "#"])}
       ${table("By field interest", d.byField, ["Field", "#"])}
+      ${table("Watched companies (live in pipeline)", (d.watched||[]).map(x => [x.company, x.ats, x.watchers]), ["Company", "Platform", "Watchers"])}
+      ${table("Coverage requests (unsupported pages — demand signal)", (d.coverage||[]).map(x => [x.company || "—", x.url, x.requests]), ["Company", "URL", "Requests"])}
       ${table("Recent signups", (d.recent||[]).map(x => [x.email, x.school, x.gradYear, x.when ? new Date(x.when).toLocaleString() : "—"]), ["Email", "School", "Grad", "When"])}
       ${d.setupRequired ? `<p class="muted">${escapeHtml(d.setupRequired)}</p>` : ""}
     `;

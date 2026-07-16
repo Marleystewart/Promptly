@@ -5,6 +5,7 @@
 
 const { listSubscribers } = require("./_shared/store");
 const { getStats } = require("./_shared/analytics");
+const { listWatchedSources, listCoverageRequests } = require("./_shared/watched-store");
 const crypto = require("crypto");
 
 function mask(email) {
@@ -49,7 +50,26 @@ module.exports = async function handler(req, res) {
 
     const live = await getStats();
 
+    // "Watch any company" intent data — what users asked Promptly to track.
+    // Watched = a real ATS board now in the pipeline; coverage = a page we
+    // couldn't auto-read (a demand signal for sources worth adding).
+    let watched = [], coverage = [];
+    try { watched = await listWatchedSources(); } catch {}
+    try { coverage = await listCoverageRequests(); } catch {}
+    const watchedRows = watched
+      .sort((a, b) => (b.watchers || []).length - (a.watchers || []).length)
+      .slice(0, 50)
+      .map((w) => ({ company: w.company || "—", ats: w.ats || "—", watchers: (w.watchers || []).length }));
+    const coverageRows = coverage
+      .sort((a, b) => (b.count || 0) - (a.count || 0))
+      .slice(0, 50)
+      .map((c) => ({ url: c.url || "—", company: c.company || "—", requests: c.count || (c.requestedBy || []).length || 1 }));
+
     return res.status(200).json({
+      watchedCount: watched.length,
+      coverageCount: coverage.length,
+      watched: watchedRows,
+      coverage: coverageRows,
       totalAccounts: subscribers.length,
       withEmail,
       withPush,
