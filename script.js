@@ -1065,6 +1065,9 @@ function markMatchingAlertsSeen() {
 // (out of memory). Show a hint to narrow with tabs/search for the rest.
 const MAX_ROWS = 60;
 function renderRows(list) {
+  if (!list.length) {
+    return `<p class="list-note" style="text-align:center;padding:36px 16px;color:var(--muted)">No openings match this yet. Try another company or field — Promptly adds new ones every day.</p>`;
+  }
   let html = list.slice(0, MAX_ROWS).map(openingRow).join("");
   if (list.length > MAX_ROWS) {
     html += `<p class="list-note">Showing ${MAX_ROWS} of ${list.length}. Use the tabs or search to find a specific company.</p>`;
@@ -1182,7 +1185,6 @@ function openDetails(company) {
   const item = findOpening(company);
   track("opening_view");
   const match = openingMatch(item);
-  const awaitingLike = isAwaitingLike(item);
   modal.dataset.company = item.company;
   modalCompany.textContent = item.company;
   modal.querySelector("[data-modal-role]").textContent = `${item.role} · ${item.program}`;
@@ -1199,10 +1201,17 @@ function openDetails(company) {
   modal.querySelector("[data-modal-field]").textContent = item.field;
   modal.querySelector("[data-modal-source]").textContent = item.sourceLabel || "Official source";
   const sourceLink = modal.querySelector("[data-modal-source-link]");
+  const status = listingStatus(item);
+  // Show the link when there's a real destination: an OPEN posting, or an
+  // UPCOMING program whose page is already live (e.g. Goldman's 2027 program).
+  // Hide only for AWAITING placeholders (no real URL) and CLOSED (dead links).
+  const showLink = Boolean(item.sourceUrl) && (status === "OPEN" || status === "UPCOMING");
   sourceLink.href = item.sourceUrl || "#";
-  sourceLink.hidden = !item.sourceUrl || awaitingLike;
-  // Honest labeling: verified deep link vs. "browse their careers page".
-  sourceLink.textContent = item.browse ? `Browse ${item.company} Careers` : "Open Official Posting";
+  sourceLink.hidden = !showLink;
+  // Honest labeling: verified deep link vs. "browse", vs. a not-yet-open program page.
+  sourceLink.textContent = status === "UPCOMING"
+    ? "View the Program Page"
+    : item.browse ? `Browse ${item.company} Careers` : "Open Official Posting";
   modal.querySelector("[data-save-modal]").textContent = saved.has(item.company) ? "Unsave Alert" : "Save Alert";
   const modalLogo = modal.querySelector(".modal-logo");
   const modalLogoUrl = companyLogoUrl(item);
@@ -1695,7 +1704,7 @@ async function deleteAccount() {
       headers: { Authorization: `Bearer ${token}` },
     });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.setupRequired || result.error || "Account deletion failed.");
+    if (!response.ok) throw new Error(result.error || "Couldn’t delete your account right now. Please try again.");
 
     routeAuthenticatedUser.reset();
     authUser = null;
@@ -1956,7 +1965,7 @@ async function saveSubscriber(subscription = null) {
       body: JSON.stringify({ subscription, profile }),
     });
     const data = await response.json().catch(() => ({}));
-    if (data.setupRequired) setPushStatus(data.setupRequired);
+    if (data.setupRequired) setPushStatus("Notifications aren’t fully switched on yet — we’re finishing setup. Check back soon.");
     return response.ok || response.status === 202;
   } catch {
     return false;
@@ -2050,17 +2059,17 @@ async function sendTestAlert() {
     });
     const data = await response.json();
     const uniqueErrors = [...new Set((data.errors || []).filter(Boolean))];
-    const setup = Array.isArray(data.setupRequired) && data.setupRequired.length ? `Setup needed: ${[...new Set(data.setupRequired)].join(" ")}` : "";
-    const domainIssue = uniqueErrors.some((e) => /verify a domain|own email address/i.test(e));
+    const notReady = (Array.isArray(data.setupRequired) && data.setupRequired.length) ||
+      uniqueErrors.some((e) => /verify a domain|own email address|key|env|vercel|redis|resend/i.test(e));
     if (response.ok && data.emailSent > 0) {
       setPushStatus(`Test email sent to ${profile.email}. Check your inbox and spam folder.`);
-    } else if (domainIssue) {
-      setPushStatus("✅ Email works — but Resend only delivers to your own inbox until you verify a domain (resend.com/domains). Verify one to reach all students.");
+    } else if (notReady) {
+      setPushStatus("Email alerts aren’t fully switched on yet — we’re finishing setup. Check back soon.");
     } else {
-      setPushStatus(data.error || setup || uniqueErrors[0] || "Test alert failed.");
+      setPushStatus(data.error || uniqueErrors[0] || "Couldn’t send the test email. Please try again.");
     }
   } catch {
-    setPushStatus("Test alert failed. Add Resend and Redis keys in Vercel, then try again.");
+    setPushStatus("Couldn’t send the test email right now. Please try again in a bit.");
   }
 }
 
@@ -2087,9 +2096,9 @@ async function sendTestPush() {
       }),
     });
     const data = await response.json();
-    setPushStatus(response.ok ? "Test sent. Check your lock screen or notification center." : data.error || "Test failed.");
+    setPushStatus(response.ok ? "Test sent. Check your lock screen or notification center." : "Couldn’t send the test notification. Please try again.");
   } catch {
-    setPushStatus("Test failed. This works after the site is deployed on Vercel with push keys.");
+    setPushStatus("Couldn’t send the test notification right now. Please try again in a bit.");
   }
 }
 
@@ -2112,9 +2121,11 @@ async function sendTestWeeklyRecap() {
     const data = await response.json();
     setPushStatus(response.ok
       ? `Weekly recap sent with ${data.count} matching alerts. Check your inbox.`
-      : data.error || data.setupRequired || "Weekly recap test failed.");
+      : data.setupRequired
+        ? "Weekly recap isn’t fully switched on yet — we’re finishing setup. Check back soon."
+        : data.error || "Couldn’t send the weekly recap. Please try again.");
   } catch {
-    setPushStatus("Weekly recap test failed. Redeploy Promptly, then try again.");
+    setPushStatus("Couldn’t send the weekly recap right now. Please try again in a bit.");
   }
 }
 
@@ -2224,6 +2235,7 @@ document.addEventListener("click", async (event) => {
 
   if (saveModalButton && modal.dataset.company) {
     saveCompany(modal.dataset.company);
+    saveModalButton.textContent = saved.has(modal.dataset.company) ? "Unsave Alert" : "Save Alert";
   }
 
   if (saveButton) {
