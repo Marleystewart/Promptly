@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>How Promptly works</title>
+    <meta name="description" content="Exactly how Promptly finds internships: which hiring systems we read, how postings are verified, and what we cannot see." />
+    <meta name="theme-color" content="#0b1020" />
+    <link rel="apple-touch-icon" href="assets/app-icon.png" />
+    <link rel="stylesheet" href="styles.css?v=20260728a" />
+    <style>
+      .hiw { max-width: 860px; margin: 0 auto; padding: 40px 22px 90px; }
+      .hiw-top { display: flex; align-items: center; gap: 12px; margin-bottom: 38px; }
+      .hiw-top img { width: 40px; height: 40px; border-radius: 10px; }
+      .hiw-top a { color: var(--ink); text-decoration: none; font-weight: 800; font-size: 19px; }
+
+      .hiw h1 { font-size: clamp(31px, 5.4vw, 44px); line-height: 1.08; margin: 0 0 14px; }
+      .hiw .lede { color: var(--muted); font-size: 17px; line-height: 1.6; margin: 0 0 34px; max-width: 62ch; }
+      .hiw h2 { font-size: 22px; margin: 46px 0 12px; }
+      .hiw h3 { font-size: 15.5px; margin: 0 0 8px; }
+      .hiw p, .hiw li { color: var(--muted); font-size: 15px; line-height: 1.65; }
+      .hiw ul { padding-left: 20px; }
+      .hiw li { margin: 7px 0; }
+      .hiw strong { color: var(--ink); }
+      .hiw a { color: var(--blue); }
+
+      .stat-row {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 0 0 10px;
+      }
+      .stat {
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: 16px; padding: 18px 16px;
+      }
+      .stat b { display: block; font-size: 30px; font-weight: 900; line-height: 1; }
+      .stat span { display: block; margin-top: 7px; color: var(--muted); font-size: 12.5px; font-weight: 600; }
+      .stat-note { color: var(--faint); font-size: 12.5px; margin: 0 0 8px; }
+
+      .step {
+        display: grid; grid-template-columns: 38px 1fr; gap: 16px;
+        padding: 18px 0; border-top: 1px solid var(--line);
+      }
+      .step-n {
+        width: 34px; height: 34px; border-radius: 50%;
+        display: grid; place-items: center;
+        background: rgba(128,87,255,0.2); color: #c3b1ff;
+        font-weight: 900; font-size: 14px;
+      }
+      .step p { margin: 0; }
+
+      .platforms { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+      .platform {
+        display: flex; align-items: baseline; gap: 7px;
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: 999px; padding: 7px 14px; font-size: 13.5px; font-weight: 700; color: var(--ink);
+      }
+      .platform i { font-style: normal; color: var(--faint); font-weight: 600; font-size: 12px; }
+
+      .callout {
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: 16px; padding: 20px 22px; margin: 20px 0;
+      }
+      .callout.warm { border-color: rgba(217,119,6,0.34); }
+      .callout.warm h3 { color: #e0a44a; }
+      .callout.cool { border-color: rgba(97,232,170,0.32); }
+      .callout.cool h3 { color: var(--green); }
+      .callout p:last-child { margin-bottom: 0; }
+
+      .company-list {
+        display: flex; flex-wrap: wrap; gap: 6px;
+        margin-top: 14px; max-height: 260px; overflow-y: auto;
+        padding: 14px; border: 1px solid var(--line); border-radius: 14px;
+        background: rgba(0,0,0,0.22);
+      }
+      .company-list span {
+        font-size: 12.5px; color: var(--muted);
+        background: rgba(255,255,255,0.06); border-radius: 7px; padding: 4px 9px;
+      }
+
+      .hiw-foot {
+        margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--line);
+        color: var(--faint); font-size: 13px;
+      }
+      .hiw-foot a { color: var(--muted); }
+
+      @media (max-width: 620px) {
+        .stat-row { grid-template-columns: repeat(2, 1fr); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="hiw">
+      <div class="hiw-top">
+        <img src="assets/app-icon.png" alt="" />
+        <a href="/">Promptly</a>
+      </div>
+
+      <h1>How Promptly works</h1>
+      <p class="lede">
+        Promptly tells students when an internship opens. This page explains exactly how —
+        which systems we read, how a posting gets verified, and, just as importantly,
+        what we cannot see. Every number here is generated from the live system, not typed
+        in by hand.
+      </p>
+
+      <div class="stat-row">
+        <div class="stat"><b data-stat-companies>—</b><span>employers monitored</span></div>
+        <div class="stat"><b data-stat-platforms>—</b><span>hiring platforms read</span></div>
+        <div class="stat"><b>Hourly</b><span>automated refresh</span></div>
+        <div class="stat"><b data-stat-fields>—</b><span>career fields covered</span></div>
+      </div>
+      <p class="stat-note" data-live-note>Checking the live feed…</p>
+
+      <h2>Where the listings come from</h2>
+      <p>
+        Most job sites copy listings from other job sites, which is why they go stale. Promptly
+        reads employers' <strong>own applicant tracking systems</strong> — the software a
+        company's recruiting team actually posts jobs into. When a role appears there, it is
+        real, and it is current.
+      </p>
+      <div class="platforms" data-platform-list></div>
+
+      <h2>What happens when a role opens</h2>
+
+      <div class="step">
+        <span class="step-n">1</span>
+        <div>
+          <h3>An employer publishes a role</h3>
+          <p>It goes live in their hiring system, usually before it is announced anywhere else.</p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-n">2</span>
+        <div>
+          <h3>Promptly's pipeline picks it up</h3>
+          <p>
+            An automated job runs every hour, across every employer we monitor, and compares
+            what is live now against what was live an hour ago.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-n">3</span>
+        <div>
+          <h3>It is filtered down to student roles</h3>
+          <p>
+            Internships and early-career roles for the relevant recruiting cycle are kept.
+            Senior, experienced, and past-cycle postings are filtered out.
+          </p>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-n">4</span>
+        <div>
+          <h3>Matching students get alerted</h3>
+          <p>
+            A phone notification goes out immediately. Email is batched into one daily digest,
+            deliberately — so a busy day never turns into twenty emails.
+          </p>
+        </div>
+      </div>
+
+      <h2>How a posting gets verified</h2>
+      <div class="callout cool">
+        <h3>If the employer is not showing it, neither are we</h3>
+        <p>
+          There is no manual "verified" badge to trust. A posting appears in Promptly
+          <strong>only while it is live in the employer's own feed</strong>. The moment a role
+          is filled or pulled, it stops appearing in that feed, so it disappears from Promptly
+          on the next refresh — automatically, without anyone having to notice.
+        </p>
+        <p style="margin-bottom:0">
+          That is also why every alert links to the employer's official posting and never to a
+          copy of it.
+        </p>
+      </div>
+
+      <h2>What Promptly cannot see</h2>
+      <div class="callout warm">
+        <h3>Some employers publish nothing we can read</h3>
+        <p>
+          A number of well-known firms — including several large consultancies and banks — do not
+          expose a machine-readable job board at all. <strong>We cannot monitor those
+          automatically, and we do not pretend otherwise.</strong> In the app, those companies are
+          labelled plainly instead of promising an alert that would never arrive.
+        </p>
+        <p style="margin-bottom:0">
+          For those, you can paste the employer's careers link and Promptly will watch it for you
+          if the page is one we can read. If it is not, we log it as a coverage request for our
+          team rather than quietly dropping it.
+        </p>
+      </div>
+
+      <h2>Coverage is still uneven, and here is where</h2>
+      <p>
+        Our strongest coverage is in technology and finance, because those employers overwhelmingly
+        use the public hiring platforms above. Fields like consulting, government, and nonprofit are
+        thinner for the same structural reason. We are actively widening this, and we would rather
+        show you the real distribution than round it off:
+      </p>
+      <div class="company-list" data-field-breakdown></div>
+
+      <h2>Every employer we monitor</h2>
+      <p>
+        The full list, straight from the live registry. No other job product will show you this,
+        and that is precisely why we do.
+      </p>
+      <div class="company-list" data-company-list></div>
+
+      <h2>What we never do</h2>
+      <ul>
+        <li>We never apply to a job for you. Promptly is the signal; you apply with the employer.</li>
+        <li>We never charge students, and we never take a fee to surface a posting.</li>
+        <li>We never sell your data. Details are on the <a href="/privacy">privacy page</a>.</li>
+        <li>We never invent a listing, a link, or a number. If we cannot verify it, we say so.</li>
+      </ul>
+
+      <div class="hiw-foot">
+        <a href="/">Open Promptly</a> · <a href="/privacy">Privacy</a> ·
+        <a href="/terms">Terms</a> ·
+        <a href="mailto:help.promptly@gmail.com">help.promptly@gmail.com</a>
+      </div>
+    </div>
+
+    <script src="monitored.js?v=20260728b"></script>
+    <script>
+      // All figures below come from the generated registry snapshot or the live
+      // API. Nothing on this page is hand-entered.
+      (function () {
+        var cov = window.PROMPTLY_COVERAGE || {};
+        var companies = window.MONITORED_COMPANIES || [];
+
+        var PLATFORM_NAMES = {
+          greenhouse: "Greenhouse",
+          lever: "Lever",
+          ashby: "Ashby",
+          smartrecruiters: "SmartRecruiters",
+          workday: "Workday",
+          usajobs: "USAJOBS (federal)",
+        };
+
+        function setText(sel, value) {
+          var el = document.querySelector(sel);
+          if (el) el.textContent = value;
+        }
+
+        var platformCounts = cov.byPlatform || {};
+        var platformKeys = Object.keys(platformCounts);
+        setText("[data-stat-companies]", String(cov.companies || companies.length || "—"));
+        setText("[data-stat-platforms]", String(platformKeys.length || "—"));
+        setText("[data-stat-fields]", String(Object.keys(cov.byField || {}).length || "—"));
+
+        var platformList = document.querySelector("[data-platform-list]");
+        if (platformList) {
+          platformList.innerHTML = platformKeys
+            .sort(function (a, b) { return platformCounts[b] - platformCounts[a]; })
+            .map(function (key) {
+              var label = PLATFORM_NAMES[key] || key;
+              return '<span class="platform">' + label + " <i>" + platformCounts[key] + "</i></span>";
+            })
+            .join("");
+        }
+
+        var fieldBox = document.querySelector("[data-field-breakdown]");
+        if (fieldBox) {
+          var fields = cov.byField || {};
+          fieldBox.innerHTML = Object.keys(fields)
+            .sort(function (a, b) { return fields[b] - fields[a]; })
+            .map(function (f) { return "<span>" + f + " · " + fields[f] + "</span>"; })
+            .join("");
+        }
+
+        var companyBox = document.querySelector("[data-company-list]");
+        if (companyBox) {
+          companyBox.innerHTML = companies
+            .map(function (c) {
+              return "<span>" + String(c).replace(/[&<>]/g, "") + "</span>";
+            })
+            .join("");
+        }
+
+        // Live feed status — real role count and real refresh time.
+        fetch("/api/openings", { headers: { Accept: "application/json" } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (data) {
+            var note = document.querySelector("[data-live-note]");
+            if (!note) return;
+            if (!data || !data.updatedAt) {
+              note.textContent = "Live counts appear here once the feed has run.";
+              return;
+            }
+            var mins = Math.max(0, Math.round((Date.now() - Date.parse(data.updatedAt)) / 60000));
+            var when = mins < 1 ? "less than a minute ago"
+              : mins < 60 ? mins + " minute" + (mins === 1 ? "" : "s") + " ago"
+              : Math.round(mins / 60) + " hour" + (Math.round(mins / 60) === 1 ? "" : "s") + " ago";
+            note.textContent =
+              (data.count || 0) + " live student roles in the feed right now. Last checked " + when + ".";
+          })
+          .catch(function () {});
+      })();
+    </script>
+  </body>
+</html>

@@ -115,7 +115,22 @@
     {
       keys: ["what is promptly", "what does promptly", "how does promptly", "what can you do", "how do you work"],
       answer:
-        "Promptly watches 110+ company career pages and federal job sites, then alerts you the moment internships in your field open — so you can apply first. Set your school, grad year, and field in <b>Profile</b>, and we handle the watching.",
+        "Promptly reads employers' own hiring systems — the software their recruiting teams post jobs into — and alerts you the moment a matching internship goes live, so you can apply first. Set your school, grad year, and field in <b>Profile</b>, and we handle the watching. Full detail, including every employer we monitor: <a href=\"/how-it-works\">How Promptly works</a>.",
+    },
+    {
+      keys: ["is this real", "is this legit", "is promptly real", "is this a scam", "real company", "can i trust", "trust you", "legit"],
+      answer:
+        "Fair question, and worth asking of anything that wants your email. Promptly is a live product, not a mockup: openings come from employers' own job systems and a listing only stays up while it is still live in that employer's feed. You can see exactly how it works, and the full list of employers we monitor, at <a href=\"/how-it-works\">How Promptly works</a>. We never charge students, never apply on your behalf, and never sell your data — that is spelled out on our <a href=\"/privacy\">privacy page</a>.",
+    },
+    {
+      keys: ["my data", "privacy", "sell my data", "personal information", "what data", "resume safe", "is my data safe", "gdpr", "delete my data"],
+      answer:
+        "Short version: your résumé text and profile photo never leave your device, and we never sell your data to anyone. We store what is needed to match and reach you — name, email, school, year, major, your alert settings. You can wipe all of it from <b>Profile → Settings → Delete My Data</b>. Full detail on the <a href=\"/privacy\">privacy page</a>.",
+    },
+    {
+      keys: ["how many companies", "which companies", "what companies", "who do you track", "coverage", "do you track"],
+      answer:
+        "We publish the complete list rather than a marketing number — you can read every employer we monitor at <a href=\"/how-it-works\">How Promptly works</a>. Worth knowing: some big firms publish no job feed anyone can read automatically, so we label those honestly instead of promising an alert that would never arrive. For those, paste their careers link and Promptly will watch it for you.",
     },
     {
       keys: ["free", "cost", "how much", "price", "pay"],

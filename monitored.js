@@ -3,7 +3,8 @@
 //
 // Companies Promptly pulls automatically from the employer's own job system.
 // The app uses this to avoid promising an alert for an employer whose postings
-// we cannot actually read.
+// we cannot actually read, and /how-it-works publishes these counts so the
+// public numbers are always the real ones.
 window.MONITORED_COMPANIES = [
   "Adobe",
   "Affirm",
@@ -132,3 +133,31 @@ window.MONITORED_COMPANIES = [
   "Zipline",
   "Zocdoc"
 ];
+
+window.PROMPTLY_COVERAGE = {
+  "sources": 126,
+  "companies": 126,
+  "byPlatform": {
+    "greenhouse": 88,
+    "workday": 13,
+    "lever": 5,
+    "ashby": 14,
+    "smartrecruiters": 5,
+    "usajobs": 1
+  },
+  "byField": {
+    "Finance": 34,
+    "Technology": 55,
+    "Consulting": 3,
+    "Healthcare": 7,
+    "Education": 4,
+    "Engineering": 8,
+    "Media": 5,
+    "Nonprofit": 2,
+    "Consumer": 4,
+    "Sports": 1,
+    "Real Estate": 1,
+    "Law": 1,
+    "Government": 1
+  }
+};

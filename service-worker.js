@@ -1,4 +1,4 @@
-const cacheName = "opening-v15";
+const cacheName = "opening-v16";
 const appShell = [
   "/",
   "/index.html",
@@ -7,6 +7,7 @@ const appShell = [
   "/assistant.js",
   "/privacy.html",
   "/terms.html",
+  "/how-it-works.html",
   "/manifest.json",
   "/assets/app-icon.png",
   "/assets/wordmark.png",

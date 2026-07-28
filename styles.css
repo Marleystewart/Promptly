@@ -2476,3 +2476,16 @@ body.onboarding-active .ap-panel { display: none; }
   border-color: var(--purple);
   background: rgba(128, 87, 255, 0.28);
 }
+
+/* "How this works" link under the tracked-count — proof next to the claim. */
+.watch-card-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 1px;
+}
+.watch-card-link:hover { color: var(--ink); border-color: var(--purple); }

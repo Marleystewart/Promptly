@@ -32,4 +32,20 @@ assert.deepEqual(
   "monitored.js is out of date — run: node scripts/generate-monitored.js"
 );
 
+// The public /how-it-works page publishes these counts, so they must be the
+// registry's real numbers — not a figure someone typed into the HTML once.
+const coverage = sandbox.window.PROMPTLY_COVERAGE;
+assert.ok(coverage, "monitored.js must set window.PROMPTLY_COVERAGE");
+assert.equal(coverage.sources, SOURCES.length, "PROMPTLY_COVERAGE.sources is stale");
+assert.equal(coverage.companies, expected.length, "PROMPTLY_COVERAGE.companies is stale");
+
+const platforms = {};
+const fields = {};
+for (const s of SOURCES) {
+  platforms[s.ats] = (platforms[s.ats] || 0) + 1;
+  fields[s.field] = (fields[s.field] || 0) + 1;
+}
+assert.deepEqual({ ...coverage.byPlatform }, platforms, "PROMPTLY_COVERAGE.byPlatform is stale");
+assert.deepEqual({ ...coverage.byField }, fields, "PROMPTLY_COVERAGE.byField is stale");
+
 console.log(`Monitored-company list in sync. ${listed.length} companies with a live feed.`);
