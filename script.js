@@ -843,11 +843,25 @@ function listingStatus(item) {
 function isAwaitingLike(item) {
   return listingStatus(item) !== "OPEN";
 }
+// True only for companies whose job system we actually pull (see monitored.js,
+// generated from the source registry). We must not promise an alert for an
+// employer we cannot read — firms like McKinsey and Apple publish no machine
+// readable board, so for those we say so and point at the watch flow instead.
+const monitoredCompanies = new Set(
+  (typeof window !== "undefined" && Array.isArray(window.MONITORED_COMPANIES) ? window.MONITORED_COMPANIES : [])
+    .map((name) => String(name).trim().toLowerCase())
+);
+
+function isMonitored(item) {
+  return monitoredCompanies.has(String(item.company || "").trim().toLowerCase());
+}
+
 function awaitingLine(item) {
   const status = listingStatus(item);
   if (status === "UPCOMING") return `Applications open ${new Date(parseOpeningDate(item)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. Promptly will alert you when it is live.`;
   if (status === "CLOSED") return "Applications closed. Promptly will alert you when they reopen.";
-  return "Awaiting the 2027 posting. Promptly will alert you the moment it opens.";
+  if (isMonitored(item)) return "Awaiting the 2027 posting. Promptly is watching their job system and will alert you the moment it opens.";
+  return "This employer does not publish a job feed Promptly can read, so we cannot promise an alert. Paste their careers link and we will watch it for you.";
 }
 
 function openingRow(item) {
@@ -862,6 +876,9 @@ function openingRow(item) {
         <h3>${esc(item.company)}</h3>
         <p>${esc(item.role)} · ${esc(item.program)}</p>
         <small class="awaiting-line">${awaitingLine(item)}</small>
+        ${isAwaitingLike(item) && !isMonitored(item) && listingStatus(item) === "AWAITING"
+          ? `<button class="tiny-action watch-this-btn" data-watch-company-name="${esc(item.company)}" type="button">Watch ${esc(item.company)}</button>`
+          : ""}
       </div>
       <div class="row-actions">
         <button class="round-btn save-btn ${isSaved ? "saved" : ""}" aria-label="${isSaved ? "Untrack" : "Track"} ${esc(item.company)}" data-save="${esc(item.company)}" aria-pressed="${isSaved}">
@@ -2288,6 +2305,27 @@ document.addEventListener("click", async (event) => {
   if (watchSubmitButton) { event.preventDefault(); await submitWatch(); return; }
   const watchRemoveButton = event.target.closest("[data-watch-remove]");
   if (watchRemoveButton) { event.preventDefault(); await removeWatch(watchRemoveButton.dataset.watchRemove); return; }
+
+  // "Watch <Company>" on an unreadable-employer card: send the student to the
+  // watch form with the company prefilled, rather than dead-ending them.
+  const watchThisButton = event.target.closest("[data-watch-company-name]");
+  if (watchThisButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    const company = watchThisButton.dataset.watchCompanyName || "";
+    setView("alerts");
+    window.setTimeout(() => {
+      const nameInput = document.querySelector("[data-watch-company]");
+      const urlInput = document.querySelector("[data-watch-url]");
+      if (nameInput) nameInput.value = company;
+      if (urlInput) {
+        urlInput.focus();
+        urlInput.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+      setWatchStatus(`Paste ${company}'s careers link and Promptly will watch it for you.`, "");
+    }, 60);
+    return;
+  }
 
   const nextButton = event.target.closest("[data-next-step]");
   const fieldButton = event.target.closest("[data-field-choice]");
