@@ -86,30 +86,44 @@ async function fetchGreenhouse(src) {
 }
 
 // ── Workday: public cxs jobs endpoint, paginated ─────────────────────────
+// Workday's searchText is matched server-side, so an over-specific query hides
+// real roles: "2027 summer" returns ZERO postings on large tenants (Nvidia,
+// Adobe, Boeing) that plainly do list student roles. We instead run a few
+// broad student-intent terms and let detectCycle do the strict filtering, which
+// is where the quality gate belongs. Results are deduped by posting path.
+const WORKDAY_TERMS = ["intern", "new grad", "university graduate"];
+const WORKDAY_PAGES = 5; // per term, 20 per page
+
 async function fetchWorkday(src) {
   const base = `https://${src.tenant}.${src.dc}.myworkdayjobs.com`;
   const api = `${base}/wday/cxs/${src.tenant}/${src.site}/jobs`;
   const out = [];
-  for (let offset = 0; offset < 200; offset += 20) {
-    let data;
-    try {
-      data = await fetchJson(api, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ appliedFacets: {}, limit: 20, offset, searchText: "2027 summer" }),
-      });
-    } catch {
-      break;
+  const seenPaths = new Set();
+
+  for (const searchText of WORKDAY_TERMS) {
+    for (let page = 0; page < WORKDAY_PAGES; page += 1) {
+      let data;
+      try {
+        data = await fetchJson(api, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ appliedFacets: {}, limit: 20, offset: page * 20, searchText }),
+        });
+      } catch {
+        break; // this term failed — try the next one rather than abandoning the source
+      }
+      const postings = Array.isArray(data.jobPostings) ? data.jobPostings : [];
+      if (!postings.length) break;
+      for (const p of postings) {
+        if (!p.externalPath || seenPaths.has(p.externalPath)) continue;
+        const cycle = detectCycle(p.title, p.locationsText);
+        if (!cycle) continue;
+        seenPaths.add(p.externalPath);
+        const url = `${base}/en-US/${src.site}${p.externalPath}`;
+        out.push(normalize(src, p.title, url, p.locationsText, cycle));
+      }
+      if (postings.length < 20) break;
     }
-    const postings = Array.isArray(data.jobPostings) ? data.jobPostings : [];
-    if (!postings.length) break;
-    for (const p of postings) {
-      const cycle = detectCycle(p.title, p.locationsText);
-      if (!cycle) continue;
-      const url = `${base}/en-US/${src.site}${p.externalPath}`;
-      out.push(normalize(src, p.title, url, p.locationsText, cycle));
-    }
-    if (postings.length < 20) break;
   }
   return out;
 }

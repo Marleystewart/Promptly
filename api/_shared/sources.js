@@ -170,6 +170,37 @@ const SOURCES = [
   // it activates the moment that employer posts a student role.)
   { company: "Keystone Strategy", short: "KEY", logoClass: "fin", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "keystonestrategy" },
   { company: "Peloton", short: "PTON", logoClass: "consumer", field: "Consumer", subField: "Fitness", ats: "greenhouse", board: "peloton" },
+
+  // ═══ ENTERPRISE + NON-TECH COVERAGE (verified July 2026) ══════════════════
+  // Every entry below was probed live before being added — see
+  // scripts/probe-candidates.js and scripts/probe-workday.js. Large employers
+  // mostly do NOT run public Greenhouse boards; they run Workday tenants, which
+  // is why this block is Workday-heavy. Anything we could not verify was left
+  // out rather than shipped as a company we can't actually watch.
+  { company: "Nvidia", short: "NVDA", logoClass: "tech", field: "Technology", subField: "Semiconductors", ats: "workday", tenant: "nvidia", dc: "wd5", site: "NVIDIAExternalCareerSite" },
+  { company: "Salesforce", short: "CRM", logoClass: "tech", field: "Technology", subField: "Enterprise Software", ats: "workday", tenant: "salesforce", dc: "wd12", site: "External_Career_Site" },
+  { company: "Adobe", short: "ADBE", logoClass: "tech", field: "Technology", subField: "Enterprise Software", ats: "workday", tenant: "adobe", dc: "wd5", site: "external_experienced" },
+  { company: "Atlassian", short: "TEAM", logoClass: "tech", field: "Technology", subField: "Enterprise Software", ats: "lever", board: "atlassian" },
+  { company: "Okta", short: "OKTA", logoClass: "tech", field: "Technology", subField: "Security", ats: "greenhouse", board: "okta" },
+
+  // Aerospace and defense — previously only startups (SpaceX, Anduril, Zipline).
+  { company: "Boeing", short: "BA", logoClass: "eng", field: "Engineering", subField: "Aerospace", ats: "workday", tenant: "boeing", dc: "wd1", site: "EXTERNAL_CAREERS" },
+  { company: "Northrop Grumman", short: "NOC", logoClass: "eng", field: "Engineering", subField: "Aerospace", ats: "workday", tenant: "ngc", dc: "wd1", site: "Northrop_Grumman_External_Site" },
+  { company: "Rocket Lab", short: "RKLB", logoClass: "eng", field: "Engineering", subField: "Aerospace", ats: "greenhouse", board: "rocketlab" },
+
+  // Healthcare — previously biotech/health-tech only, no payers or systems.
+  { company: "CVS Health", short: "CVS", logoClass: "health", field: "Healthcare", subField: "Payers", ats: "workday", tenant: "cvshealth", dc: "wd1", site: "CVS_Health_Careers" },
+
+  // Media and entertainment — previously two sources total.
+  { company: "Comcast NBCUniversal", short: "CMCSA", logoClass: "media", field: "Media", subField: "Entertainment", ats: "workday", tenant: "comcast", dc: "wd5", site: "Comcast_Careers" },
+  { company: "Netflix", short: "NFLX", logoClass: "media", field: "Media", subField: "Streaming", ats: "lever", board: "netflix" },
+  { company: "The New York Times", short: "NYT", logoClass: "media", field: "Media", subField: "News", ats: "greenhouse", board: "thenewyorktimes" },
+
+  // Consumer retail at household-name scale.
+  { company: "Target", short: "TGT", logoClass: "consumer", field: "Consumer", subField: "Retail", ats: "workday", tenant: "target", dc: "wd5", site: "targetcareers" },
+
+  // Education.
+  { company: "Udemy", short: "UDMY", logoClass: "edu", field: "Education", subField: "EdTech", ats: "greenhouse", board: "udemy" },
 ];
 
 module.exports = { SOURCES };
