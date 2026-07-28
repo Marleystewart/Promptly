@@ -2400,3 +2400,63 @@ body.onboarding-active .ap-panel { display: none; }
 }
 .watch-item .watch-remove:hover { color: var(--danger); border-color: var(--danger); }
 .watch-empty { color: var(--faint); font-size: 13.5px; margin-top: 14px; }
+
+/* ── Trust: data + safety card, privacy note, honest tracked count ───────── */
+.push-privacy-note {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--faint);
+  line-height: 1.5;
+}
+.push-privacy-note a { color: var(--blue); text-decoration: none; }
+.push-privacy-note a:hover { text-decoration: underline; }
+
+/* Cards in the settings grid stretch to equal height; pack rows to the top so
+   the status pill keeps its natural height instead of absorbing the slack. */
+.trust-card { align-content: start; }
+
+.trust-card .trust-list {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.trust-card .trust-list li {
+  position: relative;
+  padding-left: 24px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.trust-card .trust-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 13px;
+  height: 8px;
+  border-left: 2px solid var(--green);
+  border-bottom: 2px solid var(--green);
+  transform: rotate(-45deg);
+}
+.trust-card .trust-list b { color: var(--ink); font-weight: 700; }
+.trust-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.trust-links a { color: var(--muted); font-size: 13px; text-decoration: none; }
+.trust-links a:hover { color: var(--ink); text-decoration: underline; }
+
+.watch-card small {
+  display: block;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--faint);
+  font-weight: 600;
+}

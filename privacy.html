@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy — Promptly</title>
+    <meta name="description" content="What Promptly collects, what stays on your device, and what we never do with your data." />
+    <meta name="theme-color" content="#0b1020" />
+    <link rel="apple-touch-icon" href="assets/app-icon.png" />
+    <link rel="stylesheet" href="styles.css?v=20260728a" />
+    <style>
+      .legal-shell { max-width: 780px; margin: 0 auto; padding: 40px 22px 90px; }
+      .legal-top { display: flex; align-items: center; gap: 12px; margin-bottom: 34px; }
+      .legal-top img { width: 40px; height: 40px; border-radius: 10px; }
+      .legal-top a { color: var(--ink); text-decoration: none; font-weight: 800; font-size: 19px; }
+      .legal-shell h1 { font-size: clamp(30px, 5vw, 40px); line-height: 1.1; margin: 0 0 10px; }
+      .legal-updated { color: var(--faint); font-size: 13.5px; margin: 0 0 30px; }
+      .legal-lede { color: var(--muted); font-size: 16.5px; line-height: 1.6; margin: 0 0 28px; }
+      .legal-shell h2 { font-size: 20px; margin: 36px 0 10px; }
+      .legal-shell p, .legal-shell li { color: var(--muted); font-size: 15px; line-height: 1.65; }
+      .legal-shell ul { padding-left: 20px; }
+      .legal-shell li { margin: 7px 0; }
+      .legal-shell strong { color: var(--ink); }
+      .legal-shell a { color: var(--blue); }
+      .legal-card {
+        background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+        padding: 18px 20px; margin: 18px 0;
+      }
+      .legal-card h3 { margin: 0 0 10px; font-size: 15px; }
+      .legal-card.good { border-color: rgba(97, 232, 170, 0.35); }
+      .legal-card.good h3 { color: var(--green); }
+      .legal-card.never { border-color: rgba(255, 79, 107, 0.32); }
+      .legal-card.never h3 { color: var(--danger); }
+      .legal-foot {
+        margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--line);
+        color: var(--faint); font-size: 13px;
+      }
+      .legal-foot a { color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <div class="legal-shell">
+      <div class="legal-top">
+        <img src="assets/app-icon.png" alt="" />
+        <a href="/">Promptly</a>
+      </div>
+
+      <h1>Privacy</h1>
+      <p class="legal-updated">Last updated 28 July 2026</p>
+
+      <p class="legal-lede">
+        Promptly tells students when an internship opens. To do that we need a little
+        information about you. This page explains exactly what we keep, where it goes,
+        and what we will never do with it — in plain English, not legal boilerplate.
+      </p>
+
+      <div class="legal-card good">
+        <h3>Never leaves your device</h3>
+        <p style="margin:0">
+          Your <strong>résumé text</strong>, your <strong>profile photo</strong>, and your
+          <strong>application progress</strong> (applied, interview, offer) are stored only in
+          your own browser. They are never uploaded to our servers. If you clear your browser
+          data, they are gone — we have no copy.
+        </p>
+      </div>
+
+      <h2>What we store on our servers</h2>
+      <p>When you set up alerts, we save the details needed to match and reach you:</p>
+      <ul>
+        <li>Your name and email address</li>
+        <li>School, graduation year, and major</li>
+        <li>Location preference, and whether you are open to remote or relocating</li>
+        <li>Interests and the alert fields you pick</li>
+        <li>Alerts you save and companies you choose to watch</li>
+        <li>Your notification preferences, and — if you turn on phone alerts — the push
+          subscription your browser generates</li>
+      </ul>
+      <p>
+        That is the whole list. We do not ask for and do not want your government ID,
+        Social Security number, bank details, or passwords for any other service.
+      </p>
+
+      <h2>Who processes it</h2>
+      <p>We keep the number of companies touching your data as small as we can:</p>
+      <ul>
+        <li><strong>Vercel</strong> — hosts the app</li>
+        <li><strong>Upstash</strong> — stores your alert profile</li>
+        <li><strong>Resend</strong> — delivers your alert emails</li>
+        <li><strong>Apple, Google, or Mozilla push services</strong> — deliver phone
+          notifications, but only if you turn them on</li>
+      </ul>
+
+      <h2>Analytics</h2>
+      <p>
+        We count basic things — how many people opened the app today, how many alerts were
+        clicked — so we know what is working. This is first-party only: the counts live in
+        our own database, tied to a random session number, not to your name or email.
+        <strong>There are no advertising cookies, no tracking pixels, and no ad networks
+        anywhere in Promptly.</strong>
+      </p>
+      <p>
+        We also record anonymous outcomes — that a student at a given school reached a
+        given stage at a given company. This carries no name and no email, and it exists so
+        we can eventually show students how their peers are doing.
+      </p>
+
+      <div class="legal-card never">
+        <h3>What we never do</h3>
+        <ul style="margin:0">
+          <li>We never sell your data. Not to advertisers, not to data brokers, not to recruiters.</li>
+          <li>We never apply to a job on your behalf. Every alert links to the employer's own posting.</li>
+          <li>We never charge you to apply, and we will never ask you to pay an employer.</li>
+          <li>We never post anything anywhere as you.</li>
+        </ul>
+      </div>
+
+      <h2>Deleting everything</h2>
+      <p>
+        Open <strong>Profile → Settings → Delete My Data</strong> in the app. That removes your
+        stored profile, your saved alerts, your watched companies, and your notification
+        subscription. It cannot be undone, and we do not keep a shadow copy. You can also
+        email us and we will do it for you.
+      </p>
+
+      <h2>Students under 18</h2>
+      <p>
+        Promptly is built for college students and is not directed at children under 13. If
+        you believe a child under 13 has given us information, email us and we will delete it.
+      </p>
+
+      <h2>Questions</h2>
+      <p>
+        A real person reads this inbox:
+        <a href="mailto:help.promptly@gmail.com">help.promptly@gmail.com</a>. If something here
+        is unclear or looks wrong, tell us and we will fix the page.
+      </p>
+
+      <div class="legal-foot">
+        <a href="/">Back to Promptly</a> · <a href="/terms">Terms</a> ·
+        <a href="mailto:help.promptly@gmail.com">help.promptly@gmail.com</a>
+      </div>
+    </div>
+  </body>
+</html>

@@ -958,7 +958,11 @@ function openingMatch(item) {
   score = Math.max(20, Math.min(score, 98));
 
   const reasonText = reasons.length ? reasons.slice(0, 2).join(" + ") : "broad profile";
-  return { score, reasonText, label: `AI match ${score}% · ${reasonText}` };
+  // Honest labelling: this is a transparent keyword/cycle rules score, not a
+  // machine-learned model — so we show a plain tier and the reason it matched,
+  // never an "AI match %" that implies precision we can't back up.
+  const tier = score >= 85 ? "Strong match" : score >= 65 ? "Good match" : "Possible match";
+  return { score, reasonText, tier, label: `${tier} · ${reasonText}` };
 }
 
 function topFields() {
@@ -1494,6 +1498,24 @@ function showAuthEntryFallback() {
   setOnboardingStep(1);
 }
 
+// Load the Supabase SDK only when accounts are enabled. Keeping this off the
+// critical path means a parked-auth build makes no third-party requests at all,
+// which is what our privacy page promises.
+let supabaseSdkPromise = null;
+function loadSupabaseSdk() {
+  if (window.supabase?.createClient) return Promise.resolve(true);
+  if (supabaseSdkPromise) return supabaseSdkPromise;
+  supabaseSdkPromise = new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";
+    script.crossOrigin = "anonymous";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.head.appendChild(script);
+  });
+  return supabaseSdkPromise;
+}
+
 async function initializeAuth() {
   const authStatus = document.querySelector("[data-auth-status]");
   const callbackUrl = window.location.href;
@@ -1506,6 +1528,9 @@ async function initializeAuth() {
   try {
     const response = await fetch("/api/auth-config", { headers: { Accept: "application/json" } });
     const config = response.ok ? await response.json() : { enabled: false };
+    // Only reach out to the Supabase CDN when accounts are actually switched on.
+    // While auth is parked, Promptly loads zero third-party scripts.
+    if (config.enabled) await loadSupabaseSdk();
     if (!config.enabled || !window.supabase?.createClient) {
       pendingOAuthCallback = false;
       document.querySelector("[data-auth-password-group]").hidden = true;
@@ -1834,7 +1859,7 @@ function applyProfileToUI() {
   document.querySelector("[data-home-school]").textContent = profile.school || "Your school";
   document.querySelector("[data-home-year]").textContent = profile.gradYear ? `Class of ${profile.gradYear}` : "Graduation year";
   document.querySelector("[data-home-major]").textContent = profile.major || "Your major";
-  document.querySelector(".watch-card span").textContent = String(36 + profile.fields.length * 8);
+  updateTrackedCount();
   document.querySelectorAll("[data-notification-pref]").forEach((input) => {
     input.checked = profile[input.dataset.notificationPref] !== false;
   });
@@ -2584,6 +2609,11 @@ async function loadLiveOpenings() {
     const res = await fetch("/api/openings", { headers: { Accept: "application/json" } });
     if (!res.ok) return;
     const data = await res.json();
+    // Real pipeline timestamp — surfaced in the UI as proof the feed is live.
+    if (data.updatedAt) {
+      liveFeedUpdatedAt = data.updatedAt;
+      updateTrackedCount();
+    }
     const live = Array.isArray(data.openings) ? data.openings : [];
     if (!live.length) return;
 
@@ -2652,6 +2682,40 @@ document.addEventListener("click", (e) => {
 
 // --- Peer pulse (REAL numbers only — never fabricated) ----------------------
 // Shows live, truthful activity so the dashboard feels alive and trustworthy.
+// ── Honest tracked-count + live refresh stamp ───────────────────────────────
+// Both numbers come from real data: the count is the actual number of distinct
+// companies currently in the feed, and the timestamp is the pipeline's own
+// updatedAt. Nothing here is estimated or padded.
+let liveFeedUpdatedAt = null;
+
+function relativeTime(iso) {
+  const then = Date.parse(iso);
+  if (!Number.isFinite(then)) return "";
+  const mins = Math.max(0, Math.round((Date.now() - then) / 60000));
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} hour${hrs === 1 ? "" : "s"} ago`;
+  const days = Math.round(hrs / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+function updateTrackedCount() {
+  const countEl = document.querySelector("[data-tracked-count]");
+  if (!countEl) return;
+  const companies = new Set(openings.map((o) => String(o.company || "").trim().toLowerCase()).filter(Boolean));
+  countEl.textContent = String(companies.size);
+
+  const stamp = document.querySelector("[data-tracked-refreshed]");
+  if (!stamp) return;
+  if (liveFeedUpdatedAt) {
+    stamp.textContent = `Checked ${relativeTime(liveFeedUpdatedAt)}`;
+    stamp.hidden = false;
+  } else {
+    stamp.hidden = true;
+  }
+}
+
 async function renderPeerPulse() {
   const el = document.querySelector("[data-peer-pulse]");
   if (!el) return;
