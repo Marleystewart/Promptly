@@ -1,7 +1,20 @@
 const { listSubscribers, claimOnce, releaseClaim } = require("./_shared/store");
 const { getLiveOpenings, takeDigestItems, queueDigestItems } = require("./_shared/openings-store");
 const { sendDailyDigest, sendWeeklyRecap, sendDeadlineReminder, sendDeadlinePush, matchesOpening } = require("./_shared/alerts");
-const { getOrCreateUnsubToken } = require("./_shared/tokens");
+const { getOrCreateUnsubToken, createVerifyToken, purgeUnverified } = require("./_shared/tokens");
+const { sendVerificationReminder } = require("./_shared/alerts");
+
+// An unconfirmed profile is data we were never given permission to keep.
+// Remind on days 3 and 10, delete on day 14.
+const UNVERIFIED_REMINDER_DAYS = [3, 10];
+const UNVERIFIED_PURGE_DAYS = 14;
+
+// Whole days elapsed since an ISO timestamp, or null if it is unusable.
+function daysSince(iso, now = new Date()) {
+  const then = Date.parse(iso);
+  if (!Number.isFinite(then)) return null;
+  return Math.floor((now.getTime() - then) / 86400000);
+}
 
 function daysUntil(deadline, now = new Date()) {
   const target = Date.parse(deadline);
@@ -50,9 +63,40 @@ module.exports = async function handler(req, res) {
     const stored = await listSubscribers();
     const livePayload = await getLiveOpenings();
     const live = livePayload.openings || [];
-    const stats = { subscribers: stored.subscribers.length, digestsSent: 0, weeklySent: 0, reminderEmails: 0, reminderPushes: 0 };
+    const stats = { subscribers: stored.subscribers.length, digestsSent: 0, weeklySent: 0, reminderEmails: 0, reminderPushes: 0, verifyReminders: 0, unverifiedPurged: 0 };
 
     for (const subscriber of stored.subscribers) {
+      // ── Unconfirmed profile lifecycle ───────────────────────────────────
+      // A record nobody confirmed is data we were never given permission to
+      // hold. Remind twice, then delete it. Confirmed accounts are never
+      // touched by this.
+      if (subscriber.verified !== true && subscriber.email) {
+        const ageDays = daysSince(subscriber.createdAt, now);
+        if (ageDays !== null && ageDays >= UNVERIFIED_PURGE_DAYS) {
+          try {
+            await purgeUnverified(subscriber.email);
+            stats.unverifiedPurged += 1;
+          } catch {}
+          continue; // gone — nothing else to do for this record
+        }
+        const dueReminder = UNVERIFIED_REMINDER_DAYS.find((d) => ageDays === d);
+        if (dueReminder) {
+          const key = `verify-reminder:${subscriber.email}:${dueReminder}`;
+          if (await claimOnce(key, 30 * 86400)) {
+            try {
+              const token = await createVerifyToken(subscriber.email, { force: true });
+              if (token) {
+                const left = UNVERIFIED_PURGE_DAYS - dueReminder;
+                if ((await sendVerificationReminder(subscriber, token, left)).sent) {
+                  stats.verifyReminders += 1;
+                }
+              }
+            } catch {}
+          }
+        }
+        continue; // unconfirmed records get no alerts of any kind
+      }
+
       // Email only ever goes to a confirmed address. Push is exempt: a push
       // subscription is minted by the user's own browser, so it already proves
       // the person consented on that device.

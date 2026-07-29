@@ -110,10 +110,24 @@ module.exports = async function handler(req, res) {
     // ── Watch any company ────────────────────────────────────────────────
     // Same endpoint (we're at Vercel's 12-function limit) — an `action`
     // routes to the watch flow instead of the normal subscriber save.
-    if (body.action === "watch" || body.action === "unwatch") {
+    if (body.action === "watch" || body.action === "unwatch" || body.action === "resend-verification") {
       const email = String(profile.email || body.email || "").trim().toLowerCase();
       if (!isValidEmail(email)) {
         return res.status(400).json({ error: "Add your email first so we know where to send the alert." });
+      }
+
+      // Re-send the confirmation link on demand (the banner's Resend button).
+      if (body.action === "resend-verification") {
+        const record = await getSubscriber(email);
+        if (record && record.verified === true) {
+          return res.status(200).json({ ok: true, alreadyVerified: true });
+        }
+        const token = await createVerifyToken(email);
+        if (!token) {
+          return res.status(429).json({ ok: false, error: "We just sent one — check your inbox, including spam." });
+        }
+        const sent = await sendVerificationEmail(record || { email, name: "there" }, token);
+        return res.status(200).json({ ok: Boolean(sent.sent), sent: Boolean(sent.sent) });
       }
 
       if (body.action === "unwatch") {

@@ -87,3 +87,43 @@ assert.equal(queueAllowed({ verified: true, email: "a@b.co", emailNotifications:
 assert.equal(queueAllowed({ email: "a@b.co" }), false, "unconfirmed never queues");
 
 console.log("Verification-gate tests passed.");
+
+// ── Unconfirmed-profile lifecycle ─────────────────────────────────────────
+// Remind on days 3 and 10, delete on day 14. Confirmed accounts are never
+// touched by the purge — that is the guard worth pinning down.
+const REMINDER_DAYS = [3, 10];
+const PURGE_DAYS = 14;
+
+const daysSince = (iso, now) => {
+  const then = Date.parse(iso);
+  if (!Number.isFinite(then)) return null;
+  return Math.floor((now.getTime() - then) / 86400000);
+};
+
+const NOW = new Date("2026-08-01T12:00:00Z");
+const agedDays = (n) => new Date(NOW.getTime() - n * 86400000).toISOString();
+
+assert.equal(daysSince(agedDays(0), NOW), 0);
+assert.equal(daysSince(agedDays(3), NOW), 3);
+assert.equal(daysSince(agedDays(14), NOW), 14);
+assert.equal(daysSince("not a date", NOW), null, "unparseable timestamps must not trigger a purge");
+
+const shouldPurge = (sub, now) => {
+  if (sub.verified === true) return false;
+  const age = daysSince(sub.createdAt, now);
+  return age !== null && age >= PURGE_DAYS;
+};
+
+assert.equal(shouldPurge({ createdAt: agedDays(14) }, NOW), true, "unconfirmed at 14 days is purged");
+assert.equal(shouldPurge({ createdAt: agedDays(20) }, NOW), true, "older unconfirmed is purged");
+assert.equal(shouldPurge({ createdAt: agedDays(13) }, NOW), false, "not yet due");
+assert.equal(shouldPurge({ verified: true, createdAt: agedDays(400) }, NOW), false, "a confirmed account is NEVER purged");
+assert.equal(shouldPurge({ createdAt: "garbage" }, NOW), false, "bad timestamp must fail safe, not delete");
+assert.equal(shouldPurge({}, NOW), false, "missing createdAt must fail safe");
+
+const dueReminder = (sub, now) => REMINDER_DAYS.find((d) => daysSince(sub.createdAt, now) === d);
+assert.equal(dueReminder({ createdAt: agedDays(3) }, NOW), 3);
+assert.equal(dueReminder({ createdAt: agedDays(10) }, NOW), 10);
+assert.equal(dueReminder({ createdAt: agedDays(5) }, NOW), undefined, "no reminder on off days");
+
+console.log("Unverified-lifecycle tests passed.");

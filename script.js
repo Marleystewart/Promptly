@@ -714,6 +714,14 @@ let authMode = "signup";
 // while this is in flight — that caused a post-Google-login glitch where the
 // user was bounced from the school/grade form back to the sign-in page.
 let pendingOAuthCallback = false;
+// Real timestamp of the last pipeline refresh, shown next to the tracked count.
+let liveFeedUpdatedAt = null;
+
+// Whether this email has confirmed itself. Server-owned; the client only
+// reflects what /api/subscribe reports. Declared up here because
+// applyProfileToUI() reads it, and `let` has no hoisting — leaving it further
+// down threw a temporal-dead-zone error that a try/catch quietly swallowed.
+let emailVerified = false;
 let accountSyncTimer = null;
 let accountSyncPaused = false;
 
@@ -1140,6 +1148,7 @@ function setView(name) {
   title.textContent = name === "home" ? greetingText() : view.dataset.heading;
   window.scrollTo({ top: 0, behavior: "smooth" });
 
+  renderVerificationNotice();
   if (name === "openings") markMatchingAlertsSeen();
   if (name === "cycles") renderCyclesView();
 
@@ -1893,6 +1902,7 @@ function applyProfileToUI() {
   });
   updateAlertIntelligence();
   setFeatured();
+  renderVerificationNotice();
   renderWatchList();
   renderOpenings();
 }
@@ -2063,7 +2073,10 @@ function restoreProfile() {
     applyProfileToUI();
     setView("home");
     return true;
-  } catch {
+  } catch (error) {
+    // Surface it: swallowing this silently once hid a real startup bug that
+    // stopped returning users' profiles from being applied at all.
+    console.error("Promptly: could not restore saved profile", error);
     return false;
   }
 }
@@ -2126,19 +2139,56 @@ async function getVapidPublicKey() {
   }
 }
 
-// Whether this email has confirmed itself. Server-owned; the client only
-// reflects what /api/subscribe reports.
-let emailVerified = false;
-
 function renderVerificationNotice() {
+  const hide = !profile.email || emailVerified || document.body.classList.contains("onboarding-active");
+
   const el = document.querySelector("[data-verify-notice]");
-  if (!el) return;
-  if (!profile.email || emailVerified) {
-    el.hidden = true;
-    return;
+  if (el) {
+    el.hidden = hide;
+    if (!hide) el.textContent = `Email alerts are paused until you confirm ${profile.email}. Check your inbox for the confirmation link.`;
   }
-  el.hidden = false;
-  el.textContent = `Email alerts are paused until you confirm ${profile.email}. Check your inbox for the confirmation link.`;
+
+  // Persistent bar across every view — easy to miss a notice buried in Settings.
+  const banner = document.querySelector("[data-verify-banner]");
+  const text = document.querySelector("[data-verify-banner-text]");
+  if (!banner) return;
+  banner.hidden = hide;
+  if (!hide && text) {
+    text.textContent = `Confirm ${profile.email} to switch on email alerts. Unconfirmed profiles are deleted after 14 days.`;
+  }
+}
+
+// Ask the server to send another confirmation link.
+async function resendVerification() {
+  const button = document.querySelector("[data-verify-resend]");
+  const text = document.querySelector("[data-verify-banner-text]");
+  if (!profile.email || !button) return;
+  button.disabled = true;
+  const previous = button.textContent;
+  button.textContent = "Sending…";
+  try {
+    const response = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "resend-verification", profile: { email: profile.email } }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (data.alreadyVerified) {
+      emailVerified = true;
+      renderVerificationNotice();
+      return;
+    }
+    if (text) {
+      text.textContent = data.sent
+        ? `Sent. Check ${profile.email} — including your spam folder.`
+        : data.error || "Couldn't send that just now. Try again in a moment.";
+    }
+  } catch {
+    if (text) text.textContent = "Couldn't reach Promptly just now. Try again in a moment.";
+  } finally {
+    button.disabled = false;
+    button.textContent = previous;
+  }
 }
 
 async function saveSubscriber(subscription = null) {
@@ -2328,6 +2378,8 @@ renderOpenings();
 setFeatured();
 refreshSavedList();
 
+renderVerificationNotice();
+
 if (!restoreProfile()) {
   window.setTimeout(() => {
     // A signed-in user has already been routed (or is mid-OAuth exchange) —
@@ -2339,6 +2391,8 @@ if (!restoreProfile()) {
 initializeAuth();
 
 document.addEventListener("click", async (event) => {
+  if (event.target.closest("[data-verify-resend]")) { event.preventDefault(); await resendVerification(); return; }
+
   const watchSubmitButton = event.target.closest("[data-watch-submit]");
   if (watchSubmitButton) { event.preventDefault(); await submitWatch(); return; }
   const watchRemoveButton = event.target.closest("[data-watch-remove]");
@@ -2762,8 +2816,6 @@ document.addEventListener("click", (e) => {
 // Both numbers come from real data: the count is the actual number of distinct
 // companies currently in the feed, and the timestamp is the pipeline's own
 // updatedAt. Nothing here is estimated or padded.
-let liveFeedUpdatedAt = null;
-
 function relativeTime(iso) {
   const then = Date.parse(iso);
   if (!Number.isFinite(then)) return "";

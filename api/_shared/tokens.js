@@ -25,14 +25,18 @@ function normalizeEmail(email) {
 
 // Create a single-use confirmation token for an email address. Returns null if
 // one was issued very recently, so a loop of profile saves cannot spray mail.
-async function createVerifyToken(email) {
+async function createVerifyToken(email, { force = false } = {}) {
   const redis = await getRedis();
   const normalized = normalizeEmail(email);
   if (!redis || !normalized) return null;
 
-  const cooldownKey = `promptly:verify-sent:${normalized}`;
-  const slot = await redis.set(cooldownKey, "1", { nx: true, ex: VERIFY_COOLDOWN });
-  if (!slot) return null; // already sent one recently
+  // Scheduled reminders pass force: they are already gated by a claim key, so
+  // the interactive cooldown would only suppress a legitimate send.
+  if (!force) {
+    const cooldownKey = `promptly:verify-sent:${normalized}`;
+    const slot = await redis.set(cooldownKey, "1", { nx: true, ex: VERIFY_COOLDOWN });
+    if (!slot) return null; // already sent one recently
+  }
 
   const token = newToken();
   await redis.set(`${VERIFY_PREFIX}${token}`, normalized, { ex: VERIFY_TTL });
@@ -110,7 +114,32 @@ async function disableEmailFor(email) {
   return { changed: true };
 }
 
+// Delete an unconfirmed profile and everything hanging off it. Refuses to touch
+// a confirmed account — this is the destructive path, so it double-checks
+// rather than trusting the caller's filtering.
+async function purgeUnverified(email) {
+  const redis = await getRedis();
+  const normalized = normalizeEmail(email);
+  if (!redis || !normalized) return { purged: false };
+
+  const key = `promptly:subscriber:${normalized}`;
+  const record = await redis.get(key);
+  if (!record) return { purged: false, missing: true };
+  if (record.verified === true) return { purged: false, refused: "confirmed account" };
+
+  const jobs = [
+    redis.del(key),
+    redis.srem("promptly:subscribers", normalized),
+    redis.del(`promptly:digest:${normalized}`),
+    redis.del(`promptly:verify-sent:${normalized}`),
+  ];
+  if (record.unsubToken) jobs.push(redis.del(`${UNSUB_PREFIX}${record.unsubToken}`));
+  await Promise.all(jobs);
+  return { purged: true };
+}
+
 module.exports = {
+  purgeUnverified,
   createVerifyToken,
   consumeVerifyToken,
   getOrCreateUnsubToken,

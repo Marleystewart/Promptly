@@ -171,6 +171,30 @@ function verifyEmailHtml(name, url) {
   </div>`;
 }
 
+// Reminder for a record that still hasn't been confirmed. Says plainly what
+// happens if they ignore it — no dark patterns, no fake urgency.
+function verifyReminderHtml(name, url, daysLeft) {
+  const safeName = escapeHtml(name || "there");
+  const safeUrl = escapeHtml(url);
+  const when = daysLeft === 1 ? "tomorrow" : `in ${daysLeft} days`;
+  return `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#14141f;max-width:560px;margin:0 auto;padding:24px">
+    <h1 style="margin:0 0 12px;font-size:26px">Your Promptly alerts are still switched off</h1>
+    <p>Hi ${safeName}, you set up Promptly but never confirmed this email, so we haven't sent you a single alert.</p>
+    <a href="${safeUrl}" style="display:inline-block;background:#6841ff;color:#fff;text-decoration:none;font-weight:700;border-radius:8px;padding:13px 18px;margin:18px 0">Confirm and turn on alerts</a>
+    <p style="color:#5b5870">If you don't confirm, we'll delete this profile ${when} and stop emailing you. Nothing is kept.</p>
+    <p style="color:#5b5870;font-size:13px">Didn't sign up for Promptly? Ignore this and the profile disappears on its own.</p>
+  </div>`;
+}
+
+async function sendVerificationReminder(subscriber, token, daysLeft) {
+  const url = `${appBaseUrl()}/api/subscribe?action=verify&token=${encodeURIComponent(token)}`;
+  return sendEmail({
+    to: subscriber.email,
+    subject: `Confirm your email or your Promptly profile will be deleted`,
+    html: verifyReminderHtml(subscriber.name, url, daysLeft),
+  });
+}
+
 async function sendVerificationEmail(subscriber, token) {
   const url = `${appBaseUrl()}/api/subscribe?action=verify&token=${encodeURIComponent(token)}`;
   return sendEmail({
@@ -280,6 +304,7 @@ function matchesOpening(opening, subscriber) {
 
 module.exports = {
   sendVerificationEmail,
+  sendVerificationReminder,
   appBaseUrl,
   unsubscribeUrl,
   sendEmailAlert,
