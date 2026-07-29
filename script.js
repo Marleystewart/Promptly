@@ -765,28 +765,24 @@ function renderStatusTracker(company) {
 // Real-logo pipeline: curated asset file → domain-keyed logo service → colored
 // initials tile. The domain map lives in watchlist.js (COMPANY_DOMAINS), so
 // live-feed companies get real logos too. Swappable provider, keyless.
-function logoServiceUrl(domain) {
-  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
-}
+// Logos are served only from our own assets. We deliberately do NOT fall back
+// to a third-party favicon service: doing so told that provider which employer
+// each student was looking at, tied to their IP. A company without a bundled
+// logo file gets the colored initials tile instead, which costs nothing and
+// leaks nothing.
 
 function companyDomain(item) {
   return item.domain || (window.COMPANY_DOMAINS || {})[item.company] || "";
 }
 
 function companyLogoUrl(item) {
-  if (item.logo) return item.logo; // curated file first (best quality)
-  const domain = companyDomain(item);
-  return domain ? logoServiceUrl(domain) : "";
+  return item.logo || ""; // bundled asset only; otherwise the initials tile
 }
 
-// If a logo image fails, try the domain logo service once, then fall back to
-// the colored initials tile — a broken icon is never shown.
+// If a bundled logo file is missing, swap in the colored initials tile so a
+// broken icon is never shown. Wired as a delegated capture listener rather than
+// an inline onerror attribute, which a strict Content-Security-Policy blocks.
 function logoFallback(img) {
-  const cdn = img.dataset.cdn;
-  if (cdn && img.src !== cdn) {
-    img.src = cdn;
-    return;
-  }
   const el = img.closest(".logo, .modal-logo, .mega-logo");
   if (!el) return;
   el.classList.remove("logo-tile");
@@ -796,6 +792,17 @@ function logoFallback(img) {
 
 // Escape untrusted text before it goes into innerHTML. Live listings come
 // from external ATS feeds — a job title must never be able to inject markup.
+// Only ever hand an https URL to an href. Anything else (javascript:, data:,
+// a malformed value from a feed) becomes empty and the link is hidden.
+function safeHttpsUrl(value) {
+  try {
+    const url = new URL(String(value || "").trim());
+    return url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
 function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -805,9 +812,7 @@ function esc(value) {
 function logoMarkup(item) {
   const url = companyLogoUrl(item);
   if (url) {
-    const domain = companyDomain(item);
-    const cdn = domain ? logoServiceUrl(domain) : "";
-    return `<div class="logo logo-tile"><img src="${esc(url)}" alt="${esc(item.company)} logo" loading="lazy" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" ${cdn && cdn !== url ? `data-cdn="${esc(cdn)}"` : ""} onerror="logoFallback(this)" /></div>`;
+    return `<div class="logo logo-tile"><img src="${esc(url)}" alt="${esc(item.company)} logo" loading="lazy" data-logo-img data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" /></div>`;
   }
   return `<div class="logo ${esc(item.logoClass)}">${esc(item.short)}</div>`;
 }
@@ -1119,7 +1124,7 @@ function setFeatured() {
   const featureLogoUrl = companyLogoUrl(item);
   featureLogo.className = `mega-logo ${featureLogoUrl ? "logo-tile" : item.logoClass}`;
   featureLogo.innerHTML = featureLogoUrl
-    ? `<img src="${esc(featureLogoUrl)}" alt="${esc(item.company)} logo" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" onerror="logoFallback(this)" />`
+    ? `<img src="${esc(featureLogoUrl)}" alt="${esc(item.company)} logo" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" data-logo-img />`
     : esc(item.short);
   document.querySelector("[data-feature-details]").dataset.openDetails = item.company;
   document.querySelector("[data-feature-save]").dataset.save = item.company;
@@ -1236,7 +1241,9 @@ function openDetails(company) {
   // UPCOMING program whose page is already live (e.g. Goldman's 2027 program).
   // Hide only for AWAITING placeholders (no real URL) and CLOSED (dead links).
   const showLink = Boolean(item.sourceUrl) && (status === "OPEN" || status === "UPCOMING");
-  sourceLink.href = item.sourceUrl || "#";
+  // sourceUrl arrives from an external employer feed, so never trust its scheme.
+  // The email and push paths already validate; the in-app link must too.
+  sourceLink.href = safeHttpsUrl(item.sourceUrl) || "#";
   sourceLink.hidden = !showLink;
   // Honest labeling: verified deep link vs. "browse", vs. a not-yet-open program page.
   sourceLink.textContent = status === "UPCOMING"
@@ -1247,7 +1254,7 @@ function openDetails(company) {
   const modalLogoUrl = companyLogoUrl(item);
   modalLogo.className = `modal-logo ${modalLogoUrl ? "logo-tile" : item.logoClass}`;
   modalLogo.innerHTML = modalLogoUrl
-    ? `<img src="${esc(modalLogoUrl)}" alt="${esc(item.company)} logo" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" onerror="logoFallback(this)" />`
+    ? `<img src="${esc(modalLogoUrl)}" alt="${esc(item.company)} logo" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" data-logo-img />`
     : esc(item.short);
   renderStatusTracker(item.company);
   if (typeof modal.showModal === "function") modal.showModal();
@@ -2818,3 +2825,16 @@ document.addEventListener("keydown", (event) => {
     submitWatch();
   }
 });
+
+
+// Logo images: recover from a missing bundled file without an inline onerror
+// attribute (those are blocked under a strict Content-Security-Policy).
+// 'error' does not bubble, so listen in the capture phase.
+document.addEventListener(
+  "error",
+  (event) => {
+    const img = event.target;
+    if (img && img.tagName === "IMG" && img.hasAttribute("data-logo-img")) logoFallback(img);
+  },
+  true
+);
