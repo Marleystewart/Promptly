@@ -1,7 +1,8 @@
 const { isValidEmail } = require("./_shared/email-validator");
-const { readBody, saveSubscriber, normalizeSubscriber, takeTestAlertSlot } = require("./_shared/store");
+const { readBody, saveSubscriber, normalizeSubscriber, takeTestAlertSlot, getSubscriber } = require("./_shared/store");
 const { getLiveOpenings } = require("./_shared/openings-store");
 const { sendWeeklyRecap, matchesOpening } = require("./_shared/alerts");
+const { getOrCreateUnsubToken } = require("./_shared/tokens");
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
@@ -18,6 +19,16 @@ module.exports = async function handler(req, res) {
     }
 
     await saveSubscriber(profile, body.subscription || null);
+
+    // Same gate as the alert endpoint: confirmed addresses only.
+    const record = await getSubscriber(subscriber.email);
+    if (!record || record.verified !== true) {
+      return res.status(403).json({
+        error: "Confirm your email first — we've sent you a confirmation link. Alerts start once you click it.",
+        needsVerification: true,
+      });
+    }
+
     const payload = await getLiveOpenings();
     const live = (payload.openings || []).filter((opening) => matchesOpening(opening, subscriber));
     const candidates = [...live, ...(subscriber.savedAlerts || [])];
@@ -29,7 +40,8 @@ module.exports = async function handler(req, res) {
       return true;
     }).slice(0, 6);
     if (!recap.length) return res.status(400).json({ error: "Save an alert or choose a field with live openings first." });
-    const result = await sendWeeklyRecap(recap, subscriber);
+    const unsubToken = await getOrCreateUnsubToken(subscriber.email);
+    const result = await sendWeeklyRecap(recap, subscriber, unsubToken);
     return res.status(result.sent ? 200 : 202).json({ ok: result.sent, count: recap.length, ...result });
   } catch (error) {
     return res.status(500).json({ error: error.message || "Could not send weekly recap." });

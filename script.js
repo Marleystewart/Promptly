@@ -2119,6 +2119,21 @@ async function getVapidPublicKey() {
   }
 }
 
+// Whether this email has confirmed itself. Server-owned; the client only
+// reflects what /api/subscribe reports.
+let emailVerified = false;
+
+function renderVerificationNotice() {
+  const el = document.querySelector("[data-verify-notice]");
+  if (!el) return;
+  if (!profile.email || emailVerified) {
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  el.textContent = `Email alerts are paused until you confirm ${profile.email}. Check your inbox for the confirmation link.`;
+}
+
 async function saveSubscriber(subscription = null) {
   try {
     const response = await fetch("/api/subscribe", {
@@ -2128,6 +2143,13 @@ async function saveSubscriber(subscription = null) {
     });
     const data = await response.json().catch(() => ({}));
     if (data.setupRequired) setPushStatus("Notifications aren’t fully switched on yet — we’re finishing setup. Check back soon.");
+    // Email alerts stay off until the address is confirmed, so say so plainly
+    // rather than letting someone wait for alerts that will never arrive.
+    emailVerified = data.verified === true;
+    if (data.verificationSent) {
+      setPushStatus("Check your inbox — tap the confirmation link and your email alerts switch on.");
+    }
+    renderVerificationNotice();
     return response.ok || response.status === 202;
   } catch {
     return false;

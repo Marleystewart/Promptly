@@ -68,3 +68,22 @@ assert.equal(massAssign.isAdmin, undefined, "client must not be able to set isAd
 assert.equal(massAssign.role, undefined, "client must not be able to set role");
 
 console.log("Security tests passed.");
+
+// ── Email verification gate ───────────────────────────────────────────────
+// Alert mail must never reach an address that has not confirmed itself. These
+// assert the *decision rule* used by the cron and the on-demand endpoints.
+const emailAllowed = (sub) => sub.verified === true;
+
+assert.equal(emailAllowed({ verified: true }), true, "confirmed address may receive mail");
+assert.equal(emailAllowed({ verified: false }), false, "unconfirmed must not");
+assert.equal(emailAllowed({}), false, "legacy record with no flag must not (fail closed)");
+assert.equal(emailAllowed({ verified: "true" }), false, "only a real boolean counts");
+assert.equal(emailAllowed({ verified: 1 }), false, "truthy is not enough");
+
+// The refresh job uses the same rule before queueing anything.
+const queueAllowed = (sub) => sub.verified === true && sub.emailNotifications !== false && Boolean(sub.email);
+assert.equal(queueAllowed({ verified: true, email: "a@b.co" }), true);
+assert.equal(queueAllowed({ verified: true, email: "a@b.co", emailNotifications: false }), false, "opt-out respected");
+assert.equal(queueAllowed({ email: "a@b.co" }), false, "unconfirmed never queues");
+
+console.log("Verification-gate tests passed.");

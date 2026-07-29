@@ -96,6 +96,14 @@ async function saveSubscriber(profile, subscription) {
   return { saved: true, subscriber: merged };
 }
 
+// Read one subscriber record (used to check verification before sending).
+async function getSubscriber(email) {
+  const redis = await getRedis();
+  const normalized = String(email || "").trim().toLowerCase();
+  if (!redis || !normalized) return null;
+  return (await redis.get("promptly:subscriber:" + normalized)) || null;
+}
+
 async function listSubscribers() {
   const redis = await getRedis();
   if (!redis) return { subscribers: [], setupRequired: "Add Upstash Redis environment variables in Vercel." };
@@ -211,6 +219,7 @@ module.exports = {
   getRedis,
   saveSubscriber,
   listSubscribers,
+  getSubscriber,
   deleteSubscriber,
   addSubscriberWatch,
   removeSubscriberWatch,

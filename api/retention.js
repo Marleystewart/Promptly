@@ -1,6 +1,7 @@
 const { listSubscribers, claimOnce, releaseClaim } = require("./_shared/store");
 const { getLiveOpenings, takeDigestItems, queueDigestItems } = require("./_shared/openings-store");
 const { sendDailyDigest, sendWeeklyRecap, sendDeadlineReminder, sendDeadlinePush, matchesOpening } = require("./_shared/alerts");
+const { getOrCreateUnsubToken } = require("./_shared/tokens");
 
 function daysUntil(deadline, now = new Date()) {
   const target = Date.parse(deadline);
@@ -52,10 +53,15 @@ module.exports = async function handler(req, res) {
     const stats = { subscribers: stored.subscribers.length, digestsSent: 0, weeklySent: 0, reminderEmails: 0, reminderPushes: 0 };
 
     for (const subscriber of stored.subscribers) {
+      // Email only ever goes to a confirmed address. Push is exempt: a push
+      // subscription is minted by the user's own browser, so it already proves
+      // the person consented on that device.
+      const emailAllowed = subscriber.verified === true;
+      const unsubToken = emailAllowed ? await getOrCreateUnsubToken(subscriber.email) : null;
       // Daily digest: flush this subscriber's queued matches (filled by the
       // hourly refresh) as one email. Claim key stops double-sends if the
       // cron ever runs twice; on failure the items are re-queued.
-      if (subscriber.emailNotifications !== false && subscriber.email) {
+      if (emailAllowed && subscriber.emailNotifications !== false && subscriber.email) {
         const queued = await takeDigestItems(subscriber.email);
         if (queued.length) {
           const dayKey = now.toISOString().slice(0, 10);
@@ -64,7 +70,7 @@ module.exports = async function handler(req, res) {
           if (claimed) {
             let delivered = false;
             try {
-              delivered = Boolean((await sendDailyDigest(queued, subscriber)).sent);
+              delivered = Boolean((await sendDailyDigest(queued, subscriber, unsubToken)).sent);
               if (delivered) stats.digestsSent += 1;
             } catch {}
             if (!delivered) {
@@ -77,14 +83,14 @@ module.exports = async function handler(req, res) {
         }
       }
 
-      if (shouldSendWeekly && subscriber.weeklyRecap !== false && subscriber.emailNotifications !== false && subscriber.email) {
+      if (shouldSendWeekly && emailAllowed && subscriber.weeklyRecap !== false && subscriber.emailNotifications !== false && subscriber.email) {
         const recap = recapOpenings(live, subscriber);
         const deliveryKey = `weekly:${subscriber.email}:${weekKey(now)}`;
         const claimed = recap.length && await claimOnce(deliveryKey, 8 * 86400);
         if (claimed) {
           let delivered = false;
           try {
-            delivered = Boolean((await sendWeeklyRecap(recap, subscriber)).sent);
+            delivered = Boolean((await sendWeeklyRecap(recap, subscriber, unsubToken)).sent);
             if (delivered) stats.weeklySent += 1;
           } catch {}
           if (!delivered) await releaseClaim(deliveryKey);
@@ -100,9 +106,9 @@ module.exports = async function handler(req, res) {
         const claimed = await claimOnce(deliveryKey, 10 * 86400);
         if (!claimed) continue;
         let delivered = false;
-        if (subscriber.emailNotifications !== false && subscriber.email) {
+        if (emailAllowed && subscriber.emailNotifications !== false && subscriber.email) {
           try {
-            if ((await sendDeadlineReminder(opening, subscriber, daysLeft)).sent) {
+            if ((await sendDeadlineReminder(opening, subscriber, daysLeft, unsubToken)).sent) {
               stats.reminderEmails += 1;
               delivered = true;
             }

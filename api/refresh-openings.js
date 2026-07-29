@@ -33,7 +33,9 @@ async function notifySubscribers(newOpenings) {
     const matched = batch.filter((opening) => matchesOpening(opening, sub));
     if (!matched.length) continue;
 
-    if (sub.emailNotifications !== false && sub.email) {
+    // Don't even queue mail for an address that hasn't confirmed — otherwise a
+    // queue builds up for someone who never asked to hear from us.
+    if (sub.verified === true && sub.emailNotifications !== false && sub.email) {
       try {
         const { queued } = await queueDigestItems(sub.email, matched);
         emailQueued += queued;

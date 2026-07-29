@@ -1,6 +1,7 @@
 const { isValidEmail } = require("./_shared/email-validator");
-const { readBody, saveSubscriber, normalizeSubscriber, takeTestAlertSlot } = require("./_shared/store");
+const { readBody, saveSubscriber, normalizeSubscriber, takeTestAlertSlot, getSubscriber } = require("./_shared/store");
 const { sendEmailAlert } = require("./_shared/alerts");
+const { getOrCreateUnsubToken } = require("./_shared/tokens");
 
 const fallbackOpening = {
   company: "Google",
@@ -57,7 +58,19 @@ module.exports = async function handler(req, res) {
     }
 
     const stored = await saveSubscriber(profile, body.subscription || null);
-    const email = await sendEmailAlert(opening, directSubscriber);
+
+    // Only send to an address that has confirmed it wants mail from us.
+    // Without this, anyone could point this endpoint at a stranger's inbox.
+    const record = await getSubscriber(directSubscriber.email);
+    if (!record || record.verified !== true) {
+      return res.status(403).json({
+        error: "Confirm your email first — we've sent you a confirmation link. Alerts start once you click it.",
+        needsVerification: true,
+      });
+    }
+
+    const unsubToken = await getOrCreateUnsubToken(directSubscriber.email);
+    const email = await sendEmailAlert(opening, directSubscriber, unsubToken);
     const emailSent = email.sent ? 1 : 0;
     const pushSent = 0;
     const setupRequired = [stored.setupRequired, email.setupRequired].filter(Boolean);

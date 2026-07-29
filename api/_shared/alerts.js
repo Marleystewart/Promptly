@@ -113,23 +113,80 @@ function deadlineReminderHtml(opening, subscriber, daysLeft) {
   </div>`;
 }
 
-async function sendEmail({ to, subject, html }) {
+// Public base URL for links inside emails. Configurable so preview deployments
+// don't mint links pointing at production.
+function appBaseUrl() {
+  const configured = process.env.PUBLIC_APP_URL || process.env.APP_BASE_URL;
+  if (configured) return String(configured).replace(/\/+$/, "");
+  return "https://app.joinpromptly.co";
+}
+
+function unsubscribeUrl(token) {
+  return `${appBaseUrl()}/api/subscribe?action=unsubscribe&token=${encodeURIComponent(token)}`;
+}
+
+// Every alert email carries a working opt-out: a visible footer link plus the
+// List-Unsubscribe headers mailbox providers look for. Without these a
+// recipient's only recourse is marking us as spam.
+function unsubscribeFooter(unsubToken) {
+  if (!unsubToken) return "";
+  const url = escapeHtml(unsubscribeUrl(unsubToken));
+  return `<p style="color:#8a879c;font-size:12px;margin-top:26px;border-top:1px solid #e6e3f0;padding-top:14px">
+    Don't want these? <a href="${url}" style="color:#5b35e8">Unsubscribe in one click</a>.
+  </p>`;
+}
+
+async function sendEmail({ to, subject, html, unsubToken }) {
   if (!process.env.RESEND_API_KEY) {
     return { sent: false, setupRequired: "Add RESEND_API_KEY in Vercel." };
   }
   const { Resend } = await import("resend");
   const resend = new Resend(process.env.RESEND_API_KEY);
   const from = process.env.ALERT_FROM_EMAIL || "Promptly <onboarding@resend.dev>";
-  const { data, error } = await resend.emails.send({ from, to: [to], subject, html });
+
+  const payload = { from, to: [to], subject, html: html + unsubscribeFooter(unsubToken) };
+  if (unsubToken) {
+    payload.headers = {
+      "List-Unsubscribe": `<${unsubscribeUrl(unsubToken)}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    };
+  }
+
+  const { data, error } = await resend.emails.send(payload);
   if (error) return { sent: false, error: error.message || "Email failed." };
   return { sent: true, id: data && data.id };
 }
 
-async function sendEmailAlert(opening, subscriber) {
+// Confirmation email. This is the ONLY message we will send to an address that
+// has not yet proved it wants to hear from us, so it carries no alert content.
+function verifyEmailHtml(name, url) {
+  const safeName = escapeHtml(name || "there");
+  const safeUrl = escapeHtml(url);
+  return `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#14141f;max-width:560px;margin:0 auto;padding:24px">
+    <h1 style="margin:0 0 12px;font-size:26px">Confirm your Promptly alerts</h1>
+    <p>Hi ${safeName}, tap below to turn on internship alerts for this address.</p>
+    <a href="${safeUrl}" style="display:inline-block;background:#6841ff;color:#fff;text-decoration:none;font-weight:700;border-radius:8px;padding:13px 18px;margin:18px 0">Confirm my email</a>
+    <p style="color:#5b5870">Until you confirm, we will not send you any alerts.</p>
+    <p style="color:#5b5870;font-size:13px">If you did not sign up for Promptly, ignore this email and nothing further will be sent to you.</p>
+  </div>`;
+}
+
+async function sendVerificationEmail(subscriber, token) {
+  const url = `${appBaseUrl()}/api/subscribe?action=verify&token=${encodeURIComponent(token)}`;
+  return sendEmail({
+    to: subscriber.email,
+    subject: "Confirm your Promptly alerts",
+    html: verifyEmailHtml(subscriber.name, url),
+    // deliberately no unsubscribe footer: nothing is subscribed yet
+  });
+}
+
+async function sendEmailAlert(opening, subscriber, unsubToken) {
   return sendEmail({
     to: subscriber.email,
     subject: `${opening.company} ${opening.role} just opened`,
     html: openingHtml(opening, subscriber),
+    unsubToken,
   });
 }
 
@@ -147,28 +204,31 @@ function dailyDigestHtml(openings, subscriber) {
   </div>`;
 }
 
-async function sendDailyDigest(openings, subscriber) {
+async function sendDailyDigest(openings, subscriber, unsubToken) {
   return sendEmail({
     to: subscriber.email,
     subject: `${openings.length} new internship${openings.length === 1 ? "" : "s"} just opened in your field`,
     html: dailyDigestHtml(openings, subscriber),
+    unsubToken,
   });
 }
 
-async function sendWeeklyRecap(openings, subscriber) {
+async function sendWeeklyRecap(openings, subscriber, unsubToken) {
   return sendEmail({
     to: subscriber.email,
     subject: `Your Promptly weekly recap: ${openings.length} matches`,
     html: weeklyRecapHtml(openings, subscriber),
+    unsubToken,
   });
 }
 
-async function sendDeadlineReminder(opening, subscriber, daysLeft) {
+async function sendDeadlineReminder(opening, subscriber, daysLeft, unsubToken) {
   const timing = daysLeft === 1 ? "tomorrow" : `in ${daysLeft} days`;
   return sendEmail({
     to: subscriber.email,
     subject: `${opening.company} closes ${timing}`,
     html: deadlineReminderHtml(opening, subscriber, daysLeft),
+    unsubToken,
   });
 }
 
@@ -219,6 +279,9 @@ function matchesOpening(opening, subscriber) {
 }
 
 module.exports = {
+  sendVerificationEmail,
+  appBaseUrl,
+  unsubscribeUrl,
   sendEmailAlert,
   sendPushAlert,
   sendDailyDigest,

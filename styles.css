@@ -2505,3 +2505,11 @@ body.onboarding-active .ap-panel { display: none; }
   padding-bottom: 1px;
 }
 .watch-card-link:hover { color: var(--ink); border-color: var(--purple); }
+
+/* Email alerts stay off until the address is confirmed — say so where the
+   student is looking at their notification settings. */
+.verify-notice {
+  border: 1px solid rgba(217, 119, 6, 0.4);
+  background: rgba(217, 119, 6, 0.12);
+  color: #f0c987;
+}
