@@ -49,10 +49,15 @@ async function notifySubscribers(newOpenings) {
 }
 
 module.exports = async function handler(req, res) {
+  // Fail CLOSED. This used to skip the check entirely when CRON_SECRET was
+  // unset, which left a expensive full-refresh endpoint publicly triggerable.
   const secret = process.env.CRON_SECRET;
-  const isVercelCron = Boolean(secret && req.headers.authorization === `Bearer ${secret}`);
+  if (!secret) {
+    return res.status(503).json({ error: "Refresh is not configured. Set CRON_SECRET in the deployment environment." });
+  }
+  const isVercelCron = req.headers.authorization === `Bearer ${secret}`;
   const provided = (req.query && req.query.secret) || "";
-  if (secret && !isVercelCron && provided !== secret) {
+  if (!isVercelCron && provided !== secret) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 

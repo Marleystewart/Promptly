@@ -1,10 +1,17 @@
 const webpush = require("web-push");
 const { clearPushSubscription } = require("./store");
+const { isSafePushSubscription } = require("./push-target");
 
 // Send a push and, if the endpoint is permanently gone (404/410 — the phone
 // unsubscribed or the browser rotated the endpoint), drop the dead
 // subscription so future runs stop wasting sends on it.
 async function pushWithPruning(subscriber, payload) {
+  // Defence in depth: a stored subscription should already have been validated
+  // on the way in, but never let a bad endpoint reach the network layer.
+  if (!isSafePushSubscription(subscriber.pushSubscription)) {
+    try { await clearPushSubscription(subscriber.email); } catch {}
+    return { sent: false, rejected: true };
+  }
   try {
     await webpush.sendNotification(subscriber.pushSubscription, JSON.stringify(payload));
     return { sent: true };

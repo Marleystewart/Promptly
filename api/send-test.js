@@ -1,4 +1,5 @@
 const webpush = require("web-push");
+const { isSafePushSubscription } = require("./_shared/push-target");
 
 function readBody(req) {
   if (typeof req.body === "string") return JSON.parse(req.body || "{}");
@@ -31,6 +32,11 @@ module.exports = async function handler(req, res) {
     const body = readBody(req);
     if (!body.subscription) {
       return res.status(400).json({ error: "Missing push subscription." });
+    }
+    // The endpoint decides where our server sends a request, so it has to be a
+    // real vendor push URL and not somewhere the caller picked.
+    if (!isSafePushSubscription(body.subscription)) {
+      return res.status(400).json({ error: "That push subscription is not from a recognized browser push service." });
     }
 
     webpush.setVapidDetails(subject, publicKey, privateKey);

@@ -4,8 +4,17 @@
 // instead of living only in one browser tab.
 const { readBody, getRedis } = require("./_shared/store");
 
+const crypto = require("crypto");
+
 const KEY = "promptly:slides:decks";
-const EDIT_KEY = process.env.SLIDES_EDIT_KEY || "promptly2027";
+// No hardcoded fallback: a committed default key is a published credential.
+const EDIT_KEY = process.env.SLIDES_EDIT_KEY || "";
+
+function keyMatches(provided, expected) {
+  const a = Buffer.from(String(provided || ""));
+  const b = Buffer.from(String(expected || ""));
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 module.exports = async function handler(req, res) {
   if (!["GET", "POST"].includes(req.method)) {
@@ -24,8 +33,11 @@ module.exports = async function handler(req, res) {
 
   // POST — save. Require the shared edit key so a random visitor who finds
   // this URL can't overwrite the carousels.
+  if (!EDIT_KEY) {
+    return res.status(503).json({ ok: false, error: "Saving is not configured. Set SLIDES_EDIT_KEY in the deployment environment." });
+  }
   const body = readBody(req);
-  if (String(body.editKey || "") !== EDIT_KEY) {
+  if (!keyMatches(body.editKey, EDIT_KEY)) {
     return res.status(401).json({ ok: false, error: "Wrong edit key." });
   }
   if (!body.decks || typeof body.decks !== "object") {

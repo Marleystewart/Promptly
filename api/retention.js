@@ -30,10 +30,15 @@ function recapOpenings(live, subscriber) {
 }
 
 module.exports = async function handler(req, res) {
+  // Fail CLOSED. This endpoint mails every subscriber, so an unset secret must
+  // never mean "open to anyone" — previously it skipped the check altogether.
   const secret = process.env.CRON_SECRET;
-  const isVercelCron = Boolean(secret && req.headers.authorization === `Bearer ${secret}`);
+  if (!secret) {
+    return res.status(503).json({ error: "Retention is not configured. Set CRON_SECRET in the deployment environment." });
+  }
+  const isVercelCron = req.headers.authorization === `Bearer ${secret}`;
   const provided = (req.query && req.query.secret) || "";
-  if (secret && !isVercelCron && provided !== secret) {
+  if (!isVercelCron && provided !== secret) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 

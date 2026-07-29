@@ -25,6 +25,8 @@ async function getRedis() {
   });
 }
 
+const { isSafePushSubscription } = require("./push-target");
+
 function normalizeSubscriber(profile = {}, subscription = null) {
   const email = String(profile.email || "").trim().toLowerCase();
   const savedAlerts = Array.isArray(profile.savedAlerts)
@@ -58,7 +60,11 @@ function normalizeSubscriber(profile = {}, subscription = null) {
     willingToRelocate: profile.willingToRelocate === true,
     interests: String(profile.interests || "").trim(),
     fields: Array.isArray(profile.fields) ? profile.fields.filter(Boolean) : [],
-    pushSubscription: subscription || profile.pushSubscription || null,
+    // Only keep a push subscription that points at a real vendor push service.
+    pushSubscription: (() => {
+      const candidate = subscription || profile.pushSubscription || null;
+      return isSafePushSubscription(candidate) ? candidate : null;
+    })(),
     emailNotifications: profile.emailNotifications !== false,
     pushNotifications: profile.pushNotifications !== false,
     weeklyRecap: profile.weeklyRecap !== false,
@@ -174,6 +180,16 @@ async function takeTestAlertSlot(email, requester = "") {
   return { allowed: Boolean(emailSlot && requesterSlot), stored: true };
 }
 
+// Simple fixed-window throttle for admin secret guesses (10 per minute per IP).
+async function takeAdminAttempt(requester = "unknown") {
+  const redis = await getRedis();
+  if (!redis) return { allowed: true, stored: false };
+  const key = `promptly:admin-attempt:${String(requester).slice(0, 64)}`;
+  const count = await redis.incr(key);
+  if (count === 1) await redis.expire(key, 60);
+  return { allowed: count <= 10, stored: true };
+}
+
 async function claimOnce(key, ttlSeconds) {
   const redis = await getRedis();
   if (!redis) return true;
@@ -202,6 +218,7 @@ module.exports = {
   normalizeSubscriber,
   hasRedisEnv,
   takeTestAlertSlot,
+  takeAdminAttempt,
   claimOnce,
   releaseClaim,
 };

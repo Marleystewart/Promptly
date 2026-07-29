@@ -3,7 +3,7 @@
 // user info). Set ADMIN_SECRET (or reuse CRON_SECRET) in Vercel, then open
 // /admin.html and paste the secret.
 
-const { listSubscribers } = require("./_shared/store");
+const { listSubscribers, takeAdminAttempt } = require("./_shared/store");
 const { getStats } = require("./_shared/analytics");
 const { listWatchedSources, listCoverageRequests } = require("./_shared/watched-store");
 const crypto = require("crypto");
@@ -14,10 +14,12 @@ function mask(email) {
   return (u ? u[0] + "***" : "") + "@" + (d || "");
 }
 
+// Hash both sides first so the comparison is constant-length: comparing raw
+// buffers meant a wrong-length guess returned early, leaking the secret's size.
 function secretsMatch(provided, expected) {
-  const left = Buffer.from(String(provided || ""));
-  const right = Buffer.from(String(expected || ""));
-  return left.length === right.length && crypto.timingSafeEqual(left, right);
+  const left = crypto.createHash("sha256").update(String(provided || "")).digest();
+  const right = crypto.createHash("sha256").update(String(expected || "")).digest();
+  return crypto.timingSafeEqual(left, right);
 }
 
 module.exports = async function handler(req, res) {
@@ -25,6 +27,16 @@ module.exports = async function handler(req, res) {
   const authorization = String(req.headers.authorization || "");
   const provided = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
   if (!secret) return res.status(401).json({ error: "Set ADMIN_SECRET in Vercel to use this." });
+
+  // Throttle guessing. Without this the shared secret is brute-forceable at
+  // request rate, since there is no account lockout to fall back on.
+  const requester = String(req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || "unknown")
+    .split(",")[0].trim().slice(0, 64);
+  const attempt = await takeAdminAttempt(requester);
+  if (!attempt.allowed) {
+    return res.status(429).json({ error: "Too many attempts. Wait a minute and try again." });
+  }
+
   if (!secretsMatch(provided, secret)) return res.status(401).json({ error: "Unauthorized" });
 
   try {
