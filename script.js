@@ -1838,8 +1838,12 @@ function validateAcademicProfile() {
   return true;
 }
 
+// First name only. A full name pushed the greeting to four lines on a phone,
+// eating most of the first screen before any actual product showed.
 function displayName() {
-  return profile.name.trim() || "there";
+  const full = profile.name.trim();
+  if (!full) return "there";
+  return full.split(/\s+/)[0];
 }
 
 function timeGreeting() {
@@ -1962,8 +1966,13 @@ async function submitWatch() {
       setWatchStatus(data.reason || "We logged that page for our team to review.", "");
       urlInput.value = "";
       if (companyInput) companyInput.value = "";
+    } else if (data.reason || data.error) {
+      // The server actually looked at the link and told us why it won't work.
+      setWatchStatus(data.reason || data.error, "bad");
     } else {
-      setWatchStatus(data.reason || data.error || "Couldn't watch that link. Double-check it and try again.", "bad");
+      // No structured reason came back — that's our end being unavailable, not
+      // a bad link, so don't send the student off to re-check something fine.
+      setWatchStatus("We couldn't reach Promptly just now. Your link is probably fine — try again in a moment.", "bad");
     }
   } catch {
     setWatchStatus("Network hiccup — try again in a moment.", "bad");

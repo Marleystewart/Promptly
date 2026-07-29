@@ -1977,12 +1977,28 @@ input[type="checkbox"] {
     width: 100%;
   }
 
+  /* The action buttons were squeezing the greeting into a four-line column on
+     a phone. Let the title take the full row and drop the buttons beneath it. */
   .topbar {
     align-items: start;
   }
 
+  /* Keep the actions on the same row, but let the greeting use the space that
+     is actually left over instead of being crushed into a narrow column. */
+  .topbar > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .topbar h1 {
+    font-size: clamp(23px, 6.2vw, 30px);
+    line-height: 1.12;
+  }
+
   .top-actions {
     gap: 6px;
+    flex: 0 0 auto;
+    margin-left: auto;
   }
 
   .icon-btn,
