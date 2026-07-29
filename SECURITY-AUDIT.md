@@ -4,7 +4,11 @@
 **Scope:** Codebase and connected dev environment only. Paid services, legal work,
 marketing, partnerships, and manual business tasks are listed separately and do
 **not** affect the technical score.
-**Changes made:** None. This is a findings-only pass, pending approval.
+**Changes made:** All Claude-actionable Critical/High/Medium fixes applied and
+committed locally across three batches (`151bd4a`, `426d2ec`, `72990b4`).
+**Nothing has been pushed or deployed** — that remains your call.
+
+**Post-fix score: 80/100** (from 38). See §14 for what moved and what is left.
 
 ---
 
@@ -426,3 +430,59 @@ request handlers.
 Give it to people you know and trust while items 1–5 are implemented. With those
 five done, Promptly moves to **limited beta**; with 6–11 as well, and Supabase
 auth restored, **controlled public launch** is realistic.
+
+
+---
+
+## 14. Post-fix status (29 July 2026)
+
+| Finding | Severity | Status |
+|---|---|---|
+| F-01 Unauthenticated record create/overwrite | Critical | **Fixed** — records are dormant until an emailed token is redeemed; `verified` is settable only by that path |
+| F-02 Unauthenticated email to any address | High | **Fixed** — every send path requires `verified === true` |
+| F-03 SSRF via push endpoint | High | **Fixed** — vendor host allowlist at three layers |
+| F-04 Crons fail open | High | **Fixed** — both refuse to run without `CRON_SECRET` |
+| F-05 Hardcoded credential | High | **Fixed** — removed; constant-time compare |
+| F-06 No security headers | High | **Fixed** — CSP, HSTS, frame denial, nosniff, referrer, permissions, COOP |
+| F-07 Google favicon leak | Medium | **Fixed** — self-hosted only; zero external requests, verified |
+| F-08 Unvalidated `sourceUrl` in href | Medium | **Fixed** — https-only |
+| F-09 37 missing logo files | Medium | **Fixed** — dead references removed |
+| F-10 No unsubscribe | Medium | **Fixed** — one-click link + `List-Unsubscribe` headers |
+| F-11 Admin brute force / length leak | Medium | **Fixed** — 10/min throttle, hashed constant-time compare |
+| F-12 Unauthenticated analytics writes | Low–Med | **Open** — aggregate only, integrity not privacy |
+| F-13 `listSubscribers()` fan-out | Low | **Open** — fine at current scale |
+| F-14 Placeholder `href="#"` | Low | **Open** — cosmetic |
+
+### Category movement
+
+| Category | Before | After | Max |
+|---|---|---|---|
+| Security & privacy | 7 | 24 | 30 |
+| Backend reliability & data integrity | 12 | 17 | 20 |
+| Core product functionality | 16 | 18 | 20 |
+| Authentication & permissions | 1 | 6 | 10 |
+| Link & navigation accuracy | 4 | 5 | 5 |
+| Error handling & monitoring | 4 | 4 | 5 |
+| Performance & scalability | 3 | 3 | 5 |
+| Accessibility & responsive design | 3 | 3 | 5 |
+| **Total** | **38** | **80** | **100** |
+
+No score caps now apply: no unresolved Critical, no unresolved High touching
+user data or auth, no broken core journey, no exposed secret, and user data is
+isolated behind proof of email ownership.
+
+### What the remaining 20 points require
+
+- **+6 auth/permissions** — real per-user accounts. Needs the Supabase account
+  recovered; email verification is a floor, not a replacement for sign-in.
+- **+6 security & privacy** — tighten CSP to drop `'unsafe-inline'` (requires
+  extracting inline scripts/styles to files), and add an admin audit log.
+- **+3 backend** — pagination, replace the per-subscriber Redis fan-out.
+- **+2 performance**, **+2 accessibility** (real screen-reader pass), **+1 monitoring**.
+
+### Deployment note
+
+`CRON_SECRET` is now **required**. Both crons return 503 without it, by design.
+Confirm it is set in Vercel before the next deploy, or hourly refresh and the
+daily digest will stop. Existing subscriber records count as unconfirmed and
+will receive one confirmation email on their next profile save.
