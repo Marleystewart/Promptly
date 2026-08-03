@@ -242,5 +242,57 @@
     };
   }
 
-  window.PromptlyResume = { extractResumeText, MAX_CHARS };
+  // ── education details ───────────────────────────────────────────────────
+  // A résumé already states the school, the major, and the graduation year, so
+  // asking the student to retype them is busywork. These are only ever used to
+  // fill fields the student left blank, and they can edit anything we get wrong.
+
+  const DEGREE_LINE = /\b(?:bachelor(?:'s)?(?: of)?(?: arts| science| business administration| engineering| fine arts)?|master(?:'s)?(?: of)?(?: arts| science)?|b\.?a\.?|b\.?s\.?|b\.?b\.?a\.?|m\.?s\.?|associate(?:'s)?)\b[\s:,\-–—]*(?:in|of)?[\s:,\-–—]*([A-Za-z][A-Za-z&/' -]{2,44})/i;
+  const MAJOR_LABEL = /\bmajors?\b[\s:,\-–—]+([A-Za-z][A-Za-z&/' -]{2,44})/i;
+  const SCHOOL_LINE = /^[^\n]*\b(?:university|college|institute of technology|polytechnic)\b[^\n]*$/im;
+  const MONTHS = /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\b/gi;
+
+  // Trim the trailing date/location noise that sits on the same line as a
+  // degree ("Political Science May 2028" → "Political Science").
+  function cleanMajor(value) {
+    let major = String(value || "")
+      .replace(MONTHS, " ")
+      .replace(/\b(19|20)\d{2}\b/g, " ")
+      .replace(/\b(?:expected|anticipated|graduation|grad|candidate|present)\b/gi, " ")
+      .replace(/[|,;•]+.*$/, "")
+      .replace(/\s{2,}/g, " ")
+      .replace(/[\s\-–—:]+$/, "")
+      .trim();
+    // A real major is a couple of words, not a sentence fragment.
+    if (major.split(/\s+/).length > 5) major = major.split(/\s+/).slice(0, 5).join(" ");
+    return major.length >= 3 ? major : "";
+  }
+
+  function detectEducation(text) {
+    const source = String(text || "");
+    const result = { school: "", major: "", gradYear: "" };
+
+    const majorMatch = source.match(MAJOR_LABEL) || source.match(DEGREE_LINE);
+    if (majorMatch) result.major = cleanMajor(majorMatch[1]);
+
+    const schoolMatch = source.match(SCHOOL_LINE);
+    if (schoolMatch) {
+      // Keep just the institution, dropping the city/state that trails it.
+      const line = schoolMatch[0].replace(/\s{2,}/g, " ").trim();
+      const name = line.match(/([A-Z][A-Za-z.&'-]*(?:\s+[A-Z][A-Za-z.&'-]*)*\s+(?:University|College|Institute of Technology|Polytechnic))/);
+      result.school = (name ? name[1] : line).slice(0, 80).trim();
+    }
+
+    // Graduation year: the furthest-out year mentioned, which for a student
+    // résumé is the expected graduation rather than a past job.
+    const years = (source.match(/\b20\d{2}\b/g) || []).map(Number);
+    if (years.length) {
+      const latest = Math.max(...years);
+      const thisYear = new Date().getFullYear();
+      if (latest >= thisYear - 1 && latest <= thisYear + 8) result.gradYear = String(latest);
+    }
+    return result;
+  }
+
+  window.PromptlyResume = { extractResumeText, detectEducation, MAX_CHARS };
 })();

@@ -95,7 +95,11 @@ const interestKeywords = {
   Nonprofit: ["nonprofit", "social impact", "ngo", "charity", "volunteer", "humanitarian"],
   Education: ["education", "teaching", "learning", "school", "edtech", "tutoring"],
   Sports: ["sports", "athletics", "basketball", "football", "baseball", "soccer", "league", "team operations", "sports media"],
-  "Real Estate": ["real estate", "property", "development", "brokerage", "commercial real estate", "proptech", "urban planning"],
+  // "development" used to live here and was the single worst keyword in this
+  // map: it matches "player development", "product development", "MVP
+  // development", "business development" — almost never real estate. Every
+  // term here now has to be unambiguous about the industry.
+  "Real Estate": ["real estate", "property", "brokerage", "commercial real estate", "proptech", "urban planning", "realtor", "leasing", "reit", "residential"],
 };
 
 const openings = [
@@ -1372,8 +1376,17 @@ function inferFieldsFromText(value) {
 // Everything the student has told us in their own words. These are the only
 // inputs field inference is allowed to read, so "what's selected" always has a
 // visible cause the student can point at.
+// Section headings are résumé structure, not things the student is into.
+// Every résumé has an "EDUCATION" heading and most have "SKILLS" — matching on
+// those says nothing about the person.
+const RESUME_SECTION_HEADING = /^[ \t]*(education|academic background|professional experience|work experience|experience|employment|entrepreneurship|technical skills|skills|certifications?|awards?|honou?rs?|leadership[^\n]{0,40}|extracurriculars?|activities|projects?|summary|objective|profile|references|coursework|relevant coursework|volunteer(?: experience)?)[ \t]*:?[ \t]*$/gim;
+
+function resumeInferenceText() {
+  return String(profile.resumeText || "").replace(RESUME_SECTION_HEADING, " ");
+}
+
 function inferenceSourceText() {
-  return [profile.major, profile.interests, profile.resumeText].filter(Boolean).join(" ");
+  return [profile.major, profile.interests, resumeInferenceText()].filter(Boolean).join(" ");
 }
 
 // Recompute the selected fields from the CURRENT text.
@@ -2761,15 +2774,38 @@ async function handleResumeFile(file) {
   const textarea = document.querySelector("[data-resume-input]");
   if (textarea) textarea.value = result.text;
 
-  // Same inference pasted text triggers — this is what "the system reads it" means.
+  // The résumé already states school, major, and graduation year. Fill those in
+  // when they're blank rather than making the student retype them — but never
+  // overwrite something they typed themselves.
+  const filled = [];
+  const education = window.PromptlyResume.detectEducation
+    ? window.PromptlyResume.detectEducation(result.text)
+    : {};
+  const educationFields = [
+    ["school", "[data-school-input]", "school"],
+    ["major", "[data-major-input]", "major"],
+    ["gradYear", "[data-grad-year-input]", "graduation year"],
+  ];
+  for (const [key, selector, label] of educationFields) {
+    if (!education[key] || String(profile[key] || "").trim()) continue;
+    profile[key] = education[key];
+    const input = document.querySelector(selector);
+    if (input) input.value = education[key];
+    filled.push(label);
+  }
+
+  // Runs after the education fill so a major read off the résumé counts too.
   syncInferredFields();
   saveProfile();
   saveSubscriber();
 
   showResumeFile(file.name);
   const words = result.text.split(/\s+/).filter(Boolean).length;
+  // Say what was auto-filled — a field that changes on its own is unnerving
+  // unless you're told why, and the student may want to correct it.
+  const filledNote = filled.length ? ` Filled in your ${filled.join(", ")} from it — edit if any of it is off.` : "";
   setResumeStatus(
-    `Read ${words.toLocaleString()} words from ${file.name}${result.truncated ? " (first 8,000 characters used)" : ""}. Your matches now use it. It stayed on this device.`,
+    `Read ${words.toLocaleString()} words from ${file.name}${result.truncated ? " (first 8,000 characters used)" : ""}.${filledNote} Your matches now use it. It stayed on this device.`,
     "ok"
   );
 }
