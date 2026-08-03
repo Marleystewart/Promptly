@@ -1414,7 +1414,13 @@ function updateAcademicProfile() {
   syncInferredFields();
 }
 
+// Set while a reset is in flight. A debounced save that fires between "clear
+// storage" and "reload" would write the profile straight back, which is how a
+// restart could appear to do nothing — so once we're resetting, nothing saves.
+let resettingClientState = false;
+
 function saveProfile() {
+  if (resettingClientState) return;
   localStorage.setItem(profileStorageKey, JSON.stringify(profile));
   scheduleAccountSync();
 }
@@ -1764,11 +1770,18 @@ async function restartDemo() {
   }
 
   authUser = null;
-  localStorage.removeItem(profileStorageKey);
-  localStorage.removeItem(savedStorageKey);
-  localStorage.removeItem("openingPushSubscription");
-  localStorage.removeItem("promptlyPendingMigrationEmail");
-  sessionStorage.removeItem("promptlyMigrateLocal");
+
+  // Stop anything that could write state back after the wipe: a pending
+  // field-inference save, an account sync, or a queued profile save.
+  resettingClientState = true;
+  window.clearTimeout(inferenceTimer);
+  window.clearTimeout(accountSyncTimer);
+
+  // Remove EVERYTHING this origin stored, not a hand-maintained list of keys.
+  // The old list missed promptlyStatuses, promptlySeenAlerts and the analytics
+  // session id, so application statuses and "already seen" markers survived a
+  // restart that promises a clean slate.
+  window.PromptlyAuthRouting.clearPromptlyClientState(localStorage, sessionStorage);
   window.location.replace(`${window.location.origin}/`);
 }
 
@@ -1786,6 +1799,9 @@ async function deleteAccount() {
       if (confirmation !== null) setStatus("Nothing deleted. Type DELETE exactly to confirm.");
       return;
     }
+    resettingClientState = true;
+    window.clearTimeout(inferenceTimer);
+    window.clearTimeout(accountSyncTimer);
     window.PromptlyAuthRouting.clearPromptlyClientState(localStorage, sessionStorage);
     window.location.replace(`${window.location.origin}/`);
     return;
