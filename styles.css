@@ -2592,21 +2592,40 @@ body.onboarding-active .ap-panel { display: none; }
   justify-content: center;
   gap: 8px 14px;
   padding: 11px 18px;
-  background: linear-gradient(180deg, rgba(217,119,6,0.95), rgba(191,104,5,0.95));
-  color: #1c1204;
+  /* Deep amber with warm light text, rather than bright orange behind near-black.
+     Same "needs attention" read at a fraction of the shout — this sits on screen
+     for days at a time, so it has to be liveable. */
+  background: linear-gradient(180deg, rgba(122,66,12,0.97), rgba(104,55,8,0.97));
+  color: #ffe6c2;
+  border-bottom: 1px solid rgba(255,178,84,0.34);
   font-size: 13.5px;
   font-weight: 700;
   text-align: center;
+  transition: transform 0.26s ease;
+  will-change: transform;
 }
+
+/* Tucked away while reading down the page, back on the way up. Never
+   dismissible: until the address is confirmed no email alert can send at all,
+   so a permanent hide would cost the student the alerts they signed up for. */
+.verify-banner.is-tucked {
+  transform: translateY(-100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .verify-banner { transition: none; }
+}
+
 .verify-resend {
-  background: rgba(28, 18, 4, 0.86);
-  color: #ffd9a0;
+  background: rgba(255, 214, 158, 0.16);
+  color: #ffe6c2;
+  border: 1px solid rgba(255, 199, 122, 0.45);
   border-radius: 8px;
   padding: 6px 13px;
   font-size: 12.5px;
   font-weight: 800;
 }
-.verify-resend:hover { background: #1c1204; }
+.verify-resend:hover { background: rgba(255, 214, 158, 0.28); }
 .verify-resend[disabled] { opacity: 0.6; cursor: default; }
 @media (max-width: 620px) {
   .verify-banner { font-size: 12.5px; padding: 10px 12px; }

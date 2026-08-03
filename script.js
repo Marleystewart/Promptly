@@ -2240,6 +2240,39 @@ function renderVerificationNotice() {
   }
 }
 
+// Tuck the confirmation bar out of the way while reading down the page, and
+// bring it straight back on any upward scroll. It is deliberately not
+// dismissible — unconfirmed means no email alert can send at all, and the
+// profile is deleted at day 14 — so it hides only while you're reading past it.
+(function setupVerifyBannerScroll() {
+  const banner = document.querySelector("[data-verify-banner]");
+  if (!banner) return;
+
+  const TUCK_AFTER = 90;  // don't tuck until scrolled clear of the bar itself
+  const JITTER = 6;       // ignore trackpad noise so it doesn't flicker
+  let lastY = window.scrollY;
+  let ticking = false;
+
+  function update() {
+    ticking = false;
+    const y = window.scrollY;
+    const delta = y - lastY;
+    if (Math.abs(delta) < JITTER) return;
+
+    // Near the top it always shows, so it can never be scrolled into hiding
+    // and forgotten about.
+    if (y <= TUCK_AFTER) banner.classList.remove("is-tucked");
+    else banner.classList.toggle("is-tucked", delta > 0);
+    lastY = y;
+  }
+
+  window.addEventListener("scroll", () => {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(update);
+  }, { passive: true });
+})();
+
 // Ask the server to send another confirmation link.
 async function resendVerification() {
   const button = document.querySelector("[data-verify-resend]");
