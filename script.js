@@ -685,6 +685,10 @@ const profile = {
   resumeName: "",
   resumeText: "",
   fields: [],
+  // Fields the student turned on/off by hand, kept apart from the ones inferred
+  // from their major, interests, and résumé (see syncInferredFields).
+  manualFieldsOn: [],
+  manualFieldsOff: [],
   savedAlerts: [],
   watches: [],
   emailNotifications: true,
@@ -1365,10 +1369,40 @@ function inferFieldsFromText(value) {
   return fieldOptions.filter((field) => interestKeywords[field].some((keyword) => keywordInText(keyword, text)));
 }
 
-function mergeFields(fields) {
-  profile.fields = [...new Set([...profile.fields, ...fields])];
+// Everything the student has told us in their own words. These are the only
+// inputs field inference is allowed to read, so "what's selected" always has a
+// visible cause the student can point at.
+function inferenceSourceText() {
+  return [profile.major, profile.interests, profile.resumeText].filter(Boolean).join(" ");
+}
+
+// Recompute the selected fields from the CURRENT text.
+//
+// This used to be a union that only ever grew (mergeFields), which meant
+// deleting your résumé left every field it had picked still switched on — the
+// selection stopped matching the thing it claimed to be based on. Now the
+// inferred set is derived fresh each time, and the student's own taps are kept
+// separately so re-inferring can never silently undo a deliberate choice:
+//
+//   selected = (inferred ∪ manually turned on) − manually turned off
+function syncInferredFields() {
+  const inferred = inferFieldsFromText(inferenceSourceText());
+  const manualOn = Array.isArray(profile.manualFieldsOn) ? profile.manualFieldsOn : [];
+  const manualOff = Array.isArray(profile.manualFieldsOff) ? profile.manualFieldsOff : [];
+  profile.fields = [...new Set([...inferred, ...manualOn])].filter((field) => !manualOff.includes(field));
   updateFieldButtons();
 }
+
+// Record a deliberate tap so later re-inference respects it in both directions.
+function setFieldChoice(field, selected) {
+  const on = new Set(Array.isArray(profile.manualFieldsOn) ? profile.manualFieldsOn : []);
+  const off = new Set(Array.isArray(profile.manualFieldsOff) ? profile.manualFieldsOff : []);
+  if (selected) { on.add(field); off.delete(field); } else { off.add(field); on.delete(field); }
+  profile.manualFieldsOn = [...on];
+  profile.manualFieldsOff = [...off];
+  syncInferredFields();
+}
+
 
 function updateAcademicProfile() {
   profile.school = document.querySelector("[data-school-input]").value.trim();
@@ -1377,7 +1411,7 @@ function updateAcademicProfile() {
   profile.preferredLocation = document.querySelector("[data-location-input]").value.trim();
   profile.remoteOkay = document.querySelector("[data-remote-input]").checked;
   profile.willingToRelocate = document.querySelector("[data-relocate-input]").checked;
-  mergeFields(inferFieldsFromText(profile.major));
+  syncInferredFields();
 }
 
 function saveProfile() {
@@ -1498,6 +1532,8 @@ function applyAccountUser(user) {
       resumeName: "",
   resumeText: "",
       fields: [],
+      manualFieldsOn: [],
+      manualFieldsOff: [],
       savedAlerts: [],
       emailNotifications: true,
       pushNotifications: true,
@@ -2057,7 +2093,7 @@ function saveProfileEdits() {
   document.querySelector("[data-remote-input]").checked = profile.remoteOkay;
   document.querySelector("[data-relocate-input]").checked = profile.willingToRelocate;
   document.querySelector("[data-interests-input]").value = profile.interests;
-  mergeFields(inferFieldsFromText(`${profile.major} ${profile.interests}`));
+  syncInferredFields();
   saveProfile();
   saveSubscriber();
   applyProfileToUI();
@@ -2069,6 +2105,15 @@ function restoreProfile() {
     const savedProfile = JSON.parse(localStorage.getItem(profileStorageKey) || "null");
     if (!savedProfile) return false;
     Object.assign(profile, savedProfile);
+    // Profiles saved before fields tracked manual intent have no record of WHY
+    // anything was selected. Work it out instead of guessing: anything their
+    // own text explains is treated as inferred (so it now clears when that text
+    // does), and anything it doesn't must have been tapped by hand, so it stays.
+    if (!Array.isArray(savedProfile.manualFieldsOn)) {
+      const explained = inferFieldsFromText(inferenceSourceText());
+      profile.manualFieldsOn = (profile.fields || []).filter((field) => !explained.includes(field));
+      profile.manualFieldsOff = [];
+    }
     fillProfileInputs();
     // Résumé matching is live now — reflect the saved file instead of the old
     // "coming soon" placeholder this used to show.
@@ -2096,8 +2141,10 @@ function enterApp() {
   if (typedName) profile.name = typedName;
   if (typedEmail) profile.email = typedEmail;
   profile.interests = typedInterests;
-  profile.resumeText = typedResume.slice(0, 8000);
-  mergeFields(inferFieldsFromText(`${typedInterests} ${typedResume}`));
+  // An uploaded file already set resumeText; don't let the textarea (which
+  // mirrors it) be the authority when a real file is attached.
+  if (!profile.resumeName) profile.resumeText = typedResume.slice(0, 8000);
+  syncInferredFields();
   saveProfile();
   saveSubscriber();
   track("signup");
@@ -2485,14 +2532,12 @@ document.addEventListener("click", async (event) => {
 
   if (fieldButton) {
     const field = fieldButton.dataset.fieldChoice;
-    profile.fields = profile.fields.includes(field) ? profile.fields.filter((item) => item !== field) : [...profile.fields, field];
-    updateFieldButtons();
+    setFieldChoice(field, !profile.fields.includes(field));
   }
 
   if (editFieldButton) {
     const field = editFieldButton.dataset.editFieldChoice;
-    profile.fields = profile.fields.includes(field) ? profile.fields.filter((item) => item !== field) : [...profile.fields, field];
-    updateFieldButtons();
+    setFieldChoice(field, !profile.fields.includes(field));
   }
 
   if (finishButton) {
@@ -2603,6 +2648,28 @@ document.addEventListener("click", async (event) => {
 
 document.querySelector("[data-email-input]")?.addEventListener("input", () => setSignupError());
 document.querySelector("[data-name-input]")?.addEventListener("input", () => setSignupError());
+// Typing is the other way to tell Promptly what you want, so it has to drive
+// the same inference the résumé does — and update as the text shrinks, not just
+// as it grows. Debounced so it doesn't recompute on every keystroke.
+let inferenceTimer = null;
+function scheduleFieldInference() {
+  clearTimeout(inferenceTimer);
+  inferenceTimer = setTimeout(() => {
+    profile.interests = document.querySelector("[data-interests-input]")?.value.trim() || "";
+    profile.major = document.querySelector("[data-major-input]")?.value.trim() || profile.major;
+    const pasted = document.querySelector("[data-resume-input]")?.value.trim() || "";
+    // Only adopt pasted text as the résumé when no uploaded file is in play,
+    // otherwise clearing the box would wipe out the file's extracted text.
+    if (!profile.resumeName) profile.resumeText = pasted.slice(0, 8000);
+    syncInferredFields();
+    saveProfile();
+  }, 350);
+}
+
+document.querySelector("[data-interests-input]")?.addEventListener("input", scheduleFieldInference);
+document.querySelector("[data-resume-input]")?.addEventListener("input", scheduleFieldInference);
+document.querySelector("[data-major-input]")?.addEventListener("input", scheduleFieldInference);
+
 document.querySelector("[data-school-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-grad-year-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-major-input]")?.addEventListener("input", () => setAcademicError());
@@ -2679,7 +2746,7 @@ async function handleResumeFile(file) {
   if (textarea) textarea.value = result.text;
 
   // Same inference pasted text triggers — this is what "the system reads it" means.
-  mergeFields(inferFieldsFromText(`${profile.interests || ""} ${result.text}`));
+  syncInferredFields();
   saveProfile();
   saveSubscriber();
 
@@ -2706,6 +2773,8 @@ document.querySelector("[data-resume-clear]")?.addEventListener("click", () => {
   profile.resumeText = "";
   const textarea = document.querySelector("[data-resume-input]");
   if (textarea) textarea.value = "";
+  // The résumé is gone, so the fields it alone justified have to go with it.
+  syncInferredFields();
   saveProfile();
   saveSubscriber();
   showResumeFile("");
