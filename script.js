@@ -561,13 +561,24 @@ for (const item of openings) {
 // careers/search page and label the button honestly as "Browse … careers".
 // The pipeline (live ATS feeds) remains the ONLY source of verified deep
 // links. Careers roots below were probed live (2026-07).
+// Each destination below was opened in a browser and its results read, on
+// 2026-08-03. Where a filter is applied it is because it was seen to work —
+// several plausible-looking parameters are silently ignored by these sites
+// (McKinsey drops `locations`, Amazon drops `loc_query`), which produces a URL
+// that looks filtered and isn't. Don't add one here without loading it first.
 const browseCareers = {
   "Google": "https://www.google.com/about/careers/applications/jobs/results/?q=intern%202027",
-  "Apple": "https://jobs.apple.com/en-us/search?search=intern",
-  "Amazon": "https://www.amazon.jobs/en/search?base_query=2027%20intern",
-  "BlackRock": "https://careers.blackrock.com/",
+  // team= is Apple's real student filter; the old `search=intern` returned
+  // Manager and Staff Engineer roles.
+  "Apple": "https://jobs.apple.com/en-us/search?team=internships-STDNT-INTRN",
+  // base_query is "intern", not "2027 intern": the narrower phrase returns
+  // ZERO results once a city filter is applied, which is worse than no filter.
+  "Amazon": "https://www.amazon.jobs/en/search?base_query=intern",
+  // Student & graduate category, rather than the corporate careers homepage.
+  "BlackRock": "https://careers.blackrock.com/category/students-and-graduates-jobs/45831/9022304/1",
   "Bain & Company": "https://www.bain.com/careers/",
-  "McKinsey & Company": "https://www.mckinsey.com/careers",
+  // Real job search with a working intern filter (46 roles), not the landing page.
+  "McKinsey & Company": "https://www.mckinsey.com/careers/search-jobs?query=intern",
   "Morgan Stanley": "https://www.morganstanley.com/careers",
   "Lazard": "https://www.lazard.com/careers/",
   "Jefferies": "https://www.jefferies.com/careers/",
@@ -585,6 +596,40 @@ for (const item of openings) {
   item.sourceUrl = url;
   item.browse = true;
   item.sourceLabel = `${item.company} Careers — browse ${item.program || "2027"} roles`;
+}
+
+// ── Location on browse links ─────────────────────────────────────────────
+// ONLY these two were verified to honour a free-text location in the query
+// string. Apple needs an internal slug ("new-york-city-NYC") that can't be
+// derived from whatever a student types, and McKinsey ignores location
+// entirely — so neither gets a location appended rather than pretending to
+// filter. This is why a "New York" preference could return roles in India:
+// the links were never location-aware at all.
+const browseLocationQuery = {
+  Google: (location) => `&location=${encodeURIComponent(location)}`,
+  // Amazon matches on the city alone; "New York, NY" returns nothing.
+  Amazon: (location) => `&city=${encodeURIComponent(location.split(",")[0].trim())}&country=USA`,
+};
+
+function studentLocationPreference() {
+  const value = String(profile.preferredLocation || "").trim();
+  if (!value || /^no preference$/i.test(value) || /^remote$/i.test(value)) return "";
+  return value;
+}
+
+// The destination for a browse card, narrowed to the student's location where
+// the employer's site actually supports it.
+function browseUrlFor(item) {
+  const base = item.sourceUrl || "";
+  const build = browseLocationQuery[item.company];
+  const location = studentLocationPreference();
+  if (!base || !build || !location) return base;
+  return base + build(location);
+}
+
+// True when the link we're about to hand over really is narrowed to their city.
+function browseIsLocationFiltered(item) {
+  return Boolean(browseLocationQuery[item.company]) && Boolean(studentLocationPreference());
 }
 
 // Every curated opening carries a cycle (derived from its program label) so
@@ -884,7 +929,14 @@ function isMonitored(item) {
 
 function awaitingLine(item) {
   const status = listingStatus(item);
-  if (status === "BROWSE") return `${item.company} does not publish a job feed Promptly can read, so we cannot confirm a specific opening here. This opens their official careers search.`;
+  if (status === "BROWSE") {
+    const location = studentLocationPreference();
+    // Say which it is. A search that isn't location-filtered can return roles
+    // anywhere in the world, and the student should know that before clicking.
+    return browseIsLocationFiltered(item)
+      ? `${item.company} does not publish a job feed Promptly can read, so we cannot confirm a specific opening. This opens their official careers search, filtered to ${location}.`
+      : `${item.company} does not publish a job feed Promptly can read, so we cannot confirm a specific opening. This opens their official careers search — it is not filtered to your location, so results may be anywhere.`;
+  }
   if (status === "UPCOMING") return `Applications open ${new Date(parseOpeningDate(item)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. Promptly will alert you when it is live.`;
   if (status === "CLOSED") return "Applications closed. Promptly will alert you when they reopen.";
   if (isMonitored(item)) return "Awaiting the 2027 posting. Promptly is watching their job system and will alert you the moment it opens.";
@@ -1294,7 +1346,7 @@ function openDetails(company) {
   const showLink = Boolean(item.sourceUrl) && (status === "OPEN" || status === "UPCOMING" || status === "BROWSE");
   // sourceUrl arrives from an external employer feed, so never trust its scheme.
   // The email and push paths already validate; the in-app link must too.
-  sourceLink.href = safeHttpsUrl(item.sourceUrl) || "#";
+  sourceLink.href = safeHttpsUrl(status === "BROWSE" ? browseUrlFor(item) : item.sourceUrl) || "#";
   sourceLink.hidden = !showLink;
   // Honest labeling: verified deep link vs. "browse", vs. a not-yet-open program page.
   sourceLink.textContent = status === "UPCOMING"
