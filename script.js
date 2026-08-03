@@ -577,14 +577,17 @@ const browseCareers = {
   // Student & graduate category, rather than the corporate careers homepage.
   "BlackRock": "https://careers.blackrock.com/category/students-and-graduates-jobs/45831/9022304/1",
   "Bain & Company": "https://www.bain.com/careers/",
-  // Real job search with a working intern filter (46 roles), not the landing page.
-  "McKinsey & Company": "https://www.mckinsey.com/careers/search-jobs?query=intern",
-  "Morgan Stanley": "https://www.morganstanley.com/careers",
-  "Lazard": "https://www.lazard.com/careers/",
-  "Jefferies": "https://www.jefferies.com/careers/",
-  "Moelis & Company": "https://www.moelis.com/careers/",
-  "D.E. Shaw": "https://www.deshaw.com/careers",
-  "AQR Capital Management": "https://careers.aqr.com/",
+  // Real job search, intern filter + US only. The country value must be the
+  // full name — `countries=US` is silently ignored and returns Geneva, Paris
+  // and Brisbane. Taken from McKinsey's own UI: 46 roles → 7 US roles.
+  "McKinsey & Company": "https://www.mckinsey.com/careers/search-jobs?query=intern&countries=United+States",
+  // Student/early-career pages instead of corporate careers landing pages.
+  "Morgan Stanley": "https://www.morganstanley.com/people-opportunities/students-graduates",
+  "Lazard": "https://www.lazard.com/careers/students/",
+  "Jefferies": "https://www.jefferies.com/careers/students-and-graduates/",
+  "Moelis & Company": "https://www.moelis.com/careers/explore-opportunities/?tab=students-and-graduates",
+  "D.E. Shaw": "https://www.deshaw.com/careers/internships",
+  "AQR Capital Management": "https://careers.aqr.com/jobs/category/university-jobs",
   // Stable official program landing pages (not job-ID deep links) — kept as
   // the destination but relabeled honestly (program overviews, not one req).
   "Goldman Sachs": "https://www.goldmansachs.com/careers/students/programs-and-internships/americas/2027-summer-analyst-program",
@@ -605,10 +608,19 @@ for (const item of openings) {
 // entirely — so neither gets a location appended rather than pretending to
 // filter. This is why a "New York" preference could return roles in India:
 // the links were never location-aware at all.
+// Promptly is a US product — the live pipeline drops international postings
+// outright (see the aggregator). Browse links have to hold the same line, so
+// with no city preference they fall back to a whole-US filter rather than an
+// unscoped search that can surface London or Bangalore roles.
+const US_WIDE = "United States";
+
 const browseLocationQuery = {
-  Google: (location) => `&location=${encodeURIComponent(location)}`,
-  // Amazon matches on the city alone; "New York, NY" returns nothing.
-  Amazon: (location) => `&city=${encodeURIComponent(location.split(",")[0].trim())}&country=USA`,
+  Google: (location) => `&location=${encodeURIComponent(location || US_WIDE)}`,
+  // Amazon matches on the city alone — "New York, NY" returns nothing — and
+  // country=USA on its own is a valid US-wide filter.
+  Amazon: (location) => (location
+    ? `&city=${encodeURIComponent(location.split(",")[0].trim())}&country=USA`
+    : "&country=USA"),
 };
 
 function studentLocationPreference() {
@@ -622,14 +634,25 @@ function studentLocationPreference() {
 function browseUrlFor(item) {
   const base = item.sourceUrl || "";
   const build = browseLocationQuery[item.company];
-  const location = studentLocationPreference();
-  if (!base || !build || !location) return base;
-  return base + build(location);
+  if (!base || !build) return base;
+  // Called even with no preference, so the US-wide fallback still applies.
+  return base + build(studentLocationPreference());
 }
 
-// True when the link we're about to hand over really is narrowed to their city.
+// True when the link is narrowed to the student's own city (not merely to the US).
 function browseIsLocationFiltered(item) {
   return Boolean(browseLocationQuery[item.company]) && Boolean(studentLocationPreference());
+}
+
+// Employers whose destination is US-scoped even without a city preference —
+// either because we add a country filter or because the page itself is the
+// firm's US/Americas student page.
+const US_SCOPED_BROWSE = new Set([
+  "Google", "Amazon", "McKinsey & Company", "Goldman Sachs", "J.P. Morgan",
+]);
+
+function browseIsUsScoped(item) {
+  return US_SCOPED_BROWSE.has(item.company);
 }
 
 // Every curated opening carries a cycle (derived from its program label) so
@@ -933,9 +956,10 @@ function awaitingLine(item) {
     const location = studentLocationPreference();
     // Say which it is. A search that isn't location-filtered can return roles
     // anywhere in the world, and the student should know that before clicking.
-    return browseIsLocationFiltered(item)
-      ? `${item.company} does not publish a job feed Promptly can read, so we cannot confirm a specific opening. This opens their official careers search, filtered to ${location}.`
-      : `${item.company} does not publish a job feed Promptly can read, so we cannot confirm a specific opening. This opens their official careers search — it is not filtered to your location, so results may be anywhere.`;
+    const preface = `${item.company} does not publish a job feed Promptly can read, so we cannot confirm a specific opening.`;
+    if (browseIsLocationFiltered(item)) return `${preface} This opens their official careers search, filtered to ${location}.`;
+    if (browseIsUsScoped(item)) return `${preface} This opens their official US careers search — add a preferred location and we'll narrow it to your city.`;
+    return `${preface} This opens their official student careers page, which we can't filter by location — roles may be outside the US.`;
   }
   if (status === "UPCOMING") return `Applications open ${new Date(parseOpeningDate(item)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. Promptly will alert you when it is live.`;
   if (status === "CLOSED") return "Applications closed. Promptly will alert you when they reopen.";
