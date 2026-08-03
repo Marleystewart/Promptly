@@ -853,6 +853,11 @@ function parseOpeningDate(item) {
 }
 function listingStatus(item) {
   if (item.awaiting) return "AWAITING";
+  // A "browse" entry points at a careers SEARCH page, not a specific req we
+  // read from the employer. It must never be counted or displayed as a
+  // verified live posting — presence in an employer's own feed is the whole
+  // basis for that word, and these were never in one.
+  if (item.browse) return "BROWSE";
   const opens = parseOpeningDate(item);
   if (opens && opens > Date.now()) return "UPCOMING";
   const d = parseDeadline(item.deadline);
@@ -879,6 +884,7 @@ function isMonitored(item) {
 
 function awaitingLine(item) {
   const status = listingStatus(item);
+  if (status === "BROWSE") return `${item.company} does not publish a job feed Promptly can read, so we cannot confirm a specific opening here. This opens their official careers search.`;
   if (status === "UPCOMING") return `Applications open ${new Date(parseOpeningDate(item)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. Promptly will alert you when it is live.`;
   if (status === "CLOSED") return "Applications closed. Promptly will alert you when they reopen.";
   if (isMonitored(item)) return "Awaiting the 2027 posting. Promptly is watching their job system and will alert you the moment it opens.";
@@ -895,7 +901,9 @@ function openingRow(item) {
       <div>
         <span class="status-pill">${esc(item.field)}${item.subField ? " · " + esc(item.subField) : ""}</span>${statusPill(item.company)}
         <h3>${esc(item.company)}</h3>
-        <p>${esc(item.role)} · ${esc(item.program)}</p>
+        <p>${listingStatus(item) === "BROWSE"
+          ? `Internship roles · ${esc(item.program)}`
+          : `${esc(item.role)} · ${esc(item.program)}`}</p>
         <small class="awaiting-line">${awaitingLine(item)}</small>
         ${isAwaitingLike(item) && !isMonitored(item) && listingStatus(item) === "AWAITING"
           ? `<button class="tiny-action watch-this-btn" data-watch-company-name="${esc(item.company)}" type="button">Watch ${esc(item.company)}</button>`
@@ -1132,10 +1140,27 @@ function renderOpenings(items = preferredOpenings()) {
 }
 
 function setFeatured() {
-  const item = preferredOpenings()[0];
+  // "Just opened" is a claim about a real posting we saw appear. Only a
+  // verified live listing can carry it — never a placeholder or a careers-page
+  // link, which previously headlined the home screen as if it were breaking news.
+  const ranked = preferredOpenings();
+  const item = ranked.find((entry) => listingStatus(entry) === "OPEN") || ranked[0];
+  if (!item) return;
   const isSaved = saved.has(item.company);
-  document.querySelector("[data-feature-title]").textContent = `${item.company} ${item.role} just opened.`;
-  document.querySelector("[data-feature-copy]").textContent = `${item.field} student alert · ${item.location ? `${item.location} · ` : ""}Deadline ${item.deadline}. ${item.opened}.`;
+  const status = listingStatus(item);
+  const title = document.querySelector("[data-feature-title]");
+  const copy = document.querySelector("[data-feature-copy]");
+
+  if (status === "OPEN") {
+    title.textContent = `${item.company} ${item.role} just opened.`;
+    copy.textContent = `${item.field} student alert · ${item.location ? `${item.location} · ` : ""}Deadline ${item.deadline}. ${item.opened}.`;
+  } else if (status === "BROWSE") {
+    title.textContent = `${item.company} is on Promptly's watch list.`;
+    copy.textContent = `${item.field} student alert · ${item.company} doesn't publish a feed we can read, so we link their official careers search instead of claiming a posting.`;
+  } else {
+    title.textContent = `${item.company} — awaiting the ${item.program} posting.`;
+    copy.textContent = `${item.field} student alert · Promptly is watching and will alert you the moment it opens.`;
+  }
   const featureLogo = document.querySelector("[data-feature-logo]");
   const featureLogoUrl = companyLogoUrl(item);
   featureLogo.className = `mega-logo ${featureLogoUrl ? "logo-tile" : item.logoClass}`;
@@ -1239,7 +1264,10 @@ function openDetails(company) {
   const match = openingMatch(item);
   modal.dataset.company = item.company;
   modalCompany.textContent = item.company;
-  modal.querySelector("[data-modal-role]").textContent = `${item.role} · ${item.program}`;
+  // Don't name a specific req for an employer whose feed we can't read.
+  modal.querySelector("[data-modal-role]").textContent = listingStatus(item) === "BROWSE"
+    ? `Internship roles · ${item.program}`
+    : `${item.role} · ${item.program}`;
   modal.querySelector("[data-modal-why]").textContent = `Why this alert: ${match.reasonText === "broad profile" ? "It fits your broader student alert profile." : `Matched ${match.reasonText} from your profile.`}`;
   modal.querySelector("[data-modal-deadline]").textContent = item.deadline;
   const statusEl = modal.querySelector("[data-modal-status]");
@@ -1248,7 +1276,11 @@ function openDetails(company) {
     statusEl.textContent = st;
     statusEl.className = `status-pill${st === "OPEN" ? "" : ` pill-${st.toLowerCase()}`}`;
   }
-  modal.querySelector("[data-modal-opened]").textContent = item.opened.replace("Opened ", "");
+  // "Opened recently" is a curated string, not something we observed — don't
+  // assert it for an employer we can't actually read.
+  modal.querySelector("[data-modal-opened]").textContent = listingStatus(item) === "BROWSE"
+    ? "Not confirmed"
+    : item.opened.replace("Opened ", "");
   modal.querySelector("[data-modal-location]").textContent = item.location || "See posting";
   modal.querySelector("[data-modal-field]").textContent = item.field;
   modal.querySelector("[data-modal-source]").textContent = item.sourceLabel || "Official source";
@@ -1257,7 +1289,9 @@ function openDetails(company) {
   // Show the link when there's a real destination: an OPEN posting, or an
   // UPCOMING program whose page is already live (e.g. Goldman's 2027 program).
   // Hide only for AWAITING placeholders (no real URL) and CLOSED (dead links).
-  const showLink = Boolean(item.sourceUrl) && (status === "OPEN" || status === "UPCOMING");
+  // BROWSE included: the careers search page is a real, working destination —
+  // it just isn't a specific verified req, which the labelling now says.
+  const showLink = Boolean(item.sourceUrl) && (status === "OPEN" || status === "UPCOMING" || status === "BROWSE");
   // sourceUrl arrives from an external employer feed, so never trust its scheme.
   // The email and push paths already validate; the in-app link must too.
   sourceLink.href = safeHttpsUrl(item.sourceUrl) || "#";
@@ -2386,8 +2420,17 @@ async function enablePushAlerts() {
   }
 }
 
+// A test alert should demonstrate the real thing: a verified live posting.
+// Falling back to the first ranked item meant a test could announce a careers
+// -page placeholder as though a specific req had just opened.
+function bestVerifiedOpening() {
+  const ranked = preferredOpenings();
+  return ranked.find((entry) => listingStatus(entry) === "OPEN") || ranked[0] || null;
+}
+
 function currentTestOpening() {
-  const item = preferredOpenings()[0];
+  const item = bestVerifiedOpening();
+  if (!item) return null;
   return {
     company: item.company,
     role: item.role,
@@ -2452,8 +2495,14 @@ async function sendTestPush() {
       body: JSON.stringify({
         subscription: JSON.parse(raw),
         title: "Promptly",
-        body: `${preferredOpenings()[0].company} ${preferredOpenings()[0].role} just opened.`,
-        url: preferredOpenings()[0].sourceUrl || "/",
+        body: (() => {
+          const item = bestVerifiedOpening();
+          if (!item) return "A new internship opening is live.";
+          return listingStatus(item) === "OPEN"
+            ? `${item.company} ${item.role} just opened.`
+            : `${item.company} is on your watch list — open Promptly to see what's live.`;
+        })(),
+        url: bestVerifiedOpening()?.sourceUrl || "/",
       }),
     });
     const data = await response.json();
