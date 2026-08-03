@@ -1,9 +1,13 @@
-const cacheName = "opening-v21";
+const cacheName = "opening-v22";
+// pdf.js (assets/vendor/*) is deliberately NOT precached — it's ~1.7MB and only
+// needed if someone uploads a PDF. The fetch handler below caches it lazily on
+// first real use.
 const appShell = [
   "/",
   "/index.html",
   "/styles.css",
   "/script.js",
+  "/resume-parser.js",
   "/assistant.js",
   "/privacy.html",
   "/terms.html",

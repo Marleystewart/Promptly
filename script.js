@@ -1434,6 +1434,7 @@ function fillProfileInputs() {
   document.querySelector("[data-interests-input]").value = profile.interests || "";
   const resumeInput = document.querySelector("[data-resume-input]");
   if (resumeInput) resumeInput.value = profile.resumeText || "";
+  showResumeFile(profile.resumeName || "");
 }
 
 function updateAccountUI(message = "") {
@@ -2069,7 +2070,12 @@ function restoreProfile() {
     if (!savedProfile) return false;
     Object.assign(profile, savedProfile);
     fillProfileInputs();
-    if (profile.resumeName) document.querySelector("[data-resume-status]").textContent = "Resume matching is coming soon. Your current matches use your major, interests, goals, and alert fields.";
+    // Résumé matching is live now — reflect the saved file instead of the old
+    // "coming soon" placeholder this used to show.
+    if (profile.resumeName) {
+      showResumeFile(profile.resumeName);
+      setResumeStatus(`Using ${profile.resumeName} — stored on this device only.`, "ok");
+    }
     applyProfileToUI();
     setView("home");
     return true;
@@ -2193,10 +2199,15 @@ async function resendVerification() {
 
 async function saveSubscriber(subscription = null) {
   try {
+    // The résumé and photo are device-only, and the form says so. The server
+    // already drops them (normalizeSubscriber is an allowlist), but they must
+    // not travel over the wire at all — otherwise the promise is false in
+    // transit even though nothing is stored.
+    const { resumeText, photoDataUrl, ...shareableProfile } = profile;
     const response = await fetch("/api/subscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subscription, profile }),
+      body: JSON.stringify({ subscription, profile: shareableProfile }),
     });
     const data = await response.json().catch(() => ({}));
     if (data.setupRequired) setPushStatus("Notifications aren’t fully switched on yet — we’re finishing setup. Check back soon.");
@@ -2621,6 +2632,109 @@ document.querySelector("[data-photo-input]")?.addEventListener("change", (event)
   });
   reader.readAsDataURL(file);
 });
+
+// --- Résumé upload -----------------------------------------------------------
+// The file is read by resume-parser.js in this browser and never uploaded. What
+// we keep is the extracted text (same field pasting has always filled), so the
+// existing matching logic picks it up with no changes.
+const RESUME_PRIVACY_NOTE =
+  "Private by design: your résumé never leaves this device. It is read right here in your browser and only decides which alerts rise first.";
+
+function setResumeStatus(message, tone = "") {
+  const status = document.querySelector("[data-resume-status]");
+  if (!status) return;
+  status.textContent = message;
+  status.dataset.tone = tone;
+}
+
+function showResumeFile(name) {
+  const row = document.querySelector("[data-resume-file-row]");
+  const label = document.querySelector("[data-resume-file-name]");
+  if (!row || !label) return;
+  if (name) {
+    label.textContent = name;
+    row.hidden = false;
+  } else {
+    row.hidden = true;
+  }
+}
+
+async function handleResumeFile(file) {
+  if (!file || !window.PromptlyResume) return;
+  setResumeStatus(`Reading ${file.name}…`);
+
+  const result = await window.PromptlyResume.extractResumeText(file);
+  if (!result.ok) {
+    showResumeFile("");
+    setResumeStatus(result.reason, "error");
+    // Open the paste fallback so the student has an obvious way forward.
+    const paste = document.querySelector("[data-resume-paste]");
+    if (paste) paste.open = true;
+    return;
+  }
+
+  profile.resumeName = file.name;
+  profile.resumeText = result.text;
+  const textarea = document.querySelector("[data-resume-input]");
+  if (textarea) textarea.value = result.text;
+
+  // Same inference pasted text triggers — this is what "the system reads it" means.
+  mergeFields(inferFieldsFromText(`${profile.interests || ""} ${result.text}`));
+  saveProfile();
+  saveSubscriber();
+
+  showResumeFile(file.name);
+  const words = result.text.split(/\s+/).filter(Boolean).length;
+  setResumeStatus(
+    `Read ${words.toLocaleString()} words from ${file.name}${result.truncated ? " (first 8,000 characters used)" : ""}. Your matches now use it. It stayed on this device.`,
+    "ok"
+  );
+}
+
+document.querySelector("[data-resume-browse]")?.addEventListener("click", () => {
+  document.querySelector("[data-resume-file]")?.click();
+});
+
+document.querySelector("[data-resume-file]")?.addEventListener("change", (event) => {
+  const file = event.target.files?.[0];
+  if (file) handleResumeFile(file);
+  event.target.value = ""; // let the same file be re-picked after a failure
+});
+
+document.querySelector("[data-resume-clear]")?.addEventListener("click", () => {
+  profile.resumeName = "";
+  profile.resumeText = "";
+  const textarea = document.querySelector("[data-resume-input]");
+  if (textarea) textarea.value = "";
+  saveProfile();
+  saveSubscriber();
+  showResumeFile("");
+  setResumeStatus(RESUME_PRIVACY_NOTE);
+});
+
+const resumeDrop = document.querySelector("[data-resume-drop]");
+if (resumeDrop) {
+  resumeDrop.addEventListener("click", (event) => {
+    // The whole panel is a target, but don't double-fire on the browse button.
+    if (event.target.closest("[data-resume-browse]")) return;
+    document.querySelector("[data-resume-file]")?.click();
+  });
+  ["dragenter", "dragover"].forEach((type) => {
+    resumeDrop.addEventListener(type, (event) => {
+      event.preventDefault();
+      resumeDrop.classList.add("is-dragging");
+    });
+  });
+  ["dragleave", "dragend"].forEach((type) => {
+    resumeDrop.addEventListener(type, () => resumeDrop.classList.remove("is-dragging"));
+  });
+  resumeDrop.addEventListener("drop", (event) => {
+    event.preventDefault();
+    resumeDrop.classList.remove("is-dragging");
+    const file = event.dataTransfer?.files?.[0];
+    if (file) handleResumeFile(file);
+  });
+}
 
 document.querySelector(".search-panel input")?.addEventListener("input", (event) => {
   const query = event.target.value.trim().toLowerCase();
