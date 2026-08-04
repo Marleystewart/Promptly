@@ -127,3 +127,28 @@ assert.equal(dueReminder({ createdAt: agedDays(10) }, NOW), 10);
 assert.equal(dueReminder({ createdAt: agedDays(5) }, NOW), undefined, "no reminder on off days");
 
 console.log("Unverified-lifecycle tests passed.");
+
+// ── Injection sinks in the rendered feed ──────────────────────────────────
+// awaitingLine() interpolates the student's own preferred location and, for
+// watched companies, a name derived from a pasted URL. It is interpolated into
+// innerHTML by openingRow, so the call site must escape it. A regression here
+// is a real injection sink, so assert on the source rather than trusting review.
+{
+  const fs = require("fs");
+  const path = require("path");
+  const script = fs.readFileSync(path.join(__dirname, "..", "script.js"), "utf8");
+
+  assert.ok(
+    /<small class="awaiting-line">\$\{esc\(awaitingLine\(item\)\)\}<\/small>/.test(script),
+    "awaitingLine() must be escaped where it is interpolated into innerHTML"
+  );
+
+  // And the function itself must stay plain text — if a branch ever returns
+  // markup, the esc() above would render it visibly instead of executing it,
+  // which is the safe failure, but the intent should be explicit.
+  const body = script.slice(script.indexOf("function awaitingLine("));
+  const fnEnd = body.indexOf("\n}\n");
+  assert.ok(!/<[a-z]+[ >]/i.test(body.slice(0, fnEnd)), "awaitingLine() must return plain text, never markup");
+}
+
+console.log("Injection-sink tests passed.");

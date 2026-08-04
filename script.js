@@ -950,6 +950,10 @@ function isMonitored(item) {
   return monitoredCompanies.has(String(item.company || "").trim().toLowerCase());
 }
 
+// Returns PLAIN TEXT, never HTML. The caller escapes it — these strings
+// interpolate the student's own preferred location and, for watched companies,
+// a name derived from a URL they pasted, so an unescaped path here is an
+// injection sink. Keep it that way: no markup in any branch below.
 function awaitingLine(item) {
   const status = listingStatus(item);
   if (status === "BROWSE") {
@@ -980,7 +984,7 @@ function openingRow(item) {
         <p>${listingStatus(item) === "BROWSE"
           ? `Internship roles · ${esc(item.program)}`
           : `${esc(item.role)} · ${esc(item.program)}`}</p>
-        <small class="awaiting-line">${awaitingLine(item)}</small>
+        <small class="awaiting-line">${esc(awaitingLine(item))}</small>
         ${isAwaitingLike(item) && !isMonitored(item) && listingStatus(item) === "AWAITING"
           ? `<button class="tiny-action watch-this-btn" data-watch-company-name="${esc(item.company)}" type="button">Watch ${esc(item.company)}</button>`
           : ""}
