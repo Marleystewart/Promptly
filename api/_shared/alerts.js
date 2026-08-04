@@ -1,6 +1,9 @@
 const webpush = require("web-push");
 const { clearPushSubscription } = require("./store");
 const { isSafePushSubscription } = require("./push-target");
+// Shared with the browser (geo.js is dual-mode) so the radius an alert uses is
+// the same engine the app shows results with.
+const geo = require("../../geo.js");
 
 // Send a push and, if the endpoint is permanently gone (404/410 — the phone
 // unsubscribed or the browser rotated the endpoint), drop the dead
@@ -287,6 +290,42 @@ async function sendDeadlinePush(opening, subscriber, daysLeft) {
   });
 }
 
+// How far an alert may reach. The app itself widens its radius step by step
+// and explains when it does; a push notification has no room to explain, so it
+// only fires for something plausibly actionable. Remote still comes through
+// below, which is what keeps rural subscribers from getting nothing.
+const ALERT_RADIUS_MILES = 100;
+
+// Location gate for alerts.
+//
+// This did not exist: matchesOpening considered only fields and watches, so a
+// subscriber in Hartford who had NOT ticked "willing to relocate" would still
+// be emailed and pushed roles in Dallas. The app filtered by distance; the
+// alerts that are the actual product did not.
+function locationMatches(opening, subscriber) {
+  const preferred = String(subscriber.preferredLocation || "").trim();
+  if (!preferred || /^no preference$/i.test(preferred)) return true;
+  if (subscriber.willingToRelocate === true) return true;
+
+  const remoteOk = subscriber.remoteNotifications !== false && subscriber.remoteOkay !== false;
+  if (remoteOk && (opening.remote === true || geo.isRemoteText(opening.location))) return true;
+
+  const listing = String(opening.location || "").trim();
+  if (!listing) return true; // nothing to compare — don't drop it on a guess
+
+  const from = geo.resolve(preferred);
+  const to = geo.resolve(listing);
+  if (!from || !to || from.kind !== "point" || to.kind !== "point") {
+    // Unresolvable either side: fall back to name matching rather than
+    // silently withholding alerts the subscriber signed up for.
+    const tokens = preferred.toLowerCase().split(/[^a-z0-9]+/).filter((t) => t.length > 2);
+    if (!tokens.length) return true;
+    const haystack = listing.toLowerCase();
+    return tokens.some((token) => haystack.includes(token));
+  }
+  return geo.milesBetween(from, to) <= ALERT_RADIUS_MILES;
+}
+
 function matchesOpening(opening, subscriber) {
   // A company the subscriber explicitly asked Promptly to watch always
   // matches, regardless of their field filters — that's the whole point of a
@@ -297,6 +336,8 @@ function matchesOpening(opening, subscriber) {
       return true;
     }
   }
+  // Field match and location must BOTH hold for a normal alert.
+  if (!locationMatches(opening, subscriber)) return false;
   if (!opening.field) return true;
   if (!Array.isArray(subscriber.fields) || subscriber.fields.length === 0) return true;
   return subscriber.fields.includes(opening.field);

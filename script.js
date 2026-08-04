@@ -1018,44 +1018,191 @@ function openingRow(item) {
 }
 
 function preferredOpenings() {
-  // Somewhere they can actually take the job first (see locationAllowed), then
-  // real (verified) listings before awaiting placeholders, then by fit.
-  return openings
-    .filter(locationAllowed)
-    .sort((a, b) => (isAwaitingLike(a) ? 1 : 0) - (isAwaitingLike(b) ? 1 : 0) || openingMatch(b).score - openingMatch(a).score);
+  // In range first (graduated expansion, see locationSearch), then verified
+  // listings before placeholders, then by fit — with distance as the
+  // tie-breaker so the closest of two equally good roles wins.
+  return [...currentLocationResult().items]
+    .sort((a, b) => {
+      const awaiting = (isAwaitingLike(a) ? 1 : 0) - (isAwaitingLike(b) ? 1 : 0);
+      if (awaiting) return awaiting;
+      const fit = openingMatch(b).score - openingMatch(a).score;
+      if (fit) return fit;
+      const da = distanceToListing(a);
+      const db = distanceToListing(b);
+      if (da === null && db === null) return 0;
+      if (da === null) return 1;
+      if (db === null) return -1;
+      return da - db;
+    });
 }
 
 function profileMatchText() {
   return [profile.major, profile.interests, profile.school, profile.preferredLocation, profile.fields.join(" "), profile.resumeText].join(" ").toLowerCase();
 }
 
-// Whether a listing is somewhere the student would actually take it.
+// ── Location search ───────────────────────────────────────────────────────
+// Graduated radius expansion. A hard radius is wrong in both directions: too
+// tight and a student in rural Arkansas sees "no internships found", too loose
+// and someone in Philadelphia gets Pittsburgh. So we start tight and widen only
+// as far as we must to find something, and we always say what we did.
 //
-// Ranking alone wasn't enough: an out-of-area role only lost 8 points against
-// a base of 42, so a student in Hartford who did NOT tick "willing to
-// relocate" still saw New York roles in their feed. If they told us where they
-// can be and said they can't move, that's a filter, not a preference.
-function locationAllowed(item) {
-  const preferred = String(profile.preferredLocation || "").toLowerCase().trim();
-  if (!preferred || preferred === "no preference") return true;
-  if (profile.willingToRelocate) return true;
+// Distances are real great-circle miles (see geo.js), not string matching.
 
-  const listingLocation = String(item.location || "").toLowerCase();
-  // Nothing to compare against — don't hide it on a guess.
-  if (!listingLocation) return true;
-  if (profile.remoteOkay && (item.remote || listingLocation.includes("remote"))) return true;
+const LOCATION_STEPS = [25, 50, 75, 100];
+const MIN_LOCAL_RESULTS = 6;   // widen until we have at least this many
+const geo = typeof window !== "undefined" ? window.PromptlyGeo : null;
 
-  const tokens = preferred.split(/[^a-z0-9]+/).filter((token) => token.length > 2);
-  if (!tokens.length) return true;
-  return tokens.some((token) => listingLocation.includes(token));
+let locationCache = { text: null, value: null };
+
+// The student's location, resolved once per distinct input.
+function studentPoint() {
+  const text = String(profile.preferredLocation || "").trim();
+  if (!text || /^no preference$/i.test(text)) return null;
+  if (locationCache.text === text) return locationCache.value;
+  const value = geo ? geo.resolve(text) : null;
+  locationCache = { text, value };
+  return value;
 }
 
-// How many real listings we're holding back because of that filter — used to
-// explain an empty or thin feed instead of just showing nothing.
-function hiddenByLocationCount() {
+const listingPointCache = new Map();
+function listingPoint(item) {
+  const text = String(item.location || "").trim();
+  if (!text) return null;
+  if (listingPointCache.has(text)) return listingPointCache.get(text);
+  const value = geo ? geo.resolve(text) : null;
+  listingPointCache.set(text, value);
+  return value;
+}
+
+// Miles from the student to a listing, or null when either side is unknown.
+function distanceToListing(item) {
+  const from = studentPoint();
+  const to = listingPoint(item);
+  if (!from || !to || from.kind !== "point" || to.kind !== "point" || !geo) return null;
+  return geo.milesBetween(from, to);
+}
+
+function listingIsRemote(item) {
+  return Boolean(item.remote) || (geo ? geo.isRemoteText(item.location) : /remote/i.test(String(item.location || "")));
+}
+
+// Fallback for towns and listing strings geo can't place: the old substring
+// behaviour, so an unrecognised location degrades to "loosely matched" rather
+// than vanishing.
+function looseLocationMatch(item) {
   const preferred = String(profile.preferredLocation || "").toLowerCase().trim();
-  if (!preferred || preferred === "no preference" || profile.willingToRelocate) return 0;
-  return openings.filter((item) => !isAwaitingLike(item) && !locationAllowed(item)).length;
+  const listing = String(item.location || "").toLowerCase();
+  if (!preferred || !listing) return true;
+  const tokens = preferred.split(/[^a-z0-9]+/).filter((token) => token.length > 2);
+  if (!tokens.length) return true;
+  return tokens.some((token) => listing.includes(token));
+}
+
+// Runs the expansion and reports what it had to do to find results.
+// → { items, message, radius, expanded }
+function locationSearch(pool) {
+  const from = studentPoint();
+  const live = pool.filter((item) => !isAwaitingLike(item));
+
+  // No usable preference: everything, no explanation needed.
+  if (!from) return { items: pool, message: "", radius: null, expanded: false };
+
+  if (from.kind === "ambiguous") {
+    return {
+      items: pool,
+      message: `“${from.label}” matches more than one place (${from.options.slice(0, 3).join(", ")}). Add the state so we can narrow it down.`,
+      radius: null, expanded: true,
+    };
+  }
+
+  // Willing to relocate: nothing is out of bounds, but still rank near first.
+  if (profile.willingToRelocate) {
+    return { items: pool, message: "", radius: null, expanded: false };
+  }
+
+  const remoteOk = profile.remoteOkay !== false;
+  const remotes = remoteOk ? live.filter(listingIsRemote) : [];
+  const placed = live.filter((item) => distanceToListing(item) !== null);
+  const unplaceable = live.filter((item) => distanceToListing(item) === null && looseLocationMatch(item));
+
+  const within = (miles) => placed.filter((item) => distanceToListing(item) <= miles);
+  const label = from.label;
+
+  // We only pinned this to the middle of the state, so every distance below is
+  // an approximation. Say so rather than quoting a confident "within 25 miles".
+  const approximate = from.precision === "state";
+  const approxNote = approximate
+    ? ` We couldn't place that town exactly, so this is measured from the middle of the state — add a nearby city for tighter results.`
+    : "";
+
+  // Levels 1–4: widen the radius only as far as needed.
+  const baseCount = within(LOCATION_STEPS[0]).length;
+  for (const miles of LOCATION_STEPS) {
+    const hits = within(miles);
+    const total = new Set([...hits, ...remotes, ...unplaceable]);
+    const enough = total.size >= MIN_LOCAL_RESULTS;
+    if (enough || (miles === LOCATION_STEPS[0] && hits.length)) {
+      if (enough || hits.length) {
+        const widened = miles !== LOCATION_STEPS[0];
+        // baseCount, not hits.length — the message is about what was available
+        // at 25 miles, which is the reason we widened in the first place.
+        const message = widened
+          ? `${baseCount ? `Only ${baseCount} role${baseCount === 1 ? "" : "s"}` : "Nothing"} within 25 miles of ${label}, so we widened the search to ${miles} miles.${approxNote}`
+          : (approximate ? `Showing roles near ${label}.${approxNote}` : "");
+        return { items: keepAwaiting(pool, total), message, radius: miles, expanded: widened || approximate };
+      }
+    }
+  }
+
+  // Level 5: nearest major metro, named explicitly.
+  const metro = geo ? geo.nearestMetro(from) : null;
+  if (metro) {
+    const metroHits = placed.filter((item) => {
+      const point = listingPoint(item);
+      return point && geo.milesBetween({ lat: metro.lat, lon: metro.lon }, point) <= 40;
+    });
+    const total = new Set([...within(100), ...metroHits, ...remotes, ...unplaceable]);
+    if (total.size) {
+      return {
+        items: keepAwaiting(pool, total),
+        message: `Nothing within 100 miles of ${label}. Showing roles around ${metro.label}, the nearest major hiring metro (${Math.round(metro.miles)} miles away)${remotes.length ? `, plus ${remotes.length} remote` : ""}.`,
+        radius: null, expanded: true,
+      };
+    }
+  }
+
+  // Level 6: remote only.
+  if (remotes.length) {
+    return {
+      items: keepAwaiting(pool, new Set([...remotes, ...unplaceable])),
+      message: `No roles near ${label} right now, so we're showing ${remotes.length} remote internship${remotes.length === 1 ? "" : "s"} you can do from anywhere.`,
+      radius: null, expanded: true,
+    };
+  }
+
+  // Level 7: everything, clearly marked as requiring a move. Shown rather than
+  // an empty screen, but never silently.
+  return {
+    items: pool,
+    message: `Nothing within range of ${label}, and no remote roles open. These would all mean relocating — tick “Willing to relocate” in your profile to make this your normal view.`,
+    radius: null, expanded: true, beyondRange: true,
+  };
+}
+
+// Placeholders and watch-list cards aren't location-bound; they should survive
+// whatever the radius logic decides about real listings.
+function keepAwaiting(pool, allowed) {
+  return pool.filter((item) => isAwaitingLike(item) || allowed.has(item));
+}
+
+// Cached per render so a list of 200 rows doesn't re-run the whole expansion.
+let lastLocationResult = null;
+function currentLocationResult() {
+  return lastLocationResult || (lastLocationResult = locationSearch(openings));
+}
+function invalidateLocationSearch() {
+  lastLocationResult = null;
+  locationCache = { text: null, value: null };
 }
 
 function locationPreferenceMatch(item) {
@@ -1242,21 +1389,21 @@ function renderRows(list) {
   return html;
 }
 
-// Shown when the location filter is the reason the feed looks empty, so it
-// reads as a setting they control rather than the app being broken.
-function locationEmptyStateHtml() {
-  const hidden = hiddenByLocationCount();
-  if (!hidden) return "";
-  const where = esc(profile.preferredLocation);
-  return `<p class="empty-hint">Nothing open in ${where} right now. ${hidden} ${hidden === 1 ? "role is" : "roles are"} hidden because you haven't ticked <b>Willing to relocate</b> — turn it on in your profile to include ${hidden === 1 ? "it" : "them"}.</p>`;
+// The explanation banner for whatever the radius logic had to do. Section 3's
+// rule: never silently return jobs hundreds of miles away.
+function locationNoticeHtml() {
+  const result = currentLocationResult();
+  if (!result.message) return "";
+  return `<p class="location-notice${result.beyondRange ? " beyond" : ""}">${esc(result.message)}</p>`;
 }
 
 function renderOpenings(items = preferredOpenings()) {
+  const notice = locationNoticeHtml();
   const compact = items.slice(0, 5).map(openingRow).join("");
   const full = renderRows(items);
-  const hint = locationEmptyStateHtml();
-  document.querySelector(".compact-list").innerHTML = compact || hint || "";
-  document.querySelector(".full-list").innerHTML = full || hint || "";
+  const empty = `<p class="empty-hint">No openings match this profile yet. Widen your fields or turn on <b>Willing to relocate</b> to see more.</p>`;
+  document.querySelector(".compact-list").innerHTML = notice + (compact || empty);
+  document.querySelector(".full-list").innerHTML = notice + (full || empty);
 }
 
 function setFeatured() {
@@ -2290,6 +2437,7 @@ function openProfileEditor() {
 }
 
 function saveProfileEdits() {
+  invalidateLocationSearch();
   profile.name = document.querySelector("[data-edit-name]").value.trim();
   profile.email = document.querySelector("[data-edit-email]").value.trim();
   profile.school = document.querySelector("[data-edit-school]").value.trim();
@@ -2947,19 +3095,43 @@ function renderLocationCoverageHint() {
   const typed = document.querySelector("[data-location-input]")?.value.trim() || "";
   if (!typed || /^no preference$/i.test(typed)) { hint.hidden = true; return; }
 
-  const tokens = typed.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length > 2);
-  if (!tokens.length) { hint.hidden = true; return; }
+  const resolved = geo ? geo.resolve(typed) : null;
+  hint.hidden = false;
+
+  // Ambiguous city with no state — ask rather than silently pick one.
+  if (resolved && resolved.kind === "ambiguous") {
+    hint.textContent = `“${resolved.label}” could be ${resolved.options.slice(0, 3).join(", ")}. Add the state so we search the right one.`;
+    hint.dataset.tone = "warn";
+    return;
+  }
+  if (!resolved || resolved.kind !== "point") {
+    hint.textContent = `We don't recognise that place yet — we'll still match it by name, but distances will be approximate.`;
+    hint.dataset.tone = "warn";
+    return;
+  }
 
   const live = openings.filter((item) => !isAwaitingLike(item) && item.location);
-  const here = live.filter((item) => tokens.some((token) => String(item.location).toLowerCase().includes(token)));
-  const remote = live.filter((item) => item.remote || /remote/i.test(String(item.location))).length;
+  const remote = live.filter(listingIsRemote).length;
+  const near = live.filter((item) => {
+    const point = geo.resolve(item.location);
+    if (!point || point.kind !== "point") return false;
+    return geo.milesBetween(resolved, point) <= 25;
+  }).length;
+  const wider = live.filter((item) => {
+    const point = geo.resolve(item.location);
+    if (!point || point.kind !== "point") return false;
+    return geo.milesBetween(resolved, point) <= 100;
+  }).length;
 
-  hint.hidden = false;
-  if (here.length) {
-    hint.textContent = `${here.length} live role${here.length === 1 ? "" : "s"} in ${typed} right now${remote ? `, plus ${remote} remote` : ""}.`;
+  if (near) {
+    hint.textContent = `${near} live role${near === 1 ? "" : "s"} within 25 miles of ${resolved.label}${remote ? `, plus ${remote} remote` : ""}.`;
+    hint.dataset.tone = "ok";
+  } else if (wider) {
+    hint.textContent = `Nothing within 25 miles of ${resolved.label}, but ${wider} within 100 — we'll widen automatically and tell you when we do.`;
     hint.dataset.tone = "ok";
   } else {
-    hint.textContent = `No live roles in ${typed} at the moment${remote ? `, though ${remote} are remote` : ""}. Tick "Willing to relocate" to see roles elsewhere.`;
+    const metro = geo.nearestMetro(resolved);
+    hint.textContent = `No roles near ${resolved.label} yet${metro ? `. Nearest hiring metro is ${metro.label}, ${Math.round(metro.miles)} miles away` : ""}${remote ? `; ${remote} remote roles are open` : ""}.`;
     hint.dataset.tone = "warn";
   }
 }
@@ -2967,6 +3139,13 @@ function renderLocationCoverageHint() {
 document.querySelector("[data-location-input]")?.addEventListener("input", () => {
   clearTimeout(locationHintTimer);
   locationHintTimer = setTimeout(renderLocationCoverageHint, 300);
+});
+// Any change to where they can be, or whether they'll move, invalidates the
+// cached radius search.
+["[data-location-input]", "[data-relocate-input]", "[data-remote-input]",
+ "[data-edit-location]", "[data-edit-relocate]", "[data-edit-remote]"].forEach((selector) => {
+  document.querySelector(selector)?.addEventListener("change", invalidateLocationSearch);
+  document.querySelector(selector)?.addEventListener("input", invalidateLocationSearch);
 });
 let locationHintTimer = null;
 
