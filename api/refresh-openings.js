@@ -8,7 +8,7 @@
 
 const { aggregateOpenings } = require("./_shared/aggregator");
 const { saveLiveOpenings, getLiveOpenings, filterNeverAlerted, markAlerted, queueDigestItems } = require("./_shared/openings-store");
-const { listSubscribers } = require("./_shared/store");
+const { forEachSubscriberBatch } = require("./_shared/store");
 const { sendPushAlert, matchesOpening } = require("./_shared/alerts");
 const { recordNewListings } = require("./_shared/analytics");
 
@@ -21,33 +21,38 @@ const MAX_NOTIFY_OPENINGS = 25;
 async function notifySubscribers(newOpenings) {
   if (!newOpenings.length) return { notified: 0, emailQueued: 0, pushSent: 0 };
 
-  const stored = await listSubscribers();
-  const subscribers = stored.subscribers || [];
-  if (!subscribers.length) return { notified: 0, emailQueued: 0, pushSent: 0 };
-
   let emailQueued = 0;
   let pushSent = 0;
+  let scanned = 0;
   const batch = newOpenings.slice(0, MAX_NOTIFY_OPENINGS);
 
-  for (const sub of subscribers) {
-    const matched = batch.filter((opening) => matchesOpening(opening, sub));
-    if (!matched.length) continue;
+  // Batched, not "load every subscriber into memory". This runs hourly, so at
+  // scale the old fan-out was 100k concurrent Redis reads and 100k records
+  // resident at once — it would exhaust memory and the connection pool long
+  // before it finished sending anything.
+  await forEachSubscriberBatch(async (subscribers) => {
+    scanned += subscribers.length;
+    for (const sub of subscribers) {
+      const matched = batch.filter((opening) => matchesOpening(opening, sub));
+      if (!matched.length) continue;
 
-    // Don't even queue mail for an address that hasn't confirmed — otherwise a
-    // queue builds up for someone who never asked to hear from us.
-    if (sub.verified === true && sub.emailNotifications !== false && sub.email) {
-      try {
-        const { queued } = await queueDigestItems(sub.email, matched);
-        emailQueued += queued;
-      } catch {}
-    }
-    if (sub.pushNotifications !== false && sub.pushSubscription) {
-      for (const opening of matched) {
-        try { if ((await sendPushAlert(opening, sub)).sent) pushSent += 1; } catch {}
+      // Don't even queue mail for an address that hasn't confirmed — otherwise a
+      // queue builds up for someone who never asked to hear from us.
+      if (sub.verified === true && sub.emailNotifications !== false && sub.email) {
+        try {
+          const { queued } = await queueDigestItems(sub.email, matched);
+          emailQueued += queued;
+        } catch {}
+      }
+      if (sub.pushNotifications !== false && sub.pushSubscription) {
+        for (const opening of matched) {
+          try { if ((await sendPushAlert(opening, sub)).sent) pushSent += 1; } catch {}
+        }
       }
     }
-  }
-  return { notified: batch.length, emailQueued, pushSent };
+  });
+
+  return { notified: batch.length, emailQueued, pushSent, subscribersScanned: scanned };
 }
 
 module.exports = async function handler(req, res) {

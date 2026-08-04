@@ -104,15 +104,67 @@ async function getSubscriber(email) {
   return (await redis.get("promptly:subscriber:" + normalized)) || null;
 }
 
-async function listSubscribers() {
+// Load EVERY subscriber at once. Kept for the admin dashboard, which is a
+// single human looking at a page — never use it on a cron path.
+//
+// Why: this issues one Redis round trip per subscriber, all in flight at the
+// same time. At a few hundred subscribers that is fine. At 100k it is 100,000
+// concurrent HTTP requests to Upstash plus every record resident in memory,
+// which exhausts the function's memory and the connection pool long before it
+// finishes. Cron paths use forEachSubscriberBatch instead.
+const ADMIN_LIST_CAP = 5000;
+
+async function listSubscribers({ cap = ADMIN_LIST_CAP } = {}) {
   const redis = await getRedis();
   if (!redis) return { subscribers: [], setupRequired: "Add Upstash Redis environment variables in Vercel." };
 
   const emails = await redis.smembers("promptly:subscribers");
-  if (!emails.length) return { subscribers: [] };
+  if (!emails.length) return { subscribers: [], total: 0, truncated: false };
 
-  const subscribers = (await Promise.all(emails.map((email) => redis.get("promptly:subscriber:" + email)))).filter(Boolean);
-  return { subscribers };
+  const slice = emails.slice(0, cap);
+  const subscribers = [];
+  // Sequential batches, not one giant Promise.all.
+  for (let i = 0; i < slice.length; i += 100) {
+    const chunk = slice.slice(i, i + 100);
+    const records = await Promise.all(chunk.map((email) => redis.get("promptly:subscriber:" + email)));
+    for (const record of records) if (record) subscribers.push(record);
+  }
+  return { subscribers, total: emails.length, truncated: emails.length > cap };
+}
+
+// Stream subscribers in bounded batches. This is what the hourly refresh and
+// the daily retention job use, so memory and in-flight requests stay flat no
+// matter how many subscribers exist.
+//
+// SSCAN may return duplicates across iterations (it guarantees only that
+// members present for the whole scan are returned at least once), so the
+// caller-visible set is de-duplicated here.
+async function forEachSubscriberBatch(handler, { batchSize = 200 } = {}) {
+  const redis = await getRedis();
+  if (!redis) return { processed: 0, setupRequired: "Add Upstash Redis environment variables in Vercel." };
+
+  let cursor = 0;
+  let processed = 0;
+  const seen = new Set();
+
+  do {
+    const result = await redis.sscan("promptly:subscribers", cursor, { count: batchSize });
+    const next = Array.isArray(result) ? result[0] : result?.cursor;
+    const emails = (Array.isArray(result) ? result[1] : result?.members) || [];
+    cursor = Number(next) || 0;
+
+    const fresh = emails.filter((email) => email && !seen.has(email));
+    fresh.forEach((email) => seen.add(email));
+    if (!fresh.length) continue;
+
+    const records = (await Promise.all(fresh.map((email) => redis.get("promptly:subscriber:" + email)))).filter(Boolean);
+    if (records.length) {
+      await handler(records);
+      processed += records.length;
+    }
+  } while (cursor !== 0);
+
+  return { processed };
 }
 
 // Attach a watched company to a subscriber's record so the alert pipeline
@@ -188,6 +240,40 @@ async function takeTestAlertSlot(email, requester = "") {
   return { allowed: Boolean(emailSlot && requesterSlot), stored: true };
 }
 
+// Throttle for the anonymous subscribe endpoint.
+//
+// /api/subscribe took unlimited unauthenticated writes, and every unseen email
+// triggered a confirmation send. A script could therefore make Promptly mail
+// thousands of strangers — burning the Resend quota and, far worse, teaching
+// mailbox providers that our sending domain sends unsolicited mail. Domain
+// reputation is extremely hard to win back, so this is throttled per IP.
+//
+// Two windows: a burst limit (a real person saving a profile repeatedly) and
+// an hourly cap on how many DISTINCT addresses one source can enrol.
+const SUBSCRIBE_BURST = 10;        // per minute per IP
+const SUBSCRIBE_NEW_PER_HOUR = 5;  // distinct new addresses per hour per IP
+
+async function takeSubscribeSlot(requester = "unknown", { isNewAddress = false } = {}) {
+  const redis = await getRedis();
+  if (!redis) return { allowed: true, stored: false };
+  const who = String(requester || "unknown").slice(0, 64);
+
+  const burstKey = `promptly:sub-burst:${who}`;
+  const burst = await redis.incr(burstKey);
+  if (burst === 1) await redis.expire(burstKey, 60);
+  if (burst > SUBSCRIBE_BURST) return { allowed: false, reason: "burst", stored: true };
+
+  // Only creating a brand-new record can trigger mail, so only that is capped
+  // hourly — someone editing their own profile is never blocked by this.
+  if (isNewAddress) {
+    const newKey = `promptly:sub-new:${who}`;
+    const created = await redis.incr(newKey);
+    if (created === 1) await redis.expire(newKey, 3600);
+    if (created > SUBSCRIBE_NEW_PER_HOUR) return { allowed: false, reason: "new-address", stored: true };
+  }
+  return { allowed: true, stored: true };
+}
+
 // Simple fixed-window throttle for admin secret guesses (10 per minute per IP).
 async function takeAdminAttempt(requester = "unknown") {
   const redis = await getRedis();
@@ -219,6 +305,7 @@ module.exports = {
   getRedis,
   saveSubscriber,
   listSubscribers,
+  forEachSubscriberBatch,
   getSubscriber,
   deleteSubscriber,
   addSubscriberWatch,
@@ -227,6 +314,7 @@ module.exports = {
   normalizeSubscriber,
   hasRedisEnv,
   takeTestAlertSlot,
+  takeSubscribeSlot,
   takeAdminAttempt,
   claimOnce,
   releaseClaim,

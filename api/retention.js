@@ -1,4 +1,4 @@
-const { listSubscribers, claimOnce, releaseClaim } = require("./_shared/store");
+const { forEachSubscriberBatch, claimOnce, releaseClaim } = require("./_shared/store");
 const { getLiveOpenings, takeDigestItems, queueDigestItems } = require("./_shared/openings-store");
 const { sendDailyDigest, sendWeeklyRecap, sendDeadlineReminder, sendDeadlinePush, matchesOpening } = require("./_shared/alerts");
 const { getOrCreateUnsubToken, createVerifyToken, purgeUnverified } = require("./_shared/tokens");
@@ -60,12 +60,16 @@ module.exports = async function handler(req, res) {
     const now = new Date();
     const forceWeekly = req.query && req.query.mode === "weekly";
     const shouldSendWeekly = forceWeekly || now.getUTCDay() === 1;
-    const stored = await listSubscribers();
     const livePayload = await getLiveOpenings();
     const live = livePayload.openings || [];
-    const stats = { subscribers: stored.subscribers.length, digestsSent: 0, weeklySent: 0, reminderEmails: 0, reminderPushes: 0, verifyReminders: 0, unverifiedPurged: 0 };
+    const stats = { subscribers: 0, digestsSent: 0, weeklySent: 0, reminderEmails: 0, reminderPushes: 0, verifyReminders: 0, unverifiedPurged: 0 };
 
-    for (const subscriber of stored.subscribers) {
+    // Batched rather than loading every subscriber at once — this job mails the
+    // whole list, so at scale the old fan-out would run out of memory before
+    // sending a single digest.
+    await forEachSubscriberBatch(async (batch) => {
+    stats.subscribers += batch.length;
+    for (const subscriber of batch) {
       // ── Unconfirmed profile lifecycle ───────────────────────────────────
       // A record nobody confirmed is data we were never given permission to
       // hold. Remind twice, then delete it. Confirmed accounts are never
@@ -169,6 +173,7 @@ module.exports = async function handler(req, res) {
         if (!delivered) await releaseClaim(deliveryKey);
       }
     }
+    });
 
     return res.status(200).json({ ok: true, ...stats, weeklyRun: shouldSendWeekly });
   } catch (error) {

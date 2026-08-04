@@ -1,5 +1,5 @@
 const { isValidEmail } = require("./_shared/email-validator");
-const { readBody, saveSubscriber, deleteSubscriber, addSubscriberWatch, removeSubscriberWatch, getSubscriber } = require("./_shared/store");
+const { readBody, saveSubscriber, deleteSubscriber, addSubscriberWatch, removeSubscriberWatch, getSubscriber, takeSubscribeSlot } = require("./_shared/store");
 const { watchCompany, unwatchCompany } = require("./_shared/watch");
 const {
   createVerifyToken, consumeVerifyToken, resolveUnsubToken,
@@ -149,6 +149,20 @@ module.exports = async function handler(req, res) {
 
     if (!isValidEmail(profile.email)) {
       return res.status(400).json({ error: "Use a properly formatted email address." });
+    }
+
+    // Throttle before writing. Creating a record for an address we've never
+    // seen is what triggers a confirmation email, so that path is capped
+    // harder than an existing subscriber editing their own profile.
+    const requester = String(req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || "unknown").split(",")[0].trim();
+    const alreadyKnown = Boolean(await getSubscriber(profile.email));
+    const slot = await takeSubscribeSlot(requester, { isNewAddress: !alreadyKnown });
+    if (!slot.allowed) {
+      return res.status(429).json({
+        error: slot.reason === "new-address"
+          ? "Too many new sign-ups from this connection. Try again in an hour."
+          : "You're saving a bit too fast — give it a moment and try again.",
+      });
     }
 
     const result = await saveSubscriber(profile, body.subscription || null);
