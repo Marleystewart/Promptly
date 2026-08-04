@@ -1018,12 +1018,44 @@ function openingRow(item) {
 }
 
 function preferredOpenings() {
-  // real (verified) listings first, awaiting placeholders after; then by fit
-  return [...openings].sort((a, b) => (isAwaitingLike(a) ? 1 : 0) - (isAwaitingLike(b) ? 1 : 0) || openingMatch(b).score - openingMatch(a).score);
+  // Somewhere they can actually take the job first (see locationAllowed), then
+  // real (verified) listings before awaiting placeholders, then by fit.
+  return openings
+    .filter(locationAllowed)
+    .sort((a, b) => (isAwaitingLike(a) ? 1 : 0) - (isAwaitingLike(b) ? 1 : 0) || openingMatch(b).score - openingMatch(a).score);
 }
 
 function profileMatchText() {
   return [profile.major, profile.interests, profile.school, profile.preferredLocation, profile.fields.join(" "), profile.resumeText].join(" ").toLowerCase();
+}
+
+// Whether a listing is somewhere the student would actually take it.
+//
+// Ranking alone wasn't enough: an out-of-area role only lost 8 points against
+// a base of 42, so a student in Hartford who did NOT tick "willing to
+// relocate" still saw New York roles in their feed. If they told us where they
+// can be and said they can't move, that's a filter, not a preference.
+function locationAllowed(item) {
+  const preferred = String(profile.preferredLocation || "").toLowerCase().trim();
+  if (!preferred || preferred === "no preference") return true;
+  if (profile.willingToRelocate) return true;
+
+  const listingLocation = String(item.location || "").toLowerCase();
+  // Nothing to compare against — don't hide it on a guess.
+  if (!listingLocation) return true;
+  if (profile.remoteOkay && (item.remote || listingLocation.includes("remote"))) return true;
+
+  const tokens = preferred.split(/[^a-z0-9]+/).filter((token) => token.length > 2);
+  if (!tokens.length) return true;
+  return tokens.some((token) => listingLocation.includes(token));
+}
+
+// How many real listings we're holding back because of that filter — used to
+// explain an empty or thin feed instead of just showing nothing.
+function hiddenByLocationCount() {
+  const preferred = String(profile.preferredLocation || "").toLowerCase().trim();
+  if (!preferred || preferred === "no preference" || profile.willingToRelocate) return 0;
+  return openings.filter((item) => !isAwaitingLike(item) && !locationAllowed(item)).length;
 }
 
 function locationPreferenceMatch(item) {
@@ -1210,9 +1242,21 @@ function renderRows(list) {
   return html;
 }
 
+// Shown when the location filter is the reason the feed looks empty, so it
+// reads as a setting they control rather than the app being broken.
+function locationEmptyStateHtml() {
+  const hidden = hiddenByLocationCount();
+  if (!hidden) return "";
+  const where = esc(profile.preferredLocation);
+  return `<p class="empty-hint">Nothing open in ${where} right now. ${hidden} ${hidden === 1 ? "role is" : "roles are"} hidden because you haven't ticked <b>Willing to relocate</b> — turn it on in your profile to include ${hidden === 1 ? "it" : "them"}.</p>`;
+}
+
 function renderOpenings(items = preferredOpenings()) {
-  document.querySelector(".compact-list").innerHTML = items.slice(0, 5).map(openingRow).join("");
-  document.querySelector(".full-list").innerHTML = renderRows(items);
+  const compact = items.slice(0, 5).map(openingRow).join("");
+  const full = renderRows(items);
+  const hint = locationEmptyStateHtml();
+  document.querySelector(".compact-list").innerHTML = compact || hint || "";
+  document.querySelector(".full-list").innerHTML = full || hint || "";
 }
 
 function setFeatured() {
@@ -1483,6 +1527,23 @@ function inferFieldsFromText(value) {
   return fieldOptions.filter((field) => interestKeywords[field].some((keyword) => keywordInText(keyword, text)));
 }
 
+// A résumé mentions a lot of things in passing, so raw keyword matching can
+// light up half the grid and stop meaning anything. Rank by how many distinct
+// keywords actually hit, and keep only the strongest few.
+const MAX_AUTO_FIELDS = 4;
+
+function rankedInferredFields(value) {
+  const text = String(value || "").toLowerCase();
+  return fieldOptions
+    .map((field) => ({
+      field,
+      hits: interestKeywords[field].filter((keyword) => keywordInText(keyword, text)).length,
+    }))
+    .filter((entry) => entry.hits > 0)
+    .sort((a, b) => b.hits - a.hits || fieldOptions.indexOf(a.field) - fieldOptions.indexOf(b.field))
+    .map((entry) => entry.field);
+}
+
 // Everything the student has told us in their own words. These are the only
 // inputs field inference is allowed to read, so "what's selected" always has a
 // visible cause the student can point at.
@@ -1509,11 +1570,26 @@ function inferenceSourceText() {
 //
 //   selected = (inferred ∪ manually turned on) − manually turned off
 function syncInferredFields() {
-  const inferred = inferFieldsFromText(inferenceSourceText());
+  const ranked = rankedInferredFields(inferenceSourceText());
+  // Cap what we switch on automatically. Everything stays tappable, and
+  // "show all" (below) opts into the rest — but we don't decide for them that
+  // eight fields matter just because their résumé said the words.
+  const inferred = profile.showAllInferredFields ? ranked : ranked.slice(0, MAX_AUTO_FIELDS);
   const manualOn = Array.isArray(profile.manualFieldsOn) ? profile.manualFieldsOn : [];
   const manualOff = Array.isArray(profile.manualFieldsOff) ? profile.manualFieldsOff : [];
   profile.fields = [...new Set([...inferred, ...manualOn])].filter((field) => !manualOff.includes(field));
+  profile.inferredOverflow = Math.max(0, ranked.length - inferred.length);
   updateFieldButtons();
+  renderMoreFieldsButton();
+}
+
+// "I have more" — reveals the matches held back by the cap.
+function renderMoreFieldsButton() {
+  document.querySelectorAll("[data-more-fields]").forEach((button) => {
+    const overflow = profile.inferredOverflow || 0;
+    button.hidden = overflow < 1 || profile.showAllInferredFields === true;
+    button.textContent = `I have more — add ${overflow} more match${overflow === 1 ? "" : "es"}`;
+  });
 }
 
 // Record a deliberate tap so later re-inference respects it in both directions.
@@ -2852,6 +2928,47 @@ function scheduleFieldInference() {
     saveProfile();
   }, 350);
 }
+
+document.querySelectorAll("[data-more-fields]").forEach((button) => {
+  button.addEventListener("click", () => {
+    profile.showAllInferredFields = true;
+    syncInferredFields();
+    saveProfile();
+    saveSubscriber();
+  });
+});
+
+// Tell them what a location will actually get them BEFORE they finish signing
+// up. A student picking a smaller city should hear "we have 2 roles there"
+// from us, not work it out from an empty feed later.
+function renderLocationCoverageHint() {
+  const hint = document.querySelector("[data-location-hint]");
+  if (!hint) return;
+  const typed = document.querySelector("[data-location-input]")?.value.trim() || "";
+  if (!typed || /^no preference$/i.test(typed)) { hint.hidden = true; return; }
+
+  const tokens = typed.toLowerCase().split(/[^a-z0-9]+/).filter((token) => token.length > 2);
+  if (!tokens.length) { hint.hidden = true; return; }
+
+  const live = openings.filter((item) => !isAwaitingLike(item) && item.location);
+  const here = live.filter((item) => tokens.some((token) => String(item.location).toLowerCase().includes(token)));
+  const remote = live.filter((item) => item.remote || /remote/i.test(String(item.location))).length;
+
+  hint.hidden = false;
+  if (here.length) {
+    hint.textContent = `${here.length} live role${here.length === 1 ? "" : "s"} in ${typed} right now${remote ? `, plus ${remote} remote` : ""}.`;
+    hint.dataset.tone = "ok";
+  } else {
+    hint.textContent = `No live roles in ${typed} at the moment${remote ? `, though ${remote} are remote` : ""}. Tick "Willing to relocate" to see roles elsewhere.`;
+    hint.dataset.tone = "warn";
+  }
+}
+
+document.querySelector("[data-location-input]")?.addEventListener("input", () => {
+  clearTimeout(locationHintTimer);
+  locationHintTimer = setTimeout(renderLocationCoverageHint, 300);
+});
+let locationHintTimer = null;
 
 document.querySelector("[data-interests-input]")?.addEventListener("input", scheduleFieldInference);
 document.querySelector("[data-resume-input]")?.addEventListener("input", scheduleFieldInference);

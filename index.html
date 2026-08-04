@@ -29,7 +29,7 @@
     <meta name="twitter:title" content="Promptly | Never miss an internship opening" />
     <meta name="twitter:description" content="Alerts students the moment an internship opens. 126 employers monitored, refreshed hourly." />
     <meta name="twitter:image" content="https://app.joinpromptly.co/assets/og-card.png" />
-    <link rel="stylesheet" href="styles.css?v=20260803d" />
+    <link rel="stylesheet" href="styles.css?v=20260803f" />
   </head>
   <body class="onboarding-active launch-active">
     <section class="onboarding-shell" aria-label="Promptly sign up">
@@ -75,6 +75,7 @@
         </div>
         <label class="field-label">Major or program<input data-major-input type="text" placeholder="Example: Environmental Science" /></label>
         <label class="field-label">Preferred location<input data-location-input type="text" placeholder="Example: New York, NY or No preference" autocomplete="address-level2" /></label>
+        <p class="location-hint" data-location-hint hidden></p>
         <div class="preference-options" aria-label="Location flexibility">
           <label><input data-remote-input type="checkbox" checked /> Open to remote roles</label>
           <label><input data-relocate-input type="checkbox" /> Willing to relocate</label>
@@ -109,6 +110,7 @@
         <p>Type the roles, industries, companies, or problems you want Promptly to watch. Pick broad categories only if they help.</p>
         <label class="field-label">Interests<textarea data-interests-input placeholder="Example: product design, sports marketing, climate internships, hospital research, Google APM"></textarea></label>
         <div class="field-grid" data-field-grid></div>
+        <button class="soft-action wide more-fields" type="button" data-more-fields hidden></button>
         <div class="step-actions">
           <button class="soft-action" data-next-step="2">Back</button>
           <button class="primary-action" data-finish-onboarding>Enter Promptly</button>
@@ -528,6 +530,6 @@
          imported on demand by resume-parser.js, only when a PDF is uploaded. -->
     <script src="resume-parser.js?v=20260803b"></script>
     <script src="script.js?v=20260803f"></script>
-    <script src="assistant.js?v=20260728a"></script>
+    <script src="assistant.js?v=20260803f"></script>
   </body>
 </html>

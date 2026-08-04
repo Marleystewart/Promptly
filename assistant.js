@@ -288,11 +288,8 @@
       </div>
       <div class="ap-log" role="log" aria-live="polite"></div>
       <div class="ap-chips"></div>
-      <form class="ap-form">
-        <input class="ap-input" type="text" autocomplete="off"
-          placeholder="Ask about deadlines, interviews, openings…" aria-label="Your question" />
-        <button class="ap-send" type="submit" aria-label="Send">↑</button>
-      </form>`);
+      <p class="ap-note">Pick a question above. Free typing is coming soon — for anything else, email
+        <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.</p>`);
     panel.hidden = true;
 
     document.body.appendChild(launcher);
@@ -300,8 +297,6 @@
 
     const log = panel.querySelector(".ap-log");
     const chipsWrap = panel.querySelector(".ap-chips");
-    const form = panel.querySelector(".ap-form");
-    const input = panel.querySelector(".ap-input");
 
     function addMsg(who, html) {
       const row = el("div", `ap-msg ap-${who}`, html);
@@ -329,6 +324,9 @@
         row.appendChild(b);
       }
       log.scrollTop = log.scrollHeight;
+      // Chips are the only input now, so they have to come back after every
+      // answer rather than only appearing with the greeting.
+      renderChips();
     }
 
     function renderChips() {
@@ -351,7 +349,6 @@
         renderChips();
         greeted = true;
       }
-      setTimeout(() => input.focus(), 120);
     }
     function close() {
       panel.classList.remove("ap-visible");
@@ -361,13 +358,6 @@
 
     launcher.addEventListener("click", () => (panel.hidden ? open() : close()));
     panel.querySelector(".ap-close").addEventListener("click", close);
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const v = input.value.trim();
-      if (!v) return;
-      input.value = "";
-      ask(v);
-    });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && !panel.hidden) close();
     });
