@@ -867,7 +867,7 @@ function companyLogoUrl(item) {
 // broken icon is never shown. Wired as a delegated capture listener rather than
 // an inline onerror attribute, which a strict Content-Security-Policy blocks.
 function logoFallback(img) {
-  const el = img.closest(".logo, .modal-logo, .mega-logo");
+  const el = img.closest(".logo, .modal-logo, .mega-logo, .cycle-bubble");
   if (!el) return;
   el.classList.remove("logo-tile");
   if (img.dataset.lc) el.classList.add(img.dataset.lc);
@@ -1494,13 +1494,45 @@ function cycleSortKey(cycle) {
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+// A rolling window ending this month. A full calendar year would be mostly
+// empty columns — first-seen dates only exist for as long as the pipeline has
+// been running, so twelve columns read as "broken" rather than "new".
+const TIMELINE_MONTHS = 6;
+
 const cycleFilters = { track: "", industry: "", season: "" };
 
-// The month (0-11) Promptly first saw this posting, or null if we never did.
-function observedMonth(item) {
+// The columns to draw, oldest first, as {year, month, label}.
+function timelineColumns(now = new Date()) {
+  const columns = [];
+  for (let back = TIMELINE_MONTHS - 1; back >= 0; back -= 1) {
+    const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - back, 1));
+    columns.push({ year: date.getUTCFullYear(), month: date.getUTCMonth(), label: MONTH_LABELS[date.getUTCMonth()] });
+  }
+  return columns;
+}
+
+// Year AND month. Returning just the month meant a posting first seen in
+// August 2025 landed in the August 2026 column — wrong, and increasingly wrong
+// the longer the pipeline runs.
+function observedPoint(item) {
   if (!item.firstSeen) return null;
   const time = Date.parse(item.firstSeen);
-  return Number.isFinite(time) ? new Date(time).getUTCMonth() : null;
+  if (!Number.isFinite(time)) return null;
+  const date = new Date(time);
+  return { year: date.getUTCFullYear(), month: date.getUTCMonth() };
+}
+
+function inColumn(item, column) {
+  const point = observedPoint(item);
+  return Boolean(point && point.year === column.year && point.month === column.month);
+}
+
+// Rows are the broad track by default, so the overview stays readable. Drilling
+// into a single track switches to its industries — which is the level Trey's
+// mockup shows once you pick "Finance".
+function timelineRowKey(item) {
+  if (cycleFilters.track) return item.subField || item.field || "Other";
+  return item.field || "Other";
 }
 
 function timelinePool() {
@@ -1539,7 +1571,10 @@ function renderCyclesView() {
     (!cycleFilters.season || item.cycle === cycleFilters.season)
   );
 
-  const dated = filtered.filter((item) => observedMonth(item) !== null);
+  const columns = timelineColumns();
+  // "Dated" now means "falls inside the visible window" — anything older is
+  // reported separately rather than silently vanishing.
+  const dated = filtered.filter((item) => columns.some((column) => inColumn(item, column)));
   const undated = filtered.length - dated.length;
 
   // Headline counts, replacing three hard-coded "student window is active"
@@ -1567,46 +1602,62 @@ function renderCyclesView() {
     return;
   }
 
-  // Rows are industries where we can tell them apart, otherwise the track.
-  const rowKey = (item) => item.subField || item.field || "Other";
   const rows = {};
-  dated.forEach((item) => { (rows[rowKey(item)] = rows[rowKey(item)] || []).push(item); });
+  dated.forEach((item) => {
+    const key = timelineRowKey(item);
+    (rows[key] = rows[key] || []).push(item);
+  });
 
-  const header = `<div class="cycle-row cycle-head"><div class="cycle-row-label"></div>${MONTH_LABELS
-    .map((m, i) => `<div class="cycle-month${i === new Date().getUTCMonth() ? " is-now" : ""}">${m}</div>`).join("")}</div>`;
+  const now = new Date();
+  const header = `<div class="cycle-row cycle-head"><div class="cycle-row-label"></div>${columns
+    .map((column) => {
+      const isNow = column.year === now.getUTCFullYear() && column.month === now.getUTCMonth();
+      return `<div class="cycle-month${isNow ? " is-now" : ""}">${column.label}</div>`;
+    }).join("")}</div>`;
 
-  const body = Object.keys(rows).sort().map((label) => {
-    const cells = MONTH_LABELS.map((_, month) => {
+  // Busiest rows first — an empty-looking row at the top makes the whole grid
+  // read as broken.
+  const ordered = Object.keys(rows).sort((a, b) => rows[b].length - rows[a].length || a.localeCompare(b));
+
+  const body = ordered.map((label) => {
+    const cells = columns.map((column) => {
       // One bubble per company per month, even if they posted five roles.
       const here = [];
       const seen = new Set();
       for (const item of rows[label]) {
-        if (observedMonth(item) !== month || seen.has(item.company)) continue;
+        if (!inColumn(item, column) || seen.has(item.company)) continue;
         seen.add(item.company);
         here.push(item);
       }
-      const bubbles = here.slice(0, 4).map((item) => {
+      const bubbles = here.slice(0, 5).map((item) => {
         const logo = companyLogoUrl(item);
         const mine = cycleMatchesProfile(item) ? " is-mine" : "";
-        return `<button class="cycle-bubble${mine}" data-open-details="${esc(item.company)}" title="${esc(item.company)} — first seen ${MONTH_LABELS[month]}" aria-label="${esc(item.company)}, first seen ${MONTH_LABELS[month]}">${
-          logo ? `<img src="${esc(logo)}" alt="" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" data-logo-img />` : esc(item.short || item.company.slice(0, 2))
+        // Initials are the DEFAULT, with the logo layered over them, so a
+        // missing or 404'd image degrades to a readable monogram instead of a
+        // broken-image icon. logoFallback() strips the <img> on error.
+        // Max 3 characters: a 34px circle clips 4-letter tickers like RKLB.
+        const initials = esc(String(item.short || item.company.replace(/[^A-Za-z]/g, "").slice(0, 2)).toUpperCase().slice(0, 3));
+        return `<button class="cycle-bubble${mine}" data-open-details="${esc(item.company)}" title="${esc(item.company)} — first seen ${column.label} ${column.year}" aria-label="${esc(item.company)}, first seen ${column.label} ${column.year}"><span class="cycle-initials">${initials}</span>${
+          logo ? `<img src="${esc(logo)}" alt="" loading="lazy" data-short="${initials}" data-lc="${esc(item.logoClass || "")}" data-logo-img />` : ""
         }</button>`;
       }).join("");
-      const overflow = here.length > 4 ? `<span class="cycle-more">+${here.length - 4}</span>` : "";
+      const overflow = here.length > 5 ? `<span class="cycle-more">+${here.length - 5}</span>` : "";
       return `<div class="cycle-cell">${bubbles}${overflow}</div>`;
     }).join("");
-    return `<div class="cycle-row"><div class="cycle-row-label">${esc(label)}</div>${cells}</div>`;
+    const count = new Set(rows[label].map((item) => item.company)).size;
+    return `<div class="cycle-row"><div class="cycle-row-label">${esc(label)}<span>${count} employer${count === 1 ? "" : "s"}</span></div>${cells}</div>`;
   }).join("");
 
-  grid.innerHTML = `<div class="cycle-scroll">${header}${body}</div>`;
+  grid.innerHTML = `<div class="cycle-scroll" style="--cycle-cols:${columns.length}">${header}${body}</div>`;
 
   // Be explicit about what we could NOT place, rather than quietly dropping it.
   const unknown = document.querySelector("[data-cycle-unknown]");
   if (unknown) {
     unknown.hidden = !undated;
     unknown.textContent = undated
-      ? `${undated} more live role${undated === 1 ? "" : "s"} aren't placed on the timeline yet — Promptly only started recording first-seen dates recently, so older postings have no observed month.`
-      : "";
+      ? `Showing the last ${TIMELINE_MONTHS} months. ${undated} more live role${undated === 1 ? " was" : "s were"} first seen before that window, or before Promptly began recording first-seen dates.`
+      : `Showing the last ${TIMELINE_MONTHS} months of observed postings.`;
+    unknown.hidden = false;
   }
 }
 
