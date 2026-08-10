@@ -1319,6 +1319,120 @@ body.launch-active .onboarding-brand {
 .more-fields { margin-top: 10px; font-size: 13px; }
 .more-fields[hidden] { display: none; }
 
+/* ── Recruiting timeline ─────────────────────────────────────────────── */
+.cycle-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.cycle-summary article {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+.cycle-summary strong { display: block; font-size: 26px; font-weight: 900; line-height: 1; }
+.cycle-summary p { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; font-weight: 600; }
+
+.cycle-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin: 16px 0 18px;
+}
+.cycle-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.cycle-filters select {
+  min-width: 150px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  color: var(--ink);
+  font: 600 13px/1 var(--font);
+}
+.cycle-filters .soft-action { padding: 9px 14px; font-size: 12.5px; }
+
+/* Horizontal scroll lives here so the page body never scrolls sideways. */
+.cycle-scroll { overflow-x: auto; padding-bottom: 6px; }
+.cycle-row {
+  display: grid;
+  grid-template-columns: 132px repeat(12, minmax(58px, 1fr));
+  align-items: center;
+  min-width: 780px;
+}
+.cycle-head { position: sticky; top: 0; z-index: 2; }
+.cycle-month {
+  padding: 8px 0;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--faint);
+  letter-spacing: 0.04em;
+}
+.cycle-month.is-now { color: var(--purple-2, #c3b1ff); }
+.cycle-row-label {
+  padding-right: 12px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.25;
+}
+.cycle-row + .cycle-row .cycle-cell { border-top: 1px solid var(--line); }
+.cycle-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 54px;
+  padding: 7px 3px;
+}
+.cycle-bubble {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.08);
+  color: var(--ink);
+  font-size: 10.5px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+.cycle-bubble img { width: 100%; height: 100%; object-fit: cover; }
+.cycle-bubble:hover { transform: scale(1.12); border-color: var(--purple, #8057ff); }
+.cycle-bubble:focus-visible { outline: 2px solid var(--purple, #8057ff); outline-offset: 2px; }
+/* Cycles that fit the student's own class year. */
+.cycle-bubble.is-mine { border-color: rgba(97,232,170,0.75); box-shadow: 0 0 0 2px rgba(97,232,170,0.18); }
+.cycle-more { font-size: 11px; font-weight: 800; color: var(--faint); }
+
+.cycle-unknown {
+  margin: 14px 0 0;
+  color: var(--faint);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.cycle-unknown[hidden] { display: none; }
+
+@media (max-width: 720px) {
+  .cycle-summary { grid-template-columns: 1fr; }
+  .cycle-filters select { min-width: 130px; }
+}
+
 .location-notice {
   margin: 0 0 14px;
   padding: 12px 16px;

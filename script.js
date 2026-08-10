@@ -1481,48 +1481,133 @@ function cycleSortKey(cycle) {
   const season = seasonMatch ? SEASON_RANK[seasonMatch[0]] : (/new grad/i.test(cycle) ? 6 : 5);
   return year * 10 + season;
 }
-function renderCyclesView() {
-  const timeline = document.querySelector("#view-cycles .timeline");
-  const note = document.querySelector("#view-cycles .cycle-note p");
-  if (!timeline) return;
-  const months = document.querySelector("#view-cycles .months");
-  if (months) months.hidden = true; // grouped by cycle now, not by month
+// ── Recruiting timeline ───────────────────────────────────────────────────
+// A month grid of which employers post student roles when, grouped by
+// industry and filterable by track / industry / cycle.
+//
+// IMPORTANT: every dot here is a month Promptly OBSERVED a posting go live
+// (opening.firstSeen, stamped by the refresh cron). It is not a predicted
+// recruiting window. The previous version of this screen hard-coded positions
+// like "Goldman at month 8.5", which asserted recruiting dates nobody had
+// checked — the same fabrication problem as the old Google card. Observed data
+// is both defensible and a stronger claim, because no one else has it.
 
-  const isMine = (cycle) => cycleMatchesProfile({ cycle });
-  if (note) {
-    const label = profile.gradYear ? `Class of ${profile.gradYear}` : "your profile";
-    const labels = relevantCycleLabels(profile.gradYear);
-    const list = labels ? labels.join(", ") : "every cycle";
-    note.textContent = `Based on ${label}, Promptly highlights: ${list}. Verified openings are grouped by cycle below — yours first.`;
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const cycleFilters = { track: "", industry: "", season: "" };
+
+// The month (0-11) Promptly first saw this posting, or null if we never did.
+function observedMonth(item) {
+  if (!item.firstSeen) return null;
+  const time = Date.parse(item.firstSeen);
+  return Number.isFinite(time) ? new Date(time).getUTCMonth() : null;
+}
+
+function timelinePool() {
+  return openings.filter((item) => !isAwaitingLike(item) && listingStatus(item) === "OPEN");
+}
+
+function fillSelect(selector, values, current) {
+  const select = document.querySelector(selector);
+  if (!select) return;
+  const first = select.querySelector("option");
+  select.innerHTML = "";
+  select.appendChild(first);
+  values.forEach((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    if (value === current) option.selected = true;
+    select.appendChild(option);
+  });
+}
+
+function renderCyclesView() {
+  const grid = document.querySelector("[data-cycle-grid]");
+  if (!grid) return;
+  const pool = timelinePool();
+
+  // Populate the filter menus from what actually exists, so a student can
+  // never select a combination that returns nothing.
+  fillSelect("[data-cycle-track]", [...new Set(pool.map((o) => o.field).filter(Boolean))].sort(), cycleFilters.track);
+  fillSelect("[data-cycle-industry]", [...new Set(pool.filter((o) => !cycleFilters.track || o.field === cycleFilters.track).map((o) => o.subField).filter(Boolean))].sort(), cycleFilters.industry);
+  fillSelect("[data-cycle-season]", [...new Set(pool.map((o) => o.cycle).filter(Boolean))].sort((a, b) => cycleSortKey(a) - cycleSortKey(b)), cycleFilters.season);
+
+  const filtered = pool.filter((item) =>
+    (!cycleFilters.track || item.field === cycleFilters.track) &&
+    (!cycleFilters.industry || item.subField === cycleFilters.industry) &&
+    (!cycleFilters.season || item.cycle === cycleFilters.season)
+  );
+
+  const dated = filtered.filter((item) => observedMonth(item) !== null);
+  const undated = filtered.length - dated.length;
+
+  // Headline counts, replacing three hard-coded "student window is active"
+  // claims that were never based on anything.
+  const summary = document.querySelector("[data-cycle-summary]");
+  if (summary) {
+    const employers = new Set(filtered.map((o) => o.company)).size;
+    const mine = filtered.filter((o) => cycleMatchesProfile(o)).length;
+    summary.innerHTML = `
+      <article><span></span><strong>${filtered.length}</strong><p>live student roles${cycleFilters.track ? ` in ${esc(cycleFilters.track)}` : ""}</p></article>
+      <article><span></span><strong>${employers}</strong><p>employers posting</p></article>
+      <article><span></span><strong>${mine}</strong><p>match your class year</p></article>`;
   }
 
-  const live = openings.filter((o) => !isAwaitingLike(o) && o.cycle);
-  const byCycle = {};
-  live.forEach((o) => { (byCycle[o.cycle] = byCycle[o.cycle] || []).push(o); });
+  const note = document.querySelector("[data-cycle-note]");
+  if (note) {
+    const labels = relevantCycleLabels(profile.gradYear);
+    note.textContent = `Every dot is a month Promptly actually saw that employer post a student role — not a predicted recruiting date.${labels ? ` Highlighted rings are cycles that fit ${profile.gradYear ? `the class of ${profile.gradYear}` : "your profile"}: ${labels.join(", ")}.` : ""}`;
+  }
 
-  const present = Object.keys(byCycle).sort((a, b) => {
-    const am = isMine(a) ? 0 : 1, bm = isMine(b) ? 0 : 1;
-    if (am !== bm) return am - bm;
-    return cycleSortKey(a) - cycleSortKey(b);
-  });
-
-  if (!present.length) {
-    timeline.innerHTML = `<article><p style="color:var(--muted)">No verified live openings yet — watch-list companies will appear here as their postings go live.</p></article>`;
+  if (!dated.length) {
+    grid.innerHTML = `<p class="empty-hint">No observed postings yet for this filter. Promptly stamps the month each role goes live, so this timeline fills in as the pipeline runs.</p>`;
+    const unknown = document.querySelector("[data-cycle-unknown]");
+    if (unknown) unknown.hidden = true;
     return;
   }
 
-  timeline.innerHTML = present.map((cycle) => {
-    const companiesSeen = new Set();
-    const items = byCycle[cycle]
-      .sort((a, b) => openingMatch(b).score - openingMatch(a).score)
-      .filter((o) => !companiesSeen.has(o.company) && companiesSeen.add(o.company))
-      .slice(0, 10);
-    const mineTag = isMine(cycle) ? ` <span class="status-pill">for you</span>` : "";
-    const chips = items.map((o) =>
-      `<button class="company-chip" data-open-details="${esc(o.company)}">${esc(o.company)}</button>`
-    ).join("");
-    return `<article><strong>${esc(cycle)} · ${byCycle[cycle].length}${mineTag}</strong>${chips}</article>`;
+  // Rows are industries where we can tell them apart, otherwise the track.
+  const rowKey = (item) => item.subField || item.field || "Other";
+  const rows = {};
+  dated.forEach((item) => { (rows[rowKey(item)] = rows[rowKey(item)] || []).push(item); });
+
+  const header = `<div class="cycle-row cycle-head"><div class="cycle-row-label"></div>${MONTH_LABELS
+    .map((m, i) => `<div class="cycle-month${i === new Date().getUTCMonth() ? " is-now" : ""}">${m}</div>`).join("")}</div>`;
+
+  const body = Object.keys(rows).sort().map((label) => {
+    const cells = MONTH_LABELS.map((_, month) => {
+      // One bubble per company per month, even if they posted five roles.
+      const here = [];
+      const seen = new Set();
+      for (const item of rows[label]) {
+        if (observedMonth(item) !== month || seen.has(item.company)) continue;
+        seen.add(item.company);
+        here.push(item);
+      }
+      const bubbles = here.slice(0, 4).map((item) => {
+        const logo = companyLogoUrl(item);
+        const mine = cycleMatchesProfile(item) ? " is-mine" : "";
+        return `<button class="cycle-bubble${mine}" data-open-details="${esc(item.company)}" title="${esc(item.company)} — first seen ${MONTH_LABELS[month]}" aria-label="${esc(item.company)}, first seen ${MONTH_LABELS[month]}">${
+          logo ? `<img src="${esc(logo)}" alt="" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" data-logo-img />` : esc(item.short || item.company.slice(0, 2))
+        }</button>`;
+      }).join("");
+      const overflow = here.length > 4 ? `<span class="cycle-more">+${here.length - 4}</span>` : "";
+      return `<div class="cycle-cell">${bubbles}${overflow}</div>`;
+    }).join("");
+    return `<div class="cycle-row"><div class="cycle-row-label">${esc(label)}</div>${cells}</div>`;
   }).join("");
+
+  grid.innerHTML = `<div class="cycle-scroll">${header}${body}</div>`;
+
+  // Be explicit about what we could NOT place, rather than quietly dropping it.
+  const unknown = document.querySelector("[data-cycle-unknown]");
+  if (unknown) {
+    unknown.hidden = !undated;
+    unknown.textContent = undated
+      ? `${undated} more live role${undated === 1 ? "" : "s"} aren't placed on the timeline yet — Promptly only started recording first-seen dates recently, so older postings have no observed month.`
+      : "";
+  }
 }
 
 function findOpening(company) {
@@ -3152,6 +3237,26 @@ document.querySelector("[data-location-input]")?.addEventListener("input", () =>
   document.querySelector(selector)?.addEventListener("input", invalidateLocationSearch);
 });
 let locationHintTimer = null;
+
+// Timeline filters. Changing the track resets the industry, because the
+// industry list is derived from the selected track.
+document.querySelector("[data-cycle-track]")?.addEventListener("change", (event) => {
+  cycleFilters.track = event.target.value;
+  cycleFilters.industry = "";
+  renderCyclesView();
+});
+document.querySelector("[data-cycle-industry]")?.addEventListener("change", (event) => {
+  cycleFilters.industry = event.target.value;
+  renderCyclesView();
+});
+document.querySelector("[data-cycle-season]")?.addEventListener("change", (event) => {
+  cycleFilters.season = event.target.value;
+  renderCyclesView();
+});
+document.querySelector("[data-cycle-reset]")?.addEventListener("click", () => {
+  cycleFilters.track = ""; cycleFilters.industry = ""; cycleFilters.season = "";
+  renderCyclesView();
+});
 
 document.querySelector("[data-interests-input]")?.addEventListener("input", scheduleFieldInference);
 document.querySelector("[data-resume-input]")?.addEventListener("input", scheduleFieldInference);

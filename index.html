@@ -29,7 +29,7 @@
     <meta name="twitter:title" content="Promptly | Never miss an internship opening" />
     <meta name="twitter:description" content="Alerts students the moment an internship opens. 126 employers monitored, refreshed hourly." />
     <meta name="twitter:image" content="https://app.joinpromptly.co/assets/og-card.png" />
-    <link rel="stylesheet" href="styles.css?v=20260804a" />
+    <link rel="stylesheet" href="styles.css?v=20260804b" />
   </head>
   <body class="onboarding-active launch-active">
     <section class="onboarding-shell" aria-label="Promptly sign up">
@@ -305,40 +305,29 @@
           <div class="section-head">
             <h2>2026 Student Recruiting Signals</h2>
           </div>
-          <div class="soon-grid">
-            <article><span></span><strong>Finance early apps</strong><p>July 2026 student window is active</p></article>
-            <article><span></span><strong>Tech internships</strong><p>August and September 2026 campus wave</p></article>
-            <article><span></span><strong>Consulting cases</strong><p>Spring–summer 2026 application windows</p></article>
-          </div>
+          <div class="cycle-summary" data-cycle-summary></div>
 
           <div class="timeline-card">
             <div class="cycle-note">
-              <span class="status-pill">CLASS YEAR TRACKER</span>
-              <p>Promptly maps recruiting windows to your graduation year, major, and fields. When a student-fit role actually opens, it becomes an alert.</p>
+              <span class="status-pill">OBSERVED TIMELINE</span>
+              <p data-cycle-note>Every dot is a month Promptly actually saw that employer post a student role. Nothing here is a predicted recruiting date.</p>
             </div>
-            <div class="months">
-              <span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span>
+
+            <div class="cycle-filters">
+              <label>Track
+                <select data-cycle-track><option value="">All tracks</option></select>
+              </label>
+              <label>Industry
+                <select data-cycle-industry><option value="">All industries</option></select>
+              </label>
+              <label>Cycle
+                <select data-cycle-season><option value="">All cycles</option></select>
+              </label>
+              <button type="button" class="soft-action" data-cycle-reset>Clear filters</button>
             </div>
-            <div class="timeline">
-              <article>
-                <strong>Technology</strong>
-                <button class="company-chip tech-chip" data-open-details="Google" style="--start: 6.5;">Google</button>
-              </article>
-              <article>
-                <strong>Finance</strong>
-                <button class="company-chip" data-open-details="BlackRock" style="--start: 1.5;">BlackRock</button>
-                <button class="company-chip" data-open-details="Apple" style="--start: 6.0;">Apple</button>
-                <button class="company-chip" data-open-details="Amazon" style="--start: 6.4;">Amazon</button>
-                <button class="company-chip" data-open-details="Goldman Sachs" style="--start: 8.5;">Goldman</button>
-              </article>
-              <article>
-                <strong>Consulting</strong>
-                <button class="company-chip" data-open-details="McKinsey & Company" style="--start: 3.0;">McKinsey</button>
-                <button class="company-chip" data-open-details="Bain & Company" style="--start: 3.3;">Bain</button>
-                <button class="company-chip" data-open-details="BCG" style="--start: 4.2;">BCG</button>
-                <button class="company-chip" data-open-details="PwC" style="--start: 6.5;">PwC</button>
-              </article>
-            </div>
+
+            <div class="cycle-grid" data-cycle-grid></div>
+            <p class="cycle-unknown" data-cycle-unknown hidden></p>
           </div>
         </section>
 
@@ -532,7 +521,7 @@
     <!-- Location resolution + great-circle distance, shared with the alert
          pipeline. Must load before script.js, which uses it on first render. -->
     <script src="geo.js?v=20260804a"></script>
-    <script src="script.js?v=20260804a"></script>
+    <script src="script.js?v=20260804b"></script>
     <script src="assistant.js?v=20260803f"></script>
   </body>
 </html>
