@@ -1319,146 +1319,324 @@ body.launch-active .onboarding-brand {
 .more-fields { margin-top: 10px; font-size: 13px; }
 .more-fields[hidden] { display: none; }
 
-/* ── Recruiting timeline ─────────────────────────────────────────────── */
+/* ── Student Cycles: recruiting timeline ─────────────────────────────── */
+.cycle-header { margin-bottom: 20px; }
+.cycle-header h2 { font-size: clamp(24px, 3.4vw, 30px); margin: 0 0 8px; letter-spacing: -0.01em; }
+.cycle-lede {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--muted);
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+.cycle-info {
+  background: none;
+  border: 0;
+  padding: 0 0 0 6px;
+  font: inherit;
+  color: var(--purple-2, #c3b1ff);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.cycle-subnote { margin: 6px 0 0; color: var(--faint); font-size: 13px; }
+.cycle-subnote:empty { display: none; }
+.cycle-method {
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--purple, #8057ff);
+  border-radius: 12px;
+  background: rgba(128,87,255,0.06);
+}
+.cycle-method p { margin: 0 0 8px; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.cycle-method p:last-child { margin-bottom: 0; }
+.cycle-method strong { color: var(--ink); }
+
 .cycle-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 .cycle-summary article {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 16px 18px;
+  border-radius: 14px;
+  padding: 14px 16px;
 }
-.cycle-summary strong { display: block; font-size: 26px; font-weight: 900; line-height: 1; }
+.cycle-summary strong { display: block; font-size: 24px; font-weight: 900; line-height: 1; }
 .cycle-summary p { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; font-weight: 600; }
 
-.cycle-filters {
+/* Toolbar: three matched selects, with Clear as a low-emphasis ghost action
+   that only appears when something is actually filtered. */
+.cycle-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  margin: 16px 0 18px;
+  margin-bottom: 12px;
 }
-.cycle-filters label {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  font-size: 11.5px;
+.cycle-selects { display: flex; flex-wrap: wrap; gap: 8px; }
+.cycle-selects select {
+  height: 38px;
+  min-width: 150px;
+  padding: 0 34px 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05) url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238b93a7' d='M1 1.5 6 6.5l5-5'/%3E%3C/svg%3E") no-repeat right 13px center;
+  color: var(--ink);
+  font: 600 13px/1 var(--font);
+  appearance: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.cycle-selects select:hover { border-color: rgba(255,255,255,0.22); }
+.cycle-selects select:focus-visible { outline: 2px solid var(--purple, #8057ff); outline-offset: 1px; }
+.cycle-clear {
+  height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--muted);
+  font: 700 12.5px/1 var(--font);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.cycle-clear:hover { color: var(--ink); background: rgba(255,255,255,0.06); }
+.cycle-clear[hidden] { display: none; }
+
+.cycle-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.cycle-chips[hidden] { display: none; }
+.cycle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  border: 1px solid rgba(128,87,255,0.4);
+  border-radius: 999px;
+  background: rgba(128,87,255,0.12);
+  color: var(--ink);
+  font: 700 12px/1 var(--font);
+  cursor: pointer;
+}
+.cycle-chip:hover { background: rgba(128,87,255,0.2); }
+.cycle-chip span[aria-hidden] { color: var(--faint); font-size: 14px; line-height: 1; }
+
+/* Grid. Horizontal scroll is confined here so the page never scrolls sideways. */
+.cycle-scroll { overflow-x: auto; overflow-y: visible; margin: 0 -4px; padding: 0 4px; }
+.cycle-table { min-width: 660px; }
+.cycle-row {
+  display: grid;
+  grid-template-columns: 158px repeat(var(--cycle-cols, 6), minmax(86px, 1fr));
+  align-items: stretch;
+}
+.cycle-row:not(.cycle-head):hover .cycle-row-label { color: var(--ink); }
+.cycle-row:not(.cycle-head):hover .cycle-cell { background: rgba(255,255,255,0.022); }
+
+.cycle-head .cycle-month {
+  padding: 0 0 10px;
+  text-align: center;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--faint);
 }
-.cycle-filters select {
-  min-width: 150px;
-  padding: 9px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: rgba(255,255,255,0.06);
-  color: var(--ink);
-  font: 600 13px/1 var(--font);
-}
-.cycle-filters .soft-action { padding: 9px 14px; font-size: 12.5px; }
-
-/* Horizontal scroll lives here so the page body never scrolls sideways. */
-.cycle-scroll { overflow-x: auto; padding-bottom: 6px; }
-.cycle-row {
-  display: grid;
-  grid-template-columns: 150px repeat(var(--cycle-cols, 6), minmax(84px, 1fr));
-  align-items: center;
-  min-width: 640px;
-}
-.cycle-head { position: sticky; top: 0; z-index: 2; }
-.cycle-month {
-  padding: 8px 0;
-  text-align: center;
-  font-size: 11.5px;
-  font-weight: 800;
-  color: var(--faint);
-  letter-spacing: 0.04em;
-}
-.cycle-month.is-now { color: var(--purple-2, #c3b1ff); }
-.cycle-row-label {
-  padding-right: 12px;
-  font-size: 12.5px;
-  font-weight: 800;
-  color: var(--ink);
-  line-height: 1.25;
-}
-.cycle-row-label span {
+.cycle-head .cycle-month.is-now { color: var(--purple-2, #c3b1ff); }
+.cycle-now-tag {
   display: block;
-  margin-top: 2px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--faint);
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--purple-2, #c3b1ff);
+  opacity: 0.75;
 }
-.cycle-row + .cycle-row .cycle-cell { border-top: 1px solid var(--line); }
+.cycle-corner { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); }
+
+.cycle-row-label {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 12px 14px 12px 0;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+.cycle-row-label b { color: var(--ink); font-size: 13.5px; font-weight: 700; line-height: 1.25; }
+.cycle-row-label span { font-size: 11.5px; font-weight: 600; color: var(--faint); }
+
+/* Vertical rules come from the cells, so the grid reads as structure rather
+   than as a spreadsheet full of borders. */
 .cycle-cell {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-content: center;
   justify-content: center;
-  gap: 4px;
-  min-height: 54px;
-  padding: 7px 3px;
+  gap: 6px;
+  /* Fits two rows of markers, so a busy cell and an empty one are the same
+     height and the industry rows stay aligned. */
+  min-height: 104px;
+  padding: 10px 6px;
+  border-left: 1px solid rgba(255,255,255,0.055);
+  transition: background 0.15s ease;
 }
-.cycle-bubble {
+.cycle-row:not(.cycle-head) + .cycle-row:not(.cycle-head) .cycle-cell,
+.cycle-row:not(.cycle-head) + .cycle-row:not(.cycle-head) .cycle-row-label {
+  border-top: 1px solid rgba(255,255,255,0.055);
+}
+/* Current month: a restrained tint down the whole column. */
+.cycle-cell.is-now { background: rgba(128,87,255,0.055); }
+.cycle-row:not(.cycle-head):hover .cycle-cell.is-now { background: rgba(128,87,255,0.085); }
+
+.cycle-marker {
   position: relative;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   border-radius: 50%;
-  border: 1px solid var(--line);
-  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.07);
   color: var(--ink);
-  font-size: 10.5px;
-  font-weight: 800;
   display: grid;
   place-items: center;
-  overflow: hidden;
+  overflow: visible;
   cursor: pointer;
-  transition: transform 0.12s ease, border-color 0.12s ease;
+  transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
 }
-/* Initials sit underneath; the logo covers them when it loads. A missing or
-   broken image therefore shows a monogram, never a broken-image icon. */
+.cycle-marker:hover { transform: translateY(-2px) scale(1.06); border-color: var(--purple, #8057ff); box-shadow: 0 6px 18px rgba(0,0,0,0.45); z-index: 5; }
+.cycle-marker:focus-visible { outline: 2px solid var(--purple, #8057ff); outline-offset: 2px; z-index: 5; }
+.cycle-marker.is-mine { border-color: rgba(97,232,170,0.7); box-shadow: 0 0 0 2px rgba(97,232,170,0.16); }
+
+/* Initials sit beneath the logo, so a missing or 404'd image degrades to a
+   monogram instead of a broken-image icon. */
 .cycle-initials {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: 9.5px;
+  border-radius: 50%;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: -0.01em;
   color: var(--ink);
   overflow: hidden;
 }
-.cycle-bubble img {
+.cycle-marker img {
   position: relative;
   z-index: 1;
   width: 100%;
   height: 100%;
+  border-radius: 50%;
   object-fit: cover;
   background: #fff;
 }
-.cycle-bubble:hover { transform: scale(1.12); border-color: var(--purple, #8057ff); }
-.cycle-bubble:focus-visible { outline: 2px solid var(--purple, #8057ff); outline-offset: 2px; }
-/* Cycles that fit the student's own class year. */
-.cycle-bubble.is-mine { border-color: rgba(97,232,170,0.75); box-shadow: 0 0 0 2px rgba(97,232,170,0.18); }
-.cycle-more { font-size: 11px; font-weight: 800; color: var(--faint); }
 
-.cycle-unknown {
-  margin: 14px 0 0;
-  color: var(--faint);
-  font-size: 12.5px;
-  line-height: 1.5;
+.cycle-tip {
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: 50%;
+  transform: translateX(-50%) translateY(3px);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 150px;
+  max-width: 220px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #12141f;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.13s ease, transform 0.13s ease;
 }
+.cycle-marker:hover .cycle-tip,
+.cycle-marker:focus-visible .cycle-tip { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+.cycle-tip b { color: var(--ink); font-size: 12.5px; font-weight: 800; }
+.cycle-tip i { color: var(--muted); font-size: 11.5px; font-style: normal; line-height: 1.35; }
+
+.cycle-more {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255,255,255,0.22);
+  background: none;
+  color: var(--muted);
+  font: 800 11px/1 var(--font);
+  cursor: pointer;
+  transition: border-color 0.14s ease, color 0.14s ease;
+}
+.cycle-more:hover { border-color: var(--purple, #8057ff); color: var(--ink); }
+
+.cycle-popover {
+  position: absolute;
+  top: calc(100% - 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  width: max-content;
+  max-width: 216px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #12141f;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.6);
+}
+.cycle-popover[hidden] { display: none; }
+
+.cycle-unknown { margin: 16px 0 0; color: var(--faint); font-size: 12.5px; line-height: 1.5; }
 .cycle-unknown[hidden] { display: none; }
 
-@media (max-width: 720px) {
-  .cycle-summary { grid-template-columns: 1fr; }
-  .cycle-filters select { min-width: 130px; }
+@media (max-width: 900px) {
+  .cycle-summary { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .cycle-summary article { padding: 12px; }
+  .cycle-summary strong { font-size: 20px; }
+}
+@media (max-width: 620px) {
+  /* Stay three-across and shrink instead of stacking — stacked cards pushed
+     the timeline, which is the point of the page, entirely below the fold. */
+  .cycle-summary { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
+  .cycle-summary article { padding: 10px 9px; border-radius: 12px; }
+  .cycle-summary strong { font-size: 17px; }
+  .cycle-summary p { margin-top: 4px; font-size: 10.5px; line-height: 1.3; }
+
+  .cycle-lede { font-size: 13.5px; }
+  .cycle-selects { width: 100%; }
+  /* Two per row: three across at 375px clipped the labels to "All track". */
+  .cycle-selects select { min-width: 0; flex: 1 1 46%; padding-right: 28px; font-size: 12.5px; }
+
+  /* Keep the industry label readable while the months scroll under it. */
+  .cycle-row { grid-template-columns: 104px repeat(var(--cycle-cols, 6), minmax(78px, 1fr)); }
+  .cycle-table { min-width: 572px; }
+  .cycle-row-label {
+    position: sticky;
+    left: 0;
+    z-index: 6;
+    padding-left: 2px;
+    /* Backdrop blur instead of a solid fill: markers scrolling underneath are
+       obscured without the column reading as a dark slab over the card. */
+    background: rgba(17, 19, 32, 0.82);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 6px 0 10px -8px rgba(0, 0, 0, 0.7);
+  }
+  .cycle-head .cycle-row-label { background: none; backdrop-filter: none; box-shadow: none; }
+  .cycle-row-label b { font-size: 12.5px; }
+  .cycle-scroll { margin: 0 -14px; padding: 0 14px; }
 }
 
 .location-notice {

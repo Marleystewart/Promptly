@@ -867,7 +867,17 @@ function companyLogoUrl(item) {
 // broken icon is never shown. Wired as a delegated capture listener rather than
 // an inline onerror attribute, which a strict Content-Security-Policy blocks.
 function logoFallback(img) {
-  const el = img.closest(".logo, .modal-logo, .mega-logo, .cycle-bubble");
+  // Timeline markers already render initials underneath the image and carry a
+  // tooltip, so only the broken <img> is removed — the textContent rewrite
+  // below would destroy both.
+  const marker = img.closest(".cycle-marker");
+  if (marker) {
+    img.remove();
+    if (img.dataset.lc) marker.classList.add(img.dataset.lc);
+    return;
+  }
+
+  const el = img.closest(".logo, .modal-logo, .mega-logo");
   if (!el) return;
   el.classList.remove("logo-tile");
   if (img.dataset.lc) el.classList.add(img.dataset.lc);
@@ -1571,34 +1581,34 @@ function renderCyclesView() {
     (!cycleFilters.season || item.cycle === cycleFilters.season)
   );
 
+  renderCycleChips();
+
   const columns = timelineColumns();
-  // "Dated" now means "falls inside the visible window" — anything older is
-  // reported separately rather than silently vanishing.
   const dated = filtered.filter((item) => columns.some((column) => inColumn(item, column)));
   const undated = filtered.length - dated.length;
 
-  // Headline counts, replacing three hard-coded "student window is active"
-  // claims that were never based on anything.
+  // Headline counts, computed — never asserted.
   const summary = document.querySelector("[data-cycle-summary]");
   if (summary) {
     const employers = new Set(filtered.map((o) => o.company)).size;
     const mine = filtered.filter((o) => cycleMatchesProfile(o)).length;
     summary.innerHTML = `
-      <article><span></span><strong>${filtered.length}</strong><p>live student roles${cycleFilters.track ? ` in ${esc(cycleFilters.track)}` : ""}</p></article>
-      <article><span></span><strong>${employers}</strong><p>employers posting</p></article>
-      <article><span></span><strong>${mine}</strong><p>match your class year</p></article>`;
+      <article><strong>${filtered.length}</strong><p>live student roles${cycleFilters.track ? ` in ${esc(cycleFilters.track)}` : ""}</p></article>
+      <article><strong>${employers}</strong><p>employers posting</p></article>
+      <article><strong>${mine}</strong><p>match your class year</p></article>`;
   }
 
-  const note = document.querySelector("[data-cycle-note]");
-  if (note) {
+  const subnote = document.querySelector("[data-cycle-subnote]");
+  if (subnote) {
     const labels = relevantCycleLabels(profile.gradYear);
-    note.textContent = `Every dot is a month Promptly actually saw that employer post a student role — not a predicted recruiting date.${labels ? ` Highlighted rings are cycles that fit ${profile.gradYear ? `the class of ${profile.gradYear}` : "your profile"}: ${labels.join(", ")}.` : ""}`;
+    subnote.textContent = labels
+      ? `Highlighted markers are cycles especially relevant to ${profile.gradYear ? `the class of ${profile.gradYear}` : "your profile"}.`
+      : "";
   }
 
   if (!dated.length) {
-    grid.innerHTML = `<p class="empty-hint">No observed postings yet for this filter. Promptly stamps the month each role goes live, so this timeline fills in as the pipeline runs.</p>`;
-    const unknown = document.querySelector("[data-cycle-unknown]");
-    if (unknown) unknown.hidden = true;
+    grid.innerHTML = `<p class="empty-hint">No observed postings in this window for these filters. Promptly records the month each role goes live, so this fills in as the pipeline runs.</p>`;
+    renderCycleFootnote(undated);
     return;
   }
 
@@ -1609,19 +1619,23 @@ function renderCyclesView() {
   });
 
   const now = new Date();
-  const header = `<div class="cycle-row cycle-head"><div class="cycle-row-label"></div>${columns
-    .map((column) => {
-      const isNow = column.year === now.getUTCFullYear() && column.month === now.getUTCMonth();
-      return `<div class="cycle-month${isNow ? " is-now" : ""}">${column.label}</div>`;
-    }).join("")}</div>`;
+  const isCurrent = (column) => column.year === now.getUTCFullYear() && column.month === now.getUTCMonth();
 
-  // Busiest rows first — an empty-looking row at the top makes the whole grid
-  // read as broken.
+  const header = `<div class="cycle-row cycle-head" role="row">
+      <div class="cycle-row-label" role="columnheader"><span class="cycle-corner">Industry</span></div>
+      ${columns.map((column) => `<div class="cycle-month${isCurrent(column) ? " is-now" : ""}" role="columnheader">${column.label}${isCurrent(column) ? `<span class="cycle-now-tag">now</span>` : ""}</div>`).join("")}
+    </div>`;
+
+  // Busiest first — opening on a nearly empty row makes the grid read as broken.
   const ordered = Object.keys(rows).sort((a, b) => rows[b].length - rows[a].length || a.localeCompare(b));
+  // Three markers plus the "+N" button fills exactly two rows of two in a
+  // column, which keeps every industry row the same height. Five markers wrapped
+  // to three uneven lines and made the grid look ragged.
+  const MAX_VISIBLE = 3;
 
   const body = ordered.map((label) => {
     const cells = columns.map((column) => {
-      // One bubble per company per month, even if they posted five roles.
+      // One marker per company per month, even if they posted five roles.
       const here = [];
       const seen = new Set();
       for (const item of rows[label]) {
@@ -1629,36 +1643,77 @@ function renderCyclesView() {
         seen.add(item.company);
         here.push(item);
       }
-      const bubbles = here.slice(0, 5).map((item) => {
-        const logo = companyLogoUrl(item);
-        const mine = cycleMatchesProfile(item) ? " is-mine" : "";
-        // Initials are the DEFAULT, with the logo layered over them, so a
-        // missing or 404'd image degrades to a readable monogram instead of a
-        // broken-image icon. logoFallback() strips the <img> on error.
-        // Max 3 characters: a 34px circle clips 4-letter tickers like RKLB.
-        const initials = esc(String(item.short || item.company.replace(/[^A-Za-z]/g, "").slice(0, 2)).toUpperCase().slice(0, 3));
-        return `<button class="cycle-bubble${mine}" data-open-details="${esc(item.company)}" title="${esc(item.company)} — first seen ${column.label} ${column.year}" aria-label="${esc(item.company)}, first seen ${column.label} ${column.year}"><span class="cycle-initials">${initials}</span>${
-          logo ? `<img src="${esc(logo)}" alt="" loading="lazy" data-short="${initials}" data-lc="${esc(item.logoClass || "")}" data-logo-img />` : ""
-        }</button>`;
-      }).join("");
-      const overflow = here.length > 5 ? `<span class="cycle-more">+${here.length - 5}</span>` : "";
-      return `<div class="cycle-cell">${bubbles}${overflow}</div>`;
+      const visible = here.slice(0, MAX_VISIBLE);
+      const hidden = here.slice(MAX_VISIBLE);
+      const markers = visible.map((item) => companyMarker(item, column)).join("");
+      const more = hidden.length
+        ? `<button type="button" class="cycle-more" data-cycle-more aria-expanded="false" aria-label="Show ${hidden.length} more employers">+${hidden.length}</button>
+           <div class="cycle-popover" data-cycle-popover hidden>${hidden.map((item) => companyMarker(item, column, true)).join("")}</div>`
+        : "";
+      return `<div class="cycle-cell${isCurrent(column) ? " is-now" : ""}" role="gridcell">${markers}${more}</div>`;
     }).join("");
     const count = new Set(rows[label].map((item) => item.company)).size;
-    return `<div class="cycle-row"><div class="cycle-row-label">${esc(label)}<span>${count} employer${count === 1 ? "" : "s"}</span></div>${cells}</div>`;
+    return `<div class="cycle-row" role="row">
+        <div class="cycle-row-label" role="rowheader"><b>${esc(label)}</b><span>${count} employer${count === 1 ? "" : "s"}</span></div>
+        ${cells}
+      </div>`;
   }).join("");
 
-  grid.innerHTML = `<div class="cycle-scroll" style="--cycle-cols:${columns.length}">${header}${body}</div>`;
+  grid.innerHTML = `<div class="cycle-scroll"><div class="cycle-table" role="grid" style="--cycle-cols:${columns.length}">${header}${body}</div></div>`;
+  renderCycleFootnote(undated);
+}
 
-  // Be explicit about what we could NOT place, rather than quietly dropping it.
+// One company marker. Initials render UNDER the logo so a missing or broken
+// image degrades to a monogram rather than a broken-image icon.
+function companyMarker(item, column, inPopover = false) {
+  const logo = companyLogoUrl(item);
+  const mine = cycleMatchesProfile(item) ? " is-mine" : "";
+  const initials = esc(String(item.short || item.company.replace(/[^A-Za-z]/g, "").slice(0, 2)).toUpperCase().slice(0, 3));
+  const tip = [
+    item.company,
+    `Observed: ${column.label} ${column.year}`,
+    [item.field, item.subField].filter(Boolean).join(" · "),
+    item.cycle || "",
+    item.role || "",
+  ].filter(Boolean);
+  return `<button class="cycle-marker${mine}${inPopover ? " in-popover" : ""}" data-open-details="${esc(item.company)}" aria-label="${esc(tip.join(", "))}">
+      <span class="cycle-initials" aria-hidden="true">${initials}</span>
+      ${logo ? `<img src="${esc(logo)}" alt="" loading="lazy" data-short="${initials}" data-lc="${esc(item.logoClass || "")}" data-logo-img />` : ""}
+      <span class="cycle-tip" role="tooltip">
+        <b>${esc(item.company)}</b>
+        <i>Observed: ${esc(column.label)} ${column.year}</i>
+        ${item.field ? `<i>${esc([item.field, item.subField].filter(Boolean).join(" · "))}</i>` : ""}
+        ${item.cycle ? `<i>${esc(item.cycle)}</i>` : ""}
+        ${item.role ? `<i>${esc(item.role)}</i>` : ""}
+      </span>
+    </button>`;
+}
+
+// Active filters as removable chips, so what is applied is always visible.
+function renderCycleChips() {
+  const wrap = document.querySelector("[data-cycle-chips]");
+  const clear = document.querySelector("[data-cycle-reset]");
+  if (!wrap) return;
+  const active = [
+    cycleFilters.track ? { key: "track", label: cycleFilters.track } : null,
+    cycleFilters.industry ? { key: "industry", label: cycleFilters.industry } : null,
+    cycleFilters.season ? { key: "season", label: cycleFilters.season } : null,
+  ].filter(Boolean);
+
+  if (clear) clear.hidden = !active.length;
+  wrap.hidden = !active.length;
+  wrap.innerHTML = active.map((chip) =>
+    `<button type="button" class="cycle-chip" data-cycle-remove="${esc(chip.key)}">${esc(chip.label)}<span aria-hidden="true">×</span><span class="sr-only">Remove filter</span></button>`
+  ).join("");
+}
+
+function renderCycleFootnote(undated) {
   const unknown = document.querySelector("[data-cycle-unknown]");
-  if (unknown) {
-    unknown.hidden = !undated;
-    unknown.textContent = undated
-      ? `Showing the last ${TIMELINE_MONTHS} months. ${undated} more live role${undated === 1 ? " was" : "s were"} first seen before that window, or before Promptly began recording first-seen dates.`
-      : `Showing the last ${TIMELINE_MONTHS} months of observed postings.`;
-    unknown.hidden = false;
-  }
+  if (!unknown) return;
+  unknown.hidden = false;
+  unknown.textContent = undated
+    ? `Showing the last ${TIMELINE_MONTHS} months. ${undated} more live role${undated === 1 ? " was" : "s were"} first seen before this window.`
+    : `Showing the last ${TIMELINE_MONTHS} months of observed postings.`;
 }
 
 function findOpening(company) {
@@ -3307,6 +3362,53 @@ document.querySelector("[data-cycle-season]")?.addEventListener("change", (event
 document.querySelector("[data-cycle-reset]")?.addEventListener("click", () => {
   cycleFilters.track = ""; cycleFilters.industry = ""; cycleFilters.season = "";
   renderCyclesView();
+});
+
+// Remove one filter from its chip.
+document.querySelector("[data-cycle-chips]")?.addEventListener("click", (event) => {
+  const chip = event.target.closest("[data-cycle-remove]");
+  if (!chip) return;
+  const key = chip.dataset.cycleRemove;
+  cycleFilters[key] = "";
+  if (key === "track") cycleFilters.industry = "";
+  renderCyclesView();
+});
+
+// "How this works" — the deep methodology stays available without occupying
+// the interface by default.
+document.querySelector("[data-cycle-info]")?.addEventListener("click", (event) => {
+  const panel = document.querySelector("[data-cycle-method]");
+  if (!panel) return;
+  const open = panel.hidden;
+  panel.hidden = !open;
+  event.currentTarget.setAttribute("aria-expanded", String(open));
+});
+
+// "+N" overflow popovers. Delegated because the grid re-renders on every
+// filter change, and only one may be open at a time.
+function closeCyclePopovers(except) {
+  document.querySelectorAll("[data-cycle-popover]").forEach((popover) => {
+    if (popover === except) return;
+    popover.hidden = true;
+    popover.previousElementSibling?.setAttribute?.("aria-expanded", "false");
+  });
+}
+
+document.addEventListener("click", (event) => {
+  const trigger = event.target.closest("[data-cycle-more]");
+  if (trigger) {
+    const popover = trigger.nextElementSibling;
+    const willOpen = popover.hidden;
+    closeCyclePopovers(popover);
+    popover.hidden = !willOpen;
+    trigger.setAttribute("aria-expanded", String(willOpen));
+    return;
+  }
+  if (!event.target.closest("[data-cycle-popover]")) closeCyclePopovers();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeCyclePopovers();
 });
 
 document.querySelector("[data-interests-input]")?.addEventListener("input", scheduleFieldInference);

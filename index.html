@@ -29,7 +29,7 @@
     <meta name="twitter:title" content="Promptly | Never miss an internship opening" />
     <meta name="twitter:description" content="Alerts students the moment an internship opens. 126 employers monitored, refreshed hourly." />
     <meta name="twitter:image" content="https://app.joinpromptly.co/assets/og-card.png" />
-    <link rel="stylesheet" href="styles.css?v=20260804c" />
+    <link rel="stylesheet" href="styles.css?v=20260804d" />
   </head>
   <body class="onboarding-active launch-active">
     <section class="onboarding-shell" aria-label="Promptly sign up">
@@ -301,30 +301,30 @@
           <div class="opening-list full-list"></div>
         </section>
 
-        <section class="view" id="view-cycles" data-heading="Student Recruiting Cycles">
-          <div class="section-head">
-            <h2>2026 Student Recruiting Signals</h2>
-          </div>
+        <section class="view" id="view-cycles" data-heading="Student Cycles">
+          <header class="cycle-header">
+            <p class="cycle-lede">See when employers actually posted student opportunities, based on what Promptly observed.
+              <button type="button" class="cycle-info" data-cycle-info aria-expanded="false" aria-controls="cycle-method">How this works</button>
+            </p>
+            <p class="cycle-subnote" data-cycle-subnote></p>
+            <div class="cycle-method" id="cycle-method" data-cycle-method hidden>
+              <p><strong>These are observed dates, not predictions.</strong> Each marker sits in the month Promptly first saw that employer publish a student role in their own hiring system.</p>
+              <p>A company posting in August one year does not guarantee it will post in August again. Promptly reports what it saw; it does not forecast recruiting calendars.</p>
+            </div>
+          </header>
+
           <div class="cycle-summary" data-cycle-summary></div>
 
           <div class="timeline-card">
-            <div class="cycle-note">
-              <span class="status-pill">OBSERVED TIMELINE</span>
-              <p data-cycle-note>Every dot is a month Promptly actually saw that employer post a student role. Nothing here is a predicted recruiting date.</p>
+            <div class="cycle-toolbar">
+              <div class="cycle-selects">
+                <select data-cycle-track aria-label="Filter by track"><option value="">All tracks</option></select>
+                <select data-cycle-industry aria-label="Filter by industry"><option value="">All industries</option></select>
+                <select data-cycle-season aria-label="Filter by cycle"><option value="">All cycles</option></select>
+              </div>
+              <button type="button" class="cycle-clear" data-cycle-reset hidden>Clear filters</button>
             </div>
-
-            <div class="cycle-filters">
-              <label>Track
-                <select data-cycle-track><option value="">All tracks</option></select>
-              </label>
-              <label>Industry
-                <select data-cycle-industry><option value="">All industries</option></select>
-              </label>
-              <label>Cycle
-                <select data-cycle-season><option value="">All cycles</option></select>
-              </label>
-              <button type="button" class="soft-action" data-cycle-reset>Clear filters</button>
-            </div>
+            <div class="cycle-chips" data-cycle-chips hidden></div>
 
             <div class="cycle-grid" data-cycle-grid></div>
             <p class="cycle-unknown" data-cycle-unknown hidden></p>
@@ -521,7 +521,7 @@
     <!-- Location resolution + great-circle distance, shared with the alert
          pipeline. Must load before script.js, which uses it on first render. -->
     <script src="geo.js?v=20260804a"></script>
-    <script src="script.js?v=20260804c"></script>
+    <script src="script.js?v=20260804d"></script>
     <script src="assistant.js?v=20260803f"></script>
   </body>
 </html>
