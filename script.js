@@ -593,9 +593,20 @@ const browseCareers = {
   "Goldman Sachs": "https://www.goldmansachs.com/careers/students/programs-and-internships/americas/2027-summer-analyst-program",
   "J.P. Morgan": "https://www.jpmorganchase.com/careers/explore-opportunities/programs/investment-banking-summer-analyst",
 };
-for (const item of openings) {
+// A browse card stands for a COMPANY we cannot read, not for a specific req.
+// Two curated Amazon rows therefore collapsed into two identical cards — same
+// link, same "Internship roles" label — which is exactly the duplication that
+// makes a feed look padded. Keep one card per browse company.
+const browseSeen = new Set();
+for (let i = openings.length - 1; i >= 0; i -= 1) {
+  const item = openings[i];
   const url = browseCareers[item.company];
   if (!url || item.curatedAwaiting) continue;
+  if (browseSeen.has(item.company)) {
+    openings.splice(i, 1);
+    continue;
+  }
+  browseSeen.add(item.company);
   item.sourceUrl = url;
   item.browse = true;
   item.sourceLabel = `${item.company} Careers — browse ${item.program || "2027"} roles`;
@@ -1745,7 +1756,16 @@ function openDetails(company) {
     : item.opened.replace("Opened ", "");
   modal.querySelector("[data-modal-location]").textContent = item.location || "See posting";
   modal.querySelector("[data-modal-field]").textContent = item.field;
-  modal.querySelector("[data-modal-source]").textContent = item.sourceLabel || "Official source";
+  // Verification freshness. lastVerified is the timestamp of the most recent
+  // refresh that still found this posting in the employer's own feed — the
+  // strongest claim the product can make, so show it rather than leave it in
+  // the data. Absent on curated/browse cards, which were never feed-verified.
+  const sourceCell = modal.querySelector("[data-modal-source]");
+  if (sourceCell) {
+    const base = item.sourceLabel || "Official source";
+    const checked = item.lastVerified ? relativeTime(item.lastVerified) : "";
+    sourceCell.textContent = checked ? `${base} · confirmed live ${checked}` : base;
+  }
   const sourceLink = modal.querySelector("[data-modal-source-link]");
   const status = listingStatus(item);
   // Show the link when there's a real destination: an OPEN posting, or an

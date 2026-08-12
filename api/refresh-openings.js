@@ -79,10 +79,28 @@ module.exports = async function handler(req, res) {
 
     // Stamp when each listing was first seen (carried over between runs) so
     // the app can honestly show what's recent.
+    // firstSeen: when this posting first appeared. lastVerified: the most
+    // recent run that found it STILL in the employer's own feed.
+    //
+    // lastVerified is the real verification signal, and it is stronger than
+    // pinging the apply URL. URL checking was evaluated and rejected: a
+    // fabricated Greenhouse job id returns HTTP 200 and lands on a live careers
+    // page, while a genuine Point72 posting redirects to its board root and
+    // Cloudflare-protected employers (Akuna, Epic Games) return 403 for real,
+    // working links. Status codes would therefore delete valid roles and keep
+    // dead ones. Presence in the source feed cannot be faked that way — when a
+    // req is pulled, it leaves the API and the next refresh drops it.
     const previousFirstSeen = new Map((previous.openings || []).map((o) => [o.sourceUrl, o.firstSeen]));
     for (const o of result.openings) {
       o.firstSeen = previousFirstSeen.get(o.sourceUrl) || result.updatedAt;
+      o.lastVerified = result.updatedAt;
     }
+
+    // What disappeared from the employer's feed since the last run. These are
+    // filled or withdrawn reqs — reported so the drop rate is observable
+    // instead of silent.
+    const currentUrls = new Set(result.openings.map((o) => o.sourceUrl));
+    const dropped = (previous.openings || []).filter((o) => !currentUrls.has(o.sourceUrl));
 
     const payload = {
       openings: result.openings,
@@ -108,6 +126,7 @@ module.exports = async function handler(req, res) {
       stored: saved.saved,
       count: payload.count,
       newListings: newOpenings.length,
+      droppedListings: dropped.length,
       notifications: notify,
       updatedAt: payload.updatedAt,
       sources: result.sourceStatus,
