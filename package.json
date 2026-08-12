@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "python3 -m http.server 4173",
-    "test": "node tests/alerts.test.js && node tests/auth-routing.test.js && node tests/api-functions.test.js && node tests/account-deletion.test.js && node tests/sources.test.js && node tests/watch.test.js && node tests/monitored.test.js && node tests/security.test.js && node tests/geo.test.js && node tests/alert-location.test.js",
+    "test": "node tests/alerts.test.js && node tests/auth-routing.test.js && node tests/api-functions.test.js && node tests/account-deletion.test.js && node tests/sources.test.js && node tests/watch.test.js && node tests/monitored.test.js && node tests/security.test.js && node tests/geo.test.js && node tests/alert-location.test.js && node tests/pipeline.test.js",
     "probe": "node scripts/probe-sources.js"
   },
   "dependencies": {

@@ -180,7 +180,6 @@ const SOURCES = [
   { company: "Nvidia", short: "NVDA", logoClass: "tech", field: "Technology", subField: "Semiconductors", ats: "workday", tenant: "nvidia", dc: "wd5", site: "NVIDIAExternalCareerSite" },
   { company: "Salesforce", short: "CRM", logoClass: "tech", field: "Technology", subField: "Enterprise Software", ats: "workday", tenant: "salesforce", dc: "wd12", site: "External_Career_Site" },
   { company: "Adobe", short: "ADBE", logoClass: "tech", field: "Technology", subField: "Enterprise Software", ats: "workday", tenant: "adobe", dc: "wd5", site: "external_experienced" },
-  { company: "Atlassian", short: "TEAM", logoClass: "tech", field: "Technology", subField: "Enterprise Software", ats: "lever", board: "atlassian" },
   { company: "Okta", short: "OKTA", logoClass: "tech", field: "Technology", subField: "Security", ats: "greenhouse", board: "okta" },
 
   // Aerospace and defense — previously only startups (SpaceX, Anduril, Zipline).
@@ -193,7 +192,6 @@ const SOURCES = [
 
   // Media and entertainment — previously two sources total.
   { company: "Comcast NBCUniversal", short: "CMCSA", logoClass: "media", field: "Media", subField: "Entertainment", ats: "workday", tenant: "comcast", dc: "wd5", site: "Comcast_Careers" },
-  { company: "Netflix", short: "NFLX", logoClass: "media", field: "Media", subField: "Streaming", ats: "lever", board: "netflix" },
   { company: "The New York Times", short: "NYT", logoClass: "media", field: "Media", subField: "News", ats: "greenhouse", board: "thenewyorktimes" },
 
   // Consumer retail at household-name scale.
@@ -201,6 +199,30 @@ const SOURCES = [
 
   // Education.
   { company: "Udemy", short: "UDMY", logoClass: "edu", field: "Education", subField: "EdTech", ats: "greenhouse", board: "udemy" },
+
+  // ── Added by the 2026-08 backend audit ────────────────────────────────
+  // Board tokens were NOT guessed. Each was derived from a real apply URL in
+  // the summer-2027-internships repository by running it through the existing
+  // detectSource() parser, then probed with the production fetcher — only
+  // sources that actually returned US student roles are listed here.
+  // Guessing tokens by company name had a 3/23 hit rate; this had 16/19.
+  { company: "PNC Financial Services", short: "PNC", logoClass: "fin", field: "Finance", subField: "Banking", ats: "workday", tenant: "pnc", dc: "wd5", site: "External" },
+  { company: "Western Digital", short: "WDC", logoClass: "tech", field: "Technology", subField: "Semiconductors", ats: "smartrecruiters", board: "WesternDigital" },
+  { company: "The Trade Desk", short: "TTD", logoClass: "tech", field: "Technology", subField: "AdTech", ats: "greenhouse", board: "thetradedesk" },
+  { company: "Neuralink", short: "NLNK", logoClass: "tech", field: "Technology", subField: "Neurotech", ats: "greenhouse", board: "neuralink" },
+  { company: "Netic", short: "NTC", logoClass: "tech", field: "Technology", subField: "AI", ats: "ashby", board: "netic" },
+  { company: "Skydio", short: "SKY", logoClass: "eng", field: "Engineering", subField: "Robotics", ats: "ashby", board: "skydio" },
+  { company: "Blue Origin", short: "BO", logoClass: "eng", field: "Engineering", subField: "Aerospace", ats: "workday", tenant: "blueorigin", dc: "wd5", site: "BlueOrigin" },
+  { company: "Solar Turbines", short: "SOLT", logoClass: "eng", field: "Engineering", subField: "Energy", ats: "workday", tenant: "cat", dc: "wd5", site: "SolarTurbines" },
+  { company: "GE Appliances", short: "GEA", logoClass: "eng", field: "Engineering", subField: "Manufacturing", ats: "workday", tenant: "haier", dc: "wd3", site: "GE_Appliances" },
+  { company: "Ellipsis Labs", short: "ELPS", logoClass: "tech", field: "Technology", subField: "Crypto", ats: "ashby", board: "ellipsislabs" },
+  { company: "Tower Research Capital", short: "TWR", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "towerresearchcapital" },
+  { company: "Virtu Financial", short: "VIRT", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "virtu" },
+  { company: "Arrowstreet Capital", short: "ARWS", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "arrowstreetcapital", dc: "wd5", site: "Campus_Careers" },
+  { company: "Walleye Capital", short: "WLLY", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "walleyecapital-external-students" },
+  { company: "Aquatic Capital Management", short: "AQTC", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "aquaticcapitalmanagement" },
+  { company: "Voloridge Investment Management", short: "VLRG", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "voloridgeinvestmentmanagement" },
 ];
+
 
 module.exports = { SOURCES };

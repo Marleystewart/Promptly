@@ -8,20 +8,27 @@
 
 const { SOURCES } = require("./sources");
 
-const INTERNATIONAL = /london|hong ?kong|singapore|japan|munich|germany|india|toronto|calgary|montr|amsterdam|shanghai|sydney|paris|zurich|dublin|tokyo|seoul|\bhk\b|\buk\b|tel aviv|madrid|milan|frankfurt|warsaw|poland|bangalore|bengaluru|mumbai|manila|jakarta|shenzhen|beijing|dubai|abu dhabi|vancouver|berlin|stockholm|oslo|copenhagen|vienna|prague|budapest|geneva|brussels|edinburgh|manchester|glasgow|são paulo|sao paulo|mexico city|bogot/i;
+// Non-US locations. Extended after an audit found roles in Bristol, Tel Aviv,
+// Taipei and others slipping through into a US-only product. Country names are
+// included because many feeds give "Bristol, United Kingdom" with a city we
+// don't list.
+const INTERNATIONAL = /london|hong ?kong|singapore|japan|munich|germany|india|toronto|calgary|montr|ottawa|waterloo, on|amsterdam|shanghai|sydney|melbourne|brisbane|perth|auckland|paris|zurich|geneva|dublin|tokyo|osaka|seoul|taipei|taiwan|\bhk\b|\buk\b|united kingdom|england|scotland|wales|ireland|tel aviv|israel|herzliya|madrid|barcelona|milan|rome|frankfurt|berlin|hamburg|stuttgart|warsaw|poland|krak|bucharest|romania|budapest|hungary|prague|czech|vienna|austria|bangalore|bengaluru|hyderabad|mumbai|pune|chennai|gurgaon|noida|manila|philippines|jakarta|indonesia|kuala lumpur|malaysia|bangkok|thailand|vietnam|hanoi|shenzhen|beijing|guangzhou|china|dubai|abu dhabi|\buae\b|saudi|riyadh|qatar|doha|vancouver|ontario|quebec|alberta|british columbia|canada|stockholm|sweden|oslo|norway|copenhagen|denmark|helsinki|finland|brussels|belgium|luxembourg|switzerland|netherlands|rotterdam|eindhoven|edinburgh|manchester|glasgow|birmingham, uk|bristol|cambridge, uk|oxford, uk|leeds|belfast|são paulo|sao paulo|brazil|mexico city|guadalajara|bogot|colombia|buenos aires|argentina|santiago|chile|lima|peru|cairo|egypt|nairobi|kenya|lagos|nigeria|johannesburg|cape town|south africa|spain|portugal|lisbon|greece|athens|turkey|istanbul|ukraine|serbia|croatia|slovakia|slovenia|bulgaria|estonia|latvia|lithuania|iceland|malta|cyprus|emea\b|apac\b|latam\b/i;
 // Seniority / staleness / non-student gate — keeps experienced roles, past
 // cycles, and internal hiring roles out of BOTH the intern and new-grad paths.
 // "recruiter/recruiting" excludes "Campus Recruiter"-type staff jobs that
 // otherwise false-match on "early careers".
 const EXCLUDE_TITLE = /experienced|senior|staff|principal|\blead\b|manager|director|\bvp\b|vice president|\bii+\b|\b[3-9]\+?\s*years|off[- ]?cycle|recruit(er|ing)|\b2023\b|\b2024\b|\b2025\b/i;
-const INTERN_TITLE = /intern|summer analyst|co-?op/i;
+// \b anchors are essential: a bare /intern/ matched "INTERNal Audit Analyst"
+// and "INTERNational Business Developer", pulling non-student and overseas
+// roles into the feed. Found by sampling real output, not by review.
+const INTERN_TITLE = /\bintern\b|\binterns\b|\binternship\b|\bsummer analyst\b|\bco-?op\b/i;
 const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|early career|entry[ -]?level|campus hire|rotational program|analyst program/i;
 const CYCLE_YEAR = /\b(2026|2027|2028)\b/;
 const SEASON = /\b(spring|summer|fall|autumn|winter)\b/i;
 // Not a real, student-relevant job req: talent pools, mailing lists, general
 // "expression of interest" pages, and hourly production/technician roles that
 // aren't the college-intern/new-grad audience.
-const NON_ROLE = /mailing list|talent (community|network|pool)|future opportunit|join our|expression of interest|general application|prospective|production technician|assembly technician|\btemporary\b/i;
+const NON_ROLE = /mailing list|talent (community|network|pool)|future opportunit|join our|expression of interest|general application|prospective|interested in (an?|our)|register your interest|speculative|pipeline requisition|production technician|assembly technician|\btemporary\b/i;
 
 function titleCase(s) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
@@ -32,7 +39,16 @@ function titleCase(s) {
 // quality tight); new-grad/full-time entry roles are matched by explicit
 // early-career markers. Pass allowUndatedIntern for feeds (e.g. USAJOBS)
 // where a live listing is inherently current even without a year in the title.
-function detectCycle(title, location, allowUndatedIntern = false) {
+// Live ATS feeds only contain reqs the employer is currently advertising, so an
+// internship with no year in its title is a CURRENT internship whose term we
+// simply don't know. Rejecting those cost 82 real US roles across 16 employers
+// (Point72, DRW, Jump Trading, Roblox…) — a 61% false-negative rate on
+// student-relevant titles, and the single biggest reason coverage looked thin.
+//
+// The honest resolution is to keep them but label the term "Internship" rather
+// than guessing "Summer 2027". Unknown beats incorrect: a student filtering for
+// Summer 2027 must never be shown a role we cannot place in that cycle.
+function detectCycle(title, location, allowUndatedIntern = true) {
   if (!title) return null;
   // Check both title and location for international cues — some feeds put the
   // city in the title ("2026 Warsaw Data Internship") and leave location blank.
@@ -55,6 +71,34 @@ function detectCycle(title, location, allowUndatedIntern = false) {
     return yearMatch ? `New Grad ${yearMatch[1]}` : "New Grad";
   }
   return null;
+}
+
+// ── Stale cycle gate ──────────────────────────────────────────────────────
+// A live posting is not the same as a current opportunity. Employers routinely
+// leave a filled Summer 2026 req published, and showing it to a student hunting
+// Summer 2027 is exactly the "old role presented as current" failure.
+//
+// Approximate end month of each term; a cycle is past once that month has gone.
+const TERM_END_MONTH = { spring: 5, summer: 8, fall: 12, winter: 3 };
+
+function isPastCycle(cycle, now = new Date()) {
+  const text = String(cycle || "");
+  const yearMatch = text.match(/\b(20\d{2})\b/);
+  if (!yearMatch) return false; // undated ("Internship"/"New Grad") — can't call it stale
+  const year = Number(yearMatch[1]);
+  const seasonMatch = text.toLowerCase().match(/spring|summer|fall|winter/);
+
+  const nowYear = now.getUTCFullYear();
+  const nowMonth = now.getUTCMonth() + 1;
+
+  if (!seasonMatch) {
+    // "New Grad 2026" — treat as stale only once the following year begins,
+    // since new-grad classes start through the autumn.
+    return year < nowYear;
+  }
+  // Winter terms are labelled by the year they end in.
+  const endMonth = TERM_END_MONTH[seasonMatch[0]];
+  return year < nowYear || (year === nowYear && nowMonth > endMonth);
 }
 
 // Back-compat: the original single-cycle gate, kept for existing callers/tests.
@@ -241,6 +285,72 @@ async function fetchUsaJobs(src) {
   return out;
 }
 
+// ── Normalization and identity ────────────────────────────────────────────
+// Two feeds can describe the same req with different casing, punctuation,
+// tracking parameters, or company suffixes. Identity has to be computed from
+// normalized values or the same job appears two or three times.
+
+// Strip tracking/session parameters so ?gh_src=... and ?utm_campaign=... do not
+// make one posting look like several.
+const TRACKING_PARAM = /^(utm_|gh_|ref|source|src|lever-|trk|mc_|fbclid|gclid|msclkid|_ga|campaign|medium)/i;
+
+function canonicalUrl(rawUrl) {
+  const value = String(rawUrl || "").trim();
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    url.protocol = "https:";
+    url.hostname = url.hostname.toLowerCase().replace(/^www\./, "");
+    url.hash = "";
+    for (const key of [...url.searchParams.keys()]) {
+      if (TRACKING_PARAM.test(key)) url.searchParams.delete(key);
+    }
+    // Trailing slashes are not meaningful on these boards.
+    url.pathname = url.pathname.replace(/\/+$/, "") || "/";
+    return url.toString();
+  } catch {
+    return value;
+  }
+}
+
+// "Blue Origin, LLC" / "blue-origin" / "Blue Origin Inc." → "blueorigin"
+function normalizeCompany(name) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\b(inc|llc|ltd|lp|llp|plc|corp|corporation|co|company|group|holdings|technologies|technology|labs|systems|solutions|partners|capital management|the)\b/g, " ")
+    .replace(/\s+/g, "")
+    .trim();
+}
+
+// Drop decoration that varies between feeds but not between jobs:
+// "[Summer 2027] Software Engineer Intern (Remote) - New York" → core title.
+function normalizeRole(title) {
+  return String(title || "")
+    .toLowerCase()
+    .replace(/\[[^\]]*\]|\([^)]*\)/g, " ")
+    .replace(/\b(20\d{2})\b/g, " ")
+    .replace(/\b(spring|summer|fall|autumn|winter)\b/g, " ")
+    .replace(/\b(remote|hybrid|onsite|on site|us|usa|united states)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Which of two records for the same job survives. Deterministic, and biased
+// toward the most authoritative record rather than whichever arrived first.
+const ATS_AUTHORITY = { greenhouse: 5, lever: 5, ashby: 5, smartrecruiters: 4, workday: 4, usajobs: 5 };
+
+function authorityScore(item) {
+  let score = (ATS_AUTHORITY[item.ats] || 1) * 10;
+  if (item.cycle && item.cycle !== "Internship" && item.cycle !== "New Grad") score += 6; // a known term beats an unknown one
+  if (item.location) score += 3;
+  if (/^https:/i.test(item.sourceUrl || "")) score += 2;
+  score += Math.min(String(item.role || "").length, 60) / 60; // richer title breaks ties
+  return score;
+}
+
 function normalize(src, title, url, location, cycle = "Summer 2027") {
   const slug = src.board || src.tenant;
   return {
@@ -297,34 +407,76 @@ async function aggregateOpenings() {
   // Keep the feed balanced and clean: no single employer floods it, and the
   // same role posted across multiple offices collapses to one card.
   const MAX_PER_COMPANY = 12;
-  const seen = new Set();            // dedupe by exact posting URL
-  const seenRole = new Set();        // dedupe identical company+role+cycle
   const perCompany = {};
-  const openings = [];
   const sourceStatus = [];
+
+  // Two-pass dedupe. The old loop kept whichever record arrived first, which
+  // meant a Workday duplicate could beat the Greenhouse original purely on
+  // ordering, and identical jobs slipped through whenever a URL carried a
+  // tracking parameter or a title differed by a bracketed season.
+  //
+  // Pass 1 collects every candidate under two canonical keys; pass 2 keeps the
+  // single most authoritative record per key (see authorityScore).
+  const byUrl = new Map();   // canonical apply URL  → best record
+  const byRole = new Map();  // company + role + cycle → best record
+  const attributed = new Map();
 
   results.forEach((r, i) => {
     const src = allSources[i];
-    if (r.status === "fulfilled") {
-      let added = 0;
-      for (const o of r.value) {
-        if (!o.sourceUrl || seen.has(o.sourceUrl)) continue;
-        const roleKey = `${o.company}|${o.role}|${o.cycle}`.toLowerCase();
-        if (seenRole.has(roleKey)) continue;                 // same role, another office
-        if ((perCompany[o.company] || 0) >= MAX_PER_COMPANY) continue; // no flooding
-        seen.add(o.sourceUrl);
-        seenRole.add(roleKey);
-        perCompany[o.company] = (perCompany[o.company] || 0) + 1;
-        openings.push(o);
-        added += 1;
-      }
-      sourceStatus.push({ company: src.company, ats: src.ats, ok: true, count: added });
-    } else {
+    if (r.status !== "fulfilled") {
       sourceStatus.push({ company: src.company, ats: src.ats, ok: false, error: String(r.reason).slice(0, 120) });
+      return;
+    }
+    sourceStatus.push({ company: src.company, ats: src.ats, ok: true, count: r.value.length });
+
+    for (const o of r.value) {
+      if (!o.sourceUrl) continue;
+      // Drop terms that have already finished, even though the req is still
+      // published on the employer's board.
+      if (isPastCycle(o.cycle)) continue;
+      o.ats = src.ats;
+      // Canonical form is the dedupe KEY only. The stored sourceUrl stays
+      // exactly as the employer published it — normalising it (dropping "www.",
+      // forcing https) changes the link a student actually clicks, and some
+      // hosts reject the rewritten form.
+      o.companyKey = normalizeCompany(o.company);
+      o.roleKey = normalizeRole(o.role);
+
+      const urlKey = canonicalUrl(o.sourceUrl);
+      // Cycle is part of role identity: a Summer 2027 and a Fall 2026 posting
+      // for the same title are genuinely different roles, not duplicates.
+      const roleKey = `${o.companyKey}|${o.roleKey}|${o.cycle}`;
+
+      const better = (existing) => !existing || authorityScore(o) > authorityScore(existing);
+      if (better(byUrl.get(urlKey))) byUrl.set(urlKey, o);
+      if (better(byRole.get(roleKey))) byRole.set(roleKey, o);
+      attributed.set(o, src.company);
     }
   });
+
+  // A record survives only if it won BOTH keys — that removes same-URL repeats
+  // and same-role-different-URL repeats in one pass.
+  const openings = [];
+  const emitted = new Set();
+  for (const candidate of byUrl.values()) {
+    const roleKey = `${candidate.companyKey}|${candidate.roleKey}|${candidate.cycle}`;
+    if (byRole.get(roleKey) !== candidate) continue;
+    if (emitted.has(candidate)) continue;
+    if ((perCompany[candidate.company] || 0) >= MAX_PER_COMPANY) continue;
+    perCompany[candidate.company] = (perCompany[candidate.company] || 0) + 1;
+    emitted.add(candidate);
+    delete candidate.companyKey;
+    delete candidate.roleKey;
+    openings.push(candidate);
+  }
+
+  // Report what each source contributed AFTER dedupe, so a source that only
+  // ever produces duplicates is visible instead of looking productive.
+  const kept = {};
+  openings.forEach((o) => { kept[o.company] = (kept[o.company] || 0) + 1; });
+  sourceStatus.forEach((s) => { if (s.ok) s.count = kept[s.company] || 0; });
 
   return { openings, sourceStatus, updatedAt: new Date().toISOString() };
 }
 
-module.exports = { aggregateOpenings, isRelevant, detectCycle, fetchOne };
+module.exports = { aggregateOpenings, isRelevant, detectCycle, fetchOne, isPastCycle, canonicalUrl, normalizeCompany, normalizeRole };
