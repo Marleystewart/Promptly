@@ -1,4 +1,5 @@
-const { forEachSubscriberBatch, claimOnce, releaseClaim } = require("./_shared/store");
+const { forEachSubscriberBatch, claimOnce, releaseClaim, getRedis } = require("./_shared/store");
+const { runLinkVerification } = require("./_shared/link-verify");
 const { getLiveOpenings, takeDigestItems, queueDigestItems } = require("./_shared/openings-store");
 const { sendDailyDigest, sendWeeklyRecap, sendDeadlineReminder, sendDeadlinePush, matchesOpening } = require("./_shared/alerts");
 const { getOrCreateUnsubToken, createVerifyToken, purgeUnverified } = require("./_shared/tokens");
@@ -63,6 +64,11 @@ module.exports = async function handler(req, res) {
     const livePayload = await getLiveOpenings();
     const live = livePayload.openings || [];
     const stats = { subscribers: 0, digestsSent: 0, weeklySent: 0, reminderEmails: 0, reminderPushes: 0, verifyReminders: 0, unverifiedPurged: 0 };
+
+    // Content-check a rotating slice of live sourceUrls. Independent of the
+    // subscriber loop below (listings, not people) and never lets a
+    // verification failure block the actual mail this cron exists to send.
+    const linkCheck = await runLinkVerification({ getRedis, openings: live });
 
     // Batched rather than loading every subscriber at once — this job mails the
     // whole list, so at scale the old fan-out would run out of memory before
@@ -175,7 +181,7 @@ module.exports = async function handler(req, res) {
     }
     });
 
-    return res.status(200).json({ ok: true, ...stats, weeklyRun: shouldSendWeekly });
+    return res.status(200).json({ ok: true, ...stats, weeklyRun: shouldSendWeekly, linkCheck });
   } catch (error) {
     return res.status(500).json({ error: error.message || "Retention alerts failed." });
   }

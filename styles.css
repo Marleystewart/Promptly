@@ -1667,6 +1667,16 @@ body.launch-active .onboarding-brand {
 }
 .empty-hint b { color: var(--ink); }
 
+.search-watch-prompt {
+  margin-top: 10px;
+  padding: 16px;
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  text-align: center;
+}
+.search-watch-prompt p { margin: 0 0 10px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+.search-watch-prompt b { color: var(--ink); }
+
 /* Awaiting-posting (watch-list) cards: clearly tracked, not yet live */
 .opening-row.awaiting { opacity: 0.82; }
 .opening-row.awaiting .logo { filter: grayscale(0.35); }

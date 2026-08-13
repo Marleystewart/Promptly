@@ -3594,9 +3594,45 @@ if (resumeDrop) {
 }
 
 document.querySelector(".search-panel input")?.addEventListener("input", (event) => {
-  const query = event.target.value.trim().toLowerCase();
-  const matches = openings.filter((item) => `${item.company} ${item.role} ${item.field}`.toLowerCase().includes(query));
-  document.querySelector(".full-list").innerHTML = renderRows(matches);
+  const query = event.target.value.trim();
+  const q = query.toLowerCase();
+  const matches = openings.filter((item) => `${item.company} ${item.role} ${item.field}`.toLowerCase().includes(q));
+
+  // This is the exact moment the ATS-only pipeline structurally can't help:
+  // a student searches a real company (Microsoft, most Fortune 500s) that has
+  // no public ATS to read. Previously this dead-ended on a generic "no
+  // openings match" message with no path forward. Surface watch-any-company
+  // right here instead of leaving it buried at the bottom of the Alerts tab
+  // where nobody hits it at the moment they'd actually want it.
+  const companyMatch = query.length >= 2 && openings.some((item) => item.company.toLowerCase().includes(q));
+  document.querySelector(".full-list").innerHTML = renderRows(matches) + (
+    !matches.length && query.length >= 2 && !companyMatch
+      ? `<div class="search-watch-prompt">
+          <p><b>${esc(query)}</b> doesn't publish a job feed we can already read.</p>
+          <button type="button" class="soft-action" data-search-watch-company="${esc(query)}">Watch ${esc(query)} anyway</button>
+        </div>`
+      : ""
+  );
+});
+
+// The inline "Watch X anyway" prompt above — prefill and jump to the real
+// watch-any-company flow rather than duplicating its logic.
+document.addEventListener("click", (event) => {
+  const trigger = event.target.closest("[data-search-watch-company]");
+  if (!trigger) return;
+  const company = trigger.dataset.searchWatchCompany || "";
+  setView("alerts");
+  // No rAF needed: the alerts view markup is static (toggled via a CSS class,
+  // not conditionally rendered), so the inputs already exist in the DOM the
+  // instant setView returns. rAF is also unreliable here — it doesn't fire
+  // promptly in a backgrounded/inactive tab, which would silently drop the
+  // prefill on a real device if the click coincides with a tab-visibility hit.
+  const nameInput = document.querySelector("[data-watch-company]");
+  const urlInput = document.querySelector("[data-watch-url]");
+  if (nameInput) nameInput.value = company;
+  if (urlInput) { urlInput.value = ""; urlInput.focus(); }
+  document.querySelector(".watch-any-card")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  track("watch_prompt_from_search");
 });
 
 // --- College Autocomplete ---

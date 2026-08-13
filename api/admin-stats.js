@@ -3,7 +3,7 @@
 // user info). Set ADMIN_SECRET (or reuse CRON_SECRET) in Vercel, then open
 // /admin.html and paste the secret.
 
-const { listSubscribers, takeAdminAttempt } = require("./_shared/store");
+const { listSubscribers, takeAdminAttempt, getRedis } = require("./_shared/store");
 const { getStats } = require("./_shared/analytics");
 const { listWatchedSources, listCoverageRequests } = require("./_shared/watched-store");
 const crypto = require("crypto");
@@ -77,11 +77,21 @@ module.exports = async function handler(req, res) {
       .slice(0, 50)
       .map((c) => ({ url: c.url || "—", company: c.company || "—", requests: c.count || (c.requestedBy || []).length || 1 }));
 
+    // Corroborating content check, not authoritative — a listing here was
+    // flagged by weak dead-language text matching, never removed by it. See
+    // api/verify-listings.js for why no single link signal is trusted alone.
+    let verify = null;
+    try {
+      const redis = await getRedis();
+      verify = redis ? await redis.get("promptly:verify:last-run") : null;
+    } catch {}
+
     return res.status(200).json({
       watchedCount: watched.length,
       coverageCount: coverage.length,
       watched: watchedRows,
       coverage: coverageRows,
+      verify,
       totalAccounts: subscribers.length,
       withEmail,
       withPush,

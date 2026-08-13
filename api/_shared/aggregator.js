@@ -194,7 +194,7 @@ async function fetchAshby(src) {
   for (const j of jobs) {
     if (j.isListed === false) continue;
     const cycle = detectCycle(j.title, j.location);
-    if (cycle) out.push(normalize(src, j.title, j.jobUrl, j.location, cycle));
+    if (cycle) out.push(normalize(src, j.title, j.jobUrl, j.location, cycle, j.workplaceType || null));
   }
   return out;
 }
@@ -351,8 +351,13 @@ function authorityScore(item) {
   return score;
 }
 
-function normalize(src, title, url, location, cycle = "Summer 2027") {
+// workplaceType is a real structured field Ashby exposes ("Remote" / "Hybrid"
+// / "OnSite") — not a guess, and more reliable than regexing the word
+// "remote" out of a location string, which is the fallback every other ATS
+// forces us to use because none of them expose it structurally.
+function normalize(src, title, url, location, cycle = "Summer 2027", workplaceType = null) {
   const slug = src.board || src.tenant;
+  const remote = workplaceType ? workplaceType === "Remote" : /remote/i.test(String(location || ""));
   return {
     company: src.company,
     short: src.short,
@@ -366,7 +371,8 @@ function normalize(src, title, url, location, cycle = "Summer 2027") {
     deadline: "See posting",
     opened: location ? `Live • ${String(location).split(",")[0].trim()}` : "Live posting",
     location: location ? String(location).replace(/\s+/g, " ").trim().slice(0, 120) : "",
-    remote: /remote/i.test(String(location || "")),
+    remote,
+    workplaceType: workplaceType || null,
     sourceLabel: `${src.company} – verified live posting`,
     sourceUrl: url,
     live: true,
