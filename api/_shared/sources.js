@@ -222,6 +222,17 @@ const SOURCES = [
   { company: "Walleye Capital", short: "WLLY", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "walleyecapital-external-students" },
   { company: "Aquatic Capital Management", short: "AQTC", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "aquaticcapitalmanagement" },
   { company: "Voloridge Investment Management", short: "VLRG", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "voloridgeinvestmentmanagement" },
+  // Board tokens derived from real apply URLs (not guessed) and probed live.
+  // Board is healthy but has no student-relevant req open today — kept anyway
+  // so it activates the hour one posts, same as every other source here.
+  { company: "LiveRamp", short: "RAMP", logoClass: "tech", field: "Technology", subField: "Data", ats: "workday", tenant: "liveramp", dc: "wd1", site: "LiveRampCareers" },
+  // Kudu Dynamics postings actually run through Leidos's own Workday board
+  // (Kudu is a Leidos subsidiary) — this source returns ALL Leidos reqs, not
+  // just Kudu's, so it is labeled as the true employer rather than "Kudu
+  // Dynamics". Labeling it Kudu would have misattributed every other Leidos
+  // posting that comes through, which is the exact kind of misleading-name
+  // issue a clean pipeline has to avoid.
+  { company: "Leidos", short: "LDOS", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "workday", tenant: "leidos", dc: "wd5", site: "External" },
 ];
 
 

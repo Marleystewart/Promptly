@@ -71,7 +71,9 @@ window.MONITORED_COMPANIES = [
   "Khan Academy",
   "Komodo Health",
   "LaunchDarkly",
+  "Leidos",
   "Linear",
+  "LiveRamp",
   "Lyft",
   "Marshall Wace",
   "Mixpanel",
@@ -149,11 +151,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 140,
-  "companies": 140,
+  "sources": 142,
+  "companies": 142,
   "byPlatform": {
     "greenhouse": 95,
-    "workday": 18,
+    "workday": 20,
     "lever": 3,
     "ashby": 17,
     "smartrecruiters": 6,
@@ -161,11 +163,11 @@ window.PROMPTLY_COVERAGE = {
   },
   "byField": {
     "Finance": 41,
-    "Technology": 59,
+    "Technology": 60,
     "Consulting": 3,
     "Healthcare": 7,
     "Education": 4,
-    "Engineering": 12,
+    "Engineering": 13,
     "Media": 4,
     "Nonprofit": 2,
     "Consumer": 4,
