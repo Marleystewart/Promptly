@@ -1398,6 +1398,7 @@ function markMatchingAlertsSeen() {
   matchingLiveOpenings().forEach((item) => seen.add(alertIdentity(item)));
   localStorage.setItem(seenAlertsStorageKey, JSON.stringify([...seen].slice(-500)));
   updateAlertPulse();
+  updateAlertBadge();
 }
 
 // Cap how many rows render at once. 200+ image rows crashes mobile Safari
@@ -3698,26 +3699,17 @@ function setupCollegeAutocomplete(inputSel, dropdownSel) {
 setupCollegeAutocomplete("[data-school-input]", "[data-college-dropdown]");
 setupCollegeAutocomplete("[data-edit-school]", "[data-college-dropdown-edit]");
 
-// --- Alert badge (recent = opened within last 7 days) ---
-function recentOpenings() {
-  const weekAgo = Date.now() - 7 * 86400000;
-  return openings.filter((o) => {
-    // Live pipeline listings carry firstSeen (stamped on the refresh run that
-    // first found them) — the honest signal for "new this week".
-    if (o.firstSeen) {
-      const t = Date.parse(o.firstSeen);
-      return Number.isFinite(t) && t >= weekAgo;
-    }
-    if (!o.opened) return false;
-    const t = o.opened.toLowerCase();
-    if (t.includes("min") || t.includes("hour")) return true;
-    const m = t.match(/(\d+)\s*day/);
-    return m && parseInt(m[1]) <= 7;
-  });
-}
-
+// --- Alert badge (unseen = matches this profile hasn't reviewed yet) ---
+// Mirrors the Alert Pulse box's seen-tracking (see markMatchingAlertsSeen):
+// a brand-new profile has nothing "unseen" yet, so the badge starts at 0 and
+// only grows as genuinely new matching postings arrive. It must NOT count
+// every listing added platform-wide this week — that's not personalized and
+// blows past 99 instantly on a fresh account.
 function updateAlertBadge() {
-  const count = recentOpenings().length;
+  const stored = localStorage.getItem(seenAlertsStorageKey);
+  const seen = stored ? readSeenAlerts() : null;
+  const matches = matchingLiveOpenings().filter((o) => !isAwaitingLike(o));
+  const count = seen ? matches.filter((item) => !seen.has(alertIdentity(item))).length : 0;
   document.querySelectorAll("[data-alert-badge]").forEach((el) => {
     el.textContent = count > 99 ? "99+" : String(count);
     el.style.display = count === 0 ? "none" : "";
