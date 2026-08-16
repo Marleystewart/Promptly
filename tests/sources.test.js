@@ -4,6 +4,8 @@
 // Structural only (a live board is validated by scripts/probe-sources.js).
 
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const { SOURCES } = require("../api/_shared/sources");
 
 // Canonical industries (must match FIELD_ORDER + subFields in script.js).
@@ -21,7 +23,10 @@ const REQUIRED_KEYS = {
   smartrecruiters: ["board"],
   workday: ["tenant", "dc", "site"],
   usajobs: ["hiringPath"],
+  custom: ["handler"],
 };
+
+const SCRAPERS_DIR = path.join(__dirname, "../api/_shared/company-scrapers");
 
 const boardSeen = new Map(); // `${ats}:${slug}` -> company
 const companySeen = new Map();
@@ -37,6 +42,13 @@ for (const src of SOURCES) {
   assert.ok(required, `${where}: unknown ats "${src.ats}"`);
   for (const key of required) {
     assert.ok(src[key], `${where}: ${src.ats} source missing "${key}"`);
+  }
+
+  // A custom scraper's handler file must actually exist, or the source
+  // silently contributes nothing (no error, no data) once live.
+  if (src.ats === "custom") {
+    const file = path.join(SCRAPERS_DIR, `${src.handler}.js`);
+    assert.ok(fs.existsSync(file), `${where}: no company-scrapers/${src.handler}.js for handler "${src.handler}"`);
   }
 
   // No duplicate boards within the same ATS (two entries pulling the same feed).

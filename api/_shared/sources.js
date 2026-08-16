@@ -13,6 +13,10 @@
 // Ashby:      { ats:"ashby", board:"<token>" }        (jobs.ashbyhq.com/<token>)
 // SmartRecruiters: { ats:"smartrecruiters", board:"<CompanyIdentifier>" }
 //             (jobs.smartrecruiters.com/<CompanyIdentifier>/...)
+// Custom:     { ats:"custom", handler:"<filename>" } — for a company with NO
+//             feed on any system above. Runs company-scrapers/<filename>.js.
+//             See company-scrapers/_template.js before adding one of these;
+//             it's the expensive fallback, not the default.
 //
 // All boards below were probed and confirmed responding. Field-tinted logo
 // tiles (tech/fin/health/edu) are used for auto-pulled listings.

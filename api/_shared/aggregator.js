@@ -285,6 +285,23 @@ async function fetchUsaJobs(src) {
   return out;
 }
 
+// ── Custom company scrapers ───────────────────────────────────────────────
+// { ats:"custom", handler:"<filename>" } → runs
+// company-scrapers/<filename>.js, which must export an async function
+// returning [{ title, url, location }, ...]. Use ONLY when a company has no
+// feed on one of the 6 standard systems above — see
+// company-scrapers/_template.js for the full how-to before adding one.
+async function fetchCustom(src) {
+  const fetchListings = require(`./company-scrapers/${src.handler}`);
+  const raw = await fetchListings(src);
+  const out = [];
+  for (const j of Array.isArray(raw) ? raw : []) {
+    const cycle = detectCycle(j.title, j.location);
+    if (cycle) out.push(normalize(src, j.title, j.url, j.location, cycle));
+  }
+  return out;
+}
+
 // ── Normalization and identity ────────────────────────────────────────────
 // Two feeds can describe the same req with different casing, punctuation,
 // tracking parameters, or company suffixes. Identity has to be computed from
@@ -386,6 +403,7 @@ const FETCHERS = {
   ashby: fetchAshby,
   smartrecruiters: fetchSmartRecruiters,
   usajobs: fetchUsaJobs,
+  custom: fetchCustom,
 };
 
 // Run a single source's real ATS fetcher. Used both by the aggregate loop and
