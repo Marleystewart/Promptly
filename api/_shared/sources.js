@@ -43,6 +43,8 @@ const SOURCES = [
   { company: "Blackstone", short: "BX", logoClass: "bx", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "blackstone", dc: "wd1", site: "Blackstone_Campus_Careers" },
   { company: "Ares Management", short: "ARES", logoClass: "ares", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "aresmgmt", dc: "wd1", site: "external" },
   // Investment banking
+  // Citi runs its own careers site (no supported ATS) — see company-scrapers/citi.js
+  { company: "Citi", short: "C", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "citi" },
   { company: "Guggenheim Securities", short: "GUG", logoClass: "gug", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "guggenheim", dc: "wd1", site: "Guggenheim_Careers_Campus" },
   { company: "Houlihan Lokey", short: "HL", logoClass: "laz", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "hl", dc: "wd1", site: "Campus" },
   // Fintech (consumer finance)

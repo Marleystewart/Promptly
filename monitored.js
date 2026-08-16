@@ -28,6 +28,7 @@ window.MONITORED_COMPANIES = [
   "Checkr",
   "Chicago Trading (CTC)",
   "Chime",
+  "Citi",
   "Cloudflare",
   "CockroachDB",
   "Code for America",
@@ -151,18 +152,19 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 142,
-  "companies": 142,
+  "sources": 143,
+  "companies": 143,
   "byPlatform": {
     "greenhouse": 95,
     "workday": 20,
+    "custom": 1,
     "lever": 3,
     "ashby": 17,
     "smartrecruiters": 6,
     "usajobs": 1
   },
   "byField": {
-    "Finance": 41,
+    "Finance": 42,
     "Technology": 60,
     "Consulting": 3,
     "Healthcare": 7,
