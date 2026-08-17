@@ -52,7 +52,7 @@ for (const src of SOURCES) {
   }
 
   // No duplicate boards within the same ATS (two entries pulling the same feed).
-  const boardKey = `${src.ats}:${(src.board || src.tenant || src.hiringPath || "").toLowerCase()}`;
+  const boardKey = `${src.ats}:${(src.board || src.tenant || src.hiringPath || src.handler || "").toLowerCase()}`;
   if (boardSeen.has(boardKey)) {
     // USAJOBS intentionally has multiple query rows under one company.
     if (src.ats !== "usajobs") {

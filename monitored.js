@@ -67,6 +67,7 @@ window.MONITORED_COMPANIES = [
   "IMC Trading",
   "Instacart",
   "Jane Street",
+  "JPMorgan",
   "Jump Trading",
   "Keystone Strategy",
   "Khan Academy",
@@ -154,19 +155,19 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 145,
-  "companies": 145,
+  "sources": 146,
+  "companies": 146,
   "byPlatform": {
     "greenhouse": 95,
     "workday": 22,
-    "custom": 1,
+    "custom": 2,
     "lever": 3,
     "ashby": 17,
     "smartrecruiters": 6,
     "usajobs": 1
   },
   "byField": {
-    "Finance": 44,
+    "Finance": 45,
     "Technology": 60,
     "Consulting": 3,
     "Healthcare": 7,
