@@ -45,6 +45,7 @@ const SOURCES = [
   // Investment banking
   // Citi runs its own careers site (no supported ATS) — see company-scrapers/citi.js
   { company: "Citi", short: "C", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "citi" },
+  { company: "JPMorgan", short: "JPM", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "jpmorgan" },
   // studentBoard: this Workday site is PJT's students-only board, so campus
   // titles ("2027 Full Time Analyst") are trustworthy here. Never set this on
   // a general/experienced-hire board — see STUDENT_BOARD_TITLE in aggregator.js.
