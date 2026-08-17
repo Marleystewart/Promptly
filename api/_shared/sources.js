@@ -45,6 +45,11 @@ const SOURCES = [
   // Investment banking
   // Citi runs its own careers site (no supported ATS) — see company-scrapers/citi.js
   { company: "Citi", short: "C", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "citi" },
+  // studentBoard: this Workday site is PJT's students-only board, so campus
+  // titles ("2027 Full Time Analyst") are trustworthy here. Never set this on
+  // a general/experienced-hire board — see STUDENT_BOARD_TITLE in aggregator.js.
+  { company: "PJT Partners", short: "PJT", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "pjtpartners", dc: "wd1", site: "students", studentBoard: true },
+  { company: "State Street", short: "STT", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "statestreet", dc: "wd1", site: "Global" },
   { company: "Guggenheim Securities", short: "GUG", logoClass: "gug", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "guggenheim", dc: "wd1", site: "Guggenheim_Careers_Campus" },
   { company: "Houlihan Lokey", short: "HL", logoClass: "laz", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "hl", dc: "wd1", site: "Campus" },
   // Fintech (consumer finance)

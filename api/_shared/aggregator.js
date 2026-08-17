@@ -23,6 +23,13 @@ const EXCLUDE_TITLE = /experienced|senior|staff|principal|\blead\b|manager|direc
 // roles into the feed. Found by sampling real output, not by review.
 const INTERN_TITLE = /\bintern\b|\binterns\b|\binternship\b|\bsummer analyst\b|\bco-?op\b/i;
 const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|early career|entry[ -]?level|campus hire|rotational program|analyst program/i;
+// Titles that only mean "new grad" on a board that is ITSELF student-only.
+// "2027 Full Time Analyst" is the canonical campus-hire title in banking, but
+// the same words describe an experienced hire on a general board — so this
+// pattern is gated behind an explicit source flag (studentBoard: true) and is
+// never applied to a general feed. Same reasoning as the USAJOBS hiringPath
+// gate: when the FEED is already scoped to students, the feed is the evidence.
+const STUDENT_BOARD_TITLE = /\bfull[- ]?time analyst\b|\banalyst\b.*\bprogram\b|\bgraduate (analyst|programme?)\b/i;
 const CYCLE_YEAR = /\b(2026|2027|2028)\b/;
 const SEASON = /\b(spring|summer|fall|autumn|winter)\b/i;
 // Not a real, student-relevant job req: talent pools, mailing lists, general
@@ -48,7 +55,7 @@ function titleCase(s) {
 // The honest resolution is to keep them but label the term "Internship" rather
 // than guessing "Summer 2027". Unknown beats incorrect: a student filtering for
 // Summer 2027 must never be shown a role we cannot place in that cycle.
-function detectCycle(title, location, allowUndatedIntern = true) {
+function detectCycle(title, location, allowUndatedIntern = true, studentBoard = false) {
   if (!title) return null;
   // Check both title and location for international cues — some feeds put the
   // city in the title ("2026 Warsaw Data Internship") and leave location blank.
@@ -67,7 +74,7 @@ function detectCycle(title, location, allowUndatedIntern = true) {
     }
     return allowUndatedIntern ? "Internship" : null;
   }
-  if (NEWGRAD_TITLE.test(title)) {
+  if (NEWGRAD_TITLE.test(title) || (studentBoard && STUDENT_BOARD_TITLE.test(title))) {
     return yearMatch ? `New Grad ${yearMatch[1]}` : "New Grad";
   }
   return null;
@@ -160,7 +167,7 @@ async function fetchWorkday(src) {
       if (!postings.length) break;
       for (const p of postings) {
         if (!p.externalPath || seenPaths.has(p.externalPath)) continue;
-        const cycle = detectCycle(p.title, p.locationsText);
+        const cycle = detectCycle(p.title, p.locationsText, true, Boolean(src.studentBoard));
         if (!cycle) continue;
         seenPaths.add(p.externalPath);
         const url = `${base}/en-US/${src.site}${p.externalPath}`;

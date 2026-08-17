@@ -22,6 +22,22 @@ assert.strictEqual(detectCycle("2027 Summer Analyst Program", "New York"), "Summ
 // A student filtering for Summer 2027 must never be handed an unknown term.
 assert.notStrictEqual(detectCycle("Software Engineer Intern", "Chicago"), "Summer 2027");
 
+// ── studentBoard gate ─────────────────────────────────────────────────────
+// "Full Time Analyst" is the canonical campus-hire title in banking, but the
+// same words describe an experienced hire. It counts ONLY on a board that is
+// itself students-only (sources.js studentBoard: true). If this leaks to the
+// default path, general Workday feeds start emitting experienced analyst roles
+// as student jobs — the exact "wrong beats unknown" failure this repo forbids.
+assert.strictEqual(detectCycle("2027 Full Time Analyst - Strategic Advisory", "New York"), null,
+  "Full Time Analyst must NOT be accepted on a general board");
+assert.strictEqual(detectCycle("2027 Full Time Analyst - Strategic Advisory", "New York", true, true), "New Grad 2027",
+  "Full Time Analyst must be accepted on a student-only board");
+// The other gates still apply on a student board.
+assert.strictEqual(detectCycle("Senior Full Time Analyst", "New York", true, true), null,
+  "seniority filter must still apply on a student board");
+assert.strictEqual(detectCycle("2026 Full Time Analyst (Hong Kong)", "Hong Kong", true, true), null,
+  "international filter must still apply on a student board");
+
 // ── Non-US and non-student roles stay out ─────────────────────────────────
 for (const [title, location] of [
   ["Quantitative Research Intern", "London"],

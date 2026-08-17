@@ -95,6 +95,7 @@ window.MONITORED_COMPANIES = [
   "PDT Partners",
   "Peloton",
   "Pinterest",
+  "PJT Partners",
   "PNC Financial Services",
   "Point72",
   "Postman",
@@ -120,6 +121,7 @@ window.MONITORED_COMPANIES = [
   "Spotify",
   "Squarepoint Capital",
   "Squarespace",
+  "State Street",
   "Stripe",
   "Supabase",
   "Sweetgreen",
@@ -152,11 +154,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 143,
-  "companies": 143,
+  "sources": 145,
+  "companies": 145,
   "byPlatform": {
     "greenhouse": 95,
-    "workday": 20,
+    "workday": 22,
     "custom": 1,
     "lever": 3,
     "ashby": 17,
@@ -164,7 +166,7 @@ window.PROMPTLY_COVERAGE = {
     "usajobs": 1
   },
   "byField": {
-    "Finance": 42,
+    "Finance": 44,
     "Technology": 60,
     "Consulting": 3,
     "Healthcare": 7,
