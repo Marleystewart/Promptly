@@ -14,6 +14,7 @@ window.MONITORED_COMPANIES = [
   "Amplitude",
   "Anduril Industries",
   "Anthropic",
+  "AQR Capital",
   "Aquatic Capital Management",
   "Ares Management",
   "Arrowstreet Capital",
@@ -155,10 +156,10 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 146,
-  "companies": 146,
+  "sources": 149,
+  "companies": 147,
   "byPlatform": {
-    "greenhouse": 95,
+    "greenhouse": 98,
     "workday": 22,
     "custom": 2,
     "lever": 3,
@@ -167,7 +168,7 @@ window.PROMPTLY_COVERAGE = {
     "usajobs": 1
   },
   "byField": {
-    "Finance": 45,
+    "Finance": 48,
     "Technology": 60,
     "Consulting": 3,
     "Healthcare": 7,

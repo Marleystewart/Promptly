@@ -31,12 +31,15 @@ const SOURCES = [
   { company: "Jump Trading", short: "JUMP", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "jumptrading" },
   { company: "PDT Partners", short: "PDT", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "pdtpartners" },
   { company: "Squarepoint Capital", short: "SQP", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "squarepointcapital" },
+  { company: "AQR Capital", short: "AQR", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "aqr" },
+  { company: "Schonfeld", short: "SCH", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "schonfeld" },
   // Quant trading / market makers
   { company: "IMC Trading", short: "IMC", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "imc" },
   { company: "Akuna Capital", short: "AKU", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "akunacapital" },
   { company: "Flow Traders", short: "FLOW", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "flowtraders" },
   { company: "Old Mission", short: "OMC", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "oldmissioncapital" },
   { company: "Five Rings", short: "5R", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "fiveringsllc" },
+  { company: "Virtu Financial", short: "VIRT", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "virtu" },
   // Private equity / asset management
   { company: "General Atlantic", short: "GA", logoClass: "ga", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "generalatlantic" },
   { company: "Bain Capital", short: "BCap", logoClass: "bcap", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "baincapital", dc: "wd1", site: "External_Public" },
