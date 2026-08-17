@@ -156,10 +156,10 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 149,
+  "sources": 147,
   "companies": 147,
   "byPlatform": {
-    "greenhouse": 98,
+    "greenhouse": 96,
     "workday": 22,
     "custom": 2,
     "lever": 3,
@@ -168,7 +168,7 @@ window.PROMPTLY_COVERAGE = {
     "usajobs": 1
   },
   "byField": {
-    "Finance": 48,
+    "Finance": 46,
     "Technology": 60,
     "Consulting": 3,
     "Healthcare": 7,
