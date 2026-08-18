@@ -13,6 +13,10 @@ const { SOURCES } = require("./sources");
 // included because many feeds give "Bristol, United Kingdom" with a city we
 // don't list.
 const INTERNATIONAL = /london|hong ?kong|singapore|japan|munich|germany|india|toronto|calgary|montr|ottawa|waterloo, on|amsterdam|shanghai|sydney|melbourne|brisbane|perth|auckland|paris|zurich|geneva|dublin|tokyo|osaka|seoul|taipei|taiwan|\bhk\b|\buk\b|united kingdom|england|scotland|wales|ireland|tel aviv|israel|herzliya|madrid|barcelona|milan|rome|frankfurt|berlin|hamburg|stuttgart|warsaw|poland|krak|bucharest|romania|budapest|hungary|prague|czech|vienna|austria|bangalore|bengaluru|hyderabad|mumbai|pune|chennai|gurgaon|noida|manila|philippines|jakarta|indonesia|kuala lumpur|malaysia|bangkok|thailand|vietnam|hanoi|shenzhen|beijing|guangzhou|china|dubai|abu dhabi|\buae\b|saudi|riyadh|qatar|doha|vancouver|ontario|quebec|alberta|british columbia|canada|stockholm|sweden|oslo|norway|copenhagen|denmark|helsinki|finland|brussels|belgium|luxembourg|switzerland|netherlands|rotterdam|eindhoven|edinburgh|manchester|glasgow|birmingham, uk|bristol|cambridge, uk|oxford, uk|leeds|belfast|são paulo|sao paulo|brazil|mexico city|guadalajara|bogot|colombia|buenos aires|argentina|santiago|chile|lima|peru|cairo|egypt|nairobi|kenya|lagos|nigeria|johannesburg|cape town|south africa|spain|portugal|lisbon|greece|athens|turkey|istanbul|ukraine|serbia|croatia|slovakia|slovenia|bulgaria|estonia|latvia|lithuania|iceland|malta|cyprus|emea\b|apac\b|latam\b/i;
+// Some employers publish one req for several offices, e.g. "Austin, TX,
+// United States; London, United Kingdom; Singapore". An international office
+// must not hide the same req's explicit US locations.
+const US_LOCATION = /\bunited states\b|\busa\b|,\s*(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC)\b/i;
 // Seniority / staleness / non-student gate — keeps experienced roles, past
 // cycles, and internal hiring roles out of BOTH the intern and new-grad paths.
 // "recruiter/recruiting" excludes "Campus Recruiter"-type staff jobs that
@@ -41,6 +45,14 @@ function titleCase(s) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
 }
 
+function preferUsLocations(location) {
+  const value = String(location || "").replace(/\s+/g, " ").trim();
+  const parts = value.split(/\s*;\s*/).filter(Boolean);
+  if (parts.length < 2) return value;
+  const usParts = parts.filter((part) => US_LOCATION.test(part));
+  return usParts.length ? usParts.join("; ") : value;
+}
+
 // Detect which recruiting cycle a posting belongs to, or null if it's not a
 // student-relevant role. Internships require an explicit target year (keeps
 // quality tight); new-grad/full-time entry roles are matched by explicit
@@ -59,7 +71,8 @@ function detectCycle(title, location, allowUndatedIntern = true, studentBoard = 
   if (!title) return null;
   // Check both title and location for international cues — some feeds put the
   // city in the title ("2026 Warsaw Data Internship") and leave location blank.
-  if (INTERNATIONAL.test(`${title} ${location || ""}`)) return null; // US-focused audience
+  if (INTERNATIONAL.test(title) && !US_LOCATION.test(title)) return null;
+  if (INTERNATIONAL.test(location || "") && !US_LOCATION.test(location || "")) return null;
   if (EXCLUDE_TITLE.test(title)) return null;                 // not experienced / past cycles
   if (NON_ROLE.test(title)) return null;                       // talent pools / non-reqs
   const yearMatch = title.match(CYCLE_YEAR);
@@ -325,7 +338,9 @@ async function fetchCustom(src) {
 
 // Strip tracking/session parameters so ?gh_src=... and ?utm_campaign=... do not
 // make one posting look like several.
-const TRACKING_PARAM = /^(utm_|gh_|ref|source|src|lever-|trk|mc_|fbclid|gclid|msclkid|_ga|campaign|medium)/i;
+// gh_jid is not tracking: employers that embed Greenhouse on their own domain
+// use it as the job's only identity (all HRT postings otherwise share /job/).
+const TRACKING_PARAM = /^(utm_|gh_(?!jid$)|ref|source|src|lever-|trk|mc_|fbclid|gclid|msclkid|_ga|campaign|medium)/i;
 
 function canonicalUrl(rawUrl) {
   const value = String(rawUrl || "").trim();
@@ -390,6 +405,7 @@ function authorityScore(item) {
 // forces us to use because none of them expose it structurally.
 function normalize(src, title, url, location, cycle = "Summer 2027", workplaceType = null) {
   const slug = src.board || src.tenant;
+  const displayLocation = preferUsLocations(location);
   const remote = workplaceType ? workplaceType === "Remote" : /remote/i.test(String(location || ""));
   return {
     company: src.company,
@@ -402,8 +418,8 @@ function normalize(src, title, url, location, cycle = "Summer 2027", workplaceTy
     program: cycle,
     cycle,
     deadline: "See posting",
-    opened: location ? `Live • ${String(location).split(",")[0].trim()}` : "Live posting",
-    location: location ? String(location).replace(/\s+/g, " ").trim().slice(0, 120) : "",
+    opened: displayLocation ? `Live • ${displayLocation.split(",")[0].trim()}` : "Live posting",
+    location: displayLocation.slice(0, 120),
     remote,
     workplaceType: workplaceType || null,
     sourceLabel: `${src.company} – verified live posting`,
@@ -519,4 +535,4 @@ async function aggregateOpenings() {
   return { openings, sourceStatus, updatedAt: new Date().toISOString() };
 }
 
-module.exports = { aggregateOpenings, isRelevant, detectCycle, fetchOne, isPastCycle, canonicalUrl, normalizeCompany, normalizeRole };
+module.exports = { aggregateOpenings, isRelevant, detectCycle, fetchOne, isPastCycle, canonicalUrl, normalizeCompany, normalizeRole, preferUsLocations };

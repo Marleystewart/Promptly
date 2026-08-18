@@ -32,17 +32,20 @@ const SOURCES = [
   { company: "PDT Partners", short: "PDT", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "pdtpartners" },
   { company: "Squarepoint Capital", short: "SQP", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "squarepointcapital" },
   { company: "AQR Capital", short: "AQR", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "aqr" },
+  { company: "Verition", short: "VER", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "veritiongroupllc" },
   // Quant trading / market makers
   { company: "IMC Trading", short: "IMC", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "imc" },
   { company: "Akuna Capital", short: "AKU", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "akunacapital" },
   { company: "Flow Traders", short: "FLOW", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "flowtraders" },
   { company: "Old Mission", short: "OMC", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "oldmissioncapital" },
   { company: "Five Rings", short: "5R", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "fiveringsllc" },
+  { company: "Hudson River Trading", short: "HRT", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "wehrtyou" },
   // Private equity / asset management
   { company: "General Atlantic", short: "GA", logoClass: "ga", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "generalatlantic" },
   { company: "Bain Capital", short: "BCap", logoClass: "bcap", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "baincapital", dc: "wd1", site: "External_Public" },
   { company: "Blackstone", short: "BX", logoClass: "bx", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "blackstone", dc: "wd1", site: "Blackstone_Campus_Careers" },
   { company: "Ares Management", short: "ARES", logoClass: "ares", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "aresmgmt", dc: "wd1", site: "external" },
+  { company: "Wellington Management", short: "WELL", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "wellington", dc: "wd5", site: "External" },
   // Investment banking
   // Citi runs its own careers site (no supported ATS) — see company-scrapers/citi.js
   { company: "Citi", short: "C", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "citi" },
