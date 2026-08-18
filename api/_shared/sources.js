@@ -102,6 +102,13 @@ const SOURCES = [
   // ═══ HEALTHCARE / BIOTECH ════════════════════════════════════════════════
   { company: "Ginkgo Bioworks", short: "DNA", logoClass: "health", field: "Healthcare", ats: "greenhouse", board: "ginkgobioworks" },
   { company: "Recursion", short: "RXRX", logoClass: "health", field: "Healthcare", ats: "greenhouse", board: "recursionpharmaceuticals" },
+  // Boards verified live and responding. Campus reqs open Sept–Nov, so most
+  // of these legitimately return 0 in August — the value is catching the
+  // season the moment it opens, not padding today's count.
+  { company: "Natera", short: "NTRA", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "natera" },
+  { company: "Benchling", short: "BNCH", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "ashby", board: "benchling" },
+  { company: "Headway", short: "HDWY", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "ashby", board: "headway" },
+  { company: "Insitro", short: "INSI", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "ashby", board: "insitro" },
 
   // ═══ EDUCATION ═══════════════════════════════════════════════════════════
   { company: "Khan Academy", short: "KA", logoClass: "edu", field: "Education", ats: "greenhouse", board: "khanacademy" },
@@ -132,6 +139,17 @@ const SOURCES = [
   { company: "Anduril Industries", short: "AND", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "greenhouse", board: "andurilindustries" },
   { company: "Zipline", short: "ZIP", logoClass: "eng", field: "Engineering", subField: "Robotics", ats: "greenhouse", board: "flyzipline" },
   { company: "Vox Media", short: "VOX", logoClass: "media", field: "Media", subField: "Digital Media", ats: "greenhouse", board: "voxmedia" },
+  { company: "Axios", short: "AXIO", logoClass: "media", field: "Media", subField: "News", ats: "greenhouse", board: "axios" },
+  { company: "Hearst", short: "HRST", logoClass: "media", field: "Media", subField: "News", ats: "greenhouse", board: "hearst" },
+  { company: "Fox", short: "FOX", logoClass: "media", field: "Media", subField: "Entertainment", ats: "greenhouse", board: "fox" },
+  { company: "Substack", short: "SUBS", logoClass: "media", field: "Media", subField: "Digital Media", ats: "ashby", board: "substack" },
+  { company: "Patreon", short: "PTRN", logoClass: "media", field: "Media", subField: "Digital Media", ats: "ashby", board: "patreon" },
+  { company: "Waymo", short: "WAYM", logoClass: "eng", field: "Engineering", subField: "Robotics", ats: "greenhouse", board: "waymo" },
+  { company: "Zoox", short: "ZOOX", logoClass: "eng", field: "Engineering", subField: "Robotics", ats: "lever", board: "zoox" },
+  { company: "Nuro", short: "NURO", logoClass: "eng", field: "Engineering", subField: "Robotics", ats: "greenhouse", board: "nuro" },
+  { company: "Lucid Motors", short: "LCID", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "greenhouse", board: "lucidmotors" },
+  { company: "Shield AI", short: "SHLD", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "ashby", board: "shield-ai" },
+  { company: "Gopuff", short: "GPUF", logoClass: "consumer", field: "Consumer", subField: "Retail", ats: "lever", board: "gopuff" },
   { company: "Wikimedia Foundation", short: "WIKI", logoClass: "npo", field: "Nonprofit", subField: "Technology & Knowledge", ats: "greenhouse", board: "wikimedia" },
   { company: "Oscar Health", short: "OSCR", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "oscar" },
   { company: "Glossier", short: "GLOS", logoClass: "consumer", field: "Consumer", subField: "Beauty", ats: "greenhouse", board: "glossier" },
