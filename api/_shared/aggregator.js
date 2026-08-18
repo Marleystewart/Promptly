@@ -16,7 +16,40 @@ const INTERNATIONAL = /london|hong ?kong|singapore|japan|munich|germany|india|to
 // Some employers publish one req for several offices, e.g. "Austin, TX,
 // United States; London, United Kingdom; Singapore". An international office
 // must not hide the same req's explicit US locations.
-const US_LOCATION = /\bunited states\b|\busa\b|,\s*(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC)\b/i;
+// Explicit country wording is unambiguous; a bare two-letter state code is not.
+// Case matters: lowercase "or" in "New York, London, or Paris" otherwise reads
+// as Oregon. Feeds write real state codes uppercase, so require that.
+const US_COUNTRY = /\bunited states\b|\busa\b/i;
+const US_STATE_CODE = /,\s*(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC)\b/;
+
+// Dutch province codes collide with US state codes (NH = Noord-Holland,
+// ZH = Zuid-Holland, UT = Utrecht, FL = Flevoland, NB = Noord-Brabant).
+// "Amsterdam, NH" is the Netherlands, not New Hampshire — confirmed on Lucid
+// Motors' board, where the neighbouring req at that location is a
+// German-speaking role. Only treat the code as foreign when a Dutch city is
+// actually present, so real US cities that share a name with a foreign one
+// ("Bristol, PA", "Manchester, NH", "Cambridge, MA") still resolve as US.
+const DUTCH_CITY = /amsterdam|rotterdam|eindhoven|utrecht|haarlem|the hague|den haag|groningen|maastricht|delft|leiden|tilburg|nijmegen/i;
+const DUTCH_PROVINCE_CODE = /,\s*(?:NH|ZH|UT|FL|NB|GE|OV|DR|GR|FR|LI)\b/;
+
+// Is ONE location a US office?
+function isUsLocationPart(part) {
+  const value = String(part || "");
+  if (US_COUNTRY.test(value)) return true;
+  if (DUTCH_CITY.test(value) && DUTCH_PROVINCE_CODE.test(value)) return false;
+  return US_STATE_CODE.test(value);
+}
+
+// A req can list several offices ("Singapore; New York, NY"); it counts as US
+// if ANY office is.
+function isUsLocation(location) {
+  return String(location || "")
+    .split(/\s*;\s*/)
+    .filter(Boolean)
+    .some(isUsLocationPart);
+}
+
+const US_LOCATION = { test: (value) => isUsLocation(value) };
 // Seniority / staleness / non-student gate — keeps experienced roles, past
 // cycles, and internal hiring roles out of BOTH the intern and new-grad paths.
 // "recruiter/recruiting" excludes "Campus Recruiter"-type staff jobs that

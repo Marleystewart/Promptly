@@ -28,6 +28,21 @@ assert.strictEqual(
   "Austin, TX, United States; Chicago, Illinois, United States; New York, NY, United States"
 );
 
+// Two-letter codes are the sharp edge of US detection, in both directions.
+// Found by auditing real feed output, not by review:
+//   • "Amsterdam, NH" is Noord-Holland (Lucid Motors' board — the neighbouring
+//     req at that location is a German-speaking role), not New Hampshire.
+//   • lowercase "or" in "New York, London, or Paris" is not Oregon.
+// But real US cities that share a name with a foreign one must still resolve.
+for (const foreign of ["Amsterdam, NH", "Rotterdam, ZH", "New York, London, or Paris"]) {
+  assert.strictEqual(detectCycle("Software Engineer Intern", foreign), null,
+    `${foreign} must not be read as a US location`);
+}
+for (const domestic of ["Manchester, NH", "Bristol, PA", "Cambridge, MA", "Portland, OR"]) {
+  assert.notStrictEqual(detectCycle("Software Engineer Intern", domestic), null,
+    `${domestic} is a real US city and must survive`);
+}
+
 // A student filtering for Summer 2027 must never be handed an unknown term.
 assert.notStrictEqual(detectCycle("Software Engineer Intern", "Chicago"), "Summer 2027");
 
