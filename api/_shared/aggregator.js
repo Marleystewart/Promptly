@@ -26,14 +26,14 @@ const EXCLUDE_TITLE = /experienced|senior|staff|principal|\blead\b|manager|direc
 // and "INTERNational Business Developer", pulling non-student and overseas
 // roles into the feed. Found by sampling real output, not by review.
 const INTERN_TITLE = /\bintern\b|\binterns\b|\binternship\b|\bsummer analyst\b|\bco-?op\b/i;
-const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|early career|entry[ -]?level|campus hire|rotational program|analyst program/i;
+const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|ph\.?d\.? graduate|early career|entry[ -]?level|campus hire|rotational program|analyst program/i;
 // Titles that only mean "new grad" on a board that is ITSELF student-only.
 // "2027 Full Time Analyst" is the canonical campus-hire title in banking, but
 // the same words describe an experienced hire on a general board — so this
 // pattern is gated behind an explicit source flag (studentBoard: true) and is
 // never applied to a general feed. Same reasoning as the USAJOBS hiringPath
 // gate: when the FEED is already scoped to students, the feed is the evidence.
-const STUDENT_BOARD_TITLE = /\bfull[- ]?time analyst\b|\banalyst\b.*\bprogram\b|\bgraduate (analyst|programme?)\b/i;
+const STUDENT_BOARD_TITLE = /\bfull[- ]?time (analyst|program)\b|\banalyst\b.*\bprogram\b|\bgraduate (analyst|programme?)\b/i;
 const CYCLE_YEAR = /\b(2026|2027|2028)\b/;
 const SEASON = /\b(spring|summer|fall|autumn|winter)\b/i;
 // Not a real, student-relevant job req: talent pools, mailing lists, general

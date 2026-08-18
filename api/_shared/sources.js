@@ -33,6 +33,10 @@ const SOURCES = [
   { company: "Squarepoint Capital", short: "SQP", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "squarepointcapital" },
   { company: "AQR Capital", short: "AQR", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "aqr" },
   { company: "Verition", short: "VER", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "veritiongroupllc" },
+  { company: "Citadel", short: "CITA", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "custom", handler: "citadel" },
+  { company: "Millennium", short: "MLP", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "custom", handler: "millennium", studentBoard: true },
+  { company: "Balyasny", short: "BAM", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "custom", handler: "balyasny" },
+  { company: "D. E. Shaw", short: "DES", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "custom", handler: "deshaw" },
   // Quant trading / market makers
   { company: "IMC Trading", short: "IMC", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "imc" },
   { company: "Akuna Capital", short: "AKU", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "akunacapital" },
@@ -40,6 +44,7 @@ const SOURCES = [
   { company: "Old Mission", short: "OMC", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "oldmissioncapital" },
   { company: "Five Rings", short: "5R", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "fiveringsllc" },
   { company: "Hudson River Trading", short: "HRT", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "wehrtyou" },
+  { company: "Two Sigma", short: "2Σ", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "custom", handler: "twosigma" },
   // Private equity / asset management
   { company: "General Atlantic", short: "GA", logoClass: "ga", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "generalatlantic" },
   { company: "Bain Capital", short: "BCap", logoClass: "bcap", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "baincapital", dc: "wd1", site: "External_Public" },
@@ -67,6 +72,7 @@ const SOURCES = [
   { company: "Chime", short: "CHME", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "chime" },
   { company: "SoFi", short: "SOFI", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "sofi" },
   { company: "Betterment", short: "BTMT", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "betterment" },
+  { company: "Interactive Brokers", short: "IBKR", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "custom", handler: "interactivebrokers" },
 
   // ═══ TECHNOLOGY ══════════════════════════════════════════════════════════
   { company: "Anthropic", short: "ANTH", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "anthropic" },
@@ -123,7 +129,7 @@ const SOURCES = [
   { company: "Chicago Trading (CTC)", short: "CTC", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "chicagotrading" },
   { company: "Schonfeld", short: "SCHF", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "schonfeld" },
   { company: "Vatic Labs", short: "VATC", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "vaticlabs" },
-  { company: "Marshall Wace", short: "MW", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "marshallwace" },
+  { company: "Marshall Wace", short: "MW", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "mwinternshipprogram", studentBoard: true },
   // Finance — fintech
   { company: "Nubank", short: "NU", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "nubank" },
   // Technology
