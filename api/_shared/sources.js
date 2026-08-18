@@ -52,6 +52,7 @@ const SOURCES = [
   // a general/experienced-hire board — see STUDENT_BOARD_TITLE in aggregator.js.
   { company: "PJT Partners", short: "PJT", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "pjtpartners", dc: "wd1", site: "students", studentBoard: true },
   { company: "State Street", short: "STT", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "statestreet", dc: "wd1", site: "Global" },
+  { company: "William Blair", short: "WB", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "greenhouse", board: "williamblair" },
   { company: "Guggenheim Securities", short: "GUG", logoClass: "gug", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "guggenheim", dc: "wd1", site: "Guggenheim_Careers_Campus" },
   { company: "Houlihan Lokey", short: "HL", logoClass: "laz", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "hl", dc: "wd1", site: "Campus" },
   // Fintech (consumer finance)

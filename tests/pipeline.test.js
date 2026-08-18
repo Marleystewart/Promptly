@@ -22,21 +22,36 @@ assert.strictEqual(detectCycle("2027 Summer Analyst Program", "New York"), "Summ
 // A student filtering for Summer 2027 must never be handed an unknown term.
 assert.notStrictEqual(detectCycle("Software Engineer Intern", "Chicago"), "Summer 2027");
 
-// ── studentBoard gate ─────────────────────────────────────────────────────
+// ── Campus-title gate ─────────────────────────────────────────────────────
 // "Full Time Analyst" is the canonical campus-hire title in banking, but the
-// same words describe an experienced hire. It counts ONLY on a board that is
-// itself students-only (sources.js studentBoard: true). If this leaks to the
-// default path, general Workday feeds start emitting experienced analyst roles
-// as student jobs — the exact "wrong beats unknown" failure this repo forbids.
-assert.strictEqual(detectCycle("2027 Full Time Analyst - Strategic Advisory", "New York"), null,
-  "Full Time Analyst must NOT be accepted on a general board");
-assert.strictEqual(detectCycle("2027 Full Time Analyst - Strategic Advisory", "New York", true, true), "New Grad 2027",
-  "Full Time Analyst must be accepted on a student-only board");
+// same words describe an experienced hire. It needs independent evidence:
+// either a students-only board, or an explicit future cycle year in the title.
+// Without either, it stays out — emitting an experienced analyst role as a
+// student job is the exact "wrong beats unknown" failure this repo forbids.
+assert.strictEqual(detectCycle("Full Time Analyst - Strategic Advisory", "New York"), null,
+  "an UNDATED campus title on a general board has no evidence and must stay out");
+assert.strictEqual(detectCycle("Full Time Analyst - Strategic Advisory", "New York", true, true), "New Grad",
+  "a students-only board is evidence enough without a year");
 // The other gates still apply on a student board.
 assert.strictEqual(detectCycle("Senior Full Time Analyst", "New York", true, true), null,
   "seniority filter must still apply on a student board");
 assert.strictEqual(detectCycle("2026 Full Time Analyst (Hong Kong)", "Hong Kong", true, true), null,
   "international filter must still apply on a student board");
+
+// An explicit FUTURE cycle year is independent evidence of a campus class, so
+// the title counts even on a mixed board. Verified against William Blair's
+// Greenhouse board, where campus roles are dated and experienced ones are not.
+assert.strictEqual(detectCycle("2027 Investment Banking Full-Time Analyst", "Chicago, Illinois"), "New Grad 2027",
+  "a DATED full-time analyst role is a campus class even on a mixed board");
+assert.strictEqual(detectCycle("Investment Banking Analyst, Private Capital Markets", "New York"), null,
+  "an UNDATED analyst role on a mixed board stays out");
+assert.strictEqual(detectCycle("Investment Banking Experienced Analyst - Tech", "Chicago"), null,
+  "experienced roles stay out even when the board has campus roles");
+assert.strictEqual(detectCycle("2025 Full-Time Analyst", "New York"), null,
+  "a past-year campus class is still stale");
+// MBA associate programs are a different audience than the undergrad product.
+assert.strictEqual(detectCycle("2027 Investment Banking Full-Time MBA Associate", "Chicago"), null,
+  "MBA associate programs are not undergrad campus roles");
 
 // ── Non-US and non-student roles stay out ─────────────────────────────────
 for (const [title, location] of [

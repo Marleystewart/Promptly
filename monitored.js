@@ -150,16 +150,17 @@ window.MONITORED_COMPANIES = [
   "Webflow",
   "Western Digital",
   "Wikimedia Foundation",
+  "William Blair",
   "Writer",
   "Zipline",
   "Zocdoc"
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 147,
-  "companies": 147,
+  "sources": 148,
+  "companies": 148,
   "byPlatform": {
-    "greenhouse": 96,
+    "greenhouse": 97,
     "workday": 22,
     "custom": 2,
     "lever": 3,
@@ -168,7 +169,7 @@ window.PROMPTLY_COVERAGE = {
     "usajobs": 1
   },
   "byField": {
-    "Finance": 46,
+    "Finance": 47,
     "Technology": 60,
     "Consulting": 3,
     "Healthcare": 7,

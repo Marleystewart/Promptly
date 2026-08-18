@@ -74,7 +74,16 @@ function detectCycle(title, location, allowUndatedIntern = true, studentBoard = 
     }
     return allowUndatedIntern ? "Internship" : null;
   }
-  if (NEWGRAD_TITLE.test(title) || (studentBoard && STUDENT_BOARD_TITLE.test(title))) {
+  // Campus-hire titles ("Full-Time Analyst") are ambiguous on their own, so
+  // they need one of two independent pieces of evidence:
+  //   • the BOARD is students-only (studentBoard), or
+  //   • the TITLE carries an explicit future cycle year — "2027 Investment
+  //     Banking Full-Time Analyst" is a campus class; firms don't put a future
+  //     year on an experienced req, which is what makes the year load-bearing
+  //     rather than decorative. Verified against William Blair's mixed board,
+  //     where every experienced analyst role is undated and every campus one
+  //     is dated.
+  if (NEWGRAD_TITLE.test(title) || ((studentBoard || yearMatch) && STUDENT_BOARD_TITLE.test(title))) {
     return yearMatch ? `New Grad ${yearMatch[1]}` : "New Grad";
   }
   return null;
