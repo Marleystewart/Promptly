@@ -71,6 +71,7 @@ window.MONITORED_COMPANIES = [
   "Headway",
   "Hearst",
   "Houlihan Lokey",
+  "Hudson River Trading",
   "IMC Trading",
   "Insitro",
   "Instacart",
@@ -154,6 +155,7 @@ window.MONITORED_COMPANIES = [
   "Vanta",
   "Vatic Labs",
   "Vercel",
+  "Verition",
   "Virtu Financial",
   "Visa",
   "Voloridge Investment Management",
@@ -162,6 +164,7 @@ window.MONITORED_COMPANIES = [
   "Walleye Capital",
   "Waymo",
   "Webflow",
+  "Wellington Management",
   "Western Digital",
   "Wikimedia Foundation",
   "William Blair",
@@ -172,11 +175,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 163,
-  "companies": 163,
+  "sources": 166,
+  "companies": 166,
   "byPlatform": {
-    "greenhouse": 104,
-    "workday": 22,
+    "greenhouse": 106,
+    "workday": 23,
     "custom": 2,
     "lever": 5,
     "ashby": 23,
@@ -184,7 +187,7 @@ window.PROMPTLY_COVERAGE = {
     "usajobs": 1
   },
   "byField": {
-    "Finance": 47,
+    "Finance": 50,
     "Technology": 60,
     "Consulting": 3,
     "Healthcare": 11,

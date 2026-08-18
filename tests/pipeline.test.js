@@ -6,7 +6,7 @@
 // Rejecting them was a 61% false-negative rate on student-relevant titles.
 
 const assert = require("assert");
-const { detectCycle, isPastCycle, canonicalUrl, normalizeCompany, normalizeRole } = require("../api/_shared/aggregator.js");
+const { detectCycle, isPastCycle, canonicalUrl, normalizeCompany, normalizeRole, preferUsLocations } = require("../api/_shared/aggregator.js");
 
 // ── Undated internships must survive, labelled honestly ───────────────────
 assert.strictEqual(detectCycle("Quantitative Developer Intern", "New York"), "Internship");
@@ -18,6 +18,15 @@ assert.strictEqual(detectCycle("[Summer 2027] Software Engineer Intern", "San Ma
 assert.strictEqual(detectCycle("Software Engineer Intern, Summer 2026", "Seattle"), "Summer 2026");
 assert.strictEqual(detectCycle("Fall 2026 Data Science Intern", "Austin"), "Fall 2026");
 assert.strictEqual(detectCycle("2027 Summer Analyst Program", "New York"), "Summer 2027");
+
+// A single req can cover both US and international offices. Keep it when the
+// feed explicitly includes a US location, but show only those US offices.
+const mixedHrtLocations = "Austin, TX, United States; Chicago, Illinois, United States; London, United Kingdom; New York, NY, United States; Singapore";
+assert.strictEqual(detectCycle("Software Engineering Internship – Summer 2027", mixedHrtLocations), "Summer 2027");
+assert.strictEqual(
+  preferUsLocations(mixedHrtLocations),
+  "Austin, TX, United States; Chicago, Illinois, United States; New York, NY, United States"
+);
 
 // A student filtering for Summer 2027 must never be handed an unknown term.
 assert.notStrictEqual(detectCycle("Software Engineer Intern", "Chicago"), "Summer 2027");
@@ -84,6 +93,11 @@ assert.strictEqual(isPastCycle("New Grad", aug2026), false);
 assert.strictEqual(
   canonicalUrl("https://boards.greenhouse.io/acme/jobs/9?gh_src=abc&utm_source=x#apply"),
   canonicalUrl("https://boards.greenhouse.io/acme/jobs/9")
+);
+assert.notStrictEqual(
+  canonicalUrl("https://acme.com/careers/job/?gh_jid=101"),
+  canonicalUrl("https://acme.com/careers/job/?gh_jid=202"),
+  "gh_jid is a job identifier, not a tracking parameter"
 );
 assert.strictEqual(canonicalUrl("http://www.acme.com/careers/1/"), canonicalUrl("https://acme.com/careers/1"));
 
