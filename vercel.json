@@ -6,6 +6,11 @@
       "source": "/",
       "has": [{ "type": "host", "value": "health.joinpromptly.co" }],
       "destination": "/health.html"
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "promptly-health.vercel.app" }],
+      "destination": "/health.html"
     }
   ],
   "functions": {
