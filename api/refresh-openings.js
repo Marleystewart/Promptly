@@ -11,6 +11,7 @@ const { saveLiveOpenings, getLiveOpenings, filterNeverAlerted, markAlerted, queu
 const { forEachSubscriberBatch } = require("./_shared/store");
 const { sendPushAlert, matchesOpening } = require("./_shared/alerts");
 const { recordNewListings } = require("./_shared/analytics");
+const { recordSourceHealth } = require("./_shared/source-health");
 
 // Don't blast more than this many alerts in a single run (safety valve).
 const MAX_NOTIFY_OPENINGS = 25;
@@ -76,6 +77,12 @@ module.exports = async function handler(req, res) {
 
     // Pull the current live set.
     const result = await aggregateOpenings();
+
+    // Record per-source health against its stored baseline, so a scraper that
+    // silently stops producing is visible instead of just quietly missing.
+    // Never blocks the refresh — a health write failing is not a refresh
+    // failure.
+    await recordSourceHealth(result.sourceStatus).catch(() => {});
 
     // Stamp when each listing was first seen (carried over between runs) so
     // the app can honestly show what's recent.

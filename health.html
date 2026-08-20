@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Promptly — Source Health</title>
+<style>
+  :root {
+    --bg: #0b1020; --panel: #141b31; --line: #232c47;
+    --text: #e8ecf7; --muted: #94a0bd;
+    --ok: #2fbf71; --broken: #ef4d5a; --quiet: #6b7793;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 28px 20px 60px; background: var(--bg); color: var(--text);
+         font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 22px; font-size: 14px; }
+  .auth { display: flex; gap: 10px; margin-bottom: 26px; flex-wrap: wrap; }
+  input, button { font: inherit; border-radius: 10px; border: 1px solid var(--line); }
+  input { flex: 1; min-width: 240px; padding: 12px 14px; background: var(--panel); color: var(--text); }
+  button { padding: 12px 22px; background: #4560e0; color: #fff; border-color: transparent; cursor: pointer; font-weight: 600; }
+  button:hover { background: #3a52c4; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 26px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .tile b { display: block; font-size: 30px; line-height: 1.1; }
+  .tile span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel);
+          border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  tr:last-child td { border-bottom: 0; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 9px; vertical-align: middle; }
+  .dot.ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(47,191,113,.16); }
+  .dot.broken { background: var(--broken); box-shadow: 0 0 0 3px rgba(239,77,90,.18); }
+  .dot.quiet { background: var(--quiet); box-shadow: 0 0 0 3px rgba(107,119,147,.15); }
+  .err { color: var(--broken); font-size: 12.5px; }
+  .muted { color: var(--muted); }
+  .legend { margin: 22px 0 0; color: var(--muted); font-size: 13px; line-height: 1.8; }
+  .scroll { overflow-x: auto; }
+  .custom { font-size: 11px; background: #2a3454; color: #b9c4e2; padding: 2px 7px; border-radius: 6px; margin-left: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Source health</h1>
+  <p class="sub">Every company in the pipeline, and whether it is still producing what it used to. Private — needs the admin secret.</p>
+
+  <div class="auth">
+    <input id="secret" type="password" placeholder="ADMIN_SECRET" autocomplete="off" />
+    <button id="load">Load</button>
+  </div>
+
+  <div class="tiles" id="tiles" hidden>
+    <div class="tile"><b id="c-ok">0</b><span>Stable</span></div>
+    <div class="tile"><b id="c-broken">0</b><span>Needs attention</span></div>
+    <div class="tile"><b id="c-quiet">0</b><span>Quiet (no roles yet)</span></div>
+    <div class="tile"><b id="c-total">0</b><span>Sources tracked</span></div>
+  </div>
+
+  <div class="scroll"><table id="table" hidden>
+    <thead><tr><th>Company</th><th>Type</th><th>Roles now</th><th>Best ever</th><th>Last produced</th><th>Detail</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+
+  <p id="empty" class="muted" hidden>No health data yet. It is written by the hourly refresh cron — check back after the next run.</p>
+
+  <p class="legend">
+    <span class="dot ok"></span><b>Stable</b> — ran clean and returned roles.<br />
+    <span class="dot broken"></span><b>Needs attention</b> — errored, or it has produced roles before and now returns none. That is the honest signal a scraper broke: we cannot see an employer edit their page, only that a source stopped producing what it used to.<br />
+    <span class="dot quiet"></span><b>Quiet</b> — ran clean, returned nothing, and never has. Not a fault: most campus boards are genuinely empty outside September–November.
+  </p>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  function ago(iso) {
+    if (!iso) return "never";
+    const ms = Date.now() - Date.parse(iso);
+    if (!Number.isFinite(ms)) return "—";
+    const m = Math.floor(ms / 60000);
+    if (m < 60) return m + "m ago";
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + "h ago";
+    return Math.floor(h / 24) + "d ago";
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  async function load() {
+    const secret = $("secret").value.trim();
+    if (!secret) return;
+    let data;
+    try {
+      const res = await fetch("/api/admin-stats", { headers: { Authorization: "Bearer " + secret } });
+      if (!res.ok) { alert("Could not load (" + res.status + "). Check the secret."); return; }
+      data = await res.json();
+    } catch (err) { alert("Network error: " + err.message); return; }
+
+    const rows = Array.isArray(data.sourceHealth) ? data.sourceHealth : [];
+    const counts = data.sourceHealthCounts || {};
+    $("c-ok").textContent = counts.ok || 0;
+    $("c-broken").textContent = counts.broken || 0;
+    $("c-quiet").textContent = counts.quiet || 0;
+    $("c-total").textContent = rows.length;
+    $("tiles").hidden = false;
+
+    $("empty").hidden = rows.length > 0;
+    $("table").hidden = rows.length === 0;
+
+    $("rows").innerHTML = rows.map((r) => {
+      const detail = r.state === "broken"
+        ? (r.error
+            ? '<span class="err">' + esc(r.error) + "</span>"
+            : '<span class="err">stopped producing (was ' + (r.bestCount || 0) + ")</span>")
+          + (r.brokeAt ? ' <span class="muted">· since ' + ago(r.brokeAt) + "</span>" : "")
+        : '<span class="muted">—</span>';
+      // A custom scraper is the fragile kind — worth calling out on sight.
+      const tag = r.ats === "custom" ? '<span class="custom">custom scraper</span>' : "";
+      return "<tr>"
+        + '<td><span class="dot ' + esc(r.state) + '"></span>' + esc(r.company) + tag + "</td>"
+        + "<td class=\"muted\">" + esc(r.ats || "—") + "</td>"
+        + "<td>" + (r.count || 0) + "</td>"
+        + "<td class=\"muted\">" + (r.bestCount || 0) + "</td>"
+        + "<td class=\"muted\">" + ago(r.lastOkAt) + "</td>"
+        + "<td>" + detail + "</td>"
+        + "</tr>";
+    }).join("");
+  }
+
+  $("load").addEventListener("click", load);
+  $("secret").addEventListener("keydown", (e) => { if (e.key === "Enter") load(); });
+</script>
+</body>
+</html>

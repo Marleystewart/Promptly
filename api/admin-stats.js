@@ -6,6 +6,7 @@
 const { listSubscribers, takeAdminAttempt, getRedis } = require("./_shared/store");
 const { getStats } = require("./_shared/analytics");
 const { listWatchedSources, listCoverageRequests } = require("./_shared/watched-store");
+const { listSourceHealth } = require("./_shared/source-health");
 const crypto = require("crypto");
 
 function mask(email) {
@@ -86,7 +87,21 @@ module.exports = async function handler(req, res) {
       verify = redis ? await redis.get("promptly:verify:last-run") : null;
     } catch {}
 
+    // Per-source health. Custom scrapers break silently when an employer
+    // redesigns their page, so surface every source's state and sort the
+    // broken ones to the top.
+    let sourceHealth = [];
+    try { sourceHealth = await listSourceHealth(); } catch {}
+    const RANK = { broken: 0, quiet: 1, ok: 2 };
+    sourceHealth.sort((a, b) =>
+      (RANK[a.state] - RANK[b.state]) || String(a.company).localeCompare(String(b.company)));
+
     return res.status(200).json({
+      sourceHealth,
+      sourceHealthCounts: sourceHealth.reduce((acc, s) => {
+        acc[s.state] = (acc[s.state] || 0) + 1;
+        return acc;
+      }, {}),
       watchedCount: watched.length,
       coverageCount: coverage.length,
       watched: watchedRows,
