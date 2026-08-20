@@ -151,14 +151,21 @@
   }
 
   // ── iPhone-style numeric keypad ──────────────────────────────────────────
-  const PIN_LENGTH = 6; // must match ADMIN_PIN's digit count in Vercel
+  // ADMIN_PIN can be 4-8 digits (matches the backend's validation in
+  // api/admin-stats.js), so this does not hard-lock to 6 — it auto-submits
+  // at MAX_PIN_LENGTH, but Enter can also submit early at any length from
+  // MIN_PIN_LENGTH up. Without that, a 4-digit PIN would sit waiting for two
+  // digits that will never come, with no way to tell the user is stuck.
+  const MIN_PIN_LENGTH = 4;
+  const MAX_PIN_LENGTH = 8;
   let entered = "";
   let busy = false;
 
   function renderDots() {
     const dots = $("dots");
     dots.innerHTML = "";
-    for (let i = 0; i < PIN_LENGTH; i += 1) {
+    const shown = Math.max(entered.length, MIN_PIN_LENGTH);
+    for (let i = 0; i < shown; i += 1) {
       const d = document.createElement("div");
       d.className = "d" + (i < entered.length ? " filled" : "");
       dots.appendChild(d);
@@ -190,11 +197,20 @@
   }
 
   function pressDigit(d) {
-    if (busy || entered.length >= PIN_LENGTH) return;
+    if (busy || entered.length >= MAX_PIN_LENGTH) return;
     $("lock-error").textContent = "";
     entered += d;
     renderDots();
-    if (entered.length === PIN_LENGTH) tryUnlock();
+    if (entered.length === MAX_PIN_LENGTH) tryUnlock();
+  }
+
+  function submitIfReady() {
+    if (busy) return;
+    if (entered.length < MIN_PIN_LENGTH) {
+      $("lock-error").textContent = "Enter at least " + MIN_PIN_LENGTH + " digits";
+      return;
+    }
+    tryUnlock();
   }
 
   function pressDelete() {
@@ -205,14 +221,18 @@
 
   (function buildPad() {
     const pad = $("pad");
-    const keys = ["1","2","3","4","5","6","7","8","9","","0","⌫"];
+    // "↵" replaces the old blank ghost key — a click-only user (no physical
+    // keyboard, e.g. a phone) otherwise has no way to submit a PIN shorter
+    // than MAX_PIN_LENGTH at all.
+    const keys = ["1","2","3","4","5","6","7","8","9","↵","0","⌫"];
     keys.forEach((label) => {
       const btn = document.createElement("button");
-      btn.className = "key" + (label === "" ? " ghost" : "");
+      btn.className = "key";
       btn.type = "button";
       btn.textContent = label;
       if (label === "⌫") btn.addEventListener("click", pressDelete);
-      else if (label !== "") btn.addEventListener("click", () => pressDigit(label));
+      else if (label === "↵") btn.addEventListener("click", submitIfReady);
+      else btn.addEventListener("click", () => pressDigit(label));
       pad.appendChild(btn);
     });
   })();
@@ -220,6 +240,7 @@
   document.addEventListener("keydown", (e) => {
     if (/^[0-9]$/.test(e.key)) pressDigit(e.key);
     else if (e.key === "Backspace") pressDelete();
+    else if (e.key === "Enter") submitIfReady();
   });
 
   renderDots();
