@@ -40,17 +40,35 @@
   .legend { margin: 22px 0 0; color: var(--muted); font-size: 13px; line-height: 1.8; }
   .scroll { overflow-x: auto; }
   .custom { font-size: 11px; background: #2a3454; color: #b9c4e2; padding: 2px 7px; border-radius: 6px; margin-left: 6px; }
+
+  /* ── Lock screen ── */
+  #lock { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column;
+          align-items: center; justify-content: center; gap: 26px; z-index: 10; }
+  #lock h2 { margin: 0; font-size: 17px; font-weight: 600; color: var(--text); }
+  #dots { display: flex; gap: 16px; height: 16px; }
+  #dots .d { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid #4a5578; background: transparent; transition: background .1s, transform .1s; }
+  #dots .d.filled { background: var(--text); border-color: var(--text); }
+  #lock.shake #dots { animation: shake .4s; }
+  @keyframes shake { 10%,90%{transform:translateX(-8px)} 20%,80%{transform:translateX(7px)} 30%,50%,70%{transform:translateX(-6px)} 40%,60%{transform:translateX(6px)} }
+  #lock-error { color: var(--broken); font-size: 13px; min-height: 18px; }
+  #pad { display: grid; grid-template-columns: repeat(3, 68px); gap: 18px; }
+  .key { width: 68px; height: 68px; border-radius: 50%; background: var(--panel); border: 1px solid var(--line);
+         color: var(--text); font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .key:active { background: #232d4d; }
+  .key.ghost { visibility: hidden; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>Source health</h1>
-  <p class="sub">Every company in the pipeline, and whether it is still producing what it used to. Private — needs the admin secret.</p>
+<div id="lock">
+  <h2>Enter passcode</h2>
+  <div id="dots"></div>
+  <div id="lock-error">&nbsp;</div>
+  <div id="pad"></div>
+</div>
 
-  <div class="auth">
-    <input id="secret" type="password" placeholder="ADMIN_SECRET" autocomplete="off" />
-    <button id="load">Load</button>
-  </div>
+<div class="wrap" id="content" hidden>
+  <h1>Source health</h1>
+  <p class="sub">Every company in the pipeline, and whether it is still producing what it used to.</p>
 
   <div class="tiles" id="tiles" hidden>
     <div class="tile"><b id="c-ok">0</b><span>Stable</span></div>
@@ -92,15 +110,13 @@
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
-  async function load() {
-    const secret = $("secret").value.trim();
-    if (!secret) return;
+  async function load(pin) {
     let data;
     try {
-      const res = await fetch("/api/admin-stats", { headers: { Authorization: "Bearer " + secret } });
-      if (!res.ok) { alert("Could not load (" + res.status + "). Check the secret."); return; }
+      const res = await fetch("/api/admin-stats", { headers: { Authorization: "Bearer " + pin } });
+      if (!res.ok) return { ok: false, status: res.status };
       data = await res.json();
-    } catch (err) { alert("Network error: " + err.message); return; }
+    } catch (err) { return { ok: false, error: err.message }; }
 
     const rows = Array.isArray(data.sourceHealth) ? data.sourceHealth : [];
     const counts = data.sourceHealthCounts || {};
@@ -131,10 +147,82 @@
         + "<td>" + detail + "</td>"
         + "</tr>";
     }).join("");
+    return { ok: true };
   }
 
-  $("load").addEventListener("click", load);
-  $("secret").addEventListener("keydown", (e) => { if (e.key === "Enter") load(); });
+  // ── iPhone-style numeric keypad ──────────────────────────────────────────
+  const PIN_LENGTH = 6; // must match ADMIN_PIN's digit count in Vercel
+  let entered = "";
+  let busy = false;
+
+  function renderDots() {
+    const dots = $("dots");
+    dots.innerHTML = "";
+    for (let i = 0; i < PIN_LENGTH; i += 1) {
+      const d = document.createElement("div");
+      d.className = "d" + (i < entered.length ? " filled" : "");
+      dots.appendChild(d);
+    }
+  }
+
+  function shakeAndClear(message) {
+    const lock = $("lock");
+    $("lock-error").textContent = message;
+    lock.classList.add("shake");
+    setTimeout(() => lock.classList.remove("shake"), 400);
+    entered = "";
+    renderDots();
+  }
+
+  async function tryUnlock() {
+    busy = true;
+    const result = await load(entered);
+    busy = false;
+    if (result.ok) {
+      $("lock").hidden = true;
+      $("content").hidden = false;
+      return;
+    }
+    const message = result.status === 429
+      ? "Too many attempts — wait a minute."
+      : "Wrong passcode";
+    shakeAndClear(message);
+  }
+
+  function pressDigit(d) {
+    if (busy || entered.length >= PIN_LENGTH) return;
+    $("lock-error").textContent = "";
+    entered += d;
+    renderDots();
+    if (entered.length === PIN_LENGTH) tryUnlock();
+  }
+
+  function pressDelete() {
+    if (busy) return;
+    entered = entered.slice(0, -1);
+    renderDots();
+  }
+
+  (function buildPad() {
+    const pad = $("pad");
+    const keys = ["1","2","3","4","5","6","7","8","9","","0","⌫"];
+    keys.forEach((label) => {
+      const btn = document.createElement("button");
+      btn.className = "key" + (label === "" ? " ghost" : "");
+      btn.type = "button";
+      btn.textContent = label;
+      if (label === "⌫") btn.addEventListener("click", pressDelete);
+      else if (label !== "") btn.addEventListener("click", () => pressDigit(label));
+      pad.appendChild(btn);
+    });
+  })();
+
+  document.addEventListener("keydown", (e) => {
+    if (/^[0-9]$/.test(e.key)) pressDigit(e.key);
+    else if (e.key === "Backspace") pressDelete();
+  });
+
+  renderDots();
 </script>
 </body>
 </html>

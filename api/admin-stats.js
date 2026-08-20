@@ -23,11 +23,23 @@ function secretsMatch(provided, expected) {
   return crypto.timingSafeEqual(left, right);
 }
 
+// ADMIN_PIN is a separate, weaker credential: short and numeric on purpose,
+// for a fast unlock on health.html's phone-style keypad. It must NEVER gate
+// admin.html, which returns real user emails — only ADMIN_SECRET does that.
+// A short PIN is brute-forceable in principle; the per-requester throttle
+// below is what actually holds that off, not the PIN's length.
+function pinMatches(provided) {
+  const pin = String(process.env.ADMIN_PIN || "").trim();
+  if (!pin || !/^\d{4,8}$/.test(pin)) return false; // unset or misconfigured = no PIN path
+  return secretsMatch(provided, pin);
+}
+
 module.exports = async function handler(req, res) {
   const secret = process.env.ADMIN_SECRET || process.env.CRON_SECRET;
   const authorization = String(req.headers.authorization || "");
   const provided = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
   if (!secret) return res.status(401).json({ error: "Set ADMIN_SECRET in Vercel to use this." });
+  const viaPin = pinMatches(provided);
 
   // Throttle guessing. Without this the shared secret is brute-forceable at
   // request rate, since there is no account lockout to fall back on.
@@ -38,7 +50,7 @@ module.exports = async function handler(req, res) {
     return res.status(429).json({ error: "Too many attempts. Wait a minute and try again." });
   }
 
-  if (!secretsMatch(provided, secret)) return res.status(401).json({ error: "Unauthorized" });
+  if (!secretsMatch(provided, secret) && !viaPin) return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const { subscribers = [], setupRequired } = await listSubscribers();
@@ -96,12 +108,20 @@ module.exports = async function handler(req, res) {
     sourceHealth.sort((a, b) =>
       (RANK[a.state] - RANK[b.state]) || String(a.company).localeCompare(String(b.company)));
 
+    const sourceHealthCounts = sourceHealth.reduce((acc, s) => {
+      acc[s.state] = (acc[s.state] || 0) + 1;
+      return acc;
+    }, {});
+
+    // A PIN-holder gets health.html's data only — never subscriber records,
+    // even masked ones. Only ADMIN_SECRET unlocks the full founder dashboard.
+    if (viaPin && !secretsMatch(provided, secret)) {
+      return res.status(200).json({ sourceHealth, sourceHealthCounts });
+    }
+
     return res.status(200).json({
       sourceHealth,
-      sourceHealthCounts: sourceHealth.reduce((acc, s) => {
-        acc[s.state] = (acc[s.state] || 0) + 1;
-        return acc;
-      }, {}),
+      sourceHealthCounts,
       watchedCount: watched.length,
       coverageCount: coverage.length,
       watched: watchedRows,
@@ -121,3 +141,5 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: error.message || "Failed to load stats." });
   }
 };
+
+module.exports.pinMatches = pinMatches;
