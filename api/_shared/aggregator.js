@@ -66,7 +66,11 @@ const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|ph\
 // pattern is gated behind an explicit source flag (studentBoard: true) and is
 // never applied to a general feed. Same reasoning as the USAJOBS hiringPath
 // gate: when the FEED is already scoped to students, the feed is the evidence.
-const STUDENT_BOARD_TITLE = /\bfull[- ]?time (analyst|program)\b|\banalyst\b.*\bprogram\b|\bgraduate (analyst|programme?)\b/i;
+const STUDENT_BOARD_TITLE = /\bfull[- ]?time (analyst|program)\b|\banalyst(?:\s+i)?\b|\bgraduate (analyst|programme?)\b/i;
+// A generic "Full-Time" title is only meaningful when the employer has
+// explicitly put it on a student/recent-graduate board. Keeping this separate
+// avoids treating dated full-time retail roles on general boards as campus.
+const STUDENT_BOARD_ONLY_TITLE = /\bfull[- ]?time\b/i;
 const CYCLE_YEAR = /\b(2026|2027|2028)\b/;
 const SEASON = /\b(spring|summer|fall|autumn|winter)\b/i;
 // Not a real, student-relevant job req: talent pools, mailing lists, general
@@ -129,7 +133,9 @@ function detectCycle(title, location, allowUndatedIntern = true, studentBoard = 
   //     rather than decorative. Verified against William Blair's mixed board,
   //     where every experienced analyst role is undated and every campus one
   //     is dated.
-  if (NEWGRAD_TITLE.test(title) || ((studentBoard || yearMatch) && STUDENT_BOARD_TITLE.test(title))) {
+  if (NEWGRAD_TITLE.test(title)
+      || (studentBoard && STUDENT_BOARD_ONLY_TITLE.test(title))
+      || ((studentBoard || yearMatch) && STUDENT_BOARD_TITLE.test(title))) {
     return yearMatch ? `New Grad ${yearMatch[1]}` : "New Grad";
   }
   return null;
