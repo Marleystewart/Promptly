@@ -67,6 +67,10 @@ assert.strictEqual(detectCycle("2026 Full Time Analyst (Hong Kong)", "Hong Kong"
 // Greenhouse board, where campus roles are dated and experienced ones are not.
 assert.strictEqual(detectCycle("2027 Investment Banking Full-Time Analyst", "Chicago, Illinois"), "New Grad 2027",
   "a DATED full-time analyst role is a campus class even on a mixed board");
+assert.strictEqual(detectCycle("2027 Investment Banking Analyst I", "Boston, Massachusetts"), "New Grad 2027",
+  "a future-dated entry analyst title is a campus role");
+assert.strictEqual(detectCycle("Advisor Consultant Full-Time - Fall 2026", "Jersey City, United States", true, true), "New Grad 2026",
+  "a full-time posting on a student-only board is an early-career role");
 assert.strictEqual(detectCycle("Equities Associate Full Time Program 2027", "United States"), "New Grad 2027",
   "a DATED full-time campus program is a campus class even on a mixed board");
 assert.strictEqual(detectCycle("Machine Learning Researcher PhD Graduate", "United States"), "New Grad",
