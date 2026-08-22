@@ -59,4 +59,52 @@ async function fetchPhenomListings(origin, terms) {
   return [...seen.values()];
 }
 
-module.exports = { fetchPhenomListings };
+// Some Phenom sites (Roche, Warner Bros…) don't server-render the search data
+// into phApp.ddo; they load it from a POST to <origin>/widgets with
+// ddoKey:"refineSearch". This reads that feed instead. Same return shape as
+// fetchPhenomListings: plain { title, url, location } objects for aggregator.js.
+async function fetchPhenomWidgets(origin, terms) {
+  const seen = new Map();
+  for (const term of terms) {
+    for (let from = 0; from < 100; from += 10) {
+      let jobs;
+      try {
+        const res = await fetch(`${origin}/widgets`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Origin: origin,
+            Referer: `${origin}/us/en/search-results`,
+            "User-Agent": "Mozilla/5.0 (compatible; PromptlyJobs/1.0)",
+          },
+          body: JSON.stringify({
+            lang: "en_us", deviceType: "desktop", country: "us",
+            ddoKey: "refineSearch", sortBy: "Most Recent", subsearch: "",
+            from, jobs: true, counts: true, all_fields: [], size: 10,
+            clearAll: false, jdsource: "facets", isSliderEnable: false,
+            pageName: "search-results", siteType: "external",
+            keywords: term, global: true, selected_fields: {}, locationData: {},
+          }),
+          signal: AbortSignal.timeout(12000),
+        });
+        if (!res.ok) throw new Error(`${res.status} phenom-widgets`);
+        const data = await res.json();
+        jobs = Array.isArray(data?.refineSearch?.data?.jobs) ? data.refineSearch.data.jobs : [];
+      } catch {
+        break;
+      }
+      for (const job of jobs) {
+        const title = String(job.title || "").replace(/\s+/g, " ").trim();
+        const applyUrl = String(job.applyUrl || job.imApplyUrl || "").trim();
+        const location = String(job.cityStateCountry || job.cityState || job.location || "")
+          .replace(/\s+/g, " ").trim();
+        if (title && /^https:\/\//i.test(applyUrl)) seen.set(applyUrl, { title, url: applyUrl, location });
+      }
+      if (!jobs.length) break;
+    }
+  }
+  return [...seen.values()];
+}
+
+module.exports = { fetchPhenomListings, fetchPhenomWidgets };

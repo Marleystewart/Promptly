@@ -285,6 +285,20 @@ const SOURCES = [
   { company: "Merck", short: "MRK", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "msd", dc: "wd5", site: "SearchJobs" },
   { company: "Pfizer", short: "PFE", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "pfizer", dc: "wd1", site: "PfizerCareers" },
   { company: "Bristol Myers Squibb", short: "BMY", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "bristolmyerssquibb", dc: "wd5", site: "BMS" },
+  // Sanofi runs Radancy (jobs.sanofi.com) — shared parse in api/_shared/radancy.js.
+  { company: "Sanofi", short: "SNY", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "custom", handler: "sanofi" },
+  // J&J's careers.jnj.com marketing site bot-walls scrapers (403), but the
+  // underlying ATS is a first-party Workday tenant (jj.wd5/JJ) that serves the
+  // same reqs and is reachable directly.
+  { company: "Johnson & Johnson", short: "JNJ", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "jj", dc: "wd5", site: "JJ" },
+  // Global pharma boards that leak non-US roles past aggregator.js's
+  // international blocklist (bare foreign cities like "Selangor", or countries
+  // not on the list like Bangladesh). Each is a custom scraper that reads the
+  // employer's own feed and keeps only positively-confirmed US roles — see
+  // api/_shared/us-location.js. Novartis=Workday, Roche=Phenom, AbbVie=Attrax.
+  { company: "Novartis", short: "NVS", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "custom", handler: "novartis" },
+  { company: "Roche", short: "RHHBY", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "custom", handler: "roche" },
+  { company: "AbbVie", short: "ABBV", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "custom", handler: "abbvie" },
 
   // Media and entertainment — previously two sources total.
   { company: "Comcast NBCUniversal", short: "CMCSA", logoClass: "media", field: "Media", subField: "Entertainment", ats: "workday", tenant: "comcast", dc: "wd5", site: "Comcast_Careers" },
@@ -299,6 +313,10 @@ const SOURCES = [
   // custom scraper parses its server-rendered search HTML, which carries full
   // "City, State, Country" locations. See company-scrapers/disney.js.
   { company: "Disney", short: "DIS", logoClass: "media", field: "Media", subField: "Entertainment", ats: "custom", handler: "disney" },
+  { company: "Sony Pictures", short: "SPE", logoClass: "media", field: "Media", subField: "Entertainment", ats: "custom", handler: "sonypictures" },
+  // Paramount runs j2w / SuccessFactors RMK (careers.paramount.com); custom
+  // scraper reads the server-rendered results. See company-scrapers/paramount.js.
+  { company: "Paramount", short: "PARA", logoClass: "media", field: "Media", subField: "Entertainment", ats: "custom", handler: "paramount" },
   { company: "The New York Times", short: "NYT", logoClass: "media", field: "Media", subField: "News", ats: "greenhouse", board: "thenewyorktimes" },
 
   // Consumer retail at household-name scale.
