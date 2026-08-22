@@ -44,6 +44,12 @@
   .legend { margin: 22px 0 0; color: var(--muted); font-size: 13px; line-height: 1.8; }
   .scroll { overflow-x: auto; }
   .custom { font-size: 11px; background: #2a3454; color: #b9c4e2; padding: 2px 7px; border-radius: 6px; margin-left: 6px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .filter-chip { font: inherit; font-size: 13px; padding: 7px 14px; border-radius: 999px;
+                 border: 1px solid var(--line); background: var(--panel); color: var(--muted); cursor: pointer; }
+  .filter-chip:hover { color: var(--text); }
+  .filter-chip.active { background: #4560e0; border-color: #4560e0; color: #fff; }
+  .filter-chip .n { opacity: .7; margin-left: 4px; }
 
   /* ── Lock screen ── */
   #lock { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column;
@@ -94,8 +100,10 @@
     <div class="tile"><b id="c-total">0</b><span>Sources tracked</span></div>
   </div>
 
+  <div id="filters" class="filters" hidden></div>
+
   <div class="scroll"><table id="table" hidden>
-    <thead><tr><th>Company</th><th>Type</th><th>Roles now</th><th>Best ever</th><th>Last produced</th><th>Detail</th></tr></thead>
+    <thead><tr><th>Company</th><th>Field</th><th>Type</th><th>Roles now</th><th>Best ever</th><th>Last produced</th><th>Detail</th></tr></thead>
     <tbody id="rows"></tbody>
   </table></div>
 
@@ -127,23 +135,29 @@
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
-  async function load(pin) {
-    let data;
-    try {
-      const res = await fetch("/api/admin-stats", { headers: { Authorization: "Bearer " + pin } });
-      if (!res.ok) return { ok: false, status: res.status };
-      data = await res.json();
-    } catch (err) { return { ok: false, error: err.message }; }
+  let allRows = [];
+  let activeField = "All";
 
-    const rows = Array.isArray(data.sourceHealth) ? data.sourceHealth : [];
-    const counts = data.sourceHealthCounts || {};
-    $("c-ok").textContent = counts.ok || 0;
-    $("c-broken").textContent = counts.broken || 0;
-    $("c-quiet").textContent = counts.quiet || 0;
-    $("c-total").textContent = rows.length;
-    $("tiles").hidden = false;
+  function renderFilters() {
+    const counts = {};
+    allRows.forEach((r) => { const f = r.field || "Unknown"; counts[f] = (counts[f] || 0) + 1; });
+    const fields = ["All", ...Object.keys(counts).sort((a, b) => counts[b] - counts[a])];
+    const box = $("filters");
+    box.hidden = fields.length <= 2; // nothing to filter with only one real field
+    box.innerHTML = fields.map((f) => {
+      const n = f === "All" ? allRows.length : counts[f];
+      const active = f === activeField ? " active" : "";
+      return '<button type="button" class="filter-chip' + active + '" data-field="' + esc(f) + '">'
+        + esc(f) + '<span class="n">' + n + "</span></button>";
+    }).join("");
+    box.querySelectorAll("[data-field]").forEach((btn) => {
+      btn.addEventListener("click", () => { activeField = btn.dataset.field; renderFilters(); renderRows(); });
+    });
+  }
 
-    $("empty").hidden = rows.length > 0;
+  function renderRows() {
+    const rows = activeField === "All" ? allRows : allRows.filter((r) => (r.field || "Unknown") === activeField);
+    $("empty").hidden = allRows.length > 0;
     $("table").hidden = rows.length === 0;
 
     $("rows").innerHTML = rows.map((r) => {
@@ -157,6 +171,7 @@
       const tag = r.ats === "custom" ? '<span class="custom">custom scraper</span>' : "";
       return "<tr>"
         + '<td><span class="dot ' + esc(r.state) + '"></span>' + esc(r.company) + tag + "</td>"
+        + "<td class=\"muted\">" + esc(r.field || "Unknown") + "</td>"
         + "<td class=\"muted\">" + esc(r.ats || "—") + "</td>"
         + "<td>" + (r.count || 0) + "</td>"
         + "<td class=\"muted\">" + (r.bestCount || 0) + "</td>"
@@ -164,6 +179,27 @@
         + "<td>" + detail + "</td>"
         + "</tr>";
     }).join("");
+  }
+
+  async function load(pin) {
+    let data;
+    try {
+      const res = await fetch("/api/admin-stats", { headers: { Authorization: "Bearer " + pin } });
+      if (!res.ok) return { ok: false, status: res.status };
+      data = await res.json();
+    } catch (err) { return { ok: false, error: err.message }; }
+
+    allRows = Array.isArray(data.sourceHealth) ? data.sourceHealth : [];
+    activeField = "All";
+    const counts = data.sourceHealthCounts || {};
+    $("c-ok").textContent = counts.ok || 0;
+    $("c-broken").textContent = counts.broken || 0;
+    $("c-quiet").textContent = counts.quiet || 0;
+    $("c-total").textContent = allRows.length;
+    $("tiles").hidden = false;
+
+    renderFilters();
+    renderRows();
     return { ok: true };
   }
 

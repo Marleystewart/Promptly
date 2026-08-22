@@ -521,10 +521,10 @@ async function aggregateOpenings() {
   results.forEach((r, i) => {
     const src = allSources[i];
     if (r.status !== "fulfilled") {
-      sourceStatus.push({ company: src.company, ats: src.ats, ok: false, error: String(r.reason).slice(0, 120) });
+      sourceStatus.push({ company: src.company, ats: src.ats, field: src.field, ok: false, error: String(r.reason).slice(0, 120) });
       return;
     }
-    sourceStatus.push({ company: src.company, ats: src.ats, ok: true, count: r.value.length });
+    sourceStatus.push({ company: src.company, ats: src.ats, field: src.field, ok: true, count: r.value.length });
 
     for (const o of r.value) {
       if (!o.sourceUrl) continue;

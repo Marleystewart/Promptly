@@ -43,6 +43,9 @@ function mergeEntry(previous, status, now) {
   const entry = {
     company: status.company,
     ats: status.ats,
+    // A source's field can't change between runs, so once known it should
+    // never be erased by a run that (for whatever reason) didn't pass it.
+    field: status.field || prev.field || "Unknown",
     ok,
     count,
     bestCount,

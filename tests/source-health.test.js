@@ -56,4 +56,14 @@ assert.strictEqual(errored.count, 0, "a failed run contributes no count");
 const erroredFresh = mergeEntry(null, { company: "New Co", ats: "custom", ok: false, error: "timeout" }, T1);
 assert.strictEqual(stateFor(erroredFresh), "broken");
 
+// ── Field, for the health page's industry filter ──────────────────────────
+const withField = mergeEntry(null, { company: "Citi", ats: "custom", field: "Finance", ok: true, count: 4 }, T1);
+assert.strictEqual(withField.field, "Finance");
+// A source's field cannot change between runs, so a later run missing it
+// (defensive coding elsewhere, not expected in practice) must not erase it.
+const fieldPreserved = mergeEntry(withField, { company: "Citi", ats: "custom", ok: true, count: 5 }, T2);
+assert.strictEqual(fieldPreserved.field, "Finance", "field must survive a run that omitted it");
+const neverHadField = mergeEntry(null, { company: "Old Co", ats: "custom", ok: true, count: 1 }, T1);
+assert.strictEqual(neverHadField.field, "Unknown", "missing field falls back to a labelled bucket, not undefined");
+
 console.log("Source health tests passed.");
