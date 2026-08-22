@@ -270,6 +270,8 @@ const SOURCES = [
   { company: "Merck", short: "MRK", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "msd", dc: "wd5", site: "SearchJobs" },
   { company: "Pfizer", short: "PFE", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "pfizer", dc: "wd1", site: "PfizerCareers" },
   { company: "Bristol Myers Squibb", short: "BMY", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "bristolmyerssquibb", dc: "wd5", site: "BMS" },
+  // Sanofi runs Radancy (jobs.sanofi.com) — shared parse in api/_shared/radancy.js.
+  { company: "Sanofi", short: "SNY", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "custom", handler: "sanofi" },
 
   // Media and entertainment — previously two sources total.
   { company: "Comcast NBCUniversal", short: "CMCSA", logoClass: "media", field: "Media", subField: "Entertainment", ats: "workday", tenant: "comcast", dc: "wd5", site: "Comcast_Careers" },
@@ -277,6 +279,7 @@ const SOURCES = [
   // custom scraper parses its server-rendered search HTML, which carries full
   // "City, State, Country" locations. See company-scrapers/disney.js.
   { company: "Disney", short: "DIS", logoClass: "media", field: "Media", subField: "Entertainment", ats: "custom", handler: "disney" },
+  { company: "Sony Pictures", short: "SPE", logoClass: "media", field: "Media", subField: "Entertainment", ats: "custom", handler: "sonypictures" },
   { company: "The New York Times", short: "NYT", logoClass: "media", field: "Media", subField: "News", ats: "greenhouse", board: "thenewyorktimes" },
 
   // Consumer retail at household-name scale.

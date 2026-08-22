@@ -154,6 +154,7 @@ window.MONITORED_COMPANIES = [
   "Rothschild & Co",
   "Salesforce",
   "Samsara",
+  "Sanofi",
   "Scale AI",
   "Schonfeld",
   "ServiceNow",
@@ -162,6 +163,7 @@ window.MONITORED_COMPANIES = [
   "Skydio",
   "SoFi",
   "Solar Turbines",
+  "Sony Pictures",
   "SpaceX",
   "Spotify",
   "Squarepoint Capital",
@@ -211,11 +213,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 202,
-  "companies": 202,
+  "sources": 204,
+  "companies": 204,
   "byPlatform": {
     "greenhouse": 106,
-    "custom": 19,
+    "custom": 21,
     "workday": 42,
     "lever": 5,
     "ashby": 23,
@@ -226,10 +228,10 @@ window.PROMPTLY_COVERAGE = {
     "Finance": 82,
     "Technology": 60,
     "Consulting": 3,
-    "Healthcare": 14,
+    "Healthcare": 15,
     "Education": 4,
     "Engineering": 18,
-    "Media": 10,
+    "Media": 11,
     "Consumer": 5,
     "Nonprofit": 2,
     "Sports": 1,
