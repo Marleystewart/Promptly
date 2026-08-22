@@ -6,6 +6,7 @@
 // we cannot actually read, and /how-it-works publishes these counts so the
 // public numbers are always the real ones.
 window.MONITORED_COMPANIES = [
+  "AbbVie",
   "Adobe",
   "Affirm",
   "Airbnb",
@@ -93,6 +94,7 @@ window.MONITORED_COMPANIES = [
   "Interactive Brokers",
   "Invesco",
   "Jane Street",
+  "Johnson & Johnson",
   "JPMorgan",
   "Jump Trading",
   "KeyBank",
@@ -120,6 +122,7 @@ window.MONITORED_COMPANIES = [
   "Neuralink",
   "Northrop Grumman",
   "Notion",
+  "Novartis",
   "Nubank",
   "Nuro",
   "Nuveen",
@@ -130,6 +133,7 @@ window.MONITORED_COMPANIES = [
   "Optiver",
   "Oscar Health",
   "Palantir",
+  "Paramount",
   "Patreon",
   "PDT Partners",
   "Peloton",
@@ -150,6 +154,7 @@ window.MONITORED_COMPANIES = [
   "Riot Games",
   "Robinhood",
   "Roblox",
+  "Roche",
   "Rocket Lab",
   "Rothschild & Co",
   "Salesforce",
@@ -213,12 +218,12 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 204,
-  "companies": 204,
+  "sources": 209,
+  "companies": 209,
   "byPlatform": {
     "greenhouse": 106,
-    "custom": 21,
-    "workday": 42,
+    "custom": 25,
+    "workday": 43,
     "lever": 5,
     "ashby": 23,
     "smartrecruiters": 6,
@@ -228,10 +233,10 @@ window.PROMPTLY_COVERAGE = {
     "Finance": 82,
     "Technology": 60,
     "Consulting": 3,
-    "Healthcare": 15,
+    "Healthcare": 19,
     "Education": 4,
     "Engineering": 18,
-    "Media": 11,
+    "Media": 12,
     "Consumer": 5,
     "Nonprofit": 2,
     "Sports": 1,
