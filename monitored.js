@@ -112,6 +112,7 @@ window.MONITORED_COMPANIES = [
   "Moelis",
   "MongoDB",
   "Natera",
+  "Netflix",
   "Netic",
   "Neuberger Berman",
   "Neuralink",
@@ -194,6 +195,7 @@ window.MONITORED_COMPANIES = [
   "Vox Media",
   "VTS",
   "Walleye Capital",
+  "Warner Bros. Discovery",
   "Waymo",
   "Webflow",
   "Wellington Management",
@@ -207,12 +209,12 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 198,
-  "companies": 198,
+  "sources": 200,
+  "companies": 200,
   "byPlatform": {
     "greenhouse": 106,
-    "custom": 18,
-    "workday": 39,
+    "custom": 19,
+    "workday": 40,
     "lever": 5,
     "ashby": 23,
     "smartrecruiters": 6,
@@ -225,7 +227,7 @@ window.PROMPTLY_COVERAGE = {
     "Healthcare": 11,
     "Education": 4,
     "Engineering": 18,
-    "Media": 9,
+    "Media": 11,
     "Consumer": 5,
     "Nonprofit": 2,
     "Sports": 1,
