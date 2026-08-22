@@ -58,7 +58,13 @@ const EXCLUDE_TITLE = /experienced|senior|staff|principal|\blead\b|manager|direc
 // \b anchors are essential: a bare /intern/ matched "INTERNal Audit Analyst"
 // and "INTERNational Business Developer", pulling non-student and overseas
 // roles into the feed. Found by sampling real output, not by review.
-const INTERN_TITLE = /\bintern\b|\binterns\b|\binternship\b|\bsummer analyst\b|\bco-?op\b/i;
+// \binternship\b alone silently rejected any plural phrasing ("CNN
+// International Internships: ATL - Fall 2026", a real, genuinely US Atlanta
+// posting) — the trailing "s" is a word character, so no \b boundary exists
+// right after "internship" for the plural form to land on. "?s" fixes both
+// singular and plural under one pattern; \binterns\b becomes redundant once
+// that's in place but is kept for clarity/no-regression.
+const INTERN_TITLE = /\bintern\b|\binterns\b|\binternships?\b|\bsummer analyst\b|\bco-?op\b/i;
 const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|ph\.?d\.? graduate|early career|entry[ -]?level|campus hire|rotational program|analyst program/i;
 // Titles that only mean "new grad" on a board that is ITSELF student-only.
 // "2027 Full Time Analyst" is the canonical campus-hire title in banking, but

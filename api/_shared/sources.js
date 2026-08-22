@@ -276,6 +276,13 @@ const SOURCES = [
 
   // Media and entertainment — previously two sources total.
   { company: "Comcast NBCUniversal", short: "CMCSA", logoClass: "media", field: "Media", subField: "Entertainment", ats: "workday", tenant: "comcast", dc: "wd5", site: "Comcast_Careers" },
+  // Added Aug 2026 (trey/media-healthcare-2). Warner Bros. Discovery runs a
+  // first-party Workday tenant (warnerbros.wd5/global) — its Phenom careers
+  // front-end just links out to these same Workday reqs, so we read Workday
+  // directly. Netflix runs Eightfold, which has no ATS adapter, so it needs a
+  // custom scraper — see company-scrapers/netflix.js.
+  { company: "Warner Bros. Discovery", short: "WBD", logoClass: "media", field: "Media", subField: "Entertainment", ats: "workday", tenant: "warnerbros", dc: "wd5", site: "global" },
+  { company: "Netflix", short: "NFLX", logoClass: "media", field: "Media", subField: "Streaming", ats: "custom", handler: "netflix" },
   { company: "The New York Times", short: "NYT", logoClass: "media", field: "Media", subField: "News", ats: "greenhouse", board: "thenewyorktimes" },
 
   // Consumer retail at household-name scale.

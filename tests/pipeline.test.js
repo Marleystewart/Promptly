@@ -19,6 +19,17 @@ assert.strictEqual(detectCycle("Software Engineer Intern, Summer 2026", "Seattle
 assert.strictEqual(detectCycle("Fall 2026 Data Science Intern", "Austin"), "Fall 2026");
 assert.strictEqual(detectCycle("2027 Summer Analyst Program", "New York"), "Summer 2027");
 
+// Plural "Internships" must match too — \binternship\b alone never matches
+// the plural (the trailing "s" breaks the word boundary right after it).
+// Found on a real Warner Bros. Discovery/CNN posting that was a genuine
+// Atlanta, GA role being silently dropped.
+assert.strictEqual(detectCycle("CNN International Internships: ATL - Fall 2026", "GA Atlanta 1050 Techwood Drive NW"), "Fall 2026",
+  "plural 'Internships' must be recognized, and a division named 'International' must not be read as a location");
+assert.strictEqual(detectCycle("Summer Internships Program", "New York, NY"), "Internship");
+// The corresponding real foreign case must still reject — the fix is about
+// the plural word, not about loosening the location gate.
+assert.strictEqual(detectCycle("CNN International Internships: London", "London, United Kingdom"), null);
+
 // A single req can cover both US and international offices. Keep it when the
 // feed explicitly includes a US location, but show only those US offices.
 const mixedHrtLocations = "Austin, TX, United States; Chicago, Illinois, United States; London, United Kingdom; New York, NY, United States; Singapore";
