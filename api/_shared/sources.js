@@ -258,8 +258,25 @@ const SOURCES = [
   // Healthcare — previously biotech/health-tech only, no payers or systems.
   { company: "CVS Health", short: "CVS", logoClass: "health", field: "Healthcare", subField: "Payers", ats: "workday", tenant: "cvshealth", dc: "wd1", site: "CVS_Health_Careers" },
 
+  // ── Added Aug 2026 (trey/pharma-media-3): big pharma ──────────────────────
+  // First-party Workday tenants, discovered from each careers-page redirect and
+  // probed live. Big global boards, so most US campus reqs open in the fall;
+  // these carry real US roles (e.g. BMS's Princeton, NJ summer intern) and no
+  // international leaks at time of adding. NOTE: Novartis (novartis.wd3/
+  // Novartis_Careers) was deliberately NOT added — its only open student role
+  // is in Selangor, Malaysia, which slips past aggregator.js's international
+  // filter (that city isn't in the INTERNATIONAL list). Add it once the
+  // international gate covers Selangor.
+  { company: "Merck", short: "MRK", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "msd", dc: "wd5", site: "SearchJobs" },
+  { company: "Pfizer", short: "PFE", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "pfizer", dc: "wd1", site: "PfizerCareers" },
+  { company: "Bristol Myers Squibb", short: "BMY", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "bristolmyerssquibb", dc: "wd5", site: "BMS" },
+
   // Media and entertainment — previously two sources total.
   { company: "Comcast NBCUniversal", short: "CMCSA", logoClass: "media", field: "Media", subField: "Entertainment", ats: "workday", tenant: "comcast", dc: "wd5", site: "Comcast_Careers" },
+  // Disney runs Radancy (jobs.disneycareers.com) — no JSON ATS feed, so a
+  // custom scraper parses its server-rendered search HTML, which carries full
+  // "City, State, Country" locations. See company-scrapers/disney.js.
+  { company: "Disney", short: "DIS", logoClass: "media", field: "Media", subField: "Entertainment", ats: "custom", handler: "disney" },
   { company: "The New York Times", short: "NYT", logoClass: "media", field: "Media", subField: "News", ats: "greenhouse", board: "thenewyorktimes" },
 
   // Consumer retail at household-name scale.
