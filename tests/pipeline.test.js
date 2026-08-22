@@ -7,6 +7,11 @@
 
 const assert = require("assert");
 const { detectCycle, isPastCycle, canonicalUrl, normalizeCompany, normalizeRole, preferUsLocations } = require("../api/_shared/aggregator.js");
+const { isUsLocation: isPositiveUsLocation } = require("../api/_shared/us-location.js");
+
+assert.strictEqual(isPositiveUsLocation("München,DE-BY,Germany"), false,
+  "an ISO country subdivision must not be read as a US state code");
+assert.strictEqual(isPositiveUsLocation("Los Angeles,US-CA,United States"), true);
 
 // ── Undated internships must survive, labelled honestly ───────────────────
 assert.strictEqual(detectCycle("Quantitative Developer Intern", "New York"), "Internship");
@@ -18,6 +23,8 @@ assert.strictEqual(detectCycle("[Summer 2027] Software Engineer Intern", "San Ma
 assert.strictEqual(detectCycle("Software Engineer Intern, Summer 2026", "Seattle"), "Summer 2026");
 assert.strictEqual(detectCycle("Fall 2026 Data Science Intern", "Austin"), "Fall 2026");
 assert.strictEqual(detectCycle("2027 Summer Analyst Program", "New York"), "Summer 2027");
+assert.strictEqual(detectCycle("2027 Summer Associate (2L)", "New York, NY"), "Summer 2027");
+assert.strictEqual(detectCycle("3L Applications: Fall 2027", "New York, NY"), "New Grad 2027");
 
 // Plural "Internships" must match too — \binternship\b alone never matches
 // the plural (the trailing "s" breaks the word boundary right after it).

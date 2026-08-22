@@ -21,6 +21,7 @@ const REQUIRED_KEYS = {
   lever: ["board"],
   ashby: ["board"],
   smartrecruiters: ["board"],
+  florecruit: ["board"],
   workday: ["tenant", "dc", "site"],
   usajobs: ["hiringPath"],
   custom: ["handler"],

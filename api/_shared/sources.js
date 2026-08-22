@@ -13,6 +13,8 @@
 // Ashby:      { ats:"ashby", board:"<token>" }        (jobs.ashbyhq.com/<token>)
 // SmartRecruiters: { ats:"smartrecruiters", board:"<CompanyIdentifier>" }
 //             (jobs.smartrecruiters.com/<CompanyIdentifier>/...)
+// Flo Recruit:{ ats:"florecruit", board:"<org-friendly-name>" }
+//             (florecruit.com/v2/app/<org-friendly-name>/jobs)
 // Custom:     { ats:"custom", handler:"<filename>" } — for a company with NO
 //             feed on any system above. Runs company-scrapers/<filename>.js.
 //             See company-scrapers/_template.js before adding one of these;
@@ -228,6 +230,42 @@ const SOURCES = [
   { company: "Experian", short: "EXPN", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "smartrecruiters", board: "Experian" },
   { company: "Ubisoft", short: "UBI", logoClass: "tech", field: "Technology", subField: "Gaming", ats: "smartrecruiters", board: "Ubisoft2" },
   { company: "Continental", short: "CONTI", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "smartrecruiters", board: "Continental" },
+
+  // ═══ CONSUMER / CPG EXPANSION (verified August 2026) ════════════════════
+  // These Workday tenants are global, so positiveUsOnly requires affirmative
+  // US location evidence instead of trusting an incomplete foreign-city list.
+  { company: "Procter & Gamble", short: "PG", logoClass: "consumer", field: "Consumer", subField: "Consumer Products", ats: "workday", tenant: "pg", dc: "wd5", site: "1000", positiveUsOnly: true },
+  { company: "Nike", short: "NKE", logoClass: "consumer", field: "Consumer", subField: "Apparel", ats: "workday", tenant: "nike", dc: "wd1", site: "nke", positiveUsOnly: true },
+  { company: "Mondelez", short: "MDLZ", logoClass: "consumer", field: "Consumer", subField: "Food & Beverage", ats: "workday", tenant: "mdlz", dc: "wd3", site: "External", positiveUsOnly: true },
+  { company: "Kraft Heinz", short: "KHC", logoClass: "consumer", field: "Consumer", subField: "Food & Beverage", ats: "workday", tenant: "heinz", dc: "wd1", site: "KraftHeinz_Careers", positiveUsOnly: true },
+  { company: "General Mills", short: "GIS", logoClass: "consumer", field: "Consumer", subField: "Food & Beverage", ats: "workday", tenant: "genmills", dc: "wd1", site: "GMI_External_Careers", positiveUsOnly: true },
+  { company: "Unilever", short: "UL", logoClass: "consumer", field: "Consumer", subField: "Consumer Products", ats: "custom", handler: "unilever" },
+  { company: "PepsiCo", short: "PEP", logoClass: "consumer", field: "Consumer", subField: "Food & Beverage", ats: "custom", handler: "pepsico" },
+  { company: "Adidas", short: "ADS", logoClass: "consumer", field: "Consumer", subField: "Apparel", ats: "custom", handler: "adidas" },
+  { company: "L'Oréal", short: "OR", logoClass: "consumer", field: "Consumer", subField: "Beauty", ats: "custom", handler: "loreal" },
+  { company: "Estée Lauder", short: "EL", logoClass: "consumer", field: "Consumer", subField: "Beauty", ats: "custom", handler: "esteelauder" },
+
+  // ═══ REAL ESTATE EXPANSION (verified August 2026) ═══════════════════════
+  { company: "JLL", short: "JLL", logoClass: "consumer", field: "Real Estate", subField: "Commercial Real Estate", ats: "workday", tenant: "jll", dc: "wd1", site: "jllcareers", positiveUsOnly: true },
+  { company: "Cushman & Wakefield", short: "CWK", logoClass: "consumer", field: "Real Estate", subField: "Commercial Real Estate", ats: "workday", tenant: "cw", dc: "wd1", site: "External", positiveUsOnly: true },
+  { company: "Colliers", short: "CIGI", logoClass: "consumer", field: "Real Estate", subField: "Commercial Real Estate", ats: "workday", tenant: "colliers", dc: "wd3", site: "Colliers-External-Career-Site", positiveUsOnly: true },
+  { company: "Prologis", short: "PLD", logoClass: "consumer", field: "Real Estate", subField: "Industrial Real Estate", ats: "workday", tenant: "prologis", dc: "wd5", site: "Prologis_External_Careers", positiveUsOnly: true },
+
+  // ═══ LAW EXPANSION — Flo Recruit (verified August 2026) ═════════════════
+  // Each token was identity-checked against Flo's public display-name API.
+  // Most summer-associate boards are legitimately empty in August; these
+  // activate automatically as firms publish their next campus cycle.
+  { company: "Gibson Dunn", short: "GD", logoClass: "law", field: "Law", subField: "Big Law", ats: "florecruit", board: "gibsondunn" },
+  { company: "Kirkland & Ellis", short: "KE", logoClass: "law", field: "Law", subField: "Big Law", ats: "florecruit", board: "kirkland" },
+  { company: "Latham & Watkins", short: "LW", logoClass: "law", field: "Law", subField: "Big Law", ats: "florecruit", board: "latham" },
+  { company: "Skadden", short: "SK", logoClass: "law", field: "Law", subField: "Big Law", ats: "florecruit", board: "skadden" },
+  { company: "Sidley Austin", short: "SA", logoClass: "law", field: "Law", subField: "Big Law", ats: "florecruit", board: "sidley" },
+  { company: "White & Case", short: "WC", logoClass: "law", field: "Law", subField: "Big Law", ats: "florecruit", board: "whitecase" },
+  { company: "Jones Day", short: "JD", logoClass: "law", field: "Law", subField: "Big Law", ats: "florecruit", board: "jonesday" },
+  { company: "Davis Polk", short: "DP", logoClass: "law", field: "Law", subField: "Big Law", ats: "florecruit", board: "davispolk" },
+  { company: "Sullivan & Cromwell", short: "SC", logoClass: "law", field: "Law", subField: "Big Law", ats: "florecruit", board: "sullcrom" },
+  { company: "Simpson Thacher", short: "STB", logoClass: "law", field: "Law", subField: "Big Law", ats: "florecruit", board: "stblaw" },
+  { company: "Cravath", short: "CRV", logoClass: "law", field: "Law", subField: "Big Law", ats: "florecruit", board: "cravath" },
 
   // ═══ GOVERNMENT: USAJOBS (all federal agencies, one adapter) ═════════════
   // Needs free USAJOBS_API_KEY + USAJOBS_EMAIL in Vercel. No-ops until set.
