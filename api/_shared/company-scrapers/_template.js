@@ -1,8 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 // TEMPLATE for a custom company scraper — copy this file, don't edit it.
 //
-// Use this ONLY when a company has no public feed on one of the 6 standard
-// systems (Greenhouse/Lever/Workday/Ashby/SmartRecruiters/USAJOBS). Check
+// Use this ONLY when a company has no public feed on one of the 7 standard
+// systems (Greenhouse/Lever/Workday/Ashby/SmartRecruiters/Flo Recruit/USAJOBS). Check
 // those first; a custom scraper is the expensive, fragile fallback, not the
 // default.
 //

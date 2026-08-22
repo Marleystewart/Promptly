@@ -7,6 +7,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 const { SOURCES } = require("./sources");
+const { isUsLocation: isPositiveUsLocation } = require("./us-location");
 
 // Non-US locations. Extended after an audit found roles in Bristol, Tel Aviv,
 // Taipei and others slipping through into a US-only product. Country names are
@@ -64,8 +65,8 @@ const EXCLUDE_TITLE = /experienced|senior|staff|principal|\blead\b|manager|direc
 // right after "internship" for the plural form to land on. "?s" fixes both
 // singular and plural under one pattern; \binterns\b becomes redundant once
 // that's in place but is kept for clarity/no-regression.
-const INTERN_TITLE = /\bintern\b|\binterns\b|\binternships?\b|\bsummer analyst\b|\bco-?op\b/i;
-const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|ph\.?d\.? graduate|early career|entry[ -]?level|campus hire|rotational program|analyst program/i;
+const INTERN_TITLE = /\bintern\b|\binterns\b|\binternships?\b|\bsummer analyst\b|\bsummer associate\b|\bco-?op\b/i;
+const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|ph\.?d\.? graduate|early career|entry[ -]?level|campus hire|rotational program|analyst program|\b3l applications?\b/i;
 // Titles that only mean "new grad" on a board that is ITSELF student-only.
 // "2027 Full Time Analyst" is the canonical campus-hire title in banking, but
 // the same words describe an experienced hire on a general board — so this
@@ -234,6 +235,12 @@ async function fetchWorkday(src) {
       if (!postings.length) break;
       for (const p of postings) {
         if (!p.externalPath || seenPaths.has(p.externalPath)) continue;
+        // Global employers often return a loose keyword match from every
+        // country on one Workday board.  The general international blocklist
+        // is deliberately permissive, so an unfamiliar foreign city can look
+        // like a US role.  Sources marked positiveUsOnly must instead provide
+        // affirmative US evidence (country wording or a state code).
+        if (src.positiveUsOnly && !isUsLocation(p.locationsText)) continue;
         const cycle = detectCycle(p.title, p.locationsText, true, Boolean(src.studentBoard));
         if (!cycle) continue;
         seenPaths.add(p.externalPath);
@@ -295,6 +302,43 @@ async function fetchSmartRecruiters(src) {
       out.push(normalize(src, p.name, `https://jobs.smartrecruiters.com/${src.board}/${p.id}`, location, cycle));
     }
     if (postings.length < 100) break;
+  }
+  return out;
+}
+
+// ── Flo Recruit: public law-firm career pages ─────────────────────────────
+// { ats:"florecruit", board:"<org-friendly-name>" }
+// Flo's law-specific ATS exposes each employer's public, current job list with
+// stable application IDs, structured offices, and opening/closing dates.
+async function fetchFloRecruit(src) {
+  const data = await fetchJson(
+    `https://florecruit.com/api/v2/public-jobs/${encodeURIComponent(src.board)}/career-page-jobs`,
+    { headers: { Accept: "application/json", "User-Agent": "Mozilla/5.0 (compatible; PromptlyJobs/1.0)" } }
+  );
+  const jobs = Array.isArray(data) ? data : [];
+  const out = [];
+  const now = Date.now();
+
+  for (const job of jobs) {
+    if (job.isPublic === false || !job.extension || !job.title) continue;
+    const opens = job.openDate ? Date.parse(job.openDate) : NaN;
+    const closes = job.closeDate ? Date.parse(job.closeDate) : NaN;
+    if (Number.isFinite(opens) && opens > now) continue;
+    if (Number.isFinite(closes) && closes < now) continue;
+
+    const offices = (Array.isArray(job.jobOffices) ? job.jobOffices : [])
+      .map((office) => String(office?.name || "").replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+    // These firms recruit globally, while Promptly is US-only. Flo supplies
+    // full state names ("New York, New York"), so use the positive shared
+    // location test rather than aggregator.js's foreign-city blocklist.
+    const usOffices = offices.filter(isPositiveUsLocation);
+    if (!usOffices.length) continue;
+    const location = usOffices.join("; ");
+    const cycle = detectCycle(job.title, location);
+    if (!cycle) continue;
+    const url = `https://florecruit.com/v2/app/${encodeURIComponent(src.board)}/jobs/${encodeURIComponent(job.extension)}/apply`;
+    out.push(normalize(src, job.title, url, location, cycle));
   }
   return out;
 }
@@ -363,7 +407,7 @@ async function fetchUsaJobs(src) {
 // { ats:"custom", handler:"<filename>" } → runs
 // company-scrapers/<filename>.js, which must export an async function
 // returning [{ title, url, location }, ...]. Use ONLY when a company has no
-// feed on one of the 6 standard systems above — see
+// feed on one of the 7 standard systems above — see
 // company-scrapers/_template.js for the full how-to before adding one.
 async function fetchCustom(src) {
   const fetchListings = require(`./company-scrapers/${src.handler}`);
@@ -435,7 +479,7 @@ function normalizeRole(title) {
 
 // Which of two records for the same job survives. Deterministic, and biased
 // toward the most authoritative record rather than whichever arrived first.
-const ATS_AUTHORITY = { greenhouse: 5, lever: 5, ashby: 5, smartrecruiters: 4, workday: 4, usajobs: 5 };
+const ATS_AUTHORITY = { greenhouse: 5, lever: 5, ashby: 5, smartrecruiters: 4, workday: 4, florecruit: 4, usajobs: 5 };
 
 function authorityScore(item) {
   let score = (ATS_AUTHORITY[item.ats] || 1) * 10;
@@ -481,6 +525,7 @@ const FETCHERS = {
   lever: fetchLever,
   ashby: fetchAshby,
   smartrecruiters: fetchSmartRecruiters,
+  florecruit: fetchFloRecruit,
   usajobs: fetchUsaJobs,
   custom: fetchCustom,
 };
