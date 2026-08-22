@@ -66,6 +66,9 @@ const SOURCES = [
   // Citi runs its own careers site (no supported ATS) — see company-scrapers/citi.js
   { company: "Citi", short: "C", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "citi" },
   { company: "JPMorgan", short: "JPM", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "jpmorgan" },
+  // Goldman runs its own Next.js careers site (higher.gs.com), backed by a
+  // public GraphQL feed — see company-scrapers/goldmansachs.js.
+  { company: "Goldman Sachs", short: "GS", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "goldmansachs" },
   // studentBoard: this Workday site is PJT's students-only board, so campus
   // titles ("2027 Full Time Analyst") are trustworthy here. Never set this on
   // a general/experienced-hire board — see STUDENT_BOARD_TITLE in aggregator.js.
@@ -257,6 +260,19 @@ const SOURCES = [
 
   // Healthcare — previously biotech/health-tech only, no payers or systems.
   { company: "CVS Health", short: "CVS", logoClass: "health", field: "Healthcare", subField: "Payers", ats: "workday", tenant: "cvshealth", dc: "wd1", site: "CVS_Health_Careers" },
+
+  // ── Added Aug 2026 (trey/goldman-media-healthcare): large-cap biotech ─────
+  // Workday tenants discovered from each company's real careers-page redirect,
+  // then probed live (scripts/probe-workday.js pattern). All four boards
+  // resolve and return real reqs; they have 0 US student roles *today* (their
+  // only open interns are overseas — EU/APAC — in August, correctly filtered
+  // out), so each activates the hour a US campus req posts, same as the rest of
+  // the healthcare block above. Location format is "Country - City", which the
+  // INTERNATIONAL guard catches cleanly (no ", XX" state-code collision).
+  { company: "Amgen", short: "AMGN", logoClass: "health", field: "Healthcare", subField: "Biotech", ats: "workday", tenant: "amgen", dc: "wd1", site: "Careers" },
+  { company: "Gilead Sciences", short: "GILD", logoClass: "health", field: "Healthcare", subField: "Biotech", ats: "workday", tenant: "gilead", dc: "wd1", site: "gileadcareers" },
+  { company: "Biogen", short: "BIIB", logoClass: "health", field: "Healthcare", subField: "Biotech", ats: "workday", tenant: "biibhr", dc: "wd3", site: "external" },
+  { company: "Illumina", short: "ILMN", logoClass: "health", field: "Healthcare", subField: "Biotech", ats: "workday", tenant: "illumina", dc: "wd1", site: "illumina-careers" },
 
   // Media and entertainment — previously two sources total.
   { company: "Comcast NBCUniversal", short: "CMCSA", logoClass: "media", field: "Media", subField: "Entertainment", ats: "workday", tenant: "comcast", dc: "wd5", site: "Comcast_Careers" },
