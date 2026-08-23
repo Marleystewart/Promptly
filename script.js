@@ -1465,13 +1465,26 @@ function setFeatured() {
   document.querySelector("[data-feature-save]").textContent = isSaved ? "Unsave Alert" : "Save Alert";
 }
 
+// On a phone the action buttons leave ~165px for the title, but "Student
+// Alert Feed" needs ~194px, so it wrapped to two lines while every other view
+// fit on one — the header looked lopsided view to view. Shrinking the type
+// enough to fit would push it under 18px, too small for a heading, so drop the
+// "Student " prefix instead: the app is only for students and the nav bar
+// already names the section, making the word pure redundancy on a small
+// screen. Desktop keeps the full heading.
+function viewHeading(view) {
+  const full = view.dataset.heading || "";
+  return isMobileDevice() ? full.replace(/^Student\s+/, "") : full;
+}
+
 function setView(name) {
   const view = document.querySelector(`#view-${name}`);
   if (!view) return;
 
   views.forEach((item) => item.classList.toggle("active", item === view));
+  // (heading chosen below — see viewHeading)
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
-  title.textContent = name === "home" ? greetingText() : view.dataset.heading;
+  title.textContent = name === "home" ? greetingText() : viewHeading(view);
   window.scrollTo({ top: 0, behavior: "smooth" });
 
   renderVerificationNotice();
@@ -3931,6 +3944,16 @@ loadLiveOpenings();
 // Swap the phone-first notification copy for this device's wording, so a
 // laptop never reads "add to your Home Screen".
 applyDeviceNotificationCopy();
+
+// The search placeholder lists four employers, which a phone truncates
+// mid-word ("Search Google, Goldman, I"). A cut-off example reads as a bug,
+// so phones get a short version that fits.
+(function shortenSearchPlaceholderOnPhones() {
+  if (!isMobileDevice()) return;
+  document.querySelectorAll('.search-panel input[type="search"]').forEach((input) => {
+    input.placeholder = "Search companies";
+  });
+})();
 // The tracked-company count comes from the static monitored list, so it can
 // render immediately — it previously waited on a profile or the live feed and
 // sat as a placeholder dash until one of those arrived.

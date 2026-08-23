@@ -1680,14 +1680,21 @@ body.launch-active .onboarding-brand {
 /* Awaiting-posting (watch-list) cards: clearly tracked, not yet live */
 .opening-row.awaiting { opacity: 0.82; }
 .opening-row.awaiting .logo { filter: grayscale(0.35); }
+/* The 999px pill radius was written for a short one-line badge. These notes
+   are full sentences ("<Company> does not publish a job feed Promptly can
+   read…"), so on a phone they wrap to six or seven lines and the pill radius
+   bulges into a lozenge blob around the text. A modest radius holds up at any
+   length, and the extra padding keeps the tinted block readable as a note
+   rather than a highlighter smear. */
 .awaiting-line {
-  display: inline-block;
-  color: #b45309;
+  display: block;
+  color: #d98324;
   background: rgba(217,119,6,0.12);
   border: 1px solid rgba(217,119,6,0.25);
-  padding: 2px 8px;
-  border-radius: 999px;
+  padding: 8px 11px;
+  border-radius: 12px;
   font-weight: 600;
+  line-height: 1.45;
 }
 
 .logo img {
@@ -2534,6 +2541,91 @@ input[type="checkbox"] {
 
   .modal-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* ── Phone polish ──────────────────────────────────────────────────────
+     Phone is the primary surface, but several things were sized for desktop
+     and merely allowed to wrap on a small screen, which reads as clutter
+     rather than design. Measured at 375px, the width of the smallest phone
+     we care about. */
+
+  /* The eyebrow ("STUDENT ALERT DASHBOARD") wrapped onto two lines above an
+     already-large H1, so every view opened with ~200px of chrome before any
+     content. It is decorative — the H1 and the nav both already say where
+     you are — so it goes on phones and the H1 gets the room back. */
+  .topbar .eyebrow {
+    display: none;
+  }
+
+  .topbar {
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .topbar h1 {
+    /* Was wrapping "Student Cycles" and "Student Alert Feed" onto two lines
+       because the action buttons ate the right half of the row. */
+    font-size: clamp(21px, 5.6vw, 26px);
+    line-height: 1.15;
+    margin-top: 0;
+  }
+
+  /* Cycles: the three selects used flex-grow, so a row holding one leftover
+     select stretched it to full width while the two above sat at half — the
+     mismatch looked accidental. A fixed 2-column grid with the third spanning
+     is deliberate and even. */
+  .cycle-selects {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .cycle-selects select {
+    flex: none;
+    width: 100%;
+  }
+
+  .cycle-selects select:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .cycle-toolbar {
+    gap: 10px;
+  }
+
+  /* Filter chips ran under the card edge with no sign they continued, so the
+     row just looked cut off ("Financ"). Bleed the scroller to the card edges
+     and pad it, so a half-visible chip reads as "scroll me". */
+  .filter-row,
+  .search-panel .filter-row {
+    margin-inline: -14px;
+    padding-inline: 14px;
+    scroll-padding-inline: 14px;
+  }
+
+  /* Opening cards: the note wrapped into the narrow column beside the logo,
+     giving each card a ragged edge. Below 560px the logo sits on its own row
+     and the text gets the full width. */
+  .opening-row {
+    gap: 12px;
+    padding: 13px;
+  }
+}
+
+@media (max-width: 430px) {
+  /* Very narrow phones only. The two-column card puts ~250px of text next to
+     a 58px logo, which is where the long "we cannot confirm a specific
+     opening" notes turn into eight ragged lines. */
+  .opening-row {
+    grid-template-columns: 46px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .logo {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    font-size: 11px;
   }
 }
 
