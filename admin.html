@@ -64,7 +64,21 @@ async function load() {
     const d = await r.json();
     if (!r.ok) { $("err").textContent = d.error || "Failed."; $("out").innerHTML = ""; return; }
     const live = d.live || {};
+    const eh = d.emailHealth;
+    // Email either reaches real students or it does not. The sandbox sender
+    // looks healthy from the inside — say so plainly instead.
+    const emailBanner = !eh ? "" : `
+      <div style="border:1px solid ${eh.canReachRealUsers ? "#1c7a52" : "#a3341f"};background:${eh.canReachRealUsers ? "#0f2a1f" : "#2c1512"};border-radius:10px;padding:14px 16px;margin:0 0 18px">
+        <strong style="color:${eh.canReachRealUsers ? "#6fd3a3" : "#f0897c"}">
+          ${eh.canReachRealUsers ? "Email can reach students" : "Email CANNOT reach students"}
+        </strong>
+        <div class="muted" style="margin-top:6px">Sending as ${escapeHtml(eh.from || "—")}</div>
+        ${eh.blockedReason ? `<div style="margin-top:6px;color:#f0897c">${escapeHtml(eh.blockedReason)}</div>` : ""}
+        ${eh.lastFailureAt ? `<div class="muted" style="margin-top:6px">Last failure (${escapeHtml(eh.lastFailureKind || "—")}) ${escapeHtml(eh.lastFailureAt)}: ${escapeHtml(eh.lastFailureReason || "—")}</div>` : ""}
+        ${eh.lastSuccessAt ? `<div class="muted" style="margin-top:6px">Last successful send (${escapeHtml(eh.lastSuccessKind || "—")}) ${escapeHtml(eh.lastSuccessAt)}</div>` : `<div class="muted" style="margin-top:6px">No successful send recorded yet.</div>`}
+      </div>`;
     $("out").innerHTML = `
+      ${emailBanner}
       <div class="cards">
         <div class="card"><div class="n">${d.totalAccounts}</div><div class="l">Accounts</div></div>
         <div class="card"><div class="n">${d.withEmail}</div><div class="l">With email</div></div>

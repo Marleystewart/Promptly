@@ -2,6 +2,7 @@ const webpush = require("web-push");
 const { clearPushSubscription } = require("./store");
 const { isSafePushSubscription } = require("./push-target");
 const { REASONS: LISTING_REPORT_REASONS } = require("./reports");
+const { recordEmailOutcome, fromAddress } = require("./email-health");
 // Shared with the browser (geo.js is dual-mode) so the radius an alert uses is
 // the same engine the app shows results with.
 const geo = require("../../geo.js");
@@ -140,13 +141,15 @@ function unsubscribeFooter(unsubToken) {
   </p>`;
 }
 
-async function sendEmail({ to, subject, html, unsubToken }) {
+async function sendEmail({ to, subject, html, unsubToken, kind }) {
   if (!process.env.RESEND_API_KEY) {
-    return { sent: false, setupRequired: "Add RESEND_API_KEY in Vercel." };
+    const result = { sent: false, setupRequired: "Add RESEND_API_KEY in Vercel." };
+    await recordEmailOutcome(kind, result);
+    return result;
   }
   const { Resend } = await import("resend");
   const resend = new Resend(process.env.RESEND_API_KEY);
-  const from = process.env.ALERT_FROM_EMAIL || "Promptly <onboarding@resend.dev>";
+  const from = fromAddress();
 
   const payload = { from, to: [to], subject, html: html + unsubscribeFooter(unsubToken) };
   if (unsubToken) {
@@ -156,9 +159,17 @@ async function sendEmail({ to, subject, html, unsubToken }) {
     };
   }
 
+  // Awaited, not fire-and-forget: the serverless runtime can be torn down the
+  // moment the handler returns, which would drop the record silently.
   const { data, error } = await resend.emails.send(payload);
-  if (error) return { sent: false, error: error.message || "Email failed." };
-  return { sent: true, id: data && data.id };
+  if (error) {
+    const failure = { sent: false, error: error.message || "Email failed." };
+    await recordEmailOutcome(kind, failure);
+    return failure;
+  }
+  const success = { sent: true, id: data && data.id };
+  await recordEmailOutcome(kind, success);
+  return success;
 }
 
 // Confirmation email. This is the ONLY message we will send to an address that
@@ -193,6 +204,7 @@ function verifyReminderHtml(name, url, daysLeft) {
 async function sendVerificationReminder(subscriber, token, daysLeft) {
   const url = `${appBaseUrl()}/api/subscribe?action=verify&token=${encodeURIComponent(token)}`;
   return sendEmail({
+    kind: "verification-reminder",
     to: subscriber.email,
     subject: `Confirm your email or your Promptly profile will be deleted`,
     html: verifyReminderHtml(subscriber.name, url, daysLeft),
@@ -202,6 +214,7 @@ async function sendVerificationReminder(subscriber, token, daysLeft) {
 async function sendVerificationEmail(subscriber, token) {
   const url = `${appBaseUrl()}/api/subscribe?action=verify&token=${encodeURIComponent(token)}`;
   return sendEmail({
+    kind: "verification",
     to: subscriber.email,
     subject: "Confirm your Promptly alerts",
     html: verifyEmailHtml(subscriber.name, url),
@@ -211,6 +224,7 @@ async function sendVerificationEmail(subscriber, token) {
 
 async function sendEmailAlert(opening, subscriber, unsubToken) {
   return sendEmail({
+    kind: "instant-alert",
     to: subscriber.email,
     subject: `${opening.company} ${opening.role} just opened`,
     html: openingHtml(opening, subscriber),
@@ -234,6 +248,7 @@ function dailyDigestHtml(openings, subscriber) {
 
 async function sendDailyDigest(openings, subscriber, unsubToken) {
   return sendEmail({
+    kind: "daily-digest",
     to: subscriber.email,
     subject: `${openings.length} new internship${openings.length === 1 ? "" : "s"} just opened in your field`,
     html: dailyDigestHtml(openings, subscriber),
@@ -243,6 +258,7 @@ async function sendDailyDigest(openings, subscriber, unsubToken) {
 
 async function sendWeeklyRecap(openings, subscriber, unsubToken) {
   return sendEmail({
+    kind: "weekly-recap",
     to: subscriber.email,
     subject: `Your Promptly weekly recap: ${openings.length} matches`,
     html: weeklyRecapHtml(openings, subscriber),
@@ -253,6 +269,7 @@ async function sendWeeklyRecap(openings, subscriber, unsubToken) {
 async function sendDeadlineReminder(opening, subscriber, daysLeft, unsubToken) {
   const timing = daysLeft === 1 ? "tomorrow" : `in ${daysLeft} days`;
   return sendEmail({
+    kind: "deadline-reminder",
     to: subscriber.email,
     subject: `${opening.company} closes ${timing}`,
     html: deadlineReminderHtml(opening, subscriber, daysLeft),
@@ -379,7 +396,7 @@ function buildListingReportEmail(report) {
 // Awaited by the API handler so Vercel does not freeze the function before
 // Resend has accepted the message.
 async function sendListingReport(report) {
-  return sendEmail(buildListingReportEmail(report));
+  return sendEmail({ ...buildListingReportEmail(report), kind: "listing-report" });
 }
 
 module.exports = {

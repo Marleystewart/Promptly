@@ -8,6 +8,7 @@ const { getStats } = require("./_shared/analytics");
 const { listWatchedSources, listCoverageRequests } = require("./_shared/watched-store");
 const { listSourceHealth } = require("./_shared/source-health");
 const { listReports } = require("./_shared/reports");
+const { readEmailHealth } = require("./_shared/email-health");
 const crypto = require("crypto");
 
 function mask(email) {
@@ -125,7 +126,14 @@ module.exports = async function handler(req, res) {
     let reports = [];
     try { reports = await listReports(); } catch {}
 
+    // Can email actually reach a student right now? Resend accepts the sandbox
+    // sender but only delivers it to the account owner, so "no errors" never
+    // meant "working". Surfaced explicitly rather than inferred from silence.
+    let emailHealth = null;
+    try { emailHealth = await readEmailHealth(); } catch {}
+
     return res.status(200).json({
+      emailHealth,
       sourceHealth,
       sourceHealthCounts,
       reports: reports.slice(0, 50),
