@@ -111,8 +111,8 @@ module.exports = async function handler(req, res) {
     // ── Report a bad listing ─────────────────────────────────────────────
     // Deliberately does NOT require an email or a saved profile: the whole
     // point is that a student who just hit a dead link can say so in one tap.
-    // Saved first, emailed second — a mail failure must not surface to the
-    // student as a failed report.
+    // Saved first, emailed second. Await delivery so a serverless runtime does
+    // not freeze this request before Resend has accepted the notification.
     if (body.action === "report") {
       const requester = String(req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || "unknown")
         .split(",")[0].trim().slice(0, 64);
@@ -123,6 +123,7 @@ module.exports = async function handler(req, res) {
       const outcome = await recordReport({
         company: body.company,
         role: body.role,
+        location: body.location,
         url: body.url,
         reason: body.reason,
         note: body.note,
@@ -130,8 +131,13 @@ module.exports = async function handler(req, res) {
         requester,
       });
       if (!outcome.ok) return res.status(400).json({ error: outcome.error || "Could not save that report." });
-      sendListingReport(outcome.report).catch(() => {});
-      return res.status(200).json({ ok: true });
+      let email = { sent: false };
+      try {
+        email = await sendListingReport(outcome.report);
+      } catch (error) {
+        console.error("Listing report email failed:", error && error.message ? error.message : error);
+      }
+      return res.status(200).json({ ok: true, emailSent: Boolean(email && email.sent) });
     }
 
     // ── Watch any company ────────────────────────────────────────────────
