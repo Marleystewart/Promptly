@@ -2808,6 +2808,82 @@ function enterApp() {
   setView("home");
 }
 
+// ── Device-aware notification copy ────────────────────────────────────────
+// Promptly is a PWA that runs on both phones and desktop browsers, but the
+// notification copy was written phone-first: "Add to your Home Screen",
+// "lock-screen alerts", "Enable Phone Notifications". On a laptop that is
+// simply wrong — desktop push goes to the OS notification centre and needs no
+// Home Screen step — so it reads as instructions for a device the student
+// isn't holding.
+function isIOSDevice() {
+  const ua = navigator.userAgent || "";
+  // iPadOS 13+ reports as a Mac, so the touch-point check is what separates a
+  // real iPad from a desktop Safari.
+  return /iPad|iPhone|iPod/.test(ua)
+    || (/Macintosh/.test(ua) && typeof navigator.maxTouchPoints === "number" && navigator.maxTouchPoints > 1);
+}
+
+function isMobileDevice() {
+  if (isIOSDevice()) return true;
+  if (/Android|Mobile|Silk|Kindle|BlackBerry|Opera Mini|IEMobile/i.test(navigator.userAgent || "")) return true;
+  // Coarse pointer + no hover is the reliable signal for a touch device that
+  // doesn't advertise itself in the user-agent string.
+  return typeof window.matchMedia === "function"
+    && window.matchMedia("(pointer: coarse)").matches
+    && window.matchMedia("(hover: none)").matches;
+}
+
+// The one place that decides what a "notification" is called on this device.
+function pushCopy() {
+  const mobile = isMobileDevice();
+  const ios = isIOSDevice();
+  return {
+    label: mobile ? "Enable Phone Notifications" : "Enable Notifications",
+    pillText: mobile ? "PHONE ALERTS" : "DESKTOP ALERTS",
+    heading: mobile ? "Test real lock-screen alerts." : "Test real desktop notifications.",
+    // Only iOS actually requires the Home Screen install step; Android and
+    // desktop can subscribe straight from the browser.
+    intro: ios
+      ? "Add Promptly to your Home Screen, then enable alerts and send a test notification."
+      : mobile
+        ? "Enable alerts, then send yourself a test notification."
+        : "Enable browser notifications, then send yourself a test to confirm they arrive.",
+    settingsIntro: ios
+      ? "Get instant lock-screen alerts when a matching internship drops. Add Promptly to your Home Screen first on iPhone."
+      : mobile
+        ? "Get instant alerts on your device the moment a matching internship drops."
+        : "Get instant desktop notifications the moment a matching internship drops.",
+    prompt: ios
+      ? "Tap Enable Phone Notifications first. If you are on iPhone, open Promptly from the Home Screen app icon."
+      : mobile
+        ? "Tap Enable Phone Notifications to turn on alerts."
+        : "Click Enable Notifications, then allow them when your browser asks.",
+    unsupported: ios
+      ? "On iPhone, first add Promptly to your Home Screen (Share → Add to Home Screen), then open it from that icon to turn on alerts."
+      : mobile
+        ? "This browser can't do push notifications. Try Chrome, or use email alerts instead."
+        : "This browser doesn't support notifications. Try Chrome, Edge, or Safari — or use email alerts instead.",
+    blocked: ios
+      ? "Notifications are blocked. Fix: iPhone Settings → Notifications → Promptly → Allow Notifications. (Or remove Promptly from your Home Screen and re-add it, then tap Allow.)"
+      : mobile
+        ? "Notifications are blocked. Turn them back on for Promptly in your browser or system settings."
+        : "Notifications are blocked for this site. Click the lock icon in your address bar → Notifications → Allow, then try again.",
+    allow: mobile ? "Tap Allow when your phone asks, to turn on alerts." : "Click Allow when your browser asks, to turn on notifications.",
+    testSent: mobile ? "Test sent. Check your lock screen or notification center." : "Test sent. Check your desktop notifications.",
+  };
+}
+
+// Swap the static phone-first copy for whatever this device actually needs.
+function applyDeviceNotificationCopy() {
+  const copy = pushCopy();
+  document.querySelectorAll("[data-enable-push]").forEach((btn) => { btn.textContent = copy.label; });
+  document.querySelectorAll("[data-push-pill]").forEach((el) => { el.textContent = copy.pillText; });
+  document.querySelectorAll("[data-push-heading]").forEach((el) => { el.textContent = copy.heading; });
+  document.querySelectorAll("[data-push-intro]").forEach((el) => { el.textContent = copy.intro; });
+  document.querySelectorAll("[data-push-settings-intro]").forEach((el) => { el.textContent = copy.settingsIntro; });
+  document.querySelectorAll("[data-push-status]").forEach((el) => { el.textContent = copy.prompt; });
+}
+
 function setPushStatus(message) {
   document.querySelectorAll("[data-push-status]").forEach((item) => {
     item.textContent = message;
@@ -2962,7 +3038,7 @@ async function saveSubscriber(subscription = null) {
 
 async function enablePushAlerts() {
   if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
-    setPushStatus("On iPhone, first add Promptly to your Home Screen (Share → Add to Home Screen), then open it from that icon to turn on alerts.");
+    setPushStatus(pushCopy().unsupported);
     return null;
   }
 
@@ -2975,11 +3051,8 @@ async function enablePushAlerts() {
     return null;
   }
   if (permission !== "granted") {
-    setPushStatus(
-      permission === "denied"
-        ? "Notifications are blocked. Fix: iPhone Settings → Notifications → Promptly → Allow Notifications. (Or remove Promptly from your Home Screen and re-add it, then tap Allow.)"
-        : "Tap Allow when your phone asks, to turn on alerts."
-    );
+    const copy = pushCopy();
+    setPushStatus(permission === "denied" ? copy.blocked : copy.allow);
     return null;
   }
 
@@ -3099,7 +3172,7 @@ async function sendTestPush() {
       }),
     });
     const data = await response.json();
-    setPushStatus(response.ok ? "Test sent. Check your lock screen or notification center." : "Couldn’t send the test notification. Please try again.");
+    setPushStatus(response.ok ? pushCopy().testSent : "Couldn’t send the test notification. Please try again.");
   } catch {
     setPushStatus("Couldn’t send the test notification right now. Please try again in a bit.");
   }
@@ -3855,6 +3928,9 @@ rebuildPlaceholders();
 renderFilterChips();
 renderOpenings();
 loadLiveOpenings();
+// Swap the phone-first notification copy for this device's wording, so a
+// laptop never reads "add to your Home Screen".
+applyDeviceNotificationCopy();
 
 // --- Analytics (first-party, privacy-light) --------------------------------
 // Sends simple event counts so we can see what students actually do. No PII.
