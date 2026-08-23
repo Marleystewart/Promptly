@@ -1188,7 +1188,8 @@ body.launch-active .onboarding-brand {
 .filter-chip.active,
 .filter-chip:hover {
   color: #fff;
-  background: linear-gradient(135deg, rgba(128,87,255,0.45), rgba(82,169,255,0.18));
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(82,169,255,0.9);
 }
 
 .section-head {
