@@ -97,8 +97,18 @@ async function load() {
       ${table("By field interest", d.byField, ["Field", "#"])}
       ${table("Watched companies (live in pipeline)", (d.watched||[]).map(x => [x.company, x.ats, x.watchers]), ["Company", "Platform", "Watchers"])}
       ${table("Coverage requests (unsupported pages — demand signal)", (d.coverage||[]).map(x => [x.company || "—", x.url, x.requests]), ["Company", "URL", "Requests"])}
-      ${d.verify ? `<p class="muted">Content check last ran ${escapeHtml(d.verify.checkedAt || "—")} · checked ${d.verify.checked || 0} of ${d.verify.totalLive || 0} live listings that run · corroborating signal only, nothing here was auto-removed.</p>` : ""}
-      ${table("⚠ Flagged for manual review (NOT removed — verify before acting)", (d.verify && d.verify.flagged || []).map(x => [x.company, x.role, x.sourceUrl]), ["Company", "Role", "Link"])}
+      ${d.verify ? `<p class="muted">Content check last ran ${escapeHtml(d.verify.checkedAt || "—")} · checked ${d.verify.checked || 0} of ${d.verify.totalLive || 0} live listings that run${(d.verify.summary && d.verify.summary.prioritisedByReports) ? ` · ${d.verify.summary.prioritisedByReports} pulled forward by student reports` : ""} · corroborating signal only, nothing here was auto-removed.</p>` : ""}
+      ${table("⚠ Flagged for manual review (NOT removed — verify before acting)", (d.verify && d.verify.flagged || [])
+        .slice()
+        .sort((a, b) => (a.confidence === "red" ? 0 : 1) - (b.confidence === "red" ? 0 : 1))
+        .map(x => [
+          x.confidence === "red" ? "🔴 Likely dead" : x.confidence === "amber" ? "🟠 Needs a look" : "⚪ Unknown",
+          x.company,
+          x.role,
+          x.reportCount || 0,
+          x.confidenceReason || "—",
+          x.sourceUrl,
+        ]), ["State", "Company", "Role", "Reports", "Why", "Link"])}
       ${table("🚩 Reported by students (NOT removed — verify before acting)", (d.reports||[]).map(x => [
         x.company,
         x.role || "—",

@@ -74,27 +74,119 @@ async function checkBatch(urls) {
   return results;
 }
 
+// Unresolved student reports, keyed by the URL they reported. A report that a
+// human has already reviewed and marked resolved stops influencing anything.
+function reportedUrlCounts(reports = []) {
+  const counts = new Map();
+  for (const report of reports) {
+    if (!report || report.resolved === true) continue;
+    const url = String(report.url || "").trim();
+    if (!url) continue;
+    counts.set(url, (counts.get(url) || 0) + (Number(report.count) || 1));
+  }
+  return counts;
+}
+
+// Which listings get checked today.
+//
+// The rotating window alone gives every listing a turn, but with ~580 live
+// listings and a 60/day budget a reported link waits about ten days for its
+// turn — long enough that the report is worthless. A student telling us a link
+// is broken is the strongest prioritisation signal available, so reported
+// listings jump the queue; the rotating window then fills the remaining budget
+// so full coverage still happens.
+function pickSlice(openings, reportedCounts = new Map(), now = Date.now()) {
+  const budget = Math.min(SLICE_SIZE, openings.length);
+  const chosen = [];
+  const seen = new Set();
+
+  const reportedLive = openings
+    .filter((o) => reportedCounts.get(o.sourceUrl))
+    .sort((a, b) => (reportedCounts.get(b.sourceUrl) || 0) - (reportedCounts.get(a.sourceUrl) || 0));
+
+  for (const opening of reportedLive) {
+    if (chosen.length >= budget) break;
+    if (seen.has(opening.sourceUrl)) continue;
+    seen.add(opening.sourceUrl);
+    chosen.push(opening);
+  }
+
+  const dayIndex = Math.floor(now / 86400000);
+  const start = (dayIndex * SLICE_SIZE) % openings.length;
+  for (let i = 0; i < openings.length && chosen.length < budget; i += 1) {
+    const opening = openings[(start + i) % openings.length];
+    if (seen.has(opening.sourceUrl)) continue;
+    seen.add(opening.sourceUrl);
+    chosen.push(opening);
+  }
+
+  return chosen;
+}
+
+// Combine the two independent signals into one state for a human to act on.
+//
+// Neither signal is trusted alone — that is the whole lesson of this file's
+// header. Red requires BOTH a student report and dead-language text, because
+// each has been observed to be wrong by itself. Anything unreachable stays
+// "unknown" rather than red: bot protection and timeouts routinely hit real,
+// working listings, and unknown beats incorrect.
+function confidenceFor({ signal, reportCount = 0 }) {
+  const reported = Number(reportCount) > 0;
+
+  if (signal === "dead_language" && reported) {
+    return { state: "red", reason: "A student report and the page's own text agree this posting is closed." };
+  }
+  if (signal === "dead_language") {
+    return { state: "amber", reason: "Page text suggests the posting closed, but nobody reported it. Text alone has produced false positives before." };
+  }
+  if (reported && signal === "ok") {
+    return { state: "amber", reason: "Reported by a student, but the page reads as live — may be wrong company or details rather than a dead link." };
+  }
+  if (reported) {
+    return { state: "amber", reason: `Reported by a student and the page could not be checked (${signal}).` };
+  }
+  if (signal === "ok") {
+    return { state: "green", reason: "Checked and reads as live." };
+  }
+  return { state: "unknown", reason: `Could not be checked (${signal}). Bot protection and timeouts hit real, working listings — this is not evidence of a problem.` };
+}
+
 // Called once per retention run. Never throws — a verification failure must
 // not interrupt the digest/reminder sends that are the actual point of the
 // cron it lives inside.
-async function runLinkVerification({ getRedis, openings }) {
+async function runLinkVerification({ getRedis, openings, reports = [] }) {
   try {
     if (!openings || !openings.length) return { checked: 0, skipped: "no live openings" };
 
-    const dayIndex = Math.floor(Date.now() / 86400000);
-    const start = (dayIndex * SLICE_SIZE) % openings.length;
-    const slice = [];
-    for (let i = 0; i < Math.min(SLICE_SIZE, openings.length); i += 1) {
-      slice.push(openings[(start + i) % openings.length]);
-    }
+    const reportedCounts = reportedUrlCounts(reports);
+    const slice = pickSlice(openings, reportedCounts);
+    const prioritised = slice.filter((o) => reportedCounts.get(o.sourceUrl)).length;
 
     const results = await checkBatch(slice.map((o) => o.sourceUrl));
-    const flagged = slice
-      .map((o, i) => ({ company: o.company, role: o.role, sourceUrl: o.sourceUrl, ...results[i] }))
-      .filter((r) => r.signal === "dead_language");
+
+    const assessed = slice.map((o, i) => {
+      const reportCount = reportedCounts.get(o.sourceUrl) || 0;
+      const { state, reason } = confidenceFor({ signal: results[i].signal, reportCount });
+      return {
+        company: o.company,
+        role: o.role,
+        sourceUrl: o.sourceUrl,
+        ...results[i],
+        reportCount,
+        confidence: state,
+        confidenceReason: reason,
+      };
+    });
+
+    // Keep everything that isn't confidently fine, so a reported-but-readable
+    // listing is still visible for review instead of silently dropping out.
+    const flagged = assessed.filter((r) => r.confidence === "red" || r.confidence === "amber");
 
     const summary = { ok: 0, blocked: 0, server_error: 0, dead_language: 0, unreachable: 0 };
     results.forEach((r) => { summary[r.signal] = (summary[r.signal] || 0) + 1; });
+    summary.red = flagged.filter((f) => f.confidence === "red").length;
+    summary.amber = flagged.filter((f) => f.confidence === "amber").length;
+    summary.prioritisedByReports = prioritised;
 
     const redis = await getRedis();
     if (redis) {
@@ -113,10 +205,10 @@ async function runLinkVerification({ getRedis, openings }) {
       });
     }
 
-    return { checked: slice.length, flaggedThisRun: flagged.length };
+    return { checked: slice.length, flaggedThisRun: flagged.length, prioritisedByReports: prioritised };
   } catch (error) {
     return { checked: 0, error: String(error.message || error).slice(0, 120) };
   }
 }
 
-module.exports = { runLinkVerification, hasDeadLanguage };
+module.exports = { runLinkVerification, hasDeadLanguage, pickSlice, confidenceFor, reportedUrlCounts };

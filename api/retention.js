@@ -1,5 +1,6 @@
 const { forEachSubscriberBatch, claimOnce, releaseClaim, getRedis } = require("./_shared/store");
 const { runLinkVerification } = require("./_shared/link-verify");
+const { listReports } = require("./_shared/reports");
 const { getLiveOpenings, takeDigestItems, queueDigestItems } = require("./_shared/openings-store");
 const { sendDailyDigest, sendWeeklyRecap, sendDeadlineReminder, sendDeadlinePush, matchesOpening } = require("./_shared/alerts");
 const { getOrCreateUnsubToken, createVerifyToken, purgeUnverified } = require("./_shared/tokens");
@@ -65,10 +66,16 @@ module.exports = async function handler(req, res) {
     const live = livePayload.openings || [];
     const stats = { subscribers: 0, digestsSent: 0, weeklySent: 0, reminderEmails: 0, reminderPushes: 0, verifyReminders: 0, unverifiedPurged: 0 };
 
-    // Content-check a rotating slice of live sourceUrls. Independent of the
-    // subscriber loop below (listings, not people) and never lets a
-    // verification failure block the actual mail this cron exists to send.
-    const linkCheck = await runLinkVerification({ getRedis, openings: live });
+    // Content-check a slice of live sourceUrls. Independent of the subscriber
+    // loop below (listings, not people) and never lets a verification failure
+    // block the actual mail this cron exists to send.
+    //
+    // Student reports are passed in so reported listings jump the queue: the
+    // rotating window alone would leave a reported link waiting ~10 days for
+    // its turn, by which point the report is useless.
+    let openReports = [];
+    try { openReports = await listReports(); } catch {}
+    const linkCheck = await runLinkVerification({ getRedis, openings: live, reports: openReports });
 
     // Batched rather than loading every subscriber at once — this job mails the
     // whole list, so at scale the old fan-out would run out of memory before
