@@ -1,4 +1,4 @@
-const cacheName = "opening-v37";
+const cacheName = "opening-v38";
 // pdf.js (assets/vendor/*) is deliberately NOT precached — it's ~1.7MB and only
 // needed if someone uploads a PDF. The fetch handler below caches it lazily on
 // first real use.
@@ -37,6 +37,16 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
+  // Never intercept third-party requests. This is a same-origin app-shell cache,
+  // and proxying a cross-origin request through the worker re-issues it as a
+  // fetch() — which the CSP governs under connect-src rather than script-src.
+  // The Supabase SDK loads from cdn.jsdelivr.net, which script-src allows and
+  // connect-src does not, so intercepting it blocked the request outright and
+  // silently dropped the app back to "secure accounts are not connected yet".
+  // Letting the browser handle these natively also avoids trying to cache
+  // opaque responses, which never worked anyway.
+  if (new URL(event.request.url).origin !== self.location.origin) return;
 
   if (event.request.mode === "navigate") {
     event.respondWith(
