@@ -35,6 +35,7 @@ const WEB_FILES = [
   "assistant.js",
   "auth-routing.js",
   "geo.js",
+  "listing-state.js",
   "monitored.js",
   "resume-parser.js",
   "watchlist.js",

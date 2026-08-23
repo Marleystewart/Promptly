@@ -834,32 +834,41 @@ const statuses = new Map();
 function persistStatuses() {
   try { localStorage.setItem(statusStorageKey, JSON.stringify(Object.fromEntries(statuses))); } catch {}
 }
-function setStatus(company, stage) {
-  const item = findOpening(company);
-  if (stage) statuses.set(company, stage); else statuses.delete(company);
+function migrateLegacyStatuses() {
+  const result = window.PromptlyListingState.migrateLegacyEntries(statuses, openings);
+  if (!result.changed) return;
+  statuses.clear();
+  result.entries.forEach((value, key) => statuses.set(key, value));
   persistStatuses();
-  if (stage && item) {
+}
+function setStatus(reference, stage) {
+  const item = resolveOpening(reference);
+  if (!item) return;
+  const listingKey = alertIdentity(item);
+  if (stage) statuses.set(listingKey, stage); else statuses.delete(listingKey);
+  persistStatuses();
+  if (stage) {
     try {
       fetch(`${API_BASE}/api/stats`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         keepalive: true,
-        body: JSON.stringify({ company, stage, school: profile.school || "", field: item.field || "" }),
+        body: JSON.stringify({ company: item.company, stage, school: profile.school || "", field: item.field || "" }),
       }).catch(() => {});
     } catch {}
   }
-  renderStatusTracker(company);
+  renderStatusTracker(item);
   renderOpenings();
   refreshSavedList();
 }
-function statusPill(company) {
-  const s = statuses.get(company);
+function statusPill(item) {
+  const s = statuses.get(alertIdentity(item));
   return s ? `<span class="row-status status-${s.toLowerCase()}">${s}</span>` : "";
 }
-function renderStatusTracker(company) {
+function renderStatusTracker(item) {
   const tracker = modal.querySelector("[data-status-tracker]");
   if (!tracker) return;
-  const current = statuses.get(company) || "";
+  const current = item ? statuses.get(alertIdentity(item)) || "" : "";
   tracker.querySelectorAll("[data-status]").forEach((b) => {
     b.classList.toggle("active", b.dataset.status === current && current !== "");
   });
@@ -1002,13 +1011,14 @@ function awaitingLine(item) {
 
 function openingRow(item) {
   const match = openingMatch(item);
-  const isSaved = saved.has(item.company);
+  const listingKey = alertIdentity(item);
+  const isSaved = saved.has(listingKey);
   if (isAwaitingLike(item)) {
     return `
-    <article class="opening-row awaiting" data-company="${esc(item.company)}" data-field="${esc(item.field)}" data-open-details="${esc(item.company)}" tabindex="0" role="button" aria-label="Track ${esc(item.company)} for 2027 postings">
+    <article class="opening-row awaiting" data-company="${esc(item.company)}" data-field="${esc(item.field)}" data-open-details="${esc(listingKey)}" tabindex="0" role="button" aria-label="Track ${esc(item.company)} for 2027 postings">
       ${logoMarkup(item)}
       <div>
-        <span class="status-pill">${esc(item.field)}${item.subField ? " · " + esc(item.subField) : ""}</span>${statusPill(item.company)}
+        <span class="status-pill">${esc(item.field)}${item.subField ? " · " + esc(item.subField) : ""}</span>${statusPill(item)}
         <h3>${esc(item.company)}</h3>
         <p>${listingStatus(item) === "BROWSE"
           ? `Internship roles · ${esc(item.program)}`
@@ -1019,7 +1029,7 @@ function openingRow(item) {
           : ""}
       </div>
       <div class="row-actions">
-        <button class="round-btn save-btn ${isSaved ? "saved" : ""}" aria-label="${isSaved ? "Untrack" : "Track"} ${esc(item.company)}" data-save="${esc(item.company)}" aria-pressed="${isSaved}">
+        <button class="round-btn save-btn ${isSaved ? "saved" : ""}" aria-label="${isSaved ? "Untrack" : "Track"} ${esc(item.company)}" data-save="${esc(listingKey)}" aria-pressed="${isSaved}">
           <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
         </button>
       </div>
@@ -1027,10 +1037,10 @@ function openingRow(item) {
   `;
   }
   return `
-    <article class="opening-row" data-company="${esc(item.company)}" data-field="${esc(item.field)}" data-open-details="${esc(item.company)}" tabindex="0" role="button" aria-label="View alert details for ${esc(item.company)}">
+    <article class="opening-row" data-company="${esc(item.company)}" data-field="${esc(item.field)}" data-open-details="${esc(listingKey)}" tabindex="0" role="button" aria-label="View ${esc(item.role)} at ${esc(item.company)}">
       ${logoMarkup(item)}
       <div>
-        <span class="status-pill">${esc(item.field)}</span>${statusPill(item.company)}
+        <span class="status-pill">${esc(item.field)}</span>${statusPill(item)}
         <h3>${esc(item.company)}</h3>
         <p>${esc(item.role)} · ${esc(item.program)}</p>
         <small>Closes: ${esc(item.deadline)} · ${esc(item.opened)}</small>
@@ -1039,10 +1049,10 @@ function openingRow(item) {
         <small class="source-line">Verified source: ${esc(item.sourceLabel || "Official careers page")}</small>
       </div>
       <div class="row-actions">
-        <button class="round-btn save-btn ${isSaved ? "saved" : ""}" aria-label="${isSaved ? "Unsave" : "Save"} ${esc(item.company)}" data-save="${esc(item.company)}" aria-pressed="${isSaved}">
+        <button class="round-btn save-btn ${isSaved ? "saved" : ""}" aria-label="${isSaved ? "Unsave" : "Save"} ${esc(item.role)} at ${esc(item.company)}" data-save="${esc(listingKey)}" aria-pressed="${isSaved}">
           <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
         </button>
-        <button class="round-btn primary" aria-label="View alert details for ${esc(item.company)}" data-open-details-button="${esc(item.company)}">
+        <button class="round-btn primary" aria-label="View ${esc(item.role)} at ${esc(item.company)}" data-open-details-button="${esc(listingKey)}">
           <svg viewBox="0 0 24 24"><path d="M8 5h11v11"/><path d="M19 5 7 17"/><path d="M5 9v10h10"/></svg>
         </button>
       </div>
@@ -1337,7 +1347,7 @@ function updateAlertIntelligence() {
 const seenAlertsStorageKey = "promptlySeenAlerts";
 
 function alertIdentity(item) {
-  return item.sourceUrl || `${item.company}|${item.role}|${item.program}`;
+  return window.PromptlyListingState.listingIdentity(item);
 }
 
 function isWatchedCompany(item) {
@@ -1447,7 +1457,8 @@ function setFeatured() {
   const ranked = preferredOpenings();
   const item = ranked.find((entry) => listingStatus(entry) === "OPEN") || ranked[0];
   if (!item) return;
-  const isSaved = saved.has(item.company);
+  const listingKey = alertIdentity(item);
+  const isSaved = saved.has(listingKey);
   const status = listingStatus(item);
   const title = document.querySelector("[data-feature-title]");
   const copy = document.querySelector("[data-feature-copy]");
@@ -1468,8 +1479,8 @@ function setFeatured() {
   featureLogo.innerHTML = featureLogoUrl
     ? `<img src="${esc(featureLogoUrl)}" alt="${esc(item.company)} logo" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" data-logo-img />`
     : esc(item.short);
-  document.querySelector("[data-feature-details]").dataset.openDetails = item.company;
-  document.querySelector("[data-feature-save]").dataset.save = item.company;
+  document.querySelector("[data-feature-details]").dataset.openDetails = listingKey;
+  document.querySelector("[data-feature-save]").dataset.save = listingKey;
   document.querySelector("[data-feature-save]").textContent = isSaved ? "Unsave Alert" : "Save Alert";
 }
 
@@ -1709,7 +1720,7 @@ function companyMarker(item, column, inPopover = false) {
     item.cycle || "",
     item.role || "",
   ].filter(Boolean);
-  return `<button class="cycle-marker${mine}${inPopover ? " in-popover" : ""}" data-open-details="${esc(item.company)}" aria-label="${esc(tip.join(", "))}">
+  return `<button class="cycle-marker${mine}${inPopover ? " in-popover" : ""}" data-open-details="${esc(alertIdentity(item))}" aria-label="${esc(tip.join(", "))}">
       <span class="cycle-initials" aria-hidden="true">${initials}</span>
       ${logo ? `<img src="${esc(logo)}" alt="" loading="lazy" data-short="${initials}" data-lc="${esc(item.logoClass || "")}" data-logo-img />` : ""}
       <span class="cycle-tip" role="tooltip">
@@ -1749,15 +1760,21 @@ function renderCycleFootnote(undated) {
     : `Showing the last ${TIMELINE_MONTHS} months of observed postings.`;
 }
 
-function findOpening(company) {
-  return openings.find((opening) => opening.company.includes(company) || company.includes(opening.company.split(" ")[0])) || preferredOpenings()[0];
+function resolveOpening(reference) {
+  return window.PromptlyListingState.resolveListing(openings, reference);
 }
 
-function openDetails(company) {
-  const item = findOpening(company);
+function findOpening(reference) {
+  return resolveOpening(reference) || preferredOpenings()[0];
+}
+
+function openDetails(reference) {
+  const item = findOpening(reference);
+  if (!item) return;
   track("opening_view");
   const match = openingMatch(item);
   modal.dataset.company = item.company;
+  modal.dataset.listingId = alertIdentity(item);
   modalCompany.textContent = item.company;
   // Don't name a specific req for an employer whose feed we can't read.
   modal.querySelector("[data-modal-role]").textContent = listingStatus(item) === "BROWSE"
@@ -1804,14 +1821,14 @@ function openDetails(company) {
   sourceLink.textContent = status === "UPCOMING"
     ? "View the Program Page"
     : item.browse ? `Browse ${item.company} Careers` : "Open Official Posting";
-  modal.querySelector("[data-save-modal]").textContent = saved.has(item.company) ? "Unsave Alert" : "Save Alert";
+  modal.querySelector("[data-save-modal]").textContent = saved.has(alertIdentity(item)) ? "Unsave Alert" : "Save Alert";
   const modalLogo = modal.querySelector(".modal-logo");
   const modalLogoUrl = companyLogoUrl(item);
   modalLogo.className = `modal-logo ${modalLogoUrl ? "logo-tile" : item.logoClass}`;
   modalLogo.innerHTML = modalLogoUrl
     ? `<img src="${esc(modalLogoUrl)}" alt="${esc(item.company)} logo" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" data-logo-img />`
     : esc(item.short);
-  renderStatusTracker(item.company);
+  renderStatusTracker(item);
   resetReportForm();
   if (typeof modal.showModal === "function") modal.showModal();
 }
@@ -1852,8 +1869,8 @@ document.addEventListener("submit", async (event) => {
   if (!form) return;
   event.preventDefault();
 
-  const company = modal.dataset.company;
-  const item = company ? findOpening(company) : null;
+  const listingId = modal.dataset.listingId;
+  const item = listingId ? resolveOpening(listingId) : null;
   if (!item) return;
 
   const status = form.querySelector("[data-report-status]");
@@ -1895,12 +1912,14 @@ document.addEventListener("submit", async (event) => {
   }
 });
 
-function saveCompany(company) {
-  const item = findOpening(company);
-  if (saved.has(item.company)) {
-    saved.delete(item.company);
+function saveOpening(reference) {
+  const item = resolveOpening(reference);
+  if (!item) return;
+  const listingKey = alertIdentity(item);
+  if (saved.has(listingKey)) {
+    saved.delete(listingKey);
   } else {
-    saved.set(item.company, item);
+    saved.set(listingKey, item);
   }
   persistSavedCompanies();
   renderOpenings();
@@ -1928,13 +1947,18 @@ function persistSavedCompanies() {
 
 function restoreSavedCompanies() {
   try {
-    const companies = JSON.parse(localStorage.getItem(savedStorageKey) || "[]");
+    const references = JSON.parse(localStorage.getItem(savedStorageKey) || "[]");
     saved.clear();
-    if (!Array.isArray(companies)) return;
-    companies.forEach((company) => {
-      const item = openings.find((opening) => opening.company === company);
-      if (item) saved.set(item.company, item);
+    if (!Array.isArray(references)) return;
+    let migrated = false;
+    references.forEach((reference) => {
+      const item = resolveOpening(reference);
+      if (!item) return;
+      const listingKey = alertIdentity(item);
+      saved.set(listingKey, item);
+      if (listingKey !== reference) migrated = true;
     });
+    if (migrated) localStorage.setItem(savedStorageKey, JSON.stringify([...saved.keys()]));
     profile.savedAlerts = [...saved.values()].map((item) => ({
       company: item.company,
       role: item.role,
@@ -3232,6 +3256,7 @@ async function sendTestWeeklyRecap() {
 renderFieldChoices();
 updateDashboardGreeting();
 rebuildPlaceholders();
+migrateLegacyStatuses();
 restoreSavedCompanies();
 renderOpenings();
 setFeatured();
@@ -3361,15 +3386,15 @@ document.addEventListener("click", async (event) => {
     sendTestWeeklyRecap();
   }
 
-  if (saveModalButton && modal.dataset.company) {
-    saveCompany(modal.dataset.company);
-    saveModalButton.textContent = saved.has(modal.dataset.company) ? "Unsave Alert" : "Save Alert";
+  if (saveModalButton && modal.dataset.listingId) {
+    saveOpening(modal.dataset.listingId);
+    saveModalButton.textContent = saved.has(modal.dataset.listingId) ? "Unsave Alert" : "Save Alert";
   }
 
   if (saveButton) {
     event.preventDefault();
     event.stopPropagation();
-    saveCompany(saveButton.dataset.save);
+    saveOpening(saveButton.dataset.save);
     return;
   }
 
@@ -3936,6 +3961,7 @@ async function loadLiveOpenings() {
     if (!added) return;
 
     rebuildPlaceholders();
+    migrateLegacyStatuses();
     restoreSavedCompanies();
     renderFilterChips();
     renderOpenings();
@@ -3995,8 +4021,8 @@ document.addEventListener("click", (e) => {
   if (e.target.closest("[data-modal-source-link]")) track("source_click");
   const statusBtn = e.target.closest("[data-status]");
   if (statusBtn) {
-    const company = modal.dataset.company;
-    if (company) setStatus(company, statusBtn.dataset.status);
+    const listingId = modal.dataset.listingId;
+    if (listingId) setStatus(listingId, statusBtn.dataset.status);
   }
 });
 
