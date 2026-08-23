@@ -1,6 +1,7 @@
 const webpush = require("web-push");
 const { clearPushSubscription } = require("./store");
 const { isSafePushSubscription } = require("./push-target");
+const { REASONS: LISTING_REPORT_REASONS } = require("./reports");
 // Shared with the browser (geo.js is dual-mode) so the radius an alert uses is
 // the same engine the app shows results with.
 const geo = require("../../geo.js");
@@ -344,38 +345,49 @@ function matchesOpening(opening, subscriber) {
 }
 
 // ── Listing-problem report → the team's own inbox ─────────────────────────
-// Goes to REPORT_TO_EMAIL (or ALERT_FROM_EMAIL's owner inbox), never to a
-// user. Fails soft on purpose: the report is already saved in Redis by the
-// time this runs, so a mail outage must not make the student's tap look like
-// it failed.
-async function sendListingReport(report) {
-  const to = process.env.REPORT_TO_EMAIL || process.env.ADMIN_EMAIL;
-  if (!to) return { sent: false, setupRequired: "Set REPORT_TO_EMAIL in Vercel." };
+// REPORT_TO_EMAIL can override this for previews or a future support desk,
+// but production reports have a real destination without extra setup.
+const DEFAULT_REPORT_TO_EMAIL = "help.promptly@gmail.com";
 
+function buildListingReportEmail(report) {
+  const to = process.env.REPORT_TO_EMAIL || DEFAULT_REPORT_TO_EMAIL;
   const esc = escapeHtml;
-  const reasons = (report.reasons || []).join(", ");
+  const reasons = (report.reasons || [])
+    .map((reason) => LISTING_REPORT_REASONS[reason] || String(reason))
+    .join(", ");
   const notes = (report.notes || [])
     .map((n) => `<li>${esc(n.note)}</li>`)
     .join("");
+  const officialUrl = safeOfficialUrl(report.url);
+  const company = String(report.company || "Unknown company").replace(/[\r\n]+/g, " ").trim();
 
   const html = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#14141f;max-width:560px">
     <h2 style="margin:0 0 6px">Listing reported${report.count > 1 ? ` (${report.count}×)` : ""}</h2>
     <p style="margin:0 0 16px;color:#5b5870">A student flagged a problem with a live listing.</p>
-    <p><strong>${esc(report.company)}</strong><br />${esc(report.role || "—")}</p>
+    <p><strong>${esc(company)}</strong><br />${esc(report.role || "—")}</p>
+    <p><strong>Current location:</strong> ${esc(report.location || "Not provided")}</p>
     <p><strong>Reason:</strong> ${esc(reasons)}</p>
     ${notes ? `<p><strong>Notes:</strong></p><ul>${notes}</ul>` : ""}
-    ${report.url ? `<p><a href="${esc(report.url)}">${esc(report.url)}</a></p>` : ""}
+    ${officialUrl ? `<p><a href="${esc(officialUrl)}">Open the reported listing</a></p>` : ""}
     ${report.lastReporterEmail ? `<p style="color:#5b5870">Reporter: ${esc(report.lastReporterEmail)}</p>` : ""}
     <p style="color:#5b5870;font-size:13px">Nothing was removed automatically — review it in /admin.html.</p>
   </div>`;
 
-  return sendEmail({ to, subject: `Promptly: ${report.company} listing reported`, html });
+  return { to, subject: `Promptly: ${company} listing reported`, html };
+}
+
+// Awaited by the API handler so Vercel does not freeze the function before
+// Resend has accepted the message.
+async function sendListingReport(report) {
+  return sendEmail(buildListingReportEmail(report));
 }
 
 module.exports = {
   sendVerificationEmail,
   sendVerificationReminder,
   sendListingReport,
+  buildListingReportEmail,
+  DEFAULT_REPORT_TO_EMAIL,
   appBaseUrl,
   unsubscribeUrl,
   sendEmailAlert,

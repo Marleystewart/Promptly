@@ -1863,6 +1863,7 @@ document.addEventListener("submit", async (event) => {
         action: "report",
         company: item.company,
         role: item.role || "",
+        location: item.location || "",
         url: item.sourceUrl || "",
         reason: form.querySelector("[data-report-reason]").value,
         note: form.querySelector("[data-report-note]").value,
@@ -1873,7 +1874,9 @@ document.addEventListener("submit", async (event) => {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "Could not send that.");
     status.className = "report-status ok";
-    status.textContent = "Thanks — we'll check this one.";
+    status.textContent = data.emailSent
+      ? "Thanks — your report was sent to Promptly."
+      : "Thanks — your report was saved for review.";
     submit.textContent = "Sent";
     track("listing_reported");
   } catch (err) {

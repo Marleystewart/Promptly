@@ -56,7 +56,7 @@ async function takeReportSlot(requester = "unknown") {
   return { allowed: count <= 20, stored: true };
 }
 
-async function recordReport({ company, role, url, reason, note, email, requester }) {
+async function recordReport({ company, role, location, url, reason, note, email, requester }) {
   const redis = await getRedis();
   if (!redis) return { ok: false, error: "Reporting is not configured." };
   if (!company || !isValidReason(reason)) return { ok: false, error: "Invalid report." };
@@ -79,6 +79,7 @@ async function recordReport({ company, role, url, reason, note, email, requester
     id,
     company: String(company).slice(0, 80),
     role: String(role || "").slice(0, 120),
+    location: String(location || "").slice(0, 160),
     url: String(url || "").slice(0, 500),
     reasons: [...reasons],
     notes,
