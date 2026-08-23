@@ -141,7 +141,7 @@ const openings = [
     opened: "Applications open Aug 15, 2026",
     upcoming: true,
     sourceLabel: "Goldman Sachs – 2027 Summer Analyst Americas",
-    sourceUrl: "https://www.goldmansachs.com/careers/students/programs-and-internships/americas/2027-summer-analyst-program",
+    sourceUrl: "https://higher.gs.com/campus?EXPERIENCE_LEVEL=Summer%20Analyst",
   },
 
   // ── Finance — Asset Management ────────────────────────────────────────────
@@ -583,15 +583,15 @@ const browseCareers = {
   "McKinsey & Company": "https://www.mckinsey.com/careers/search-jobs?query=intern&countries=United+States",
   // Student/early-career pages instead of corporate careers landing pages.
   "Morgan Stanley": "https://www.morganstanley.com/people-opportunities/students-graduates",
-  "Lazard": "https://www.lazard.com/careers/students/",
+  "Lazard": "https://icbpjb.fa.ocs.oraclecloud.com/hcmUI/CandidateExperience/en/sites/LazardStudentCareers/jobs",
   "Jefferies": "https://www.jefferies.com/careers/students-and-graduates/",
-  "Moelis & Company": "https://www.moelis.com/careers/explore-opportunities/?tab=students-and-graduates",
+  "Moelis & Company": "https://moelis.wd1.myworkdayjobs.com/University-Hires",
   "D.E. Shaw": "https://www.deshaw.com/careers/internships",
   "AQR Capital Management": "https://careers.aqr.com/jobs/category/university-jobs",
   // Stable official program landing pages (not job-ID deep links) — kept as
   // the destination but relabeled honestly (program overviews, not one req).
-  "Goldman Sachs": "https://www.goldmansachs.com/careers/students/programs-and-internships/americas/2027-summer-analyst-program",
-  "J.P. Morgan": "https://www.jpmorganchase.com/careers/explore-opportunities/programs/investment-banking-summer-analyst",
+  "Goldman Sachs": "https://higher.gs.com/campus?EXPERIENCE_LEVEL=Summer%20Analyst",
+  "J.P. Morgan": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/requisitions?keyword=2027%20Summer%20Analyst",
 };
 // A browse card stands for a COMPANY we cannot read, not for a specific req.
 // Two curated Amazon rows therefore collapsed into two identical cards — same
