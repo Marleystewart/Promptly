@@ -46,4 +46,20 @@ window.PROMPTLY_COVERAGE = ${JSON.stringify(
 `;
 
 fs.writeFileSync(path.join(__dirname, "..", "monitored.js"), file);
+
+// index.html's meta description / share-preview text quotes the same count.
+// Those are static tags (search engines and link unfurlers read the raw HTML,
+// so they can't be filled in by script.js at runtime), which is exactly how
+// they silently drifted to a stale "126 employers monitored" while the real
+// registry nearly doubled. Rewrite them here so the public number is
+// regenerated from SOURCES like everything else.
+const indexPath = path.join(__dirname, "..", "index.html");
+let html = fs.readFileSync(indexPath, "utf8");
+const before = html;
+html = html.replace(/\b\d+ employers monitored\b/g, `${names.length} employers monitored`);
+if (html !== before) {
+  fs.writeFileSync(indexPath, html);
+  console.log(`index.html meta updated — "${names.length} employers monitored".`);
+}
+
 console.log(`monitored.js written — ${names.length} monitored companies.`);

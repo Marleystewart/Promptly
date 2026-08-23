@@ -3931,6 +3931,10 @@ loadLiveOpenings();
 // Swap the phone-first notification copy for this device's wording, so a
 // laptop never reads "add to your Home Screen".
 applyDeviceNotificationCopy();
+// The tracked-company count comes from the static monitored list, so it can
+// render immediately — it previously waited on a profile or the live feed and
+// sat as a placeholder dash until one of those arrived.
+updateTrackedCount();
 
 // --- Analytics (first-party, privacy-light) --------------------------------
 // Sends simple event counts so we can see what students actually do. No PII.
@@ -3980,11 +3984,40 @@ function relativeTime(iso) {
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
+// "Companies tracked" means the employers Promptly actually polls every hour
+// — the generated monitored.js list, which is the same number /how-it-works
+// publishes. It is NOT the same as "companies with an open role right now":
+// most campus boards are legitimately empty outside Sept–Nov, so that second
+// number is much smaller and swings week to week. Showing one and labelling
+// it as the other is the "wrong beats unknown" failure this repo forbids, so
+// each has its own label.
+function trackedCompanyCount() {
+  return monitoredCompanies.size || new Set(
+    openings.map((o) => String(o.company || "").trim().toLowerCase()).filter(Boolean)
+  ).size;
+}
+
+function companiesWithOpenRoles() {
+  return new Set(
+    openings.filter((o) => !isAwaitingLike(o))
+      .map((o) => String(o.company || "").trim().toLowerCase())
+      .filter(Boolean)
+  ).size;
+}
+
 function updateTrackedCount() {
   const countEl = document.querySelector("[data-tracked-count]");
   if (!countEl) return;
-  const companies = new Set(openings.map((o) => String(o.company || "").trim().toLowerCase()).filter(Boolean));
-  countEl.textContent = String(companies.size);
+  countEl.textContent = String(trackedCompanyCount());
+
+  // Say plainly how many of those actually have something open today, rather
+  // than letting the headline number imply they all do.
+  const openEl = document.querySelector("[data-tracked-open]");
+  if (openEl) {
+    const withRoles = companiesWithOpenRoles();
+    openEl.textContent = `${withRoles} hiring right now`;
+    openEl.hidden = withRoles === 0;
+  }
 
   const stamp = document.querySelector("[data-tracked-refreshed]");
   if (!stamp) return;
@@ -4000,8 +4033,13 @@ async function renderPeerPulse() {
   const el = document.querySelector("[data-peer-pulse]");
   if (!el) return;
   const textEl = el.querySelector("[data-pulse-text]");
-  const verified = openings.filter((o) => !o.awaiting).length;
-  const watched = openings.length;
+  // These two were both wrong: `watched` was openings.length — the LISTING
+  // count — but rendered as "companies tracked", so the pill claimed ~568
+  // companies when the real figure is the monitored registry. And `verified`
+  // used o.awaiting, which live pipeline listings don't set, so it equalled
+  // the same number and the pill read "568 live roles · 568 companies".
+  const verified = openings.filter((o) => !isAwaitingLike(o)).length;
+  const watched = trackedCompanyCount();
   const parts = [];
   // Hold the live "students on today" count until the app is popping.
   // Show real listing activity + directory size now (no fake numbers).

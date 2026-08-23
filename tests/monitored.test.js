@@ -48,4 +48,18 @@ for (const s of SOURCES) {
 assert.deepEqual({ ...coverage.byPlatform }, platforms, "PROMPTLY_COVERAGE.byPlatform is stale");
 assert.deepEqual({ ...coverage.byField }, fields, "PROMPTLY_COVERAGE.byField is stale");
 
+// index.html's meta description and share-preview tags quote the same count.
+// They're static (crawlers and link unfurlers read the raw HTML, so script.js
+// can't fill them in), which is how they silently drifted to "126 employers
+// monitored" while the registry nearly doubled. Assert them here so a stale
+// public number fails the build instead of shipping.
+const fs2 = require("node:fs");
+const indexHtml = fs2.readFileSync(require("node:path").join(__dirname, "..", "index.html"), "utf8");
+const quoted = [...indexHtml.matchAll(/\b(\d+) employers monitored\b/g)].map((m) => Number(m[1]));
+assert.ok(quoted.length, "index.html should quote the monitored-employer count");
+for (const n of quoted) {
+  assert.equal(n, expected.length,
+    `index.html says "${n} employers monitored" but the registry has ${expected.length} — run: node scripts/generate-monitored.js`);
+}
+
 console.log(`Monitored-company list in sync. ${listed.length} companies with a live feed.`);
