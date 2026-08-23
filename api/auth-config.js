@@ -1,9 +1,11 @@
+const { withCors } = require("./_shared/cors");
+
 // Kill switch: Supabase auth is parked while we sort out the project account.
 // The app falls back to a clean on-device profile flow (easy to demo).
 // Flip to true when Google/Supabase login is ready to come back.
 const AUTH_ENABLED = true;
 
-module.exports = function handler(req, res) {
+function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
   const url = process.env.SUPABASE_URL || "";
@@ -16,3 +18,5 @@ module.exports = function handler(req, res) {
     publishableKey: AUTH_ENABLED ? publishableKey : "",
   });
 };
+
+module.exports = withCors(handler);

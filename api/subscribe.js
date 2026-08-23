@@ -1,3 +1,5 @@
+const { withCors } = require("./_shared/cors");
+
 const { isValidEmail } = require("./_shared/email-validator");
 const { readBody, saveSubscriber, deleteSubscriber, addSubscriberWatch, removeSubscriberWatch, getSubscriber, takeSubscribeSlot } = require("./_shared/store");
 const { watchCompany, unwatchCompany } = require("./_shared/watch");
@@ -97,7 +99,7 @@ async function deleteAccount(req, res) {
   return res.status(200).json({ ok: true, subscriberRemoved });
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method === "DELETE") return deleteAccount(req, res);
   if (req.method === "GET") return handleEmailLink(req, res);
   if (req.method !== "POST") {
@@ -230,3 +232,5 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: error.message || "Could not save subscriber." });
   }
 };
+
+module.exports = withCors(handler);

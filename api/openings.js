@@ -2,9 +2,10 @@
 // The frontend merges these on top of its curated baseline, so a slow or
 // empty response never leaves the app blank.
 
+const { withCors } = require("./_shared/cors");
 const { getLiveOpenings } = require("./_shared/openings-store");
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -20,3 +21,5 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ openings: [], updatedAt: null, count: 0, error: error.message });
   }
 };
+
+module.exports = withCors(handler);

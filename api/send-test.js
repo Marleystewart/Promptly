@@ -1,3 +1,5 @@
+const { withCors } = require("./_shared/cors");
+
 const webpush = require("web-push");
 const { isSafePushSubscription } = require("./_shared/push-target");
 
@@ -15,7 +17,7 @@ function safeUrl(value) {
   }
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -55,3 +57,5 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: error.message || "Could not send test push." });
   }
 };
+
+module.exports = withCors(handler);

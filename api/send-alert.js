@@ -1,3 +1,5 @@
+const { withCors } = require("./_shared/cors");
+
 const { isValidEmail } = require("./_shared/email-validator");
 const { readBody, saveSubscriber, normalizeSubscriber, takeTestAlertSlot, getSubscriber } = require("./_shared/store");
 const { sendEmailAlert } = require("./_shared/alerts");
@@ -36,7 +38,7 @@ function normalizeTestOpening(value = {}) {
   };
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -88,3 +90,5 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: error.message || "Could not send alert." });
   }
 };
+
+module.exports = withCors(handler);

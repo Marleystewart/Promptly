@@ -1,3 +1,11 @@
+// Where the API lives. On the web the app is served from the same origin as its
+// own functions, so a relative path is correct and stays correct on previews.
+// Inside the iOS/Android shell the page loads from capacitor://localhost, which
+// has no /api of its own — those builds must call production absolutely.
+// window.Capacitor only exists in the native shell, so this is "" on the web.
+const API_ORIGIN = "https://app.joinpromptly.co";
+const API_BASE = window.Capacitor?.isNativePlatform?.() ? API_ORIGIN : "";
+
 const COLLEGES = [
   "Abilene Christian University", "Agnes Scott College", "Alabama A&M University", "Alcorn State University",
   "American University", "Amherst College", "Arizona State University", "Auburn University",
@@ -832,7 +840,7 @@ function setStatus(company, stage) {
   persistStatuses();
   if (stage && item) {
     try {
-      fetch("/api/stats", {
+      fetch(`${API_BASE}/api/stats`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         keepalive: true,
@@ -1856,7 +1864,7 @@ document.addEventListener("submit", async (event) => {
   status.textContent = "";
 
   try {
-    const res = await fetch("/api/subscribe", {
+    const res = await fetch(`${API_BASE}/api/subscribe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -2257,7 +2265,7 @@ async function initializeAuth() {
     window.history.replaceState(window.history.state, "", cleanUrl);
   }
   try {
-    const response = await fetch("/api/auth-config", { headers: { Accept: "application/json" } });
+    const response = await fetch(`${API_BASE}/api/auth-config`, { headers: { Accept: "application/json" } });
     const config = response.ok ? await response.json() : { enabled: false };
     // Only reach out to the Supabase CDN when accounts are actually switched on.
     // While auth is parked, Promptly loads zero third-party scripts.
@@ -2474,7 +2482,7 @@ async function deleteAccount() {
     const { data } = await authClient.auth.getSession();
     const token = data?.session?.access_token;
     if (!token) throw new Error("Your session expired. Sign in and try again.");
-    const response = await fetch("/api/subscribe", {
+    const response = await fetch(`${API_BASE}/api/subscribe`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -2668,7 +2676,7 @@ async function submitWatch() {
   button.disabled = true;
   setWatchStatus("Checking that link…");
   try {
-    const response = await fetch("/api/subscribe", {
+    const response = await fetch(`${API_BASE}/api/subscribe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "watch", url, company, profile: { email: profile.email } }),
@@ -2713,7 +2721,7 @@ async function removeWatch(id) {
   setWatchStatus("Stopped watching.", "");
   if (!profile.email) return;
   try {
-    await fetch("/api/subscribe", {
+    await fetch(`${API_BASE}/api/subscribe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "unwatch", id, profile: { email: profile.email } }),
@@ -2931,7 +2939,7 @@ async function registerServiceWorker() {
 
 async function getVapidPublicKey() {
   try {
-    const response = await fetch("/api/vapid-public-key");
+    const response = await fetch(`${API_BASE}/api/vapid-public-key`);
     if (!response.ok) return fallbackVapidPublicKey;
     const data = await response.json();
     return data.publicKey || fallbackVapidPublicKey;
@@ -3001,7 +3009,7 @@ async function resendVerification() {
   const previous = button.textContent;
   button.textContent = "Sending…";
   try {
-    const response = await fetch("/api/subscribe", {
+    const response = await fetch(`${API_BASE}/api/subscribe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "resend-verification", profile: { email: profile.email } }),
@@ -3032,7 +3040,7 @@ async function saveSubscriber(subscription = null) {
     // not travel over the wire at all — otherwise the promise is false in
     // transit even though nothing is stored.
     const { resumeText, photoDataUrl, ...shareableProfile } = profile;
-    const response = await fetch("/api/subscribe", {
+    const response = await fetch(`${API_BASE}/api/subscribe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ subscription, profile: shareableProfile }),
@@ -3134,7 +3142,7 @@ async function sendTestAlert() {
   setPushStatus("Sending a test email alert...");
 
   try {
-    const response = await fetch("/api/send-alert", {
+    const response = await fetch(`${API_BASE}/api/send-alert`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -3171,7 +3179,7 @@ async function sendTestPush() {
   setPushStatus("Sending a real test notification...");
 
   try {
-    const response = await fetch("/api/send-test", {
+    const response = await fetch(`${API_BASE}/api/send-test`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -3202,7 +3210,7 @@ async function sendTestWeeklyRecap() {
   setPushStatus("Sending your weekly recap test...");
   try {
     const raw = localStorage.getItem("openingPushSubscription");
-    const response = await fetch("/api/send-recap", {
+    const response = await fetch(`${API_BASE}/api/send-recap`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -3901,7 +3909,7 @@ registerServiceWorker();
 // If the request fails, nothing changes and the curated list still shows.
 async function loadLiveOpenings() {
   try {
-    const res = await fetch("/api/openings", { headers: { Accept: "application/json" } });
+    const res = await fetch(`${API_BASE}/api/openings`, { headers: { Accept: "application/json" } });
     if (!res.ok) return;
     const data = await res.json();
     // Real pipeline timestamp — surfaced in the UI as proof the feed is live.
@@ -3977,7 +3985,7 @@ function track(event) {
     if (navigator.sendBeacon) {
       navigator.sendBeacon("/api/stats", new Blob([body], { type: "application/json" }));
     } else {
-      fetch("/api/stats", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
+      fetch(`${API_BASE}/api/stats`, { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
     }
   } catch {}
 }
@@ -4070,7 +4078,7 @@ async function renderPeerPulse() {
   // Hold the live "students on today" count until the app is popping.
   // Show real listing activity + directory size now (no fake numbers).
   try {
-    const r = await fetch("/api/stats", { headers: { Accept: "application/json" } });
+    const r = await fetch(`${API_BASE}/api/stats`, { headers: { Accept: "application/json" } });
     if (r.ok) {
       const s = await r.json();
       if (s.newListingsThisWeek > 0) parts.push(`${s.newListingsThisWeek} new listing${s.newListingsThisWeek > 1 ? "s" : ""} this week`);

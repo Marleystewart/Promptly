@@ -1,9 +1,11 @@
 // Safe, public aggregate stats (no PII), anonymous progress updates, and
 // lightweight event tracking (merged from the old /api/track endpoint to
 // stay under Vercel's Hobby function limit).
+const { withCors } = require("./_shared/cors");
+
 const { getStats, recordOutcome, track } = require("./_shared/analytics");
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (!["GET", "POST"].includes(req.method)) return res.status(405).json({ error: "Method not allowed" });
   try {
     if (req.method === "POST") {
@@ -33,3 +35,5 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ activeToday: 0, applicationsToday: 0, signupsToday: 0, newListingsThisWeek: 0, error: error.message });
   }
 };
+
+module.exports = withCors(handler);

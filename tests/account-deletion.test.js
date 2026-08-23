@@ -5,6 +5,11 @@ function response() {
   return {
     statusCode: null,
     body: null,
+    headers: {},
+    // Real Vercel responses always carry setHeader; the handler is wrapped in
+    // withCors, which sets Vary on every request.
+    setHeader(key, value) { this.headers[String(key).toLowerCase()] = value; return this; },
+    getHeader(key) { return this.headers[String(key).toLowerCase()]; },
     status(code) { this.statusCode = code; return this; },
     json(body) { this.body = body; return this; },
   };

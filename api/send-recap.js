@@ -1,10 +1,12 @@
+const { withCors } = require("./_shared/cors");
+
 const { isValidEmail } = require("./_shared/email-validator");
 const { readBody, saveSubscriber, normalizeSubscriber, takeTestAlertSlot, getSubscriber } = require("./_shared/store");
 const { getLiveOpenings } = require("./_shared/openings-store");
 const { sendWeeklyRecap, matchesOpening } = require("./_shared/alerts");
 const { getOrCreateUnsubToken } = require("./_shared/tokens");
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   try {
     const body = readBody(req);
@@ -47,3 +49,5 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: error.message || "Could not send weekly recap." });
   }
 };
+
+module.exports = withCors(handler);
