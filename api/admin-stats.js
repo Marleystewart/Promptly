@@ -7,6 +7,7 @@ const { listSubscribers, takeAdminAttempt, getRedis } = require("./_shared/store
 const { getStats } = require("./_shared/analytics");
 const { listWatchedSources, listCoverageRequests } = require("./_shared/watched-store");
 const { listSourceHealth } = require("./_shared/source-health");
+const { listReports } = require("./_shared/reports");
 const crypto = require("crypto");
 
 function mask(email) {
@@ -119,9 +120,16 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ sourceHealth, sourceHealthCounts });
     }
 
+    // Student-reported listing problems. Corroborating signal for manual
+    // review — nothing here was removed automatically.
+    let reports = [];
+    try { reports = await listReports(); } catch {}
+
     return res.status(200).json({
       sourceHealth,
       sourceHealthCounts,
+      reports: reports.slice(0, 50),
+      reportCount: reports.length,
       watchedCount: watched.length,
       coverageCount: coverage.length,
       watched: watchedRows,

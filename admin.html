@@ -76,6 +76,7 @@ async function load() {
         <div class="card"><div class="n">${d.watchedCount || 0}</div><div class="l">Companies watched</div></div>
         <div class="card"><div class="n">${d.coverageCount || 0}</div><div class="l">Coverage requests</div></div>
         <div class="card"><div class="n">${(d.verify && d.verify.flagged || []).length}</div><div class="l">Links flagged for review</div></div>
+        <div class="card"><div class="n">${d.reportCount || 0}</div><div class="l">Student reports</div></div>
       </div>
       ${table("Accounts by school", d.bySchool, ["School", "#"])}
       ${table("By graduation year", d.byGradYear, ["Grad year", "#"])}
@@ -84,6 +85,14 @@ async function load() {
       ${table("Coverage requests (unsupported pages — demand signal)", (d.coverage||[]).map(x => [x.company || "—", x.url, x.requests]), ["Company", "URL", "Requests"])}
       ${d.verify ? `<p class="muted">Content check last ran ${escapeHtml(d.verify.checkedAt || "—")} · checked ${d.verify.checked || 0} of ${d.verify.totalLive || 0} live listings that run · corroborating signal only, nothing here was auto-removed.</p>` : ""}
       ${table("⚠ Flagged for manual review (NOT removed — verify before acting)", (d.verify && d.verify.flagged || []).map(x => [x.company, x.role, x.sourceUrl]), ["Company", "Role", "Link"])}
+      ${table("🚩 Reported by students (NOT removed — verify before acting)", (d.reports||[]).map(x => [
+        x.company,
+        x.role || "—",
+        (x.reasons||[]).join(", "),
+        (x.notes||[]).map(n => n.note).join(" · ") || "—",
+        x.count,
+        x.lastReportedAt ? new Date(x.lastReportedAt).toLocaleString() : "—",
+      ]), ["Company", "Role", "Reason", "Notes", "Reports", "Last"])}
       ${table("Recent signups", (d.recent||[]).map(x => [x.email, x.school, x.gradYear, x.when ? new Date(x.when).toLocaleString() : "—"]), ["Email", "School", "Grad", "When"])}
       ${d.setupRequired ? `<p class="muted">${escapeHtml(d.setupRequired)}</p>` : ""}
     `;

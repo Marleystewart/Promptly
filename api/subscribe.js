@@ -5,7 +5,8 @@ const {
   createVerifyToken, consumeVerifyToken, resolveUnsubToken,
   markVerified, disableEmailFor, getOrCreateUnsubToken,
 } = require("./_shared/tokens");
-const { sendVerificationEmail } = require("./_shared/alerts");
+const { sendVerificationEmail, sendListingReport } = require("./_shared/alerts");
+const { recordReport, takeReportSlot } = require("./_shared/reports");
 
 // Minimal styled page for links opened from an email client.
 function page(res, status, title, message, cta = true) {
@@ -106,6 +107,32 @@ module.exports = async function handler(req, res) {
   try {
     const body = readBody(req);
     const profile = body.profile || {};
+
+    // ── Report a bad listing ─────────────────────────────────────────────
+    // Deliberately does NOT require an email or a saved profile: the whole
+    // point is that a student who just hit a dead link can say so in one tap.
+    // Saved first, emailed second — a mail failure must not surface to the
+    // student as a failed report.
+    if (body.action === "report") {
+      const requester = String(req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || "unknown")
+        .split(",")[0].trim().slice(0, 64);
+      const slot = await takeReportSlot(requester);
+      if (!slot.allowed) {
+        return res.status(429).json({ error: "Thanks — you've sent a few already. Try again later." });
+      }
+      const outcome = await recordReport({
+        company: body.company,
+        role: body.role,
+        url: body.url,
+        reason: body.reason,
+        note: body.note,
+        email: profile.email || body.email || "",
+        requester,
+      });
+      if (!outcome.ok) return res.status(400).json({ error: outcome.error || "Could not save that report." });
+      sendListingReport(outcome.report).catch(() => {});
+      return res.status(200).json({ ok: true });
+    }
 
     // ── Watch any company ────────────────────────────────────────────────
     // Same endpoint (we're at Vercel's 12-function limit) — an `action`

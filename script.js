@@ -1791,8 +1791,85 @@ function openDetails(company) {
     ? `<img src="${esc(modalLogoUrl)}" alt="${esc(item.company)} logo" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" data-logo-img />`
     : esc(item.short);
   renderStatusTracker(item.company);
+  resetReportForm();
   if (typeof modal.showModal === "function") modal.showModal();
 }
+
+// ── Report a bad listing ──────────────────────────────────────────────────
+// At this many monitored employers nobody can hand-verify every posting, and
+// the student who just clicked a dead link is the fastest signal we have.
+// Collapsed by default and reset per open, so a previous report's state never
+// bleeds onto a different company.
+function resetReportForm() {
+  const form = document.querySelector("[data-report-form]");
+  const toggle = document.querySelector("[data-report-toggle]");
+  if (!form || !toggle) return;
+  form.hidden = true;
+  toggle.hidden = false;
+  toggle.textContent = "Something wrong with this listing?";
+  const note = form.querySelector("[data-report-note]");
+  const reason = form.querySelector("[data-report-reason]");
+  const status = form.querySelector("[data-report-status]");
+  const submit = form.querySelector(".report-submit");
+  if (note) note.value = "";
+  if (reason) reason.selectedIndex = 0;
+  if (status) { status.textContent = ""; status.className = "report-status"; }
+  if (submit) { submit.disabled = false; submit.textContent = "Send report"; }
+}
+
+document.addEventListener("click", (event) => {
+  if (!event.target.closest("[data-report-toggle]")) return;
+  const form = document.querySelector("[data-report-form]");
+  const toggle = document.querySelector("[data-report-toggle]");
+  if (!form || !toggle) return;
+  form.hidden = false;
+  toggle.hidden = true;
+});
+
+document.addEventListener("submit", async (event) => {
+  const form = event.target.closest("[data-report-form]");
+  if (!form) return;
+  event.preventDefault();
+
+  const company = modal.dataset.company;
+  const item = company ? findOpening(company) : null;
+  if (!item) return;
+
+  const status = form.querySelector("[data-report-status]");
+  const submit = form.querySelector(".report-submit");
+  submit.disabled = true;
+  submit.textContent = "Sending…";
+  status.className = "report-status";
+  status.textContent = "";
+
+  try {
+    const res = await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "report",
+        company: item.company,
+        role: item.role || "",
+        url: item.sourceUrl || "",
+        reason: form.querySelector("[data-report-reason]").value,
+        note: form.querySelector("[data-report-note]").value,
+        // Only sent if they already gave it to us; never prompted for here.
+        email: (profile && profile.email) || "",
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Could not send that.");
+    status.className = "report-status ok";
+    status.textContent = "Thanks — we'll check this one.";
+    submit.textContent = "Sent";
+    track("listing_reported");
+  } catch (err) {
+    status.className = "report-status err";
+    status.textContent = err.message || "Could not send that. Try again.";
+    submit.disabled = false;
+    submit.textContent = "Send report";
+  }
+});
 
 function saveCompany(company) {
   const item = findOpening(company);

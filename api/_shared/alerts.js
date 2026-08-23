@@ -343,9 +343,39 @@ function matchesOpening(opening, subscriber) {
   return subscriber.fields.includes(opening.field);
 }
 
+// ── Listing-problem report → the team's own inbox ─────────────────────────
+// Goes to REPORT_TO_EMAIL (or ALERT_FROM_EMAIL's owner inbox), never to a
+// user. Fails soft on purpose: the report is already saved in Redis by the
+// time this runs, so a mail outage must not make the student's tap look like
+// it failed.
+async function sendListingReport(report) {
+  const to = process.env.REPORT_TO_EMAIL || process.env.ADMIN_EMAIL;
+  if (!to) return { sent: false, setupRequired: "Set REPORT_TO_EMAIL in Vercel." };
+
+  const esc = escapeHtml;
+  const reasons = (report.reasons || []).join(", ");
+  const notes = (report.notes || [])
+    .map((n) => `<li>${esc(n.note)}</li>`)
+    .join("");
+
+  const html = `<div style="font-family:Arial,sans-serif;line-height:1.5;color:#14141f;max-width:560px">
+    <h2 style="margin:0 0 6px">Listing reported${report.count > 1 ? ` (${report.count}×)` : ""}</h2>
+    <p style="margin:0 0 16px;color:#5b5870">A student flagged a problem with a live listing.</p>
+    <p><strong>${esc(report.company)}</strong><br />${esc(report.role || "—")}</p>
+    <p><strong>Reason:</strong> ${esc(reasons)}</p>
+    ${notes ? `<p><strong>Notes:</strong></p><ul>${notes}</ul>` : ""}
+    ${report.url ? `<p><a href="${esc(report.url)}">${esc(report.url)}</a></p>` : ""}
+    ${report.lastReporterEmail ? `<p style="color:#5b5870">Reporter: ${esc(report.lastReporterEmail)}</p>` : ""}
+    <p style="color:#5b5870;font-size:13px">Nothing was removed automatically — review it in /admin.html.</p>
+  </div>`;
+
+  return sendEmail({ to, subject: `Promptly: ${report.company} listing reported`, html });
+}
+
 module.exports = {
   sendVerificationEmail,
   sendVerificationReminder,
+  sendListingReport,
   appBaseUrl,
   unsubscribeUrl,
   sendEmailAlert,

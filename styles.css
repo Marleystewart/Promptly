@@ -2203,6 +2203,53 @@ input[type="checkbox"] {
   text-align: center;
 }
 
+/* Report a bad listing. Deliberately low-key — it must be findable when a
+   student needs it without competing with the apply button. */
+.report-block {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+}
+.report-toggle {
+  background: none;
+  border: 0;
+  color: rgba(250, 250, 255, 0.55);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 4px;
+}
+.report-toggle:hover { color: rgba(250, 250, 255, 0.9); }
+.report-form { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; text-align: left; }
+.report-form[hidden] { display: none; }
+.report-label { font-size: 12px; color: rgba(250, 250, 255, 0.6); }
+.report-form select,
+.report-form input {
+  font: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.07);
+  color: #fafaff;
+}
+.report-submit {
+  font: inherit;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 0;
+  background: #6841ff;
+  color: #fff;
+  cursor: pointer;
+}
+.report-submit:disabled { opacity: .6; cursor: default; }
+.report-status { font-size: 13px; margin: 2px 0 0; color: rgba(250, 250, 255, 0.7); }
+.report-status.ok { color: #6ee7a8; }
+.report-status.err { color: #ff8f9c; }
+
 .modal-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
