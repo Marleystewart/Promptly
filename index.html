@@ -299,6 +299,7 @@
             <div class="cycle-method" id="cycle-method" data-cycle-method hidden>
               <p><strong>These are observed dates, not predictions.</strong> Each marker sits in the month Promptly first saw that employer publish a student role in their own hiring system.</p>
               <p>A company posting in August one year does not guarantee it will post in August again. Promptly reports what it saw; it does not forecast recruiting calendars.</p>
+              <p><strong>Looking ahead?</strong> Any future month shows <strong>estimated</strong> drop windows, projected from when each company posted in previous years. These are estimates only — nothing is 100% accurate, and an estimated role is not open yet. Past and current months show what Promptly actually observed, with each role's opening (and closing date where the employer provides one).</p>
             </div>
           </header>
 
@@ -314,6 +315,14 @@
               <button type="button" class="cycle-clear" data-cycle-reset hidden>Clear filters</button>
             </div>
             <div class="cycle-chips" data-cycle-chips hidden></div>
+
+            <div class="cycle-window-nav" role="group" aria-label="Move the timeline window">
+              <button type="button" class="cyc-nav" data-cycle-nav="-12" aria-label="Back one year" title="Back one year">«</button>
+              <button type="button" class="cyc-nav" data-cycle-nav="-6" aria-label="Back six months" title="Back six months">‹</button>
+              <span class="cyc-window-label" data-cycle-window-label aria-live="polite"></span>
+              <button type="button" class="cyc-nav" data-cycle-nav="6" aria-label="Forward six months" title="Forward six months">›</button>
+              <button type="button" class="cyc-nav" data-cycle-nav="12" aria-label="Forward one year" title="Forward one year">»</button>
+            </div>
 
             <div class="cycle-grid" data-cycle-grid></div>
             <p class="cycle-unknown" data-cycle-unknown hidden></p>
@@ -469,6 +478,14 @@
       </div>
       <div class="field-grid edit-fields" data-edit-field-grid></div>
       <button class="primary-action wide" data-save-profile-edits>Save Profile</button>
+    </dialog>
+
+    <dialog class="month-modal" data-month-modal>
+      <button class="close-modal" data-month-close aria-label="Close">×</button>
+      <span class="status-pill" data-month-tag>OBSERVED</span>
+      <h2 data-month-title>Month</h2>
+      <p class="why-alert" data-month-note></p>
+      <div class="month-list" data-month-list></div>
     </dialog>
 
     <dialog class="details-modal">
