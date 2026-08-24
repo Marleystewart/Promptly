@@ -1,7 +1,8 @@
 const { withCors } = require("./_shared/cors");
 
 const { isValidEmail } = require("./_shared/email-validator");
-const { readBody, saveSubscriber, deleteSubscriber, addSubscriberWatch, removeSubscriberWatch, getSubscriber, takeSubscribeSlot } = require("./_shared/store");
+const { readBody, saveSubscriber, addSubscriberWatch, removeSubscriberWatch, getSubscriber, takeSubscribeSlot } = require("./_shared/store");
+const { eraseSubscriber } = require("./_shared/erase");
 const { watchCompany, unwatchCompany } = require("./_shared/watch");
 const {
   createVerifyToken, consumeVerifyToken, resolveUnsubToken,
@@ -92,9 +93,13 @@ async function deleteAccount(req, res) {
     return res.status(502).json({ error: details.message || "Supabase could not delete this account." });
   }
 
+  // Full erasure, not just the profile record: queued digests, the permanent
+  // unsubscribe token->email map, and this address inside shared rows
+  // (watched companies, coverage requests, listing reports) all have to go for
+  // "we do not keep a shadow copy" to be true.
   let subscriberRemoved = false;
   try {
-    subscriberRemoved = Boolean((await deleteSubscriber(user.email)).removed);
+    subscriberRemoved = Boolean((await eraseSubscriber(user.email)).erased);
   } catch {}
   return res.status(200).json({ ok: true, subscriberRemoved });
 }

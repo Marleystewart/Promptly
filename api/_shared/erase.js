@@ -1,0 +1,119 @@
+// Complete erasure of one person's data.
+//
+// deleteSubscriber() removed exactly two keys: the profile record and the
+// membership set. Everything else keyed to that email survived — including a
+// permanent token->email map with no TTL. The privacy policy tells students
+// "we do not keep a shadow copy", and specifically that deletion removes
+// "your watched companies", so that gap was a promise the code did not keep.
+//
+// Oddly, purgeUnverified() (for abandoned signups) was already more thorough
+// than the path a user reaches by explicitly asking to be deleted. This makes
+// the deliberate path the most complete one.
+//
+// NOT erased here, deliberately:
+//   promptly:school:* and promptly:schoolfeed:* — aggregate outcome data that
+//   carries no user identifier at all. There is no way to select one person's
+//   rows because nothing links them to a person. That is a data-architecture
+//   limitation to fix at write time (see the audit), not something erasure can
+//   reach. Guessing at rows to delete would corrupt other students' counts.
+
+const { getRedis } = require("./store");
+const { WATCHED_KEY, COVERAGE_KEY } = require("./watched-store");
+const { REPORTS_KEY } = require("./reports");
+
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+// Walk a hash of JSON records and rewrite only the entries that mention this
+// address. Rewrites in place rather than deleting the row, because these rows
+// are shared across users — a watched company may have other watchers.
+async function scrubHash(redis, key, scrubber) {
+  const raw = (await redis.hgetall(key)) || {};
+  const updates = {};
+  let removed = 0;
+
+  for (const [field, value] of Object.entries(raw)) {
+    let record = value;
+    if (typeof record === "string") {
+      try { record = JSON.parse(record); } catch { continue; }
+    }
+    if (!record || typeof record !== "object") continue;
+
+    const next = scrubber(record);
+    if (next === null) continue;
+    updates[field] = JSON.stringify(next);
+    removed += 1;
+  }
+
+  if (Object.keys(updates).length) await redis.hset(key, updates);
+  return removed;
+}
+
+async function eraseSubscriber(email) {
+  const redis = await getRedis();
+  const normalized = normalizeEmail(email);
+  if (!redis || !normalized) return { erased: false };
+
+  // Read first: the unsubscribe token is only discoverable via the record, and
+  // once the record is gone the token->email mapping is unreachable garbage
+  // that still resolves to this person's address.
+  let record = null;
+  try { record = await redis.get(`promptly:subscriber:${normalized}`); } catch {}
+
+  const removed = [];
+
+  const jobs = [
+    redis.del(`promptly:subscriber:${normalized}`),
+    redis.srem("promptly:subscribers", normalized),
+    redis.del(`promptly:digest:${normalized}`),
+    redis.del(`promptly:verify-sent:${normalized}`),
+  ];
+  removed.push("profile", "subscriber-set", "queued-digest", "verify-cooldown");
+
+  if (record && record.unsubToken) {
+    jobs.push(redis.del(`promptly:unsub:${record.unsubToken}`));
+    removed.push("unsubscribe-token");
+  }
+
+  await Promise.all(jobs);
+
+  // Watched companies: the policy explicitly promises these are removed.
+  let watchedScrubbed = 0;
+  try {
+    watchedScrubbed = await scrubHash(redis, WATCHED_KEY, (r) => {
+      const watchers = Array.isArray(r.watchers) ? r.watchers : [];
+      if (!watchers.includes(normalized)) return null;
+      return { ...r, watchers: watchers.filter((w) => w !== normalized) };
+    });
+  } catch {}
+  if (watchedScrubbed) removed.push(`watched-sources(${watchedScrubbed})`);
+
+  // Coverage requests: demand signal we want to keep, but the requester's
+  // address is not needed to keep the count.
+  let coverageScrubbed = 0;
+  try {
+    coverageScrubbed = await scrubHash(redis, COVERAGE_KEY, (r) => {
+      const by = Array.isArray(r.requestedBy) ? r.requestedBy : [];
+      if (!by.includes(normalized)) return null;
+      return { ...r, requestedBy: by.filter((e) => e !== normalized) };
+    });
+  } catch {}
+  if (coverageScrubbed) removed.push(`coverage-requests(${coverageScrubbed})`);
+
+  // Listing reports: the report itself is operational (a broken link is still
+  // broken after the reporter leaves), so keep the report and drop only the
+  // contact address, which exists solely for optional follow-up.
+  let reportsScrubbed = 0;
+  try {
+    reportsScrubbed = await scrubHash(redis, REPORTS_KEY, (r) => {
+      if (normalizeEmail(r.lastReporterEmail) !== normalized) return null;
+      return { ...r, lastReporterEmail: null };
+    });
+  } catch {}
+  if (reportsScrubbed) removed.push(`listing-reports(${reportsScrubbed})`);
+
+  return { erased: true, removed };
+}
+
+module.exports = { eraseSubscriber, scrubHash };

@@ -132,4 +132,8 @@ module.exports = {
   logCoverageRequest,
   listCoverageRequests,
   MAX_WATCHED,
+  // Exported so account erasure can scrub a departing user's address out of
+  // these shared rows (see _shared/erase.js).
+  WATCHED_KEY,
+  COVERAGE_KEY,
 };
