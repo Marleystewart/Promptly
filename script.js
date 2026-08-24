@@ -593,6 +593,28 @@ const browseCareers = {
   "Goldman Sachs": "https://higher.gs.com/campus?EXPERIENCE_LEVEL=Summer%20Analyst",
   "J.P. Morgan": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/requisitions?keyword=2027%20Summer%20Analyst",
 };
+// Normalize a company name so spelling variants collapse to one key —
+// "J.P. Morgan" / "JPMorgan", "Moelis & Company" / "Moelis",
+// "AQR Capital Management" / "AQR Capital", "D.E. Shaw" / "D. E. Shaw" all
+// match. Without this, a curated card spelled slightly differently from the
+// registry name was treated as unmonitored and shown as "we can't read their
+// feed" even though we scrape it. Defined here (before the browse loop that
+// uses it) so it is initialized in time.
+function normalizeCompanyName(name) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/&/g, " ")
+    .replace(/\b(incorporated|inc|llc|ltd|lp|llp|plc|corp|corporation|co|company|group|holdings|partners|management|and|the)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, "");
+}
+const monitoredCompanies = new Set(
+  (typeof window !== "undefined" && Array.isArray(window.MONITORED_COMPANIES) ? window.MONITORED_COMPANIES : [])
+    .map(normalizeCompanyName)
+);
+function isMonitored(item) {
+  return monitoredCompanies.has(normalizeCompanyName(item.company));
+}
+
 // A browse card stands for a COMPANY we cannot read, not for a specific req.
 // Two curated Amazon rows therefore collapsed into two identical cards — same
 // link, same "Internship roles" label — which is exactly the duplication that
@@ -602,6 +624,12 @@ for (let i = openings.length - 1; i >= 0; i -= 1) {
   const item = openings[i];
   const url = browseCareers[item.company];
   if (!url || item.curatedAwaiting) continue;
+  // If we actually have a readable feed for this employer (it's monitored),
+  // never force the "we can't read their feed" browse card — show the real
+  // listing / awaiting state instead. This is what makes Goldman, JPMorgan,
+  // Moelis, D.E. Shaw, AQR etc. stop reading as unreadable once their scraper
+  // is live, without maintaining a second hand-kept list.
+  if (isMonitored(item)) continue;
   if (browseSeen.has(item.company)) {
     openings.splice(i, 1);
     continue;
@@ -962,14 +990,6 @@ function isAwaitingLike(item) {
 // generated from the source registry). We must not promise an alert for an
 // employer we cannot read — firms like McKinsey and Apple publish no machine
 // readable board, so for those we say so and point at the watch flow instead.
-const monitoredCompanies = new Set(
-  (typeof window !== "undefined" && Array.isArray(window.MONITORED_COMPANIES) ? window.MONITORED_COMPANIES : [])
-    .map((name) => String(name).trim().toLowerCase())
-);
-
-function isMonitored(item) {
-  return monitoredCompanies.has(String(item.company || "").trim().toLowerCase());
-}
 
 // Returns PLAIN TEXT, never HTML. The caller escapes it — these strings
 // interpolate the student's own preferred location and, for watched companies,
