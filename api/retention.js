@@ -1,6 +1,8 @@
 const { forEachSubscriberBatch, claimOnce, releaseClaim, getRedis } = require("./_shared/store");
 const { runLinkVerification } = require("./_shared/link-verify");
-const { listReports } = require("./_shared/reports");
+const { listReports, pruneReports } = require("./_shared/reports");
+const { minimizeCoverageContacts } = require("./_shared/watched-store");
+const { purgeLegacyOutcomeData } = require("./_shared/analytics");
 const { getLiveOpenings, takeDigestItems, queueDigestItems } = require("./_shared/openings-store");
 const { sendDailyDigest, sendWeeklyRecap, sendDeadlineReminder, sendDeadlinePush, matchesOpening } = require("./_shared/alerts");
 const { getOrCreateUnsubToken, createVerifyToken, purgeUnverified } = require("./_shared/tokens");
@@ -65,6 +67,14 @@ module.exports = async function handler(req, res) {
     const livePayload = await getLiveOpenings();
     const live = livePayload.openings || [];
     const stats = { subscribers: 0, digestsSent: 0, weeklySent: 0, reminderEmails: 0, reminderPushes: 0, verifyReminders: 0, unverifiedPurged: 0 };
+
+    // Privacy housekeeping runs with the existing daily retention job: remove
+    // expired reports and contact fields older builds collected unnecessarily,
+    // and delete legacy exact-school progress rows no current feature uses.
+    const privacyCleanup = {};
+    try { privacyCleanup.reports = await pruneReports(now); } catch {}
+    try { privacyCleanup.coverage = await minimizeCoverageContacts(); } catch {}
+    try { privacyCleanup.legacyOutcomes = await purgeLegacyOutcomeData(); } catch {}
 
     // Content-check a slice of live sourceUrls. Independent of the subscriber
     // loop below (listings, not people) and never lets a verification failure
@@ -188,7 +198,7 @@ module.exports = async function handler(req, res) {
     }
     });
 
-    return res.status(200).json({ ok: true, ...stats, weeklyRun: shouldSendWeekly, linkCheck });
+    return res.status(200).json({ ok: true, ...stats, weeklyRun: shouldSendWeekly, linkCheck, privacyCleanup });
   } catch (error) {
     return res.status(500).json({ error: error.message || "Retention alerts failed." });
   }

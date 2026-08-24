@@ -1,6 +1,6 @@
-// First-party, privacy-light analytics stored in Redis. No third parties, no
-// cookies, no PII — just counts of what's happening so the founder can see
-// what works, and so the app can show real activity (peer pulse).
+// First-party aggregate analytics stored in Redis. No third parties, cookies,
+// profiles, search text, listing details, or persistent identifiers — just
+// allowlisted event counters with a short expiry.
 
 function redisEnv() {
   return {
@@ -20,6 +20,7 @@ async function getRedis() {
 const ALLOWED = new Set([
   "app_open", "view_change", "opening_view", "source_click",
   "save_opening", "signup", "search", "install_prompt",
+  "listing_reported", "watch_prompt_from_search",
 ]);
 
 function today() {
@@ -28,7 +29,7 @@ function today() {
 
 const WEEK_TTL = 60 * 60 * 24 * 9; // keep daily keys ~9 days
 
-async function track(event, sessionId) {
+async function track(event) {
   if (!ALLOWED.has(event)) return { ok: false, error: "unknown event" };
   const redis = await getRedis();
   if (!redis) return { ok: true, stored: false };
@@ -38,11 +39,6 @@ async function track(event, sessionId) {
   await redis.incr(key);
   await redis.expire(key, WEEK_TTL);
 
-  if (sessionId) {
-    const sk = `promptly:sessions:${d}`;
-    await redis.sadd(sk, String(sessionId).slice(0, 64));
-    await redis.expire(sk, WEEK_TTL);
-  }
   return { ok: true, stored: true };
 }
 
@@ -52,10 +48,10 @@ async function counter(redis, event, d) {
 
 async function getStats() {
   const redis = await getRedis();
-  if (!redis) return { activeToday: 0, applicationsToday: 0, signupsToday: 0, newListingsThisWeek: 0 };
+  if (!redis) return { appOpensToday: 0, applicationsToday: 0, signupsToday: 0, newListingsThisWeek: 0 };
 
   const d = today();
-  const activeToday = (await redis.scard(`promptly:sessions:${d}`)) || 0;
+  const appOpensToday = await counter(redis, "app_open", d);
   const applicationsToday = await counter(redis, "source_click", d);
   const signupsToday = await counter(redis, "signup", d);
 
@@ -65,7 +61,7 @@ async function getStats() {
     newListingsThisWeek += await counter(redis, "new_listings", day);
   }
 
-  return { activeToday, applicationsToday, signupsToday, newListingsThisWeek };
+  return { appOpensToday, applicationsToday, signupsToday, newListingsThisWeek };
 }
 
 // Used by the refresh job to record how many brand-new listings appeared.
@@ -77,30 +73,28 @@ async function recordNewListings(count) {
   await redis.expire(key, WEEK_TTL);
 }
 
-const STAGES = new Set(["Applied", "Interview", "Offer"]);
-
-// Records a student's progress on a listing. Anonymous — we store the school +
-// company + stage (no name/email), which later powers the per-school pulse
-// ("students from your school are getting OAs at X"). This is the data moat.
-async function recordOutcome({ school, stage, company, field }) {
-  if (!STAGES.has(stage)) return { ok: false };
+// Remove exact-school progress records written by older clients. Those rows
+// cannot be attributed back to a person for selective deletion and are not
+// needed by any current product view, so retaining them would only preserve a
+// re-identification risk with no user benefit.
+async function purgeLegacyOutcomeData() {
   const redis = await getRedis();
-  if (!redis) return { ok: true, stored: false };
-
-  // global daily counter for the stage (drives admin + pulse)
-  const gk = `promptly:a:status_${stage}:${today()}`;
-  await redis.incr(gk);
-  await redis.expire(gk, WEEK_TTL);
-
-  const schoolKey = String(school || "").trim().toLowerCase();
-  if (schoolKey) {
-    await redis.incr(`promptly:school:${schoolKey}:${stage}`);
-    // capped recent feed per school for the future "people from your school" hook
-    const feedKey = `promptly:schoolfeed:${schoolKey}`;
-    await redis.lpush(feedKey, JSON.stringify({ company, stage, field, ts: Date.now() }));
-    await redis.ltrim(feedKey, 0, 49);
+  if (!redis) return { removed: 0, stored: false };
+  const patterns = ["promptly:school:*", "promptly:schoolfeed:*"];
+  let removed = 0;
+  for (const match of patterns) {
+    let cursor = 0;
+    do {
+      const result = await redis.scan(cursor, { match, count: 200 });
+      cursor = Number(Array.isArray(result) ? result[0] : result?.cursor) || 0;
+      const keys = (Array.isArray(result) ? result[1] : result?.keys) || [];
+      if (keys.length) {
+        await redis.del(...keys);
+        removed += keys.length;
+      }
+    } while (cursor !== 0);
   }
-  return { ok: true, stored: true };
+  return { removed, stored: true };
 }
 
-module.exports = { track, getStats, recordNewListings, recordOutcome };
+module.exports = { track, getStats, recordNewListings, purgeLegacyOutcomeData, ALLOWED, WEEK_TTL };

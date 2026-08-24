@@ -1279,6 +1279,7 @@ body.launch-active .onboarding-brand {
 .status-tracker { margin: 14px 0 6px; }
 .status-tracker-label { display: block; font-size: 12px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
 .status-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.status-tracker > small { display: block; margin-top: 7px; color: var(--muted, #9a97b5); font-size: 11px; }
 .status-options button {
   flex: 1; min-width: 64px; padding: 9px 10px; border-radius: 12px;
   border: 1px solid rgba(124,58,237,0.3); background: transparent;
@@ -2994,6 +2995,8 @@ body.onboarding-active .ap-panel { display: none; }
 }
 .push-privacy-note a { color: var(--blue); text-decoration: none; }
 .push-privacy-note a:hover { text-decoration: underline; }
+.signup-privacy-note { font-size: 12px !important; line-height: 1.5 !important; color: var(--faint) !important; margin-top: 12px !important; }
+.signup-privacy-note a { color: var(--blue); }
 
 /* Cards in the settings grid stretch to equal height; pack rows to the top so
    the status pill keeps its natural height instead of absorbing the slack. */

@@ -3,7 +3,8 @@ const { withCors } = require("./_shared/cors");
 const { isValidEmail } = require("./_shared/email-validator");
 const { readBody, saveSubscriber, normalizeSubscriber, takeTestAlertSlot, getSubscriber } = require("./_shared/store");
 const { sendEmailAlert } = require("./_shared/alerts");
-const { getOrCreateUnsubToken } = require("./_shared/tokens");
+const { getOrCreateUnsubToken, markVerified } = require("./_shared/tokens");
+const { authenticateUser, emailBelongsToUser } = require("./_shared/auth-user");
 
 const fallbackOpening = {
   company: "Google",
@@ -47,6 +48,12 @@ async function handler(req, res) {
     const body = readBody(req);
     const opening = normalizeTestOpening(body.opening);
     const profile = body.profile || {};
+    const auth = await authenticateUser(req);
+    if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+    if (!emailBelongsToUser(profile.email, auth.email)) {
+      return res.status(403).json({ error: "That email does not belong to your signed-in account." });
+    }
+    profile.email = auth.email;
     const directSubscriber = normalizeSubscriber(profile, body.subscription || null);
 
     if (!isValidEmail(directSubscriber.email)) {
@@ -60,10 +67,11 @@ async function handler(req, res) {
     }
 
     const stored = await saveSubscriber(profile, body.subscription || null);
+    if (stored.saved) await markVerified(auth.email);
 
     // Only send to an address that has confirmed it wants mail from us.
     // Without this, anyone could point this endpoint at a stranger's inbox.
-    const record = await getSubscriber(directSubscriber.email);
+    const record = await getSubscriber(auth.email);
     if (!record || record.verified !== true) {
       return res.status(403).json({
         error: "Confirm your email first — we've sent you a confirmation link. Alerts start once you click it.",

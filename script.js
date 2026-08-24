@@ -821,8 +821,9 @@ let accountSyncTimer = null;
 let accountSyncPaused = false;
 
 // --- Application status tracker (Applied → OA → Interview → Offer) ----------
-// Gives students a reason to come back (track their progress) and feeds the
-// anonymous per-school pulse. Stored locally; also sent to /api/stats.
+// Gives students a reason to come back while remaining strictly device-only.
+// A stage at a named company plus an exact school can identify someone in a
+// small cohort, so progress is never sent to analytics or the backend.
 const statusStorageKey = "promptlyStatuses";
 const statuses = new Map();
 (function loadStatuses() {
@@ -847,16 +848,6 @@ function setStatus(reference, stage) {
   const listingKey = alertIdentity(item);
   if (stage) statuses.set(listingKey, stage); else statuses.delete(listingKey);
   persistStatuses();
-  if (stage) {
-    try {
-      fetch(`${API_BASE}/api/stats`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        keepalive: true,
-        body: JSON.stringify({ company: item.company, stage, school: profile.school || "", field: item.field || "" }),
-      }).catch(() => {});
-    } catch {}
-  }
   renderStatusTracker(item);
   renderOpenings();
   refreshSavedList();
@@ -1892,8 +1883,6 @@ document.addEventListener("submit", async (event) => {
         url: item.sourceUrl || "",
         reason: form.querySelector("[data-report-reason]").value,
         note: form.querySelector("[data-report-note]").value,
-        // Only sent if they already gave it to us; never prompted for here.
-        email: (profile && profile.email) || "",
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -2129,6 +2118,27 @@ function accountProfile() {
     weeklyRecap: profile.weeklyRecap !== false,
     deadlineReminders: profile.deadlineReminders !== false,
   };
+}
+
+// Exact allowlist for Promptly's alert API. Do not serialize the whole profile:
+// it also contains résumé text, a photo data URL, and device-only UI state.
+function serverAlertProfile() {
+  return {
+    ...accountProfile(),
+    savedAlerts: Array.isArray(profile.savedAlerts) ? profile.savedAlerts : [],
+    watches: Array.isArray(profile.watches) ? profile.watches : [],
+  };
+}
+
+async function authenticatedJsonHeaders() {
+  const headers = { "Content-Type": "application/json" };
+  if (!authClient) return headers;
+  try {
+    const { data } = await authClient.auth.getSession();
+    const token = data?.session?.access_token;
+    if (token) headers.Authorization = `Bearer ${token}`;
+  } catch {}
+  return headers;
 }
 
 function scheduleAccountSync() {
@@ -2702,7 +2712,7 @@ async function submitWatch() {
   try {
     const response = await fetch(`${API_BASE}/api/subscribe`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await authenticatedJsonHeaders(),
       body: JSON.stringify({ action: "watch", url, company, profile: { email: profile.email } }),
     });
     const data = await response.json().catch(() => ({}));
@@ -2747,7 +2757,7 @@ async function removeWatch(id) {
   try {
     await fetch(`${API_BASE}/api/subscribe`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await authenticatedJsonHeaders(),
       body: JSON.stringify({ action: "unwatch", id, profile: { email: profile.email } }),
     });
   } catch {}
@@ -3035,7 +3045,7 @@ async function resendVerification() {
   try {
     const response = await fetch(`${API_BASE}/api/subscribe`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await authenticatedJsonHeaders(),
       body: JSON.stringify({ action: "resend-verification", profile: { email: profile.email } }),
     });
     const data = await response.json().catch(() => ({}));
@@ -3059,15 +3069,10 @@ async function resendVerification() {
 
 async function saveSubscriber(subscription = null) {
   try {
-    // The résumé and photo are device-only, and the form says so. The server
-    // already drops them (normalizeSubscriber is an allowlist), but they must
-    // not travel over the wire at all — otherwise the promise is false in
-    // transit even though nothing is stored.
-    const { resumeText, photoDataUrl, ...shareableProfile } = profile;
     const response = await fetch(`${API_BASE}/api/subscribe`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subscription, profile: shareableProfile }),
+      headers: await authenticatedJsonHeaders(),
+      body: JSON.stringify({ subscription, profile: serverAlertProfile() }),
     });
     const data = await response.json().catch(() => ({}));
     if (data.setupRequired) setPushStatus("Notifications aren’t fully switched on yet — we’re finishing setup. Check back soon.");
@@ -3168,10 +3173,10 @@ async function sendTestAlert() {
   try {
     const response = await fetch(`${API_BASE}/api/send-alert`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await authenticatedJsonHeaders(),
       body: JSON.stringify({
         opening: currentTestOpening(),
-        profile,
+        profile: serverAlertProfile(),
         subscription: raw ? JSON.parse(raw) : null,
       }),
     });
@@ -3205,7 +3210,7 @@ async function sendTestPush() {
   try {
     const response = await fetch(`${API_BASE}/api/send-test`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await authenticatedJsonHeaders(),
       body: JSON.stringify({
         subscription: JSON.parse(raw),
         title: "Promptly",
@@ -3236,9 +3241,9 @@ async function sendTestWeeklyRecap() {
     const raw = localStorage.getItem("openingPushSubscription");
     const response = await fetch(`${API_BASE}/api/send-recap`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await authenticatedJsonHeaders(),
       body: JSON.stringify({
-        profile,
+        profile: serverAlertProfile(),
         subscription: raw ? JSON.parse(raw) : null,
       }),
     });
@@ -3342,7 +3347,13 @@ document.addEventListener("click", async (event) => {
   if (signOutButton && authClient) {
     authClient.auth.signOut().then(() => {
       authUser = null;
-      updateAccountUI();
+      // A shared computer must not reveal the previous account's résumé,
+      // photo, profile, saved jobs, or Supabase session to the next person.
+      resettingClientState = true;
+      window.clearTimeout(inferenceTimer);
+      window.clearTimeout(accountSyncTimer);
+      window.PromptlyAuthRouting.clearPromptlyClientState(localStorage, sessionStorage);
+      window.location.replace(`${window.location.origin}/`);
     });
   }
   if (deleteAccountButton) {
@@ -3996,18 +4007,12 @@ applyDeviceNotificationCopy();
 // sat as a placeholder dash until one of those arrived.
 updateTrackedCount();
 
-// --- Analytics (first-party, privacy-light) --------------------------------
-// Sends simple event counts so we can see what students actually do. No PII.
-function getSessionId() {
-  try {
-    let id = localStorage.getItem("promptlySession");
-    if (!id) { id = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)); localStorage.setItem("promptlySession", id); }
-    return id;
-  } catch { return "anon"; }
-}
+// --- Analytics (first-party, aggregate, identifier-free) ------------------
+// Sends an allowlisted event name only. No profile, search text, listing data,
+// email, or persistent browser/session identifier is included.
 function track(event) {
   try {
-    const body = JSON.stringify({ event, sessionId: getSessionId() });
+    const body = JSON.stringify({ event });
     if (navigator.sendBeacon) {
       navigator.sendBeacon("/api/stats", new Blob([body], { type: "application/json" }));
     } else {

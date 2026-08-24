@@ -3,7 +3,11 @@
 
 const assert = require("node:assert/strict");
 const { isAllowedPushEndpoint, isSafePushSubscription } = require("../api/_shared/push-target");
-const { normalizeSubscriber } = require("../api/_shared/store");
+const { normalizeSubscriber, opaqueKeyPart } = require("../api/_shared/store");
+
+const opaqueIp = opaqueKeyPart("203.0.113.10");
+assert.doesNotMatch(opaqueIp, /203\.0\.113\.10/, "rate-limit key parts must not expose the raw IP");
+assert.equal(opaqueIp, opaqueKeyPart("203.0.113.10"), "the same requester must stay in the same rate bucket");
 
 // ── SSRF guard on push endpoints ───────────────────────────────────────────
 // web-push POSTs to whatever endpoint we hand it, so only real vendor push

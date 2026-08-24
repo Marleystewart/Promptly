@@ -5,7 +5,7 @@
 // floods the queue), and a junk reason can't be stored.
 
 const assert = require("node:assert/strict");
-const { reportId, isValidReason, REASONS } = require("../api/_shared/reports.js");
+const { reportId, isValidReason, REASONS, reportExpired, REPORT_TTL_DAYS } = require("../api/_shared/reports.js");
 const {
   buildListingReportEmail,
   DEFAULT_REPORT_TO_EMAIL,
@@ -44,6 +44,11 @@ for (const reason of Object.keys(REASONS)) {
 for (const bad of ["", null, undefined, "nonsense", "constructor", "__proto__", "toString"]) {
   assert.strictEqual(isValidReason(bad), false, `"${bad}" must not validate as a reason`);
 }
+
+const retentionNow = new Date("2026-08-24T00:00:00Z");
+assert.equal(REPORT_TTL_DAYS, 90);
+assert.equal(reportExpired({ lastReportedAt: "2026-05-01T00:00:00Z" }, retentionNow), true);
+assert.equal(reportExpired({ lastReportedAt: "2026-08-20T00:00:00Z" }, retentionNow), false);
 
 // ── Inbox notification ──────────────────────────────────────────────────
 const previousReportTo = process.env.REPORT_TO_EMAIL;

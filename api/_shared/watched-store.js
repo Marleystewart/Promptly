@@ -103,18 +103,32 @@ async function logCoverageRequest(url, meta = {}) {
   if (!redis || !url) return { logged: false };
   const key = String(url).slice(0, 300);
   const existing = parse(await redis.hget(COVERAGE_KEY, key));
-  const emails = new Set((existing && existing.requestedBy) || []);
-  if (meta.email) emails.add(String(meta.email).trim().toLowerCase());
   const record = {
     url: key,
     company: String(meta.company || (existing && existing.company) || "").slice(0, 80),
-    requestedBy: [...emails].slice(0, 500),
     count: ((existing && existing.count) || 0) + 1,
     firstRequestedAt: (existing && existing.firstRequestedAt) || new Date().toISOString(),
     lastRequestedAt: new Date().toISOString(),
   };
   await redis.hset(COVERAGE_KEY, { [key]: JSON.stringify(record) });
   return { logged: true, record };
+}
+
+// Earlier versions retained every requester's email even though the product
+// only uses the aggregate demand count. Remove that unnecessary legacy field.
+async function minimizeCoverageContacts() {
+  const redis = await getRedis();
+  if (!redis) return { scrubbed: 0, stored: false };
+  const raw = (await redis.hgetall(COVERAGE_KEY)) || {};
+  const updates = {};
+  for (const [key, value] of Object.entries(raw)) {
+    const record = parse(value);
+    if (!record || !Object.prototype.hasOwnProperty.call(record, "requestedBy")) continue;
+    const { requestedBy, ...minimized } = record;
+    updates[key] = JSON.stringify(minimized);
+  }
+  if (Object.keys(updates).length) await redis.hset(COVERAGE_KEY, updates);
+  return { scrubbed: Object.keys(updates).length, stored: true };
 }
 
 async function listCoverageRequests() {
@@ -130,6 +144,7 @@ module.exports = {
   addWatchedSource,
   removeWatcher,
   logCoverageRequest,
+  minimizeCoverageContacts,
   listCoverageRequests,
   MAX_WATCHED,
   // Exported so account erasure can scrub a departing user's address out of

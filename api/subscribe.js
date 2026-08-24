@@ -5,11 +5,11 @@ const { readBody, saveSubscriber, addSubscriberWatch, removeSubscriberWatch, get
 const { eraseSubscriber } = require("./_shared/erase");
 const { watchCompany, unwatchCompany } = require("./_shared/watch");
 const {
-  createVerifyToken, consumeVerifyToken, resolveUnsubToken,
-  markVerified, disableEmailFor, getOrCreateUnsubToken,
+  consumeVerifyToken, resolveUnsubToken, markVerified, disableEmailFor,
 } = require("./_shared/tokens");
-const { sendVerificationEmail, sendListingReport } = require("./_shared/alerts");
+const { sendListingReport } = require("./_shared/alerts");
 const { recordReport, takeReportSlot } = require("./_shared/reports");
+const { authenticateUser, bearerToken, emailBelongsToUser } = require("./_shared/auth-user");
 
 // Minimal styled page for links opened from an email client.
 function page(res, status, title, message, cta = true) {
@@ -59,16 +59,8 @@ async function handleEmailLink(req, res) {
   return res.status(400).json({ error: "Unknown action." });
 }
 
-function bearerToken(req) {
-  const authorization = String(req.headers?.authorization || "");
-  const match = authorization.match(/^Bearer\s+(.+)$/i);
-  return match ? match[1].trim() : "";
-}
-
 async function deleteAccount(req, res) {
-  const token = bearerToken(req);
-  if (!token) return res.status(401).json({ error: "Sign in again before deleting your account." });
-
+  if (!bearerToken(req)) return res.status(401).json({ error: "Sign in again before deleting your account." });
   const supabaseUrl = String(process.env.SUPABASE_URL || "").replace(/\/$/, "");
   const serverSecret = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || "";
   if (!supabaseUrl || !serverSecret) {
@@ -78,13 +70,20 @@ async function deleteAccount(req, res) {
     });
   }
 
-  const authHeaders = { Authorization: `Bearer ${token}`, apikey: serverSecret };
-  const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, { headers: authHeaders });
-  if (!userResponse.ok) return res.status(401).json({ error: "Your session is no longer valid. Sign in and try again." });
-  const user = await userResponse.json();
-  if (!user?.id) return res.status(401).json({ error: "Supabase could not verify this account." });
+  const auth = await authenticateUser(req);
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
-  const deleteResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(user.id)}`, {
+  // Erase Promptly's alert-side records first. If Supabase deletion fails the
+  // user can still retry while authenticated; deleting auth first could strand
+  // an undeletable Redis profile with no account left to prove ownership.
+  let subscriberRemoved = false;
+  try {
+    subscriberRemoved = Boolean((await eraseSubscriber(auth.email)).erased);
+  } catch {
+    return res.status(502).json({ error: "Promptly could not finish deleting your alert data. Nothing else was deleted; please try again." });
+  }
+
+  const deleteResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(auth.user.id)}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${serverSecret}`, apikey: serverSecret },
   });
@@ -93,14 +92,6 @@ async function deleteAccount(req, res) {
     return res.status(502).json({ error: details.message || "Supabase could not delete this account." });
   }
 
-  // Full erasure, not just the profile record: queued digests, the permanent
-  // unsubscribe token->email map, and this address inside shared rows
-  // (watched companies, coverage requests, listing reports) all have to go for
-  // "we do not keep a shadow copy" to be true.
-  let subscriberRemoved = false;
-  try {
-    subscriberRemoved = Boolean((await eraseSubscriber(user.email)).erased);
-  } catch {}
   return res.status(200).json({ ok: true, subscriberRemoved });
 }
 
@@ -134,7 +125,6 @@ async function handler(req, res) {
         url: body.url,
         reason: body.reason,
         note: body.note,
-        email: profile.email || body.email || "",
         requester,
       });
       if (!outcome.ok) return res.status(400).json({ error: outcome.error || "Could not save that report." });
@@ -147,27 +137,30 @@ async function handler(req, res) {
       return res.status(200).json({ ok: true, emailSent: Boolean(email && email.sent) });
     }
 
+    // Everything below changes account-linked data or sends a message. Derive
+    // the address from the authenticated Supabase user; a JSON email field is
+    // never proof that the caller owns that inbox.
+    const auth = await authenticateUser(req);
+    if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+    if (!emailBelongsToUser(profile.email || body.email, auth.email)) {
+      return res.status(403).json({ error: "That email does not belong to your signed-in account." });
+    }
+    profile.email = auth.email;
+
     // ── Watch any company ────────────────────────────────────────────────
     // Same endpoint (we're at Vercel's 12-function limit) — an `action`
     // routes to the watch flow instead of the normal subscriber save.
     if (body.action === "watch" || body.action === "unwatch" || body.action === "resend-verification") {
-      const email = String(profile.email || body.email || "").trim().toLowerCase();
+      const email = auth.email;
       if (!isValidEmail(email)) {
         return res.status(400).json({ error: "Add your email first so we know where to send the alert." });
       }
 
-      // Re-send the confirmation link on demand (the banner's Resend button).
+      // Signed-in Supabase sessions already prove control of their email.
       if (body.action === "resend-verification") {
         const record = await getSubscriber(email);
-        if (record && record.verified === true) {
-          return res.status(200).json({ ok: true, alreadyVerified: true });
-        }
-        const token = await createVerifyToken(email);
-        if (!token) {
-          return res.status(429).json({ ok: false, error: "We just sent one — check your inbox, including spam." });
-        }
-        const sent = await sendVerificationEmail(record || { email, name: "there" }, token);
-        return res.status(200).json({ ok: Boolean(sent.sent), sent: Boolean(sent.sent) });
+        if (record) await markVerified(email);
+        return res.status(200).json({ ok: true, alreadyVerified: true });
       }
 
       if (body.action === "unwatch") {
@@ -181,6 +174,7 @@ async function handler(req, res) {
         const { watches } = await addSubscriberWatch(email, {
           id: outcome.id, company: outcome.company, url: String(body.url || "").trim(), ats: outcome.ats,
         });
+        await markVerified(email);
         return res.status(200).json({ ok: true, ...outcome, watches });
       }
       // logged / invalid / unreachable / at_capacity — report honestly.
@@ -191,9 +185,8 @@ async function handler(req, res) {
       return res.status(400).json({ error: "Use a properly formatted email address." });
     }
 
-    // Throttle before writing. Creating a record for an address we've never
-    // seen is what triggers a confirmation email, so that path is capped
-    // harder than an existing subscriber editing their own profile.
+    // Throttle before writing. New records cost more storage and pipeline work,
+    // so that path is capped harder than an owner editing an existing profile.
     const requester = String(req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || "unknown").split(",")[0].trim();
     const alreadyKnown = Boolean(await getSubscriber(profile.email));
     const slot = await takeSubscribeSlot(requester, { isNewAddress: !alreadyKnown });
@@ -206,31 +199,16 @@ async function handler(req, res) {
     }
 
     const result = await saveSubscriber(profile, body.subscription || null);
-
-    // A record keyed by email proves nothing on its own — anyone can type an
-    // address. Until the owner clicks the emailed link we hold the record but
-    // send no alerts to it. The cooldown inside createVerifyToken means a burst
-    // of profile saves can't turn into a burst of mail.
-    const verified = result.saved && result.subscriber && result.subscriber.verified === true;
-    let verificationSent = false;
-    if (result.saved && !verified) {
-      try {
-        const token = await createVerifyToken(result.subscriber.email);
-        if (token) {
-          await getOrCreateUnsubToken(result.subscriber.email);
-          const sent = await sendVerificationEmail(result.subscriber, token);
-          verificationSent = Boolean(sent.sent);
-        }
-      } catch {
-        // Never fail the save because confirmation mail couldn't go out.
-      }
-    }
+    // A valid Supabase session already proves control of this account's email,
+    // so do not send a second verification message through another provider.
+    if (result.saved) await markVerified(auth.email);
+    const verified = Boolean(result.saved);
 
     return res.status(result.saved ? 200 : 202).json({
       ok: true,
       saved: result.saved,
       verified,
-      verificationSent,
+      verificationSent: false,
       setupRequired: result.setupRequired,
     });
   } catch (error) {

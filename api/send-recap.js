@@ -4,13 +4,20 @@ const { isValidEmail } = require("./_shared/email-validator");
 const { readBody, saveSubscriber, normalizeSubscriber, takeTestAlertSlot, getSubscriber } = require("./_shared/store");
 const { getLiveOpenings } = require("./_shared/openings-store");
 const { sendWeeklyRecap, matchesOpening } = require("./_shared/alerts");
-const { getOrCreateUnsubToken } = require("./_shared/tokens");
+const { getOrCreateUnsubToken, markVerified } = require("./_shared/tokens");
+const { authenticateUser, emailBelongsToUser } = require("./_shared/auth-user");
 
 async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   try {
     const body = readBody(req);
     const profile = body.profile || {};
+    const auth = await authenticateUser(req);
+    if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+    if (!emailBelongsToUser(profile.email, auth.email)) {
+      return res.status(403).json({ error: "That email does not belong to your signed-in account." });
+    }
+    profile.email = auth.email;
     if (!isValidEmail(profile.email)) return res.status(400).json({ error: "Add a valid email first." });
     const subscriber = normalizeSubscriber(profile, body.subscription || null);
 
@@ -20,10 +27,11 @@ async function handler(req, res) {
       return res.status(429).json({ error: "Please wait a moment before sending another recap." });
     }
 
-    await saveSubscriber(profile, body.subscription || null);
+    const stored = await saveSubscriber(profile, body.subscription || null);
+    if (stored.saved) await markVerified(auth.email);
 
     // Same gate as the alert endpoint: confirmed addresses only.
-    const record = await getSubscriber(subscriber.email);
+    const record = await getSubscriber(auth.email);
     if (!record || record.verified !== true) {
       return res.status(403).json({
         error: "Confirm your email first — we've sent you a confirmation link. Alerts start once you click it.",

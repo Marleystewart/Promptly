@@ -1,4 +1,4 @@
-const cacheName = "opening-v39";
+const cacheName = "opening-v40";
 // pdf.js (assets/vendor/*) is deliberately NOT precached — it's ~1.7MB and only
 // needed if someone uploads a PDF. The fetch handler below caches it lazily on
 // first real use.
@@ -47,14 +47,25 @@ self.addEventListener("fetch", (event) => {
   // silently dropped the app back to "secure accounts are not connected yet".
   // Letting the browser handle these natively also avoids trying to cache
   // opaque responses, which never worked anyway.
-  if (new URL(event.request.url).origin !== self.location.origin) return;
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.origin !== self.location.origin) return;
+
+  // API responses can contain account or founder-dashboard data. Cache-Control
+  // is advisory to normal HTTP caches, but an explicit Cache API put can still
+  // persist a no-store response. Never intercept /api at all.
+  if (requestUrl.pathname === "/api" || requestUrl.pathname.startsWith("/api/")) return;
+
+  const mayStore = (response) => {
+    const control = response.headers?.get?.("Cache-Control") || "";
+    return response.ok !== false && !/\bno-store\b/i.test(control);
+  };
 
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
           const copy = response.clone();
-          caches.open(cacheName).then((cache) => cache.put("/index.html", copy));
+          if (mayStore(response)) caches.open(cacheName).then((cache) => cache.put("/index.html", copy));
           return response;
         })
         .catch(() => caches.match("/index.html"))
@@ -66,7 +77,7 @@ self.addEventListener("fetch", (event) => {
     fetch(event.request)
       .then((response) => {
         const copy = response.clone();
-        caches.open(cacheName).then((cache) => cache.put(event.request, copy));
+        if (mayStore(response)) caches.open(cacheName).then((cache) => cache.put(event.request, copy));
         return response;
       })
       .catch(() => caches.match(event.request))

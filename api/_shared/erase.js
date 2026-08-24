@@ -10,12 +10,9 @@
 // than the path a user reaches by explicitly asking to be deleted. This makes
 // the deliberate path the most complete one.
 //
-// NOT erased here, deliberately:
-//   promptly:school:* and promptly:schoolfeed:* — aggregate outcome data that
-//   carries no user identifier at all. There is no way to select one person's
-//   rows because nothing links them to a person. That is a data-architecture
-//   limitation to fix at write time (see the audit), not something erasure can
-//   reach. Guessing at rows to delete would corrupt other students' counts.
+// Legacy exact-school progress rows could not be attributed back to one person,
+// so the product no longer writes them and the daily retention job removes the
+// old keys wholesale. This per-account path therefore has no such rows to find.
 
 const { getRedis } = require("./store");
 const { WATCHED_KEY, COVERAGE_KEY } = require("./watched-store");

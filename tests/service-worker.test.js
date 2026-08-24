@@ -76,6 +76,13 @@ assert.equal(
   "same-origin navigations must still be handled by the worker"
 );
 
+// API GETs can contain account or founder data and must never enter Cache API,
+// even when a response carries Cache-Control: no-store.
+assert.equal(
+  dispatch("https://app.joinpromptly.co/api/admin-stats"), false,
+  "same-origin API responses must bypass the service worker"
+);
+
 // Non-GET is left alone regardless of origin.
 assert.equal(
   dispatch("https://app.joinpromptly.co/api/subscribe", { method: "POST" }), false,
