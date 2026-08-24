@@ -1569,11 +1569,44 @@ function inColumn(item, column) {
   return Boolean(point && point.year === column.year && point.month === column.month);
 }
 
+// Curated industry (division) list per track. Selecting a track shows exactly
+// this set — never another track's industries — so the taxonomy reads clean and
+// familiar (Finance → IB, S&T, AM, WM, PE, Quant…) instead of whatever raw
+// labels happen to be in the data.
+const TRACK_DIVISIONS = {
+  Finance: ["Investment Banking", "Sales & Trading", "Asset Management", "Wealth Management", "Private Equity", "Hedge Fund", "Quant Trading", "Corporate & Commercial Banking", "Fintech", "Payments"],
+  Technology: ["Software Engineering", "AI / ML", "Data", "Security", "Semiconductors", "Enterprise Software", "Gaming", "Cloud & Infrastructure"],
+  Healthcare: ["Biotech", "Pharma", "Medical Devices", "Payers", "Health Systems", "Health Technology"],
+  Consulting: ["Strategy", "Management Consulting", "Technology Consulting", "Economic Consulting"],
+  Media: ["Streaming", "Entertainment", "News", "Publishing", "Digital Media", "Sports Media"],
+  Consumer: ["Consumer Packaged Goods", "Retail", "Food & Beverage", "Apparel", "Beauty", "Fitness"],
+  Engineering: ["Aerospace & Defense", "Automotive", "Robotics", "Energy", "Manufacturing", "Semiconductors"],
+  Law: ["Big Law", "Legal Technology"],
+  "Real Estate": ["Commercial Real Estate", "Property Technology"],
+  Marketing: ["Brand Marketing", "Growth", "Advertising", "Communications"],
+};
+// Raw registry subField values that don't match a division label 1:1.
+const DIVISION_ALIASES = {
+  "Banking": "Corporate & Commercial Banking",
+  "AI": "AI / ML",
+  "Data & ML": "AI / ML",
+  "Aerospace": "Aerospace & Defense",
+  "CPG": "Consumer Packaged Goods",
+  "Health Tech": "Health Technology",
+  "AdTech": "Advertising",
+  "News": "News",
+};
+// The curated division an item belongs to (independent of raw label variants).
+function divisionOf(item) {
+  const raw = String(item.subField || "").trim();
+  if (!raw) return "";
+  return DIVISION_ALIASES[raw] || raw;
+}
+
 // Rows are the broad track by default, so the overview stays readable. Drilling
-// into a single track switches to its industries — which is the level Trey's
-// mockup shows once you pick "Finance".
+// into a single track switches to its curated divisions.
 function timelineRowKey(item) {
-  if (cycleFilters.track) return item.subField || item.field || "Other";
+  if (cycleFilters.track) return divisionOf(item) || "Other";
   return item.field || "Other";
 }
 
@@ -1604,7 +1637,12 @@ function renderCyclesView() {
   // Populate the filter menus from what actually exists, so a student can
   // never select a combination that returns nothing.
   fillSelect("[data-cycle-track]", [...new Set(pool.map((o) => o.field).filter(Boolean))].sort(), cycleFilters.track);
-  fillSelect("[data-cycle-industry]", [...new Set(pool.filter((o) => !cycleFilters.track || o.field === cycleFilters.track).map((o) => o.subField).filter(Boolean))].sort(), cycleFilters.industry);
+  // Industries are the selected track's curated divisions. With no track chosen,
+  // fall back to whatever divisions exist across everything.
+  const industryOptions = cycleFilters.track
+    ? (TRACK_DIVISIONS[cycleFilters.track] || [...new Set(pool.filter((o) => o.field === cycleFilters.track).map(divisionOf).filter(Boolean))].sort())
+    : [...new Set(pool.map(divisionOf).filter(Boolean))].sort();
+  fillSelect("[data-cycle-industry]", industryOptions, cycleFilters.industry);
   // Drop the undated generic cycles ("Internship" / "New Grad") — this is an
   // internship platform, so a bare "Internship" tag is noise; keep only the
   // dated seasons (Summer 2027, Fall 2026, New Grad 2027…).
@@ -1614,7 +1652,7 @@ function renderCyclesView() {
 
   const filtered = pool.filter((item) =>
     (!cycleFilters.track || item.field === cycleFilters.track) &&
-    (!cycleFilters.industry || item.subField === cycleFilters.industry) &&
+    (!cycleFilters.industry || divisionOf(item) === cycleFilters.industry) &&
     (!cycleFilters.season || item.cycle === cycleFilters.season)
   );
 
