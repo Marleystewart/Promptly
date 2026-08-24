@@ -1555,12 +1555,32 @@ const TIMELINE_MONTHS = 6;
 
 const cycleFilters = { track: "", industry: "", season: "" };
 
-// The columns to draw, oldest first, as {year, month, label}.
+// How far the 6-month window is shifted from "ending this month", in months.
+// Positive = into the future (estimates), negative = into the past.
+// Clamped so the window END never goes past +12 months (1 year of estimates)
+// and the window START never goes before -36 months (3 years of history).
+let cycleWindowOffset = 0;
+const CYCLE_OFFSET_MAX = 12;                          // window end up to +1yr
+const CYCLE_OFFSET_MIN = -(36 - (TIMELINE_MONTHS - 1)); // window start back to -3yr
+
+function clampCycleOffset(value) {
+  return Math.max(CYCLE_OFFSET_MIN, Math.min(CYCLE_OFFSET_MAX, value));
+}
+
+// The columns to draw, oldest first, as {year, month, label, future}.
 function timelineColumns(now = new Date()) {
   const columns = [];
+  const endMonthIndex = now.getUTCMonth() + cycleWindowOffset;
+  const nowKey = now.getUTCFullYear() * 12 + now.getUTCMonth();
   for (let back = TIMELINE_MONTHS - 1; back >= 0; back -= 1) {
-    const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - back, 1));
-    columns.push({ year: date.getUTCFullYear(), month: date.getUTCMonth(), label: MONTH_LABELS[date.getUTCMonth()] });
+    const date = new Date(Date.UTC(now.getUTCFullYear(), endMonthIndex - back, 1));
+    const key = date.getUTCFullYear() * 12 + date.getUTCMonth();
+    columns.push({
+      year: date.getUTCFullYear(),
+      month: date.getUTCMonth(),
+      label: MONTH_LABELS[date.getUTCMonth()],
+      future: key > nowKey,
+    });
   }
   return columns;
 }
@@ -1581,11 +1601,44 @@ function inColumn(item, column) {
   return Boolean(point && point.year === column.year && point.month === column.month);
 }
 
+// Curated industry (division) list per track. Selecting a track shows exactly
+// this set — never another track's industries — so the taxonomy reads clean and
+// familiar (Finance → IB, S&T, AM, WM, PE, Quant…) instead of whatever raw
+// labels happen to be in the data.
+const TRACK_DIVISIONS = {
+  Finance: ["Investment Banking", "Sales & Trading", "Asset Management", "Wealth Management", "Private Equity", "Hedge Fund", "Quant Trading", "Corporate & Commercial Banking", "Fintech", "Payments"],
+  Technology: ["Software Engineering", "AI / ML", "Data", "Security", "Semiconductors", "Enterprise Software", "Gaming", "Cloud & Infrastructure"],
+  Healthcare: ["Biotech", "Pharma", "Medical Devices", "Payers", "Health Systems", "Health Technology"],
+  Consulting: ["Strategy", "Management Consulting", "Technology Consulting", "Economic Consulting"],
+  Media: ["Streaming", "Entertainment", "News", "Publishing", "Digital Media", "Sports Media"],
+  Consumer: ["Consumer Packaged Goods", "Retail", "Food & Beverage", "Apparel", "Beauty", "Fitness"],
+  Engineering: ["Aerospace & Defense", "Automotive", "Robotics", "Energy", "Manufacturing", "Semiconductors"],
+  Law: ["Big Law", "Legal Technology"],
+  "Real Estate": ["Commercial Real Estate", "Property Technology"],
+  Marketing: ["Brand Marketing", "Growth", "Advertising", "Communications"],
+};
+// Raw registry subField values that don't match a division label 1:1.
+const DIVISION_ALIASES = {
+  "Banking": "Corporate & Commercial Banking",
+  "AI": "AI / ML",
+  "Data & ML": "AI / ML",
+  "Aerospace": "Aerospace & Defense",
+  "CPG": "Consumer Packaged Goods",
+  "Health Tech": "Health Technology",
+  "AdTech": "Advertising",
+  "News": "News",
+};
+// The curated division an item belongs to (independent of raw label variants).
+function divisionOf(item) {
+  const raw = String(item.subField || "").trim();
+  if (!raw) return "";
+  return DIVISION_ALIASES[raw] || raw;
+}
+
 // Rows are the broad track by default, so the overview stays readable. Drilling
-// into a single track switches to its industries — which is the level Trey's
-// mockup shows once you pick "Finance".
+// into a single track switches to its curated divisions.
 function timelineRowKey(item) {
-  if (cycleFilters.track) return item.subField || item.field || "Other";
+  if (cycleFilters.track) return divisionOf(item) || "Other";
   return item.field || "Other";
 }
 
@@ -1616,18 +1669,29 @@ function renderCyclesView() {
   // Populate the filter menus from what actually exists, so a student can
   // never select a combination that returns nothing.
   fillSelect("[data-cycle-track]", [...new Set(pool.map((o) => o.field).filter(Boolean))].sort(), cycleFilters.track);
-  fillSelect("[data-cycle-industry]", [...new Set(pool.filter((o) => !cycleFilters.track || o.field === cycleFilters.track).map((o) => o.subField).filter(Boolean))].sort(), cycleFilters.industry);
-  fillSelect("[data-cycle-season]", [...new Set(pool.map((o) => o.cycle).filter(Boolean))].sort((a, b) => cycleSortKey(a) - cycleSortKey(b)), cycleFilters.season);
+  // Industries are the selected track's curated divisions. With no track chosen,
+  // fall back to whatever divisions exist across everything.
+  const industryOptions = cycleFilters.track
+    ? (TRACK_DIVISIONS[cycleFilters.track] || [...new Set(pool.filter((o) => o.field === cycleFilters.track).map(divisionOf).filter(Boolean))].sort())
+    : [...new Set(pool.map(divisionOf).filter(Boolean))].sort();
+  fillSelect("[data-cycle-industry]", industryOptions, cycleFilters.industry);
+  // Drop the undated generic cycles ("Internship" / "New Grad") — this is an
+  // internship platform, so a bare "Internship" tag is noise; keep only the
+  // dated seasons (Summer 2027, Fall 2026, New Grad 2027…).
+  fillSelect("[data-cycle-season]", [...new Set(pool.map((o) => o.cycle).filter(Boolean))]
+    .filter((c) => /20\d\d/.test(c))
+    .sort((a, b) => cycleSortKey(a) - cycleSortKey(b)), cycleFilters.season);
 
   const filtered = pool.filter((item) =>
     (!cycleFilters.track || item.field === cycleFilters.track) &&
-    (!cycleFilters.industry || item.subField === cycleFilters.industry) &&
+    (!cycleFilters.industry || divisionOf(item) === cycleFilters.industry) &&
     (!cycleFilters.season || item.cycle === cycleFilters.season)
   );
 
   renderCycleChips();
 
   const columns = timelineColumns();
+  updateCycleWindowLabel(columns);
   const dated = filtered.filter((item) => columns.some((column) => inColumn(item, column)));
   const undated = filtered.length - dated.length;
 
@@ -1650,14 +1714,11 @@ function renderCyclesView() {
       : "";
   }
 
-  if (!dated.length) {
-    grid.innerHTML = `<p class="empty-hint">No observed postings in this window for these filters. Promptly records the month each role goes live, so this fills in as the pipeline runs.</p>`;
-    renderCycleFootnote(undated);
-    return;
-  }
-
+  // Rows come from the full filtered set (not just in-window observations) so a
+  // company observed in a prior year is available as a future ESTIMATE.
   const rows = {};
-  dated.forEach((item) => {
+  filtered.forEach((item) => {
+    if (!observedPoint(item)) return;
     const key = timelineRowKey(item);
     (rows[key] = rows[key] || []).push(item);
   });
@@ -1665,28 +1726,43 @@ function renderCyclesView() {
   const now = new Date();
   const isCurrent = (column) => column.year === now.getUTCFullYear() && column.month === now.getUTCMonth();
 
+  // What belongs in one cell. Past/current months show what Promptly actually
+  // observed that month. Future months show ESTIMATES: companies seen in the
+  // same calendar month in an earlier year (one marker per company).
+  function cellItems(rowItems, column) {
+    const seen = new Set();
+    const out = [];
+    for (const item of rowItems) {
+      const point = observedPoint(item);
+      if (!point) continue;
+      const hit = column.future
+        ? point.month === column.month && point.year < column.year
+        : point.year === column.year && point.month === column.month;
+      if (!hit || seen.has(item.company)) continue;
+      seen.add(item.company);
+      out.push(item);
+    }
+    return out;
+  }
+
   const header = `<div class="cycle-row cycle-head" role="row">
       <div class="cycle-row-label" role="columnheader"><span class="cycle-corner">Industry</span></div>
-      ${columns.map((column) => `<div class="cycle-month${isCurrent(column) ? " is-now" : ""}" role="columnheader">${column.label}${isCurrent(column) ? `<span class="cycle-now-tag">now</span>` : ""}</div>`).join("")}
+      ${columns.map((column) => `<button type="button" class="cycle-month${isCurrent(column) ? " is-now" : ""}${column.future ? " is-future" : ""}" role="columnheader" data-cycle-month data-col-year="${column.year}" data-col-month="${column.month}" title="Double-click to see every company this month">${column.label}${isCurrent(column) ? `<span class="cycle-now-tag">now</span>` : column.future ? `<span class="cycle-est-tag">est.</span>` : ""}</button>`).join("")}
     </div>`;
 
-  // Busiest first — opening on a nearly empty row makes the grid read as broken.
-  const ordered = Object.keys(rows).sort((a, b) => rows[b].length - rows[a].length || a.localeCompare(b));
-  // Three markers plus the "+N" button fills exactly two rows of two in a
-  // column, which keeps every industry row the same height. Five markers wrapped
-  // to three uneven lines and made the grid look ragged.
+  // Only rows with at least one marker somewhere in the window, busiest first.
+  const activeRows = Object.keys(rows).filter((label) => columns.some((column) => cellItems(rows[label], column).length));
+  if (!activeRows.length) {
+    grid.innerHTML = `<p class="empty-hint">Nothing to show in this window for these filters. Use the arrows to move to a month with observed postings, or look ahead to estimated drop windows.</p>`;
+    renderCycleFootnote(undated);
+    return;
+  }
+  const ordered = activeRows.sort((a, b) => rows[b].length - rows[a].length || a.localeCompare(b));
   const MAX_VISIBLE = 3;
 
   const body = ordered.map((label) => {
     const cells = columns.map((column) => {
-      // One marker per company per month, even if they posted five roles.
-      const here = [];
-      const seen = new Set();
-      for (const item of rows[label]) {
-        if (!inColumn(item, column) || seen.has(item.company)) continue;
-        seen.add(item.company);
-        here.push(item);
-      }
+      const here = cellItems(rows[label], column);
       const visible = here.slice(0, MAX_VISIBLE);
       const hidden = here.slice(MAX_VISIBLE);
       const markers = visible.map((item) => companyMarker(item, column)).join("");
@@ -1694,9 +1770,9 @@ function renderCyclesView() {
         ? `<button type="button" class="cycle-more" data-cycle-more aria-expanded="false" aria-label="Show ${hidden.length} more employers">+${hidden.length}</button>
            <div class="cycle-popover" data-cycle-popover hidden>${hidden.map((item) => companyMarker(item, column, true)).join("")}</div>`
         : "";
-      return `<div class="cycle-cell${isCurrent(column) ? " is-now" : ""}" role="gridcell">${markers}${more}</div>`;
+      return `<div class="cycle-cell${isCurrent(column) ? " is-now" : ""}${column.future ? " is-future" : ""}" role="gridcell">${markers}${more}</div>`;
     }).join("");
-    const count = new Set(rows[label].map((item) => item.company)).size;
+    const count = new Set(columns.flatMap((column) => cellItems(rows[label], column).map((i) => i.company))).size;
     return `<div class="cycle-row" role="row">
         <div class="cycle-row-label" role="rowheader"><b>${esc(label)}</b><span>${count} employer${count === 1 ? "" : "s"}</span></div>
         ${cells}
@@ -1712,25 +1788,51 @@ function renderCyclesView() {
 function companyMarker(item, column, inPopover = false) {
   const logo = companyLogoUrl(item);
   const mine = cycleMatchesProfile(item) ? " is-mine" : "";
+  const est = column.future ? " is-estimate" : "";
+  const when = column.future ? `Estimated: ${column.label} ${column.year}` : `Observed: ${column.label} ${column.year}`;
+  const fn = roleFunction(item.role);
   const initials = esc(String(item.short || item.company.replace(/[^A-Za-z]/g, "").slice(0, 2)).toUpperCase().slice(0, 3));
-  const tip = [
-    item.company,
-    `Observed: ${column.label} ${column.year}`,
-    [item.field, item.subField].filter(Boolean).join(" · "),
-    item.cycle || "",
-    item.role || "",
-  ].filter(Boolean);
-  return `<button class="cycle-marker${mine}${inPopover ? " in-popover" : ""}" data-open-details="${esc(alertIdentity(item))}" aria-label="${esc(tip.join(", "))}">
+  // Trey's estimate/function tooltip, keyed by Cam's per-listing identity —
+  // this branch predates that fix and would otherwise re-key the marker back
+  // to company name, reviving the "one role marks them all" bug.
+  const tip = [item.company, when, [item.field, item.subField].filter(Boolean).join(" · "), fn, item.cycle || "", item.role || ""].filter(Boolean);
+  return `<button class="cycle-marker${mine}${est}${inPopover ? " in-popover" : ""}" data-open-details="${esc(alertIdentity(item))}"${column.future ? ` data-estimate="${esc(column.label)} ${column.year}"` : ""} aria-label="${esc(tip.join(", "))}">
       <span class="cycle-initials" aria-hidden="true">${initials}</span>
       ${logo ? `<img src="${esc(logo)}" alt="" loading="lazy" data-short="${initials}" data-lc="${esc(item.logoClass || "")}" data-logo-img />` : ""}
       <span class="cycle-tip" role="tooltip">
         <b>${esc(item.company)}</b>
-        <i>Observed: ${esc(column.label)} ${column.year}</i>
+        <i>${esc(when)}</i>
         ${item.field ? `<i>${esc([item.field, item.subField].filter(Boolean).join(" · "))}</i>` : ""}
+        ${fn ? `<i>Function: ${esc(fn)}</i>` : ""}
         ${item.cycle ? `<i>${esc(item.cycle)}</i>` : ""}
         ${item.role ? `<i>${esc(item.role)}</i>` : ""}
       </span>
     </button>`;
+}
+
+// Role FUNCTION from the title, independent of the employer's industry — so an
+// "Operations Intern" at a hedge fund reads as Operations, not Finance. Used in
+// tooltips and the month drill-down. Returns "" when nothing clearly matches.
+const ROLE_FUNCTIONS = [
+  ["Software Engineering", /software|\bswe\b|full[- ]?stack|backend|front[- ]?end|developer|programming/i],
+  ["Data & ML", /data scien|machine learning|\bml\b|\bai\b|analytics|data engineer|quantitative research/i],
+  ["Quant / Trading", /quant|trader|trading|market maker/i],
+  ["Operations", /operations|\bops\b|supply chain|logistics|program management/i],
+  ["Finance & Accounting", /accounting|financial analyst|corporate finance|treasury|\bfp&a\b|audit|tax/i],
+  ["Investment / Banking", /investment bank|\bib\b|sales (&|and) trading|\bs&t\b|private equity|asset management|wealth/i],
+  ["Product", /product manager|product management|\bpm\b intern|product design/i],
+  ["Design", /\bdesign|\bux\b|\bui\b|creative/i],
+  ["Marketing", /marketing|brand|growth|social media|communications|\bpr\b/i],
+  ["Sales", /\bsales\b|business development|account executive|partnerships/i],
+  ["Engineering (Hardware)", /mechanical|electrical|hardware|manufacturing|aerospace engineer|civil/i],
+  ["Legal", /legal|counsel|paralegal|compliance/i],
+  ["HR / People", /human resources|\bhr\b|people team|recruit|talent/i],
+  ["Research", /research|scientist|\br&d\b|clinical/i],
+];
+function roleFunction(role) {
+  const text = String(role || "");
+  for (const [name, re] of ROLE_FUNCTIONS) if (re.test(text)) return name;
+  return "";
 }
 
 // Active filters as removable chips, so what is applied is always visible.
@@ -1755,9 +1857,26 @@ function renderCycleFootnote(undated) {
   const unknown = document.querySelector("[data-cycle-unknown]");
   if (!unknown) return;
   unknown.hidden = false;
+  // Methodology (observed vs estimated) lives in the "How this works" box up
+  // top — keep this line to a plain window summary.
   unknown.textContent = undated
-    ? `Showing the last ${TIMELINE_MONTHS} months. ${undated} more live role${undated === 1 ? " was" : "s were"} first seen before this window.`
-    : `Showing the last ${TIMELINE_MONTHS} months of observed postings.`;
+    ? `${undated} more live role${undated === 1 ? " was" : "s were"} first seen outside this window.`
+    : "Double-click a month to see every company that month.";
+}
+
+// The "« ‹ Mar–Aug 2026 › »" label + arrow enable/disable state.
+function updateCycleWindowLabel(columns) {
+  const label = document.querySelector("[data-cycle-window-label]");
+  if (label && columns.length) {
+    const a = columns[0];
+    const b = columns[columns.length - 1];
+    // Just the year — "2026" — or "2026–27" when the window straddles two.
+    label.textContent = a.year === b.year ? `${b.year}` : `${a.year}–${String(b.year).slice(2)}`;
+  }
+  document.querySelectorAll("[data-cycle-nav]").forEach((btn) => {
+    const step = Number(btn.dataset.cycleNav);
+    btn.disabled = clampCycleOffset(cycleWindowOffset + step) === cycleWindowOffset;
+  });
 }
 
 function resolveOpening(reference) {
@@ -1768,7 +1887,10 @@ function findOpening(reference) {
   return resolveOpening(reference) || preferredOpenings()[0];
 }
 
-function openDetails(reference) {
+// Takes a listing reference (Cam's per-listing identity), not a company name.
+// estimateWhen is Trey's future-column marker: an estimate is not a live req,
+// so the modal has to say so.
+function openDetails(reference, estimateWhen = "") {
   const item = findOpening(reference);
   if (!item) return;
   track("opening_view");
@@ -1780,6 +1902,26 @@ function openDetails(reference) {
   modal.querySelector("[data-modal-role]").textContent = listingStatus(item) === "BROWSE"
     ? `Internship roles · ${item.program}`
     : `${item.role} · ${item.program}`;
+  // An ESTIMATE (future month) is not a live posting — say so plainly rather
+  // than showing it like an open req. The general "how this works" note carries
+  // the methodology; this just states the status for this one marker.
+  if (estimateWhen) {
+    modal.querySelector("[data-modal-why]").textContent = `Not open yet — estimated to drop around ${estimateWhen}, based on when ${item.company} posted in previous years.`;
+    modal.querySelector("[data-modal-deadline]").textContent = "Not open yet";
+    const statusEl0 = modal.querySelector("[data-modal-status]");
+    if (statusEl0) { statusEl0.textContent = "NOT OPEN YET"; statusEl0.className = "status-pill pill-browse"; }
+    modal.querySelector("[data-modal-opened]").textContent = `Est. ${estimateWhen}`;
+    modal.querySelector("[data-modal-location]").textContent = item.location || "See posting";
+    modal.querySelector("[data-modal-field]").textContent = item.field;
+    const estLogo = modal.querySelector(".modal-logo");
+    const estLogoUrl = companyLogoUrl(item);
+    estLogo.className = `modal-logo ${estLogoUrl ? "logo-tile" : item.logoClass}`;
+    estLogo.innerHTML = estLogoUrl
+      ? `<img src="${esc(estLogoUrl)}" alt="${esc(item.company)} logo" data-short="${esc(item.short || "")}" data-lc="${esc(item.logoClass || "")}" data-logo-img />`
+      : esc(item.short || item.company.slice(0, 3).toUpperCase());
+    if (typeof modal.showModal === "function" && !modal.open) modal.showModal();
+    return;
+  }
   modal.querySelector("[data-modal-why]").textContent = `Why this alert: ${match.reasonText === "broad profile" ? "It fits your broader student alert profile." : `Matched ${match.reasonText} from your profile.`}`;
   modal.querySelector("[data-modal-deadline]").textContent = item.deadline;
   const statusEl = modal.querySelector("[data-modal-status]");
@@ -3426,7 +3568,7 @@ document.addEventListener("click", async (event) => {
   }
 
   if (detailsButton) {
-    openDetails(detailsButton.dataset.openDetails || detailsButton.dataset.openDetailsButton);
+    openDetails(detailsButton.dataset.openDetails || detailsButton.dataset.openDetailsButton, detailsButton.dataset.estimate || "");
   }
 
   if (filterButton) {
@@ -3581,8 +3723,79 @@ document.querySelector("[data-cycle-season]")?.addEventListener("change", (event
 });
 document.querySelector("[data-cycle-reset]")?.addEventListener("click", () => {
   cycleFilters.track = ""; cycleFilters.industry = ""; cycleFilters.season = "";
+  cycleWindowOffset = 0;
   renderCyclesView();
 });
+
+// Timeline window navigation: ‹ › shift six months, « » shift a year.
+document.querySelectorAll("[data-cycle-nav]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    cycleWindowOffset = clampCycleOffset(cycleWindowOffset + Number(btn.dataset.cycleNav));
+    renderCyclesView();
+  });
+});
+
+// Double-click a month header → every company + role for that month.
+document.querySelector("[data-cycle-grid]")?.addEventListener("dblclick", (event) => {
+  const head = event.target.closest("[data-cycle-month]");
+  if (head) openMonthDetails(Number(head.dataset.colYear), Number(head.dataset.colMonth));
+});
+document.querySelector("[data-month-close]")?.addEventListener("click", () => {
+  document.querySelector("[data-month-modal]")?.close();
+});
+
+function openMonthDetails(year, month) {
+  const dialog = document.querySelector("[data-month-modal]");
+  if (!dialog) return;
+  const now = new Date();
+  const future = year * 12 + month > now.getUTCFullYear() * 12 + now.getUTCMonth();
+
+  const filtered = timelinePool().filter((item) =>
+    (!cycleFilters.track || item.field === cycleFilters.track) &&
+    (!cycleFilters.industry || item.subField === cycleFilters.industry) &&
+    (!cycleFilters.season || item.cycle === cycleFilters.season)
+  );
+  // One entry per company (its earliest/most relevant role that month).
+  const seen = new Map();
+  filtered.forEach((item) => {
+    const point = observedPoint(item);
+    if (!point) return;
+    const hit = future ? point.month === month && point.year < year : point.year === year && point.month === month;
+    if (hit && !seen.has(item.company)) seen.set(item.company, item);
+  });
+  const items = [...seen.values()].sort((a, b) => a.company.localeCompare(b.company));
+
+  dialog.querySelector("[data-month-tag]").textContent = future ? "ESTIMATED" : "OBSERVED";
+  dialog.querySelector("[data-month-tag]").classList.toggle("is-estimate", future);
+  dialog.querySelector("[data-month-title]").textContent = `${MONTH_LABELS[month]} ${year}`;
+  dialog.querySelector("[data-month-note]").textContent = future
+    ? "Estimated drop window — projected from when these employers posted in the same month in prior years. Not a guarantee."
+    : "What Promptly observed go live this month.";
+
+  dialog.querySelector("[data-month-list]").innerHTML = items.length
+    ? items.map((item) => {
+        const logo = companyLogoUrl(item);
+        const initials = esc(String(item.short || item.company.slice(0, 2)).toUpperCase().slice(0, 3));
+        const fn = roleFunction(item.role);
+        const dates = future
+          ? "Estimated drop"
+          : `Opened ${MONTH_LABELS[month]} ${year}${item.deadline && item.deadline !== "See posting" ? ` · Closes ${esc(item.deadline)}` : " · Closes: see posting"}`;
+        // Keyed by listing identity, not company: a company with several roles
+        // in one month would otherwise open whichever row matched first.
+        return `<button class="month-row" data-open-details="${esc(alertIdentity(item))}">
+            <span class="month-logo logo ${esc(item.logoClass || "")}">${logo ? `<img src="${esc(logo)}" alt="" data-short="${initials}" data-lc="${esc(item.logoClass || "")}" data-logo-img />` : initials}</span>
+            <span class="month-info">
+              <b>${esc(item.company)}</b>
+              <span>${esc(item.role || "Student role")}</span>
+              <small>${[fn, item.subField, item.cycle].filter(Boolean).map(esc).join(" · ")}</small>
+              <small class="month-dates">${dates}</small>
+            </span>
+          </button>`;
+      }).join("")
+    : `<p class="empty-hint">No companies for this month with the current filters.</p>`;
+
+  if (typeof dialog.showModal === "function") dialog.showModal(); else dialog.setAttribute("open", "");
+}
 
 // Remove one filter from its chip.
 document.querySelector("[data-cycle-chips]")?.addEventListener("click", (event) => {
