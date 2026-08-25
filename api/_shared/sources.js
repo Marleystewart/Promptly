@@ -101,6 +101,21 @@ const SOURCES = [
   { company: "Betterment", short: "BTMT", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "betterment" },
   { company: "Interactive Brokers", short: "IBKR", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "custom", handler: "interactivebrokers" },
 
+  // ═══ ADDED Aug 2026 (trey/finance-completeness): major-firm coverage ══════
+  // Each probed live before adding. Big global boards mostly return 0 US
+  // student roles today (fall campus season) but activate the hour one posts.
+  // Hedge funds / prop trading (Greenhouse)
+  { company: "ExodusPoint", short: "EXPT", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "exoduspoint" },
+  { company: "Man Group", short: "EMG", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "mangroup" },
+  { company: "Geneva Trading", short: "GVA", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "genevatrading" },
+  { company: "DV Trading", short: "DV", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "dvtrading" },
+  // Fintech
+  { company: "Block", short: "XYZ", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "block" },
+  // Private equity / banking / exchanges (Workday tenants from careers redirects)
+  { company: "Apollo Global Management", short: "APO", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "athene", dc: "wd5", site: "Apollo_Careers" },
+  { company: "U.S. Bank", short: "USB", logoClass: "fin", field: "Finance", subField: "Banking", ats: "workday", tenant: "usbank", dc: "wd1", site: "US_Bank_Careers" },
+  { company: "Nasdaq", short: "NDAQ", logoClass: "fin", field: "Finance", subField: "Exchanges", ats: "workday", tenant: "nasdaq", dc: "wd1", site: "Global_External_Site" },
+
   // ═══ TECHNOLOGY ══════════════════════════════════════════════════════════
   { company: "Anthropic", short: "ANTH", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "anthropic" },
   { company: "Databricks", short: "DBX", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "databricks" },
