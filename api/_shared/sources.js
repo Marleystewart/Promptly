@@ -130,6 +130,8 @@ const SOURCES = [
   { company: "Sixth Street", short: "6ST", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "sixthstreet" },
   { company: "KKR", short: "KKR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "stage" },
   { company: "Carlyle", short: "CG", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "carlyle", dc: "wd1", site: "Carlyle" },
+  { company: "Blue Owl", short: "OWL", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "blueowl", dc: "wd1", site: "blueowl" },
+  { company: "Piper Sandler", short: "PIPR", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "pipersandler", dc: "wd501", site: "Piper_Sandler_Careers" },
   { company: "GTCR", short: "GTCR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "gtcr" },
   // Asset management
   { company: "Artisan Partners", short: "APAM", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "greenhouse", board: "artisanpartners" },

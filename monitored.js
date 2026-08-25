@@ -34,6 +34,7 @@ window.MONITORED_COMPANIES = [
   "Blackstone",
   "Block",
   "Blue Origin",
+  "Blue Owl",
   "Boeing",
   "Brex",
   "Capital One",
@@ -152,6 +153,7 @@ window.MONITORED_COMPANIES = [
   "PGIM",
   "PIMCO",
   "Pinterest",
+  "Piper Sandler",
   "PJT Partners",
   "PNC Financial Services",
   "Point72",
@@ -233,19 +235,19 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 224,
-  "companies": 224,
+  "sources": 226,
+  "companies": 226,
   "byPlatform": {
     "greenhouse": 123,
     "custom": 20,
-    "workday": 46,
+    "workday": 48,
     "lever": 5,
     "ashby": 23,
     "smartrecruiters": 6,
     "usajobs": 1
   },
   "byField": {
-    "Finance": 108,
+    "Finance": 110,
     "Technology": 60,
     "Consulting": 3,
     "Healthcare": 11,
