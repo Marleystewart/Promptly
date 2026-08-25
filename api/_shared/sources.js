@@ -114,7 +114,27 @@ const SOURCES = [
   // Private equity / banking / exchanges (Workday tenants from careers redirects)
   { company: "Apollo Global Management", short: "APO", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "athene", dc: "wd5", site: "Apollo_Careers" },
   { company: "U.S. Bank", short: "USB", logoClass: "fin", field: "Finance", subField: "Banking", ats: "workday", tenant: "usbank", dc: "wd1", site: "US_Bank_Careers" },
-  { company: "Nasdaq", short: "NDAQ", logoClass: "fin", field: "Finance", subField: "Exchanges", ats: "workday", tenant: "nasdaq", dc: "wd1", site: "Global_External_Site" },
+  // Hedge funds
+  { company: "Lone Pine Capital", short: "LP", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "lonepinecapital" },
+  { company: "Holocene Advisors", short: "HOL", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "holoceneadvisors" },
+  { company: "Winton", short: "WIN", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "winton" },
+  // Prop / quant
+  { company: "TransMarket Group", short: "TMG", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "transmarketgroup" },
+  { company: "Gelber Group", short: "GEL", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "gelbergroup" },
+  // Private equity / credit
+  { company: "Sixth Street", short: "6ST", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "sixthstreet" },
+  { company: "GTCR", short: "GTCR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "gtcr" },
+  // Asset management
+  { company: "Artisan Partners", short: "APAM", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "greenhouse", board: "artisanpartners" },
+  // Advisory / boutique investment banks
+  { company: "Lincoln International", short: "LINC", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "greenhouse", board: "lincolninternational" },
+  { company: "LionTree", short: "LT", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "greenhouse", board: "liontree" },
+  // More PE + asset managers (Greenhouse + Workday tenants from careers pages)
+  { company: "TPG", short: "TPG", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "tpgcareers" },
+  { company: "Northern Trust", short: "NTRS", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "ntrs", dc: "wd1", site: "northerntrust" },
+  { company: "Ameriprise Financial", short: "AMP", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "ameriprise", dc: "wd5", site: "Ameriprise" },
+  { company: "Guggenheim Investments", short: "GGM", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "guggenheiminvestment", dc: "wd5", site: "External" },
+  { company: "PGIM", short: "PGIM", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "pru", dc: "wd5", site: "PGIM_Careers" },
 
   // ═══ TECHNOLOGY ══════════════════════════════════════════════════════════
   { company: "Anthropic", short: "ANTH", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "anthropic" },
