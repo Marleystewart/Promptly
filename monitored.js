@@ -185,6 +185,7 @@ window.MONITORED_COMPANIES = [
   "Stripe",
   "Substack",
   "Supabase",
+  "Susquehanna (SIG)",
   "Sweetgreen",
   "Synchrony",
   "T. Rowe Price",
@@ -229,11 +230,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 220,
-  "companies": 220,
+  "sources": 221,
+  "companies": 221,
   "byPlatform": {
     "greenhouse": 122,
-    "custom": 18,
+    "custom": 19,
     "workday": 45,
     "lever": 5,
     "ashby": 23,
@@ -241,7 +242,7 @@ window.PROMPTLY_COVERAGE = {
     "usajobs": 1
   },
   "byField": {
-    "Finance": 104,
+    "Finance": 105,
     "Technology": 60,
     "Consulting": 3,
     "Healthcare": 11,

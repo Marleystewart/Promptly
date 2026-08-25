@@ -121,6 +121,9 @@ const SOURCES = [
   // Prop / quant
   { company: "TransMarket Group", short: "TMG", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "transmarketgroup" },
   { company: "Gelber Group", short: "GEL", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "gelbergroup" },
+  // Susquehanna (SIG) — Jibe careers site fronting iCIMS; custom scraper reads
+  // its /api/jobs endpoint. See company-scrapers/susquehanna.js + jibe.js.
+  { company: "Susquehanna (SIG)", short: "SIG", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "custom", handler: "susquehanna" },
   // Private equity / credit
   { company: "Sixth Street", short: "6ST", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "sixthstreet" },
   { company: "GTCR", short: "GTCR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "gtcr" },
