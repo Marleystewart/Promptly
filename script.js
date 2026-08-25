@@ -1557,8 +1557,12 @@ const cycleFilters = { track: "", industry: "", season: "" };
 // Clamped so the window END never goes past +12 months (1 year of estimates)
 // and the window START never goes before -36 months (3 years of history).
 let cycleWindowOffset = 0;
-const CYCLE_OFFSET_MAX = 12;                          // window end up to +1yr
-const CYCLE_OFFSET_MIN = -(36 - (TIMELINE_MONTHS - 1)); // window start back to -3yr
+// Forward-looking only: no navigating into past years, and reach out to the end
+// of next year (Dec 2027 from an Aug-2026 "now" ≈ +16 months) for estimated
+// drop windows. The current window still shows this year's already-observed
+// months; the arrows only move forward from there.
+const CYCLE_OFFSET_MAX = 16;  // window end reaches December of next year
+const CYCLE_OFFSET_MIN = 0;   // never page back into past years
 
 function clampCycleOffset(value) {
   return Math.max(CYCLE_OFFSET_MIN, Math.min(CYCLE_OFFSET_MAX, value));
