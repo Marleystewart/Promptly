@@ -1536,6 +1536,15 @@ function cycleSortKey(cycle) {
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+// "2026-08-15..." -> "Aug 15, 2026". Used to show a real opening date on past
+// listings in the month drill-down.
+function fmtCycleDate(iso) {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return "";
+  const d = new Date(t);
+  return `${MONTH_LABELS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+}
+
 // A rolling window ending this month. A full calendar year would be mostly
 // empty columns — first-seen dates only exist for as long as the pipeline has
 // been running, so twelve columns read as "broken" rather than "new".
@@ -1630,8 +1639,16 @@ function timelineRowKey(item) {
   return item.field || "Other";
 }
 
+// The Cycles timeline is a historical record of WHEN employers dropped student
+// roles — so it keeps every real observed listing (anything with a firstSeen
+// date), open OR already closed, and only drops the browse/awaiting placeholder
+// cards that were never actually observed going live.
 function timelinePool() {
-  return openings.filter((item) => !isAwaitingLike(item) && listingStatus(item) === "OPEN");
+  return openings.filter((item) => {
+    if (!item.firstSeen) return false;             // only things actually observed
+    const status = listingStatus(item);
+    return status !== "AWAITING" && status !== "BROWSE"; // keep OPEN, CLOSED, UPCOMING
+  });
 }
 
 function fillSelect(selector, values, current) {
@@ -3592,9 +3609,13 @@ function openMonthDetails(year, month) {
         const logo = companyLogoUrl(item);
         const initials = esc(String(item.short || item.company.slice(0, 2)).toUpperCase().slice(0, 3));
         const fn = roleFunction(item.role);
+        // Past/current: show the real opening date (when Promptly saw it go
+        // live) and the closing date the employer published. Future: estimate.
+        const openedOn = item.firstSeen ? fmtCycleDate(item.firstSeen) : `${MONTH_LABELS[month]} ${year}`;
+        const closesOn = item.deadline && item.deadline !== "See posting" ? esc(item.deadline) : "see posting";
         const dates = future
-          ? "Estimated drop"
-          : `Opened ${MONTH_LABELS[month]} ${year}${item.deadline && item.deadline !== "See posting" ? ` · Closes ${esc(item.deadline)}` : " · Closes: see posting"}`;
+          ? "Estimated drop — not open yet"
+          : `Opened ${esc(openedOn)} · Closes ${closesOn}`;
         return `<button class="month-row" data-open-details="${esc(item.company)}">
             <span class="month-logo logo ${esc(item.logoClass || "")}">${logo ? `<img src="${esc(logo)}" alt="" data-short="${initials}" data-lc="${esc(item.logoClass || "")}" data-logo-img />` : initials}</span>
             <span class="month-info">
