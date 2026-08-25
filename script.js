@@ -575,7 +575,6 @@ const browseCareers = {
   // ZERO results once a city filter is applied, which is worse than no filter.
   "Amazon": "https://www.amazon.jobs/en/search?base_query=intern",
   // Student & graduate category, rather than the corporate careers homepage.
-  "BlackRock": "https://careers.blackrock.com/category/students-and-graduates-jobs/45831/9022304/1",
   "Bain & Company": "https://www.bain.com/careers/",
   // Real job search, intern filter + US only. The country value must be the
   // full name — `countries=US` is silently ignored and returns Geneva, Paris
