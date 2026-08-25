@@ -125,6 +125,7 @@ window.MONITORED_COMPANIES = [
   "M&T Bank",
   "Man Group",
   "Marshall Wace",
+  "Mastercard",
   "Millennium",
   "Mixpanel",
   "Modal",
@@ -235,11 +236,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 226,
-  "companies": 226,
+  "sources": 227,
+  "companies": 227,
   "byPlatform": {
     "greenhouse": 123,
-    "custom": 20,
+    "custom": 21,
     "workday": 48,
     "lever": 5,
     "ashby": 23,
@@ -247,7 +248,7 @@ window.PROMPTLY_COVERAGE = {
     "usajobs": 1
   },
   "byField": {
-    "Finance": 110,
+    "Finance": 111,
     "Technology": 60,
     "Consulting": 3,
     "Healthcare": 11,

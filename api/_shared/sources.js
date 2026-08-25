@@ -126,6 +126,9 @@ const SOURCES = [
   { company: "Susquehanna (SIG)", short: "SIG", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "custom", handler: "susquehanna" },
   // BlackRock runs a Radancy careers site — custom scraper via api/_shared/radancy.js.
   { company: "BlackRock", short: "BLK", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "custom", handler: "blackrock" },
+  // Mastercard — Phenom careers site (global), custom scraper keeps US-only. See
+  // company-scrapers/mastercard.js + phenom.js fetchPhenomWidgets + us-location.js.
+  { company: "Mastercard", short: "MA", logoClass: "fin", field: "Finance", subField: "Payments", ats: "custom", handler: "mastercard" },
   // Private equity / credit
   { company: "Sixth Street", short: "6ST", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "sixthstreet" },
   { company: "KKR", short: "KKR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "stage" },
