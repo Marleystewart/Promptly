@@ -75,6 +75,8 @@ window.MONITORED_COMPANIES = [
   "Experian",
   "Fifth Third Bank",
   "Figma",
+  "FIS",
+  "Fiserv",
   "Five Rings",
   "Flatiron Health",
   "Flow Traders",
@@ -125,6 +127,7 @@ window.MONITORED_COMPANIES = [
   "M&T Bank",
   "Man Group",
   "Marshall Wace",
+  "MassMutual",
   "Mastercard",
   "Millennium",
   "Mixpanel",
@@ -236,11 +239,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 227,
-  "companies": 227,
+  "sources": 230,
+  "companies": 230,
   "byPlatform": {
     "greenhouse": 123,
-    "custom": 21,
+    "custom": 24,
     "workday": 48,
     "lever": 5,
     "ashby": 23,
@@ -248,7 +251,7 @@ window.PROMPTLY_COVERAGE = {
     "usajobs": 1
   },
   "byField": {
-    "Finance": 111,
+    "Finance": 114,
     "Technology": 60,
     "Consulting": 3,
     "Healthcare": 11,
