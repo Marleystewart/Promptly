@@ -531,6 +531,22 @@ const openings = [
     sourceLabel: "Millennium – Investment Internship 2027",
     sourceUrl: null,
   },
+  // ── Browse-only finance firms (no machine-readable feed exists) ───────────
+  // These employers publish no ATS feed we can read, so we show one card per
+  // firm that links to their OWN official careers search — never a claimed req.
+  // Paired with a URL in browseCareers below; the browse loop relabels them
+  // honestly ("browse their careers search", not a specific opening).
+  { company: "Fidelity Investments", short: "FID", logoClass: "fin", field: "Finance", subField: "Asset Management", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Fidelity Careers", sourceUrl: null },
+  { company: "Evercore", short: "EVR", logoClass: "fin", field: "Finance", subField: "Investment Banking", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Evercore Careers", sourceUrl: null },
+  { company: "Centerview Partners", short: "CVP", logoClass: "fin", field: "Finance", subField: "Investment Banking", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Centerview Careers", sourceUrl: null },
+  { company: "Perella Weinberg", short: "PWP", logoClass: "fin", field: "Finance", subField: "Investment Banking", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Perella Weinberg Careers", sourceUrl: null },
+  { company: "Bridgewater Associates", short: "BW", logoClass: "fin", field: "Finance", subField: "Hedge Fund", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Bridgewater Careers", sourceUrl: null },
+  { company: "Coatue Management", short: "COA", logoClass: "fin", field: "Finance", subField: "Hedge Fund", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Coatue Careers", sourceUrl: null },
+  { company: "Tiger Global", short: "TGM", logoClass: "fin", field: "Finance", subField: "Hedge Fund", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Tiger Global Careers", sourceUrl: null },
+  { company: "Warburg Pincus", short: "WP", logoClass: "fin", field: "Finance", subField: "Private Equity", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Warburg Pincus Careers", sourceUrl: null },
+  { company: "Silver Lake", short: "SLK", logoClass: "fin", field: "Finance", subField: "Private Equity", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Silver Lake Careers", sourceUrl: null },
+  { company: "Thoma Bravo", short: "TB", logoClass: "fin", field: "Finance", subField: "Private Equity", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Thoma Bravo Careers", sourceUrl: null },
+  { company: "PayPal", short: "PYPL", logoClass: "fin", field: "Finance", subField: "Fintech", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "PayPal Careers", sourceUrl: null },
 ];
 
 // These postings were confirmed closed or redirected away from the role on
@@ -591,6 +607,18 @@ const browseCareers = {
   // the destination but relabeled honestly (program overviews, not one req).
   "Goldman Sachs": "https://www.goldmansachs.com/careers/students/programs-and-internships/americas/2027-summer-analyst-program",
   "J.P. Morgan": "https://www.jpmorganchase.com/careers/explore-opportunities/programs/investment-banking-summer-analyst",
+  // Big finance firms with no machine-readable feed — link to their own search.
+  "Fidelity Investments": "https://jobs.fidelity.com/en/jobs/?keywords=intern",
+  "Evercore": "https://www.evercore.com/careers/students-graduates/",
+  "Centerview Partners": "https://www.centerview.com/careers/",
+  "Perella Weinberg": "https://pwpartners.com/careers/",
+  "Bridgewater Associates": "https://www.bridgewater.com/working-at-bridgewater",
+  "Coatue Management": "https://www.coatue.com/careers",
+  "Tiger Global": "https://www.tigerglobal.com/careers",
+  "Warburg Pincus": "https://warburgpincus.com/careers/",
+  "Silver Lake": "https://www.silverlake.com/careers/",
+  "Thoma Bravo": "https://www.thomabravo.com/careers",
+  "PayPal": "https://careers.pypl.com/home/",
 };
 // A browse card stands for a COMPANY we cannot read, not for a specific req.
 // Two curated Amazon rows therefore collapsed into two identical cards — same
