@@ -43,7 +43,16 @@ function response() {
       requests.push({ url, options });
       if (url.endsWith("/auth/v1/user")) {
         assert.equal(options.headers.Authorization, "Bearer caller-jwt");
-        return { ok: true, async json() { return { id: "verified-user-id", email: "student@example.com" }; } };
+        return {
+          ok: true,
+          async json() {
+            return {
+              id: "verified-user-id",
+              email: "student@example.com",
+              email_confirmed_at: "2026-08-24T00:00:00Z",
+            };
+          },
+        };
       }
       assert.equal(url, "https://project.supabase.co/auth/v1/admin/users/verified-user-id");
       assert.equal(options.method, "DELETE");
@@ -55,7 +64,7 @@ function response() {
     await subscribeHandler({ method: "DELETE", headers: { authorization: "Bearer caller-jwt" } }, deleted);
     assert.equal(deleted.statusCode, 200);
     assert.equal(deleted.body.ok, true);
-    assert.equal(requests.length, 2);
+    assert.equal(requests.length, 2, "deletion must not be blocked by the confirmation-policy check");
   } finally {
     global.fetch = originalFetch;
     for (const [key, value] of Object.entries(originalEnv)) {
