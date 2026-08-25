@@ -2,6 +2,8 @@ const { withCors } = require("./_shared/cors");
 
 const webpush = require("web-push");
 const { isSafePushSubscription } = require("./_shared/push-target");
+const { getSubscriber } = require("./_shared/store");
+const { authenticateUser } = require("./_shared/auth-user");
 
 function readBody(req) {
   if (typeof req.body === "string") return JSON.parse(req.body || "{}");
@@ -32,6 +34,8 @@ async function handler(req, res) {
 
   try {
     const body = readBody(req);
+    const auth = await authenticateUser(req);
+    if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
     if (!body.subscription) {
       return res.status(400).json({ error: "Missing push subscription." });
     }
@@ -39,6 +43,12 @@ async function handler(req, res) {
     // real vendor push URL and not somewhere the caller picked.
     if (!isSafePushSubscription(body.subscription)) {
       return res.status(400).json({ error: "That push subscription is not from a recognized browser push service." });
+    }
+    const subscriber = await getSubscriber(auth.email);
+    const storedEndpoint = String(subscriber?.pushSubscription?.endpoint || "");
+    const requestedEndpoint = String(body.subscription?.endpoint || "");
+    if (!storedEndpoint || requestedEndpoint !== storedEndpoint) {
+      return res.status(403).json({ error: "Enable notifications on this signed-in account before sending a test." });
     }
 
     webpush.setVapidDetails(subject, publicKey, privateKey);

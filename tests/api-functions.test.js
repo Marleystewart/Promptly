@@ -24,7 +24,7 @@ function response() {
   await statsHandler({ method: "GET" }, getResponse);
   assert.equal(getResponse.statusCode, 200);
   assert.deepEqual(getResponse.body, {
-    activeToday: 0,
+    appOpensToday: 0,
     applicationsToday: 0,
     signupsToday: 0,
     newListingsThisWeek: 0,
@@ -37,7 +37,7 @@ function response() {
     body: { school: "Example U", stage: "Applied", company: "Acme", field: "Technology" },
   }, postResponse);
   assert.equal(postResponse.statusCode, 200);
-  assert.deepEqual(postResponse.body, { ok: true, stored: false });
+  assert.deepEqual(postResponse.body, { ok: false, stored: false, error: "outcome tracking disabled" });
 
   const rejectedResponse = response();
   await statsHandler({ method: "DELETE" }, rejectedResponse);

@@ -3,6 +3,15 @@ function readBody(req) {
   return req.body || {};
 }
 
+const crypto = require("crypto");
+
+// Redis key names are visible to operators and backups. Abuse controls only
+// need a stable bucket, not the raw IP address or email, so use an opaque
+// digest for short-lived rate-limit and delivery keys.
+function opaqueKeyPart(value) {
+  return crypto.createHash("sha256").update(String(value || "unknown")).digest("hex").slice(0, 32);
+}
+
 function redisEnv() {
   return {
     url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL,
@@ -234,13 +243,13 @@ async function takeTestAlertSlot(email, requester = "") {
   const normalizedEmail = String(email || "").trim().toLowerCase().slice(0, 254);
   const normalizedRequester = String(requester || "unknown").trim().slice(0, 80);
   const [emailSlot, requesterSlot] = await Promise.all([
-    redis.set(`promptly:test-email:${normalizedEmail}`, "1", { nx: true, ex: 60 }),
-    redis.set(`promptly:test-requester:${normalizedRequester}`, "1", { nx: true, ex: 10 }),
+    redis.set(`promptly:test-email:${opaqueKeyPart(normalizedEmail)}`, "1", { nx: true, ex: 60 }),
+    redis.set(`promptly:test-requester:${opaqueKeyPart(normalizedRequester)}`, "1", { nx: true, ex: 10 }),
   ]);
   return { allowed: Boolean(emailSlot && requesterSlot), stored: true };
 }
 
-// Throttle for the anonymous subscribe endpoint.
+// Throttle for the account-owned subscribe endpoint.
 //
 // /api/subscribe took unlimited unauthenticated writes, and every unseen email
 // triggered a confirmation send. A script could therefore make Promptly mail
@@ -256,7 +265,7 @@ const SUBSCRIBE_NEW_PER_HOUR = 5;  // distinct new addresses per hour per IP
 async function takeSubscribeSlot(requester = "unknown", { isNewAddress = false } = {}) {
   const redis = await getRedis();
   if (!redis) return { allowed: true, stored: false };
-  const who = String(requester || "unknown").slice(0, 64);
+  const who = opaqueKeyPart(String(requester || "unknown").slice(0, 64));
 
   const burstKey = `promptly:sub-burst:${who}`;
   const burst = await redis.incr(burstKey);
@@ -278,7 +287,7 @@ async function takeSubscribeSlot(requester = "unknown", { isNewAddress = false }
 async function takeAdminAttempt(requester = "unknown") {
   const redis = await getRedis();
   if (!redis) return { allowed: true, stored: false };
-  const key = `promptly:admin-attempt:${String(requester).slice(0, 64)}`;
+  const key = `promptly:admin-attempt:${opaqueKeyPart(String(requester).slice(0, 64))}`;
   const count = await redis.incr(key);
   if (count === 1) await redis.expire(key, 60);
   return { allowed: count <= 10, stored: true };
@@ -287,7 +296,7 @@ async function takeAdminAttempt(requester = "unknown") {
 async function claimOnce(key, ttlSeconds) {
   const redis = await getRedis();
   if (!redis) return true;
-  const result = await redis.set(`promptly:delivery:${key}`, new Date().toISOString(), {
+  const result = await redis.set(`promptly:delivery:${opaqueKeyPart(key)}`, new Date().toISOString(), {
     nx: true,
     ex: ttlSeconds,
   });
@@ -297,7 +306,7 @@ async function claimOnce(key, ttlSeconds) {
 async function releaseClaim(key) {
   const redis = await getRedis();
   if (!redis) return;
-  await redis.del(`promptly:delivery:${key}`);
+  await redis.del(`promptly:delivery:${opaqueKeyPart(key)}`);
 }
 
 module.exports = {
@@ -318,4 +327,5 @@ module.exports = {
   takeAdminAttempt,
   claimOnce,
   releaseClaim,
+  opaqueKeyPart,
 };

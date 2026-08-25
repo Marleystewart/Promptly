@@ -29,7 +29,7 @@
     <meta name="twitter:title" content="Promptly | Never miss an internship opening" />
     <meta name="twitter:description" content="Alerts students the moment an internship opens. 241 employers monitored, refreshed hourly." />
     <meta name="twitter:image" content="https://app.joinpromptly.co/assets/og-card.png" />
-    <link rel="stylesheet" href="styles.css?v=20260824a" />
+    <link rel="stylesheet" href="styles.css?v=20260824b" />
   </head>
   <body class="onboarding-active launch-active">
     <section class="onboarding-shell" aria-label="Promptly sign up">
@@ -58,6 +58,11 @@
         <button class="soft-action wide auth-google" type="button" data-google-auth>Continue with Google</button>
         <button class="text-action" type="button" data-forgot-password hidden>Forgot password?</button>
         <p class="auth-status" data-auth-status>Checking secure account setup...</p>
+        <p class="signup-privacy-note">
+          Before you continue: account and alert information is stored with our account and
+          alert providers; your résumé and photo stay on this device. Read
+          <a href="/privacy">Privacy</a> and <a href="/terms">Terms</a>.
+        </p>
       </div>
 
       <div class="signup-card onboard-step" data-step="2">
@@ -412,7 +417,7 @@
                 </div>
                 <p class="alert-status" data-push-status>Tap Enable Phone Notifications first. If you are on iPhone, open Promptly from the Home Screen app icon.</p>
                 <p class="alert-status verify-notice" data-verify-notice hidden></p>
-                <p class="push-privacy-note">Alerts only. We never send ads, and we never sell your data. <a href="/privacy">How your data is handled</a></p>
+                <p class="push-privacy-note">Push alerts can show the company, role, or deadline on your lock screen. Leave push off or hide notification previews in your device settings if that is private. We never send ads or sell your data. <a href="/privacy">How your data is handled</a></p>
               </article>
 
               <article class="settings-card trust-card">
@@ -512,6 +517,7 @@
           <button data-status="Offer">Offer</button>
           <button data-status="" class="status-clear">Clear</button>
         </div>
+        <small>Saved only on this device.</small>
       </div>
       <button class="primary-action wide" data-save-modal>Save Alert</button>
       <p class="modal-note">Promptly does not submit applications. Use this alert to move fast, then apply on the employer's official site.</p>
@@ -529,7 +535,7 @@
             <option value="wrong-company">Wrong company or details</option>
             <option value="other">Something else</option>
           </select>
-          <input type="text" data-report-note maxlength="300" placeholder="Anything else? (optional)" />
+          <input type="text" data-report-note maxlength="300" placeholder="Anything else? Don’t include personal information." />
           <button type="submit" class="report-submit">Send report</button>
           <p class="report-status" data-report-status role="status"></p>
         </form>
@@ -547,8 +553,8 @@
     <!-- Location resolution + great-circle distance, shared with the alert
          pipeline. Must load before script.js, which uses it on first render. -->
     <script src="geo.js?v=20260804a"></script>
-    <script src="listing-state.js?v=20260824a"></script>
-    <script src="script.js?v=20260824a"></script>
+    <script src="listing-state.js?v=20260824b"></script>
+    <script src="script.js?v=20260824b"></script>
     <script src="assistant.js?v=20260803f"></script>
   </body>
 </html>

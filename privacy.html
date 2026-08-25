@@ -61,7 +61,7 @@
       </div>
 
       <h1>Privacy</h1>
-      <p class="legal-updated">Last updated 28 July 2026</p>
+      <p class="legal-updated">Last updated 24 August 2026</p>
 
       <p class="legal-lede">
         Promptly tells students when an internship opens. To do that we need a little
@@ -70,58 +70,123 @@
       </p>
 
       <div class="legal-card good">
-        <h3>Never leaves your device</h3>
+        <h3>Stays on your device</h3>
         <p style="margin:0">
-          Your <strong>résumé text</strong>, your <strong>profile photo</strong>, and your
-          <strong>application progress</strong> (applied, interview, offer) are stored only in
-          your own browser. They are never uploaded to our servers. If you clear your browser
-          data, they are gone — we have no copy.
+          Your <strong>résumé text</strong>, <strong>profile photo</strong>, and
+          <strong>application progress</strong> (applied, interview, offer) stay in your
+          browser. Promptly does not send them to its backend, analytics, email provider,
+          authentication provider, or an AI service. Clearing Promptly's browser data removes
+          them from that device.
         </p>
       </div>
 
-      <h2>What we store on our servers</h2>
-      <p>When you set up alerts, we save the details needed to match and reach you:</p>
+      <h2>Account and alert information</h2>
+      <p>When you create an account and set up alerts, Promptly processes:</p>
       <ul>
-        <li>Your name and email address</li>
-        <li>School, graduation year, and major</li>
-        <li>Location preference, and whether you are open to remote or relocating</li>
-        <li>Interests and the alert fields you pick</li>
-        <li>Alerts you save and companies you choose to watch</li>
-        <li>Your notification preferences, and — if you turn on phone alerts — the push
-          subscription your browser generates</li>
+        <li>Name, email address, and authentication account information</li>
+        <li>School, graduation year, major, location preference, and location flexibility</li>
+        <li>Interests, alert fields, saved alerts, and companies you choose to watch</li>
+        <li>Email, recap, reminder, and push-notification preferences</li>
+        <li>A browser push subscription if you explicitly enable push notifications</li>
       </ul>
       <p>
-        That is the whole list. We do not ask for and do not want your government ID,
-        Social Security number, bank details, or passwords for any other service.
+        Your account profile and saved-list references are stored in your Supabase account
+        metadata so they can follow you across devices. The alert-delivery copy is stored in
+        Upstash so Promptly can match openings and send the notifications you requested.
+        We do not ask for your government ID, Social Security number, bank details, or
+        passwords for any other service.
       </p>
 
-      <h2>Who processes it</h2>
-      <p>We keep the number of companies touching your data as small as we can:</p>
+      <h2>Automatic collection</h2>
+      <p>
+        Like any hosted website, a visit sends network information such as your IP address,
+        browser request headers, requested page, and time of request to Vercel, our hosting
+        provider. Promptly uses short-lived, one-way-digested request identifiers for abuse
+        limits; it does not put the raw address into those Redis key names. Hosting and
+        security logs may still be processed by Vercel under our service configuration and
+        Vercel's own retention practices.
+      </p>
+
+      <h2>Browser storage, cookies, and caching</h2>
+      <p>
+        Promptly's own code does not set cookies. It uses browser local storage for your
+        on-device profile, résumé text, photo, progress, saved-list references, seen-alert
+        markers, and push subscription. When you sign in, Supabase also persists the account
+        session in browser storage. Signing out, restarting the demo, or deleting your data
+        clears Promptly's local and session storage on that device.
+      </p>
+      <p>
+        The service worker caches public app files for offline use. It does not intercept or
+        cache API responses. Choosing Google sign-in or opening an employer's website takes
+        you to that provider's site, where its own cookies and privacy terms may apply.
+      </p>
+
+      <h2>First-party analytics</h2>
+      <p>
+        Promptly stores short-lived counts for a small allowlist of actions, such as an app
+        open, listing view, official-posting click, signup, listing report, or request to watch
+        a company. The event contains only its name: no email, name, school, résumé, search
+        text, listing details, full profile, or persistent browser/session identifier. Daily
+        analytics keys expire after about nine days.
+      </p>
+      <p>
+        There are no advertising cookies, tracking pixels, ad networks, session-replay tools,
+        or cross-site behavioral analytics in Promptly. Company logos and résumé-reading
+        libraries are served from Promptly's own files.
+      </p>
+
+      <h2>AI</h2>
+      <p>
+        Promptly does not send your profile, résumé, questions, or other information to an AI
+        or large-language-model provider. Résumé parsing and matching run in your browser.
+        “Ask Promptly” is a scripted, on-device help tool rather than an AI chat service.
+      </p>
+
+      <h2>Service providers and outside sites</h2>
       <ul>
-        <li><strong>Vercel</strong> — hosts the app</li>
-        <li><strong>Upstash</strong> — stores your alert profile</li>
-        <li><strong>Resend</strong> — delivers your alert emails</li>
-        <li><strong>Apple, Google, or Mozilla push services</strong> — deliver phone
-          notifications, but only if you turn them on</li>
+        <li><strong>Vercel</strong> hosts the site and server functions and receives normal web-request data.</li>
+        <li><strong>Supabase</strong> provides accounts, authentication emails, and cross-device profile metadata.</li>
+        <li><strong>jsDelivr</strong> serves the Supabase browser library when account support is enabled.</li>
+        <li><strong>Upstash</strong> stores alert profiles, preferences, operational queues, reports, and aggregate counters.</li>
+        <li><strong>Resend</strong> receives the recipient address and operational email content needed to deliver alerts and support notifications.</li>
+        <li><strong>Apple, Google, Mozilla, or Microsoft push services</strong> receive a browser push subscription and notification payload only after you enable push.</li>
+        <li><strong>Google</strong> processes the optional Google sign-in flow. Our support inbox is hosted by Gmail, which processes messages you send to it and listing-report notifications.</li>
       </ul>
+      <p>
+        Promptly's backend reads public job data from employer career sites and applicant
+        tracking systems. It does not send your profile to those job-data sources. When you
+        choose “Open Official Posting,” you leave Promptly and the employer or recruiting
+        platform receives the normal web data involved in visiting its site.
+      </p>
 
-      <h2>Analytics</h2>
+      <h2>Email, reports, and notifications</h2>
       <p>
-        We count basic things — how many people opened the app today, how many alerts were
-        clicked — so we know what is working. This is first-party only: the counts live in
-        our own database, tied to a random session number, not to your name or email.
-        <strong>There are no advertising cookies, no tracking pixels, and no ad networks
-        anywhere in Promptly.</strong>
+        Promptly sends account messages and the internship alerts, recaps, and deadline
+        reminders you enable; it does not currently send advertising or third-party marketing
+        email. Alert emails go to one recipient at a time and include a one-click unsubscribe
+        link. You can also turn email, recap, reminder, and push categories on or off in
+        Settings.
       </p>
       <p>
-        Company logos are served from our own servers. We deliberately do not use a
-        third-party logo or favicon service, because that would tell another company
-        which employers you are looking at.
+        A listing report includes the listing, selected reason, and optional note. Promptly
+        does not attach your account email to that report. Do not put personal information in
+        the note. Push alerts can show a company, role, or deadline on a locked device; you can
+        leave push off or hide notification previews in your device settings.
       </p>
+
+      <h2>How long we keep information</h2>
+      <ul>
+        <li>Account and verified alert profiles remain until you delete the account or ask us to delete them. Promptly has not yet adopted an automatic inactive-account deletion period.</li>
+        <li>Legacy unconfirmed alert profiles are deleted after 14 days; their confirmation tokens expire after seven days.</li>
+        <li>Unsent daily-digest items expire after three days.</li>
+        <li>First-party analytics counters expire after about nine days.</li>
+        <li>Listing-problem reports expire after 90 days. They do not retain the reporter's account email.</li>
+        <li>Most abuse-control buckets expire between 10 seconds and one hour; delivery-deduplication records last only as long as needed to prevent a duplicate alert.</li>
+      </ul>
       <p>
-        We also record anonymous outcomes — that a student at a given school reached a
-        given stage at a given company. This carries no name and no email, and it exists so
-        we can eventually show students how their peers are doing.
+        Public job-feed history and service-health records are operational, not student
+        profiles. Service-provider logs and backups follow the applicable provider settings
+        and contracts and may not disappear at the same instant as an active-record deletion.
       </p>
 
       <div class="legal-card never">
@@ -134,12 +199,15 @@
         </ul>
       </div>
 
-      <h2>Deleting everything</h2>
+      <h2>Your controls</h2>
       <p>
-        Open <strong>Profile → Settings → Delete My Data</strong> in the app. That removes your
-        stored profile, your saved alerts, your watched companies, and your notification
-        subscription. It cannot be undone, and we do not keep a shadow copy. You can also
-        email us and we will do it for you.
+        You can view and correct profile information, change each notification category,
+        remove a résumé or photo, and clear a listing's progress inside the app. Open
+        <strong>Profile → Settings → Delete My Data</strong> to remove the active Supabase
+        account, Promptly alert profile, saved alerts, watched-company links, queued digest,
+        unsubscribe mapping, and push subscription, and to clear this device. You can also
+        email us to request access, correction, deletion, or a copy of stored account
+        information; a self-service download is not available yet.
       </p>
 
       <h2>Students under 18</h2>

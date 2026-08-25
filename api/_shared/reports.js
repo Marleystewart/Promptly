@@ -13,11 +13,12 @@
 // content-checker in link-verify.js — flag, review, then act.
 // ─────────────────────────────────────────────────────────────────────────
 
-const { getRedis } = require("./store");
+const { getRedis, opaqueKeyPart } = require("./store");
 
 const REPORTS_KEY = "promptly:listing-reports";       // hash: id -> report JSON
 const REPORT_RATE_KEY = "promptly:report-rate";        // per-reporter counter
 const MAX_REPORTS = 500;                               // keep the hash bounded
+const REPORT_TTL_DAYS = 90;
 
 // What a student can tell us without guessing. Free-text goes in `note`.
 const REASONS = {
@@ -50,13 +51,13 @@ function reportId(company, url) {
 async function takeReportSlot(requester = "unknown") {
   const redis = await getRedis();
   if (!redis) return { allowed: true, stored: false };
-  const key = `${REPORT_RATE_KEY}:${String(requester).slice(0, 64)}`;
+  const key = `${REPORT_RATE_KEY}:${opaqueKeyPart(String(requester).slice(0, 64))}`;
   const count = await redis.incr(key);
   if (count === 1) await redis.expire(key, 3600);
   return { allowed: count <= 20, stored: true };
 }
 
-async function recordReport({ company, role, location, url, reason, note, email, requester }) {
+async function recordReport({ company, role, location, url, reason, note, requester }) {
   const redis = await getRedis();
   if (!redis) return { ok: false, error: "Reporting is not configured." };
   if (!company || !isValidReason(reason)) return { ok: false, error: "Invalid report." };
@@ -84,10 +85,12 @@ async function recordReport({ company, role, location, url, reason, note, email,
     reasons: [...reasons],
     notes,
     count: (Number(existing?.count) || 0) + 1,
-    // Only kept so we can follow up if the reporter volunteered it.
-    lastReporterEmail: String(email || "").trim().toLowerCase().slice(0, 120) || existing?.lastReporterEmail || null,
+    // The report form never asks the student to share contact details, so an
+    // account email collected for alerts must not be silently repurposed here.
+    lastReporterEmail: null,
     firstReportedAt: existing?.firstReportedAt || now,
     lastReportedAt: now,
+    expiresAt: new Date(Date.now() + REPORT_TTL_DAYS * 86400000).toISOString(),
     resolved: false, // set by hand after review; never automatically
   };
 
@@ -111,6 +114,48 @@ async function recordReport({ company, role, location, url, reason, note, email,
   return { ok: true, report: record };
 }
 
+function reportExpired(report, now = new Date()) {
+  const expiry = Date.parse(report?.expiresAt || "");
+  if (Number.isFinite(expiry)) return expiry <= now.getTime();
+  const last = Date.parse(report?.lastReportedAt || report?.firstReportedAt || "");
+  return Number.isFinite(last) && last + REPORT_TTL_DAYS * 86400000 <= now.getTime();
+}
+
+// Daily minimization for both new and legacy reports. Old rows may contain an
+// account email because earlier clients attached it without asking; scrub that
+// field immediately and remove reports after the operational review window.
+async function pruneReports(now = new Date()) {
+  const redis = await getRedis();
+  if (!redis) return { removed: 0, scrubbed: 0, stored: false };
+  const raw = (await redis.hgetall(REPORTS_KEY)) || {};
+  const remove = [];
+  const updates = {};
+  let scrubbed = 0;
+
+  for (const [id, value] of Object.entries(raw)) {
+    let report = value;
+    if (typeof report === "string") { try { report = JSON.parse(report); } catch { report = null; } }
+    if (!report || reportExpired(report, now)) {
+      remove.push(id);
+      continue;
+    }
+    if (report.lastReporterEmail || !report.expiresAt) {
+      const reportedAt = Date.parse(report.lastReportedAt || report.firstReportedAt || "");
+      const retentionStart = Number.isFinite(reportedAt) ? reportedAt : now.getTime();
+      updates[id] = JSON.stringify({
+        ...report,
+        lastReporterEmail: null,
+        expiresAt: report.expiresAt || new Date(retentionStart + REPORT_TTL_DAYS * 86400000).toISOString(),
+      });
+      scrubbed += 1;
+    }
+  }
+
+  if (remove.length) await redis.hdel(REPORTS_KEY, ...remove);
+  if (Object.keys(updates).length) await redis.hset(REPORTS_KEY, updates);
+  return { removed: remove.length, scrubbed, stored: true };
+}
+
 async function listReports() {
   try {
     const redis = await getRedis();
@@ -122,10 +167,22 @@ async function listReports() {
         return v;
       })
       .filter(Boolean)
+      .filter((report) => !reportExpired(report))
       .sort((a, b) => (b.count - a.count) || String(b.lastReportedAt).localeCompare(String(a.lastReportedAt)));
   } catch {
     return [];
   }
 }
 
-module.exports = { recordReport, listReports, takeReportSlot, isValidReason, reportId, REASONS, REPORTS_KEY };
+module.exports = {
+  recordReport,
+  listReports,
+  takeReportSlot,
+  pruneReports,
+  reportExpired,
+  isValidReason,
+  reportId,
+  REASONS,
+  REPORTS_KEY,
+  REPORT_TTL_DAYS,
+};
