@@ -124,6 +124,8 @@ const SOURCES = [
   // Susquehanna (SIG) — Jibe careers site fronting iCIMS; custom scraper reads
   // its /api/jobs endpoint. See company-scrapers/susquehanna.js + jibe.js.
   { company: "Susquehanna (SIG)", short: "SIG", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "custom", handler: "susquehanna" },
+  // BlackRock runs a Radancy careers site — custom scraper via api/_shared/radancy.js.
+  { company: "BlackRock", short: "BLK", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "custom", handler: "blackrock" },
   // Private equity / credit
   { company: "Sixth Street", short: "6ST", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "sixthstreet" },
   { company: "GTCR", short: "GTCR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "gtcr" },

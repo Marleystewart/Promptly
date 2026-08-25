@@ -30,6 +30,7 @@ window.MONITORED_COMPANIES = [
   "Balyasny",
   "Benchling",
   "Betterment",
+  "BlackRock",
   "Blackstone",
   "Block",
   "Blue Origin",
@@ -230,11 +231,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 221,
-  "companies": 221,
+  "sources": 222,
+  "companies": 222,
   "byPlatform": {
     "greenhouse": 122,
-    "custom": 19,
+    "custom": 20,
     "workday": 45,
     "lever": 5,
     "ashby": 23,
@@ -242,7 +243,7 @@ window.PROMPTLY_COVERAGE = {
     "usajobs": 1
   },
   "byField": {
-    "Finance": 105,
+    "Finance": 106,
     "Technology": 60,
     "Consulting": 3,
     "Healthcare": 11,
