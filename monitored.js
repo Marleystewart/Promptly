@@ -37,6 +37,7 @@ window.MONITORED_COMPANIES = [
   "Boeing",
   "Brex",
   "Capital One",
+  "Carlyle",
   "Charles River Associates",
   "Charles Schwab",
   "Checkr",
@@ -108,6 +109,7 @@ window.MONITORED_COMPANIES = [
   "KeyBank",
   "Keystone Strategy",
   "Khan Academy",
+  "KKR",
   "Komodo Health",
   "LaunchDarkly",
   "Leidos",
@@ -231,19 +233,19 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 222,
-  "companies": 222,
+  "sources": 224,
+  "companies": 224,
   "byPlatform": {
-    "greenhouse": 122,
+    "greenhouse": 123,
     "custom": 20,
-    "workday": 45,
+    "workday": 46,
     "lever": 5,
     "ashby": 23,
     "smartrecruiters": 6,
     "usajobs": 1
   },
   "byField": {
-    "Finance": 106,
+    "Finance": 108,
     "Technology": 60,
     "Consulting": 3,
     "Healthcare": 11,

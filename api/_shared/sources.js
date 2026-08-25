@@ -128,6 +128,8 @@ const SOURCES = [
   { company: "BlackRock", short: "BLK", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "custom", handler: "blackrock" },
   // Private equity / credit
   { company: "Sixth Street", short: "6ST", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "sixthstreet" },
+  { company: "KKR", short: "KKR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "stage" },
+  { company: "Carlyle", short: "CG", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "carlyle", dc: "wd1", site: "Carlyle" },
   { company: "GTCR", short: "GTCR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "gtcr" },
   // Asset management
   { company: "Artisan Partners", short: "APAM", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "greenhouse", board: "artisanpartners" },
