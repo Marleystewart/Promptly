@@ -3095,3 +3095,18 @@ body.onboarding-active .ap-panel { display: none; }
 }
 .month-modal::backdrop { background: rgba(6,8,16,0.62); backdrop-filter: blur(3px); }
 .month-modal .close-modal { position: absolute; top: 16px; right: 18px; }
+
+/* Empty Student-Cycles window: keep the month calendar, show one quiet row. */
+.cycle-empty-row { min-height: 96px; }
+.cycle-empty-inline {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+  padding: 26px 20px;
+  max-width: 560px;
+  margin: 0 auto;
+}

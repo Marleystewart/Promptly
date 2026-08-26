@@ -1777,13 +1777,21 @@ function renderCyclesView() {
 
   // Only rows with at least one marker somewhere in the window, busiest first.
   const activeRows = Object.keys(rows).filter((label) => columns.some((column) => cellItems(rows[label], column).length));
-  if (!activeRows.length) {
-    grid.innerHTML = `<p class="empty-hint">Nothing to show in this window for these filters. Use the arrows to move to a month with observed postings, or look ahead to estimated drop windows.</p>`;
+  const ordered = activeRows.sort((a, b) => rows[b].length - rows[a].length || a.localeCompare(b));
+  const MAX_VISIBLE = 3;
+
+  // Keep the month-column calendar visible at EVERY window so paging always
+  // reads as a coherent timeline — never a blank "broken" panel. When a window
+  // has no markers, show one quiet inline row under the same columns.
+  if (!ordered.length) {
+    const anyFuture = columns.some((column) => column.future);
+    const msg = anyFuture
+      ? "No estimated drops for these months yet — projections fill in once Promptly has watched a full prior cycle."
+      : "No student postings observed in these months for these filters.";
+    grid.innerHTML = `<div class="cycle-scroll"><div class="cycle-table" role="grid" style="--cycle-cols:${columns.length}">${header}<div class="cycle-row cycle-empty-row" role="row"><div class="cycle-empty-inline">${esc(msg)}</div></div></div></div>`;
     renderCycleFootnote(undated);
     return;
   }
-  const ordered = activeRows.sort((a, b) => rows[b].length - rows[a].length || a.localeCompare(b));
-  const MAX_VISIBLE = 3;
 
   const body = ordered.map((label) => {
     const cells = columns.map((column) => {
@@ -1882,7 +1890,7 @@ function renderCycleFootnote(undated) {
   // Methodology (observed vs estimated) lives in the "How this works" box up
   // top — keep this line to a plain window summary.
   unknown.textContent = undated
-    ? `${undated} more live role${undated === 1 ? " was" : "s were"} first seen outside this window.`
+    ? `${undated} live role${undated === 1 ? " was" : "s were"} first observed in other months — use the arrows to page to them. Double-click any month to see every company.`
     : "Double-click a month to see every company that month.";
 }
 
