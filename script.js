@@ -1568,6 +1568,22 @@ function clampCycleOffset(value) {
   return Math.max(CYCLE_OFFSET_MIN, Math.min(CYCLE_OFFSET_MAX, value));
 }
 
+// Where a nav arrow should land. The single arrows (±6) page the window by six
+// months. The DOUBLE arrows (±12) are a full-year jump that lands on the first
+// six months (Jan–Jun) of the next/previous year, so "»" from 2026 lands on
+// Jan–Jun 2027 rather than a rolling Mar–Aug 2027.
+function cycleNavTarget(step, now = new Date()) {
+  if (Math.abs(step) === 12) {
+    const firstColumnYear = timelineColumns(now)[0].year;
+    const targetYear = firstColumnYear + (step > 0 ? 1 : -1);
+    const nowIndex = now.getUTCFullYear() * 12 + now.getUTCMonth();
+    // Window END = now-month + offset; we want the window to END on June of the
+    // target year so its first column is January.
+    return clampCycleOffset((targetYear * 12 + 5) - nowIndex);
+  }
+  return clampCycleOffset(cycleWindowOffset + step);
+}
+
 // The columns to draw, oldest first, as {year, month, label, future}.
 function timelineColumns(now = new Date()) {
   const columns = [];
@@ -1880,8 +1896,7 @@ function updateCycleWindowLabel(columns) {
     label.textContent = a.year === b.year ? `${b.year}` : `${a.year}–${String(b.year).slice(2)}`;
   }
   document.querySelectorAll("[data-cycle-nav]").forEach((btn) => {
-    const step = Number(btn.dataset.cycleNav);
-    btn.disabled = clampCycleOffset(cycleWindowOffset + step) === cycleWindowOffset;
+    btn.disabled = cycleNavTarget(Number(btn.dataset.cycleNav)) === cycleWindowOffset;
   });
 }
 
@@ -3566,7 +3581,7 @@ document.querySelector("[data-cycle-reset]")?.addEventListener("click", () => {
 // Timeline window navigation: ‹ › shift six months, « » shift a year.
 document.querySelectorAll("[data-cycle-nav]").forEach((btn) => {
   btn.addEventListener("click", () => {
-    cycleWindowOffset = clampCycleOffset(cycleWindowOffset + Number(btn.dataset.cycleNav));
+    cycleWindowOffset = cycleNavTarget(Number(btn.dataset.cycleNav));
     renderCyclesView();
   });
 });
