@@ -539,6 +539,22 @@ const openings = [
     sourceLabel: "Millennium – Investment Internship 2027",
     sourceUrl: null,
   },
+  // ── Browse-only finance firms (no machine-readable feed exists) ───────────
+  // These employers publish no ATS feed we can read, so we show one card per
+  // firm that links to their OWN official careers search — never a claimed req.
+  // Paired with a URL in browseCareers below; the browse loop relabels them
+  // honestly ("browse their careers search", not a specific opening).
+  { company: "Fidelity Investments", short: "FID", logoClass: "fin", field: "Finance", subField: "Asset Management", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Fidelity Careers", sourceUrl: null },
+  { company: "Evercore", short: "EVR", logoClass: "fin", field: "Finance", subField: "Investment Banking", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Evercore Careers", sourceUrl: null },
+  { company: "Centerview Partners", short: "CVP", logoClass: "fin", field: "Finance", subField: "Investment Banking", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Centerview Careers", sourceUrl: null },
+  { company: "Perella Weinberg", short: "PWP", logoClass: "fin", field: "Finance", subField: "Investment Banking", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Perella Weinberg Careers", sourceUrl: null },
+  { company: "Bridgewater Associates", short: "BW", logoClass: "fin", field: "Finance", subField: "Hedge Fund", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Bridgewater Careers", sourceUrl: null },
+  { company: "Coatue Management", short: "COA", logoClass: "fin", field: "Finance", subField: "Hedge Fund", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Coatue Careers", sourceUrl: null },
+  { company: "Tiger Global", short: "TGM", logoClass: "fin", field: "Finance", subField: "Hedge Fund", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Tiger Global Careers", sourceUrl: null },
+  { company: "Warburg Pincus", short: "WP", logoClass: "fin", field: "Finance", subField: "Private Equity", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Warburg Pincus Careers", sourceUrl: null },
+  { company: "Silver Lake", short: "SLK", logoClass: "fin", field: "Finance", subField: "Private Equity", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Silver Lake Careers", sourceUrl: null },
+  { company: "Thoma Bravo", short: "TB", logoClass: "fin", field: "Finance", subField: "Private Equity", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Thoma Bravo Careers", sourceUrl: null },
+  { company: "PayPal", short: "PYPL", logoClass: "fin", field: "Finance", subField: "Fintech", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "PayPal Careers", sourceUrl: null },
 ];
 
 // These postings were confirmed closed or redirected away from the role on
@@ -583,7 +599,6 @@ const browseCareers = {
   // ZERO results once a city filter is applied, which is worse than no filter.
   "Amazon": "https://www.amazon.jobs/en/search?base_query=intern",
   // Student & graduate category, rather than the corporate careers homepage.
-  "BlackRock": "https://careers.blackrock.com/category/students-and-graduates-jobs/45831/9022304/1",
   "Bain & Company": "https://www.bain.com/careers/",
   // Real job search, intern filter + US only. The country value must be the
   // full name — `countries=US` is silently ignored and returns Geneva, Paris
@@ -598,8 +613,23 @@ const browseCareers = {
   "AQR Capital Management": "https://careers.aqr.com/jobs/category/university-jobs",
   // Stable official program landing pages (not job-ID deep links) — kept as
   // the destination but relabeled honestly (program overviews, not one req).
+  // Goldman and J.P. Morgan both have live scrapers now, so isMonitored()
+  // short-circuits their browse cards and these URLs are effectively unused —
+  // keeping the searchable board links rather than the single-programme pages.
   "Goldman Sachs": "https://higher.gs.com/campus?EXPERIENCE_LEVEL=Summer%20Analyst",
   "J.P. Morgan": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/requisitions?keyword=2027%20Summer%20Analyst",
+  // Big finance firms with no machine-readable feed — link to their own search.
+  "Fidelity Investments": "https://jobs.fidelity.com/en/jobs/?keywords=intern",
+  "Evercore": "https://www.evercore.com/careers/students-graduates/",
+  "Centerview Partners": "https://www.centerview.com/careers/",
+  "Perella Weinberg": "https://pwpartners.com/careers/",
+  "Bridgewater Associates": "https://www.bridgewater.com/working-at-bridgewater",
+  "Coatue Management": "https://www.coatue.com/careers",
+  "Tiger Global": "https://www.tigerglobal.com/careers",
+  "Warburg Pincus": "https://warburgpincus.com/careers/",
+  "Silver Lake": "https://www.silverlake.com/careers/",
+  "Thoma Bravo": "https://www.thomabravo.com/careers",
+  "PayPal": "https://careers.pypl.com/home/",
 };
 // Normalize a company name so spelling variants collapse to one key —
 // "J.P. Morgan" / "JPMorgan", "Moelis & Company" / "Moelis",

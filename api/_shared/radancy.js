@@ -19,7 +19,11 @@
 // The href may carry a locale prefix (/en/job/…, Sanofi) and there may be a
 // job-type span/comment between the anchor and the <h2> (Sony), so both gaps are
 // tolerated rather than assuming <a><h2> are adjacent (Disney's shape).
-const ROW = /href="((?:\/[a-z]{2})?\/job\/[^"]+)"[^>]*>[\s\S]{0,300}?<h2>([^<]+)<\/h2>[\s\S]{0,900}?class="job-location"[^>]*>([\s\S]*?)<\/span>/gi;
+// Trey's branch found employers (BlackRock, MassMutual) whose markup puts
+// attributes on the <h2> and extra classes on job-location, so both are
+// tolerated. Strictly broader than the old pattern — it still matches every
+// shape that worked before.
+const ROW = /href="((?:\/[a-z]{2})?\/job\/[^"]+)"[^>]*>[\s\S]{0,300}?<h2[^>]*>([^<]+)<\/h2>[\s\S]{0,900}?class="job-location[^"]*"[^>]*>([\s\S]*?)<\/span>/gi;
 
 const { usOnly } = require("./us-location");
 
