@@ -207,10 +207,31 @@ async function deleteSubscriber(email) {
   const redis = await getRedis();
   const normalizedEmail = String(email || "").trim().toLowerCase();
   if (!redis || !normalizedEmail) return { removed: false };
-  await Promise.all([
-    redis.del(`promptly:subscriber:${normalizedEmail}`),
+
+  // Deletion must remove ALL of this person's PII, not just the main record —
+  // otherwise the email lingers in queued digests, token maps, and every
+  // watched-source's watchers[] list. Read the record first so we can follow
+  // its references, then delete everything that keys off this address.
+  const key = `promptly:subscriber:${normalizedEmail}`;
+  const record = (await redis.get(key)) || {};
+
+  const jobs = [
+    redis.del(key),
     redis.srem("promptly:subscribers", normalizedEmail),
-  ]);
+    redis.del(`promptly:digest:${normalizedEmail}`),
+    redis.del(`promptly:verify-sent:${normalizedEmail}`),
+  ];
+  if (record.unsubToken) jobs.push(redis.del(`promptly:unsub:${record.unsubToken}`));
+  await Promise.all(jobs);
+
+  // Detach the email from every source it was watching so it leaves watchers[].
+  try {
+    const { removeWatcher } = require("./watched-store");
+    for (const watch of Array.isArray(record.watches) ? record.watches : []) {
+      if (watch && watch.id) await removeWatcher(watch.id, normalizedEmail);
+    }
+  } catch {}
+
   return { removed: true };
 }
 
