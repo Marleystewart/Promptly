@@ -11,6 +11,7 @@ const index = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const policy = fs.readFileSync(path.join(root, "privacy.html"), "utf8");
 const reports = fs.readFileSync(path.join(root, "api", "_shared", "reports.js"), "utf8");
 const testPush = fs.readFileSync(path.join(root, "api", "send-test.js"), "utf8");
+const authBoundary = fs.readFileSync(path.join(root, "api", "_shared", "auth-user.js"), "utf8");
 
 // Analytics has no stable browser identifier and application progress remains
 // device-only rather than becoming an exact-school/company event.
@@ -34,6 +35,10 @@ assert.match(signOutBlock, /clearPromptlyClientState\(localStorage, sessionStora
 // Account ownership comes from the verified session, never a JSON email.
 assert.equal(emailBelongsToUser("student@example.edu", "STUDENT@example.edu"), true);
 assert.equal(emailBelongsToUser("attacker@example.edu", "student@example.edu"), false);
+assert.match(authBoundary, /Boolean\(user\?\.email_confirmed_at\)/,
+  "server ownership checks must require Supabase's confirmed-email timestamp");
+assert.match(authBoundary, /settings\?\.mailer_autoconfirm\s*!==\s*false/,
+  "server ownership checks must fail closed if Supabase email confirmation is disabled");
 
 // Listing reports do not silently repurpose the account email.
 assert.match(reports, /lastReporterEmail:\s*null/);

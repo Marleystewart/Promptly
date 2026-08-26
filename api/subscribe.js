@@ -70,7 +70,10 @@ async function deleteAccount(req, res) {
     });
   }
 
-  const auth = await authenticateUser(req);
+  // Deletion must remain available even if the project's email-confirmation
+  // policy is temporarily unsafe or unavailable. A valid session is enough to
+  // delete that session's own account; it is not enough for send/edit routes.
+  const auth = await authenticateUser(req, { requireConfirmedEmail: false });
   if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
   // Erase Promptly's alert-side records first. If Supabase deletion fails the
@@ -156,7 +159,8 @@ async function handler(req, res) {
         return res.status(400).json({ error: "Add your email first so we know where to send the alert." });
       }
 
-      // Signed-in Supabase sessions already prove control of their email.
+      // authenticateUser requires Supabase's confirmed-email timestamp, so a
+      // session cannot mark an unconfirmed address as verified here.
       if (body.action === "resend-verification") {
         const record = await getSubscriber(email);
         if (record) await markVerified(email);
@@ -199,8 +203,9 @@ async function handler(req, res) {
     }
 
     const result = await saveSubscriber(profile, body.subscription || null);
-    // A valid Supabase session already proves control of this account's email,
-    // so do not send a second verification message through another provider.
+    // A confirmed Supabase user already proves control of this account's
+    // email, so do not send a second verification message through another
+    // provider.
     if (result.saved) await markVerified(auth.email);
     const verified = Boolean(result.saved);
 

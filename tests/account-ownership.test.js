@@ -23,10 +23,19 @@ function response() {
     process.env.SUPABASE_URL = "https://project.supabase.co";
     process.env.SUPABASE_PUBLISHABLE_KEY = "publishable-key";
     global.fetch = async (url) => {
+      if (url.endsWith("/auth/v1/settings")) {
+        return { ok: true, async json() { return { mailer_autoconfirm: false }; } };
+      }
       assert.equal(url, "https://project.supabase.co/auth/v1/user");
       return {
         ok: true,
-        async json() { return { id: "owner-id", email: "owner@example.edu" }; },
+        async json() {
+          return {
+            id: "owner-id",
+            email: "owner@example.edu",
+            email_confirmed_at: "2026-08-24T00:00:00Z",
+          };
+        },
       };
     };
 

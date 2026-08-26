@@ -5,6 +5,24 @@
 **Code baseline:** `main` at `00c6b90`, audited and remediated on `cam/privacy-prelaunch-audit`
 
 **Production sampled:** `https://promptly-ctm.vercel.app/` on 24 August 2026
+
+**Post-merge production recheck:** PR #16 was merged and the live assets now contain
+the narrow server alert payload, identifier-free analytics, API cache bypass, and
+updated privacy notice; the client no longer posts application stage or school.
+The initial production-gap findings below are retained for
+audit history and marked resolved where appropriate.
+
+**Post-audit email-confirmation check:** Supabase's public production settings
+returned `mailer_autoconfirm=false`, so email confirmation is currently required.
+Because disabling confirmation implicitly sets a user's confirmation timestamp,
+protected APIs now verify both the live `mailer_autoconfirm=false` policy and the
+Supabase user record's `email_confirmed_at` timestamp. A policy change or unreadable
+settings response fails closed for send/edit actions; authenticated account deletion
+remains available. Confirmation-message delivery remains **UNKNOWN**
+until tested with an inbox; the setting alone proves configuration, not delivery.
+[Supabase documents](https://supabase.com/docs/guides/auth/users) the confirmation
+timestamp and explains that unverified email users cannot sign in by default.
+
 **Scope:** public web app, onboarding, account/profile sync, browser storage, analytics, listings and reports, email, push, admin/cron functions, privacy/terms copy, service worker, runtime dependencies, and public production responses.
 
 This is a technical privacy assessment, not a legal opinion or certification. Legal applicability depends on Promptly's entity, users, markets, contracts, revenue, processing scale, and actual operating practices. Where the repository or public responses cannot prove a fact, the answer is **UNKNOWN** rather than assumed.
@@ -22,25 +40,25 @@ The pre-audit implementation nevertheless had four material trust failures:
 
 Those issues are fixed and regression-tested on the audit branch. The branch also removes the persistent analytics session identifier, stops attaching account email to listing reports, installs report retention, scrubs legacy unnecessary contact/outcome data, clears local data on sign-out, binds test push to the owner's saved subscription, improves deletion ordering, adds just-in-time notice, and rewrites the privacy notice to match the product.
 
-**Launch conclusion:** the remediated branch is technically suitable for a controlled beta only after it is merged, deployed, and verified in production. The currently sampled live deployment still contains the old progress upload, persistent analytics identifier, broad profile transmission, and service-worker API caching. Production is therefore **not privacy-ready yet**.
+**Launch conclusion:** the core remediations have now been merged and observed in the live production assets. A controlled beta still requires the remaining production checks in section 14, especially real-inbox verification for Supabase confirmation and Resend delivery, retention-cleanup evidence, vendor/access review, and founder/legal decisions. The email-confirmation policy guard described above is a post-merge follow-up and is not live until its separate PR is merged.
 
 ## 2. Critical findings
 
 | ID | Finding | Pre-fix impact | Branch status | Production status |
 |---|---|---|---|---|
-| P-01 | Account-linked APIs trusted caller-supplied email | Unauthorized modification of another student's alert profile, watches, and email actions | **Fixed:** bearer token is verified with Supabase; email is derived from the verified user | **OPEN until deployment** |
-| P-02 | Service worker cached every same-origin GET, including admin/API responses | Account or founder data could persist in Cache Storage and be served later without respecting `Authorization` | **Fixed:** `/api` is never intercepted or written to Cache Storage; `no-store` is respected | **OPEN until deployment** |
+| P-01 | Account-linked APIs trusted caller-supplied email | Unauthorized modification of another student's alert profile, watches, and email actions | **Fixed:** bearer token is verified with Supabase; email is derived from the verified user | **DEPLOYED; confirmation-toggle guard pending follow-up PR** |
+| P-02 | Service worker cached every same-origin GET, including admin/API responses | Account or founder data could persist in Cache Storage and be served later without respecting `Authorization` | **Fixed:** `/api` is never intercepted or written to Cache Storage; `no-store` is respected | **DEPLOYED** |
 
 ## 3. High findings
 
 | ID | Finding | Status / required action |
 |---|---|---|
-| P-03 | Full profile was sent by test email/recap flows, including résumé and photo | **Fixed on branch** with an explicit server payload allowlist. Deploy and verify network payloads. |
-| P-04 | Progress uploaded exact school + company + application stage | **Fixed on branch.** New writes are refused, progress is device-only, and the daily retention job deletes legacy school outcome keys. Confirm that cleanup runs after deployment. |
-| P-05 | Signing out left résumé, photo, profile, saved jobs, and progress in the browser | **Fixed on branch:** sign-out clears all origin local/session storage. Test on a shared-device scenario after deployment. |
-| P-06 | Listing reports silently reused the signed-in account email | **Fixed on branch:** report payload and stored record contain no reporter email; legacy emails are scrubbed. |
+| P-03 | Full profile was sent by test email/recap flows, including résumé and photo | **Fixed and deployed** with an explicit server payload allowlist. Verify a real signed-in network payload manually. |
+| P-04 | Progress uploaded exact school + company + application stage | **Fixed and deployed.** New writes are refused, progress is device-only, and the daily retention job deletes legacy school outcome keys. Confirm cleanup metrics. |
+| P-05 | Signing out left résumé, photo, profile, saved jobs, and progress in the browser | **Fixed and deployed:** sign-out clears all origin local/session storage. Test on a shared-device scenario. |
+| P-06 | Listing reports silently reused the signed-in account email | **Fixed and deployed:** report payload and stored record contain no reporter email; legacy emails are scrubbed. |
 | P-07 | Active account and verified alert data have no inactivity limit | **Open founder/legal decision.** Adopt a period (proposed starting point: 24 months after last meaningful account use, with warning and extension) or document why account-lifetime retention is necessary. |
-| P-08 | Production does not yet contain the remediations | **Launch blocker.** Merge, deploy, and complete the production checklist in section 14. |
+| P-08 | Production did not contain the remediations at initial sampling | **Resolved:** PR #16 merged and the core assets were observed live. Complete the remaining production checklist in section 14. |
 
 ## 4. Medium findings
 
@@ -318,7 +336,7 @@ School, graduation year, and major are mandatory for the current personalized st
 
 ## 14. Must fix before launch
 
-1. Merge and deploy this branch. The public site sampled on 24 August 2026 still contains the old privacy failures.
+1. **Completed:** PR #16 was merged and the core remediation assets were observed on production. Merge/deploy the separate email-confirmation-policy guard from the post-audit follow-up.
 2. After deployment, use a clean browser/network capture to verify:
    - test email/recap payload contains no résumé/photo;
    - progress changes produce no request;
@@ -349,7 +367,7 @@ School, graduation year, and major are mandatory for the current personalized st
 
 | Files | Change | Reason / privacy benefit | Compatibility risk |
 |---|---|---|---|
-| `api/_shared/auth-user.js`, account/email/push API handlers, `script.js` | Verify Supabase bearer token; derive owner email; attach authenticated headers | Stops cross-account access and unsolicited sends | Local-only/auth-disabled mode cannot use server account features, which is the safe fallback |
+| `api/_shared/auth-user.js`, account/email/push API handlers, `script.js` | Verify Supabase bearer token and confirmed-email timestamp; derive owner email; attach authenticated headers | Stops cross-account access, unsolicited sends, and dashboard auto-confirm from silently bypassing email ownership | Local-only/auth-disabled or unconfirmed accounts cannot use server account features, which is the safe fallback |
 | `script.js` | Server payload allowlist | Résumé/photo/device state never enter API request | New server profile fields must be deliberately added |
 | `script.js`, `api/stats.js`, `api/_shared/analytics.js` | Remove progress upload and persistent analytics session ID; refuse old outcome payloads | Removes exact-school re-identification risk and persistent tracking | “Active users” becomes less precise “app opens” |
 | `api/retention.js`, analytics/report/coverage stores | Delete legacy school outcome keys; scrub legacy unnecessary emails; expire reports | Enforces minimization and storage limitation | Daily cleanup must run successfully |
