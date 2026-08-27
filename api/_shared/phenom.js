@@ -50,7 +50,10 @@ async function fetchPhenomListings(origin, terms) {
         const applyUrl = String(job.applyUrl || job.imApplyUrl || "").trim();
         const location = String(job.cityStateCountry || job.cityState || job.location || "")
           .replace(/\s+/g, " ").trim();
-        if (title && /^https:\/\//i.test(applyUrl)) seen.set(applyUrl, { title, url: applyUrl, location });
+        // Phenom exposes the employer's real post date — carry it so roles land
+        // in the month they actually dropped, not when Promptly first saw them.
+        const postedAt = job.postedDate || job.dateCreated || null;
+        if (title && /^https:\/\//i.test(applyUrl)) seen.set(applyUrl, { title, url: applyUrl, location, postedAt });
       }
       const total = Number(search?.totalHits) || jobs.length;
       if (!jobs.length || from + jobs.length >= total) break;
