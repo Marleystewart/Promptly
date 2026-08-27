@@ -57,6 +57,10 @@ async function fetchListings() {
           title,
           url,
           location: String(job.PrimaryLocation || "").replace(/\s+/g, " ").trim(),
+          // Oracle's own posted date — this is what puts a role in the month it
+          // actually dropped (e.g. IB sophomore programs landing in January),
+          // rather than the month Promptly first happened to see it.
+          postedAt: job.PostedDate || null,
         });
       }
 
