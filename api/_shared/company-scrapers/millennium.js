@@ -25,6 +25,8 @@ async function fetchListings() {
         title: job.name,
         url: job.canonicalPositionUrl || `https://mlp.eightfold.ai/careers/job/${job.id}`,
         location: job.location || "",
+        // Eightfold's t_create is the real posting timestamp (epoch seconds).
+        postedAt: job.t_create ? new Date(job.t_create * 1000).toISOString() : null,
       });
     }
 

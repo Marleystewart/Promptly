@@ -417,7 +417,7 @@ async function fetchCustom(src) {
     // studentBoard must be threaded through here too — a custom scraper can
     // point at a students-only careers page just as a Workday site can.
     const cycle = detectCycle(j.title, j.location, true, Boolean(src.studentBoard));
-    if (cycle) out.push(normalize(src, j.title, j.url, j.location, cycle));
+    if (cycle) out.push(normalize(src, j.title, j.url, j.location, cycle, j.workplaceType || null, j.postedAt || null));
   }
   return out;
 }
