@@ -1658,9 +1658,17 @@ function timelineColumns(now = new Date()) {
 // Year AND month. Returning just the month meant a posting first seen in
 // August 2025 landed in the August 2026 column — wrong, and increasingly wrong
 // the longer the pipeline runs.
+// Prefer the employer's OWN posting date (postedAt, from the ATS) over
+// firstSeen. This screen's whole claim is "when employers actually posted" —
+// the real post date is that, and it back-fills months from before Promptly
+// started watching. firstSeen is the honest fallback when the ATS gives no date.
+function cycleDateOf(item) {
+  return item.postedAt || item.firstSeen || null;
+}
 function observedPoint(item) {
-  if (!item.firstSeen) return null;
-  const time = Date.parse(item.firstSeen);
+  const raw = cycleDateOf(item);
+  if (!raw) return null;
+  const time = Date.parse(raw);
   if (!Number.isFinite(time)) return null;
   const date = new Date(time);
   return { year: date.getUTCFullYear(), month: date.getUTCMonth() };
@@ -1718,7 +1726,7 @@ function timelineRowKey(item) {
 // cards that were never actually observed going live.
 function timelinePool() {
   return openings.filter((item) => {
-    if (!item.firstSeen) return false;             // only things actually observed
+    if (!cycleDateOf(item)) return false;          // only things with a real date
     const status = listingStatus(item);
     return status !== "AWAITING" && status !== "BROWSE"; // keep OPEN, CLOSED, UPCOMING
   });
@@ -1830,13 +1838,21 @@ function renderCyclesView() {
 
   // Only rows with at least one marker somewhere in the window, busiest first.
   const activeRows = Object.keys(rows).filter((label) => columns.some((column) => cellItems(rows[label], column).length));
-  if (!activeRows.length) {
-    grid.innerHTML = `<p class="empty-hint">Nothing to show in this window for these filters. Use the arrows to move to a month with observed postings, or look ahead to estimated drop windows.</p>`;
+  const ordered = activeRows.sort((a, b) => rows[b].length - rows[a].length || a.localeCompare(b));
+  const MAX_VISIBLE = 3;
+
+  // Keep the month-column calendar visible at EVERY window so paging always
+  // reads as a coherent timeline — never a blank "broken" panel. When a window
+  // has no markers, show one quiet inline row under the same columns.
+  if (!ordered.length) {
+    const anyFuture = columns.some((column) => column.future);
+    const msg = anyFuture
+      ? "No estimated drops for these months yet — projections fill in once Promptly has watched a full prior cycle."
+      : "No student postings observed in these months for these filters.";
+    grid.innerHTML = `<div class="cycle-scroll"><div class="cycle-table" role="grid" style="--cycle-cols:${columns.length}">${header}<div class="cycle-row cycle-empty-row" role="row"><div class="cycle-empty-inline">${esc(msg)}</div></div></div></div>`;
     renderCycleFootnote(undated);
     return;
   }
-  const ordered = activeRows.sort((a, b) => rows[b].length - rows[a].length || a.localeCompare(b));
-  const MAX_VISIBLE = 3;
 
   const body = ordered.map((label) => {
     const cells = columns.map((column) => {
@@ -1938,7 +1954,10 @@ function renderCycleFootnote(undated) {
   // Methodology (observed vs estimated) lives in the "How this works" box up
   // top — keep this line to a plain window summary.
   unknown.textContent = undated
-    ? `${undated} more live role${undated === 1 ? " was" : "s were"} first seen outside this window.`
+    // Don't promise the arrows reach these. Navigation is forward-only, and
+    // postedAt now back-fills real employer dates from before Promptly started
+    // watching, so some of this count sits in months the timeline never pages to.
+    ? `${undated} live role${undated === 1 ? " sits" : "s sit"} outside these months. Double-click any month to see every company in it.`
     : "Double-click a month to see every company that month.";
 }
 
@@ -3876,7 +3895,7 @@ function openMonthDetails(year, month) {
         const fn = roleFunction(item.role);
         // Past/current: show the real opening date (when Promptly saw it go
         // live) and the closing date the employer published. Future: estimate.
-        const openedOn = item.firstSeen ? fmtCycleDate(item.firstSeen) : `${MONTH_LABELS[month]} ${year}`;
+        const openedOn = cycleDateOf(item) ? fmtCycleDate(cycleDateOf(item)) : `${MONTH_LABELS[month]} ${year}`;
         const closesOn = item.deadline && item.deadline !== "See posting" ? esc(item.deadline) : "see posting";
         const dates = future
           ? "Estimated drop — not open yet"

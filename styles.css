@@ -3276,3 +3276,18 @@ body.onboarding-active .ap-panel { display: none; }
   .filter-chip { min-height: 34px; padding: 0 13px; font-size: 13px; }
   .section-head h2, .view h2 { font-size: 18px; }
 }
+
+/* Empty Student-Cycles window: keep the month calendar, show one quiet row. */
+.cycle-empty-row { min-height: 96px; }
+.cycle-empty-inline {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+  padding: 26px 20px;
+  max-width: 560px;
+  margin: 0 auto;
+}

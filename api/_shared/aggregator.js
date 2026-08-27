@@ -199,7 +199,7 @@ async function fetchGreenhouse(src) {
   for (const j of jobs) {
     const loc = (j.location || {}).name;
     const cycle = detectCycle(j.title, loc);
-    if (cycle) out.push(normalize(src, j.title, j.absolute_url, loc, cycle));
+    if (cycle) out.push(normalize(src, j.title, j.absolute_url, loc, cycle, null, j.first_published || j.updated_at));
   }
   return out;
 }
@@ -261,7 +261,7 @@ async function fetchLever(src) {
   for (const j of jobs) {
     const loc = (j.categories || {}).location;
     const cycle = detectCycle(j.text, loc);
-    if (cycle) out.push(normalize(src, j.text, j.hostedUrl, loc, cycle));
+    if (cycle) out.push(normalize(src, j.text, j.hostedUrl, loc, cycle, null, j.createdAt));
   }
   return out;
 }
@@ -275,7 +275,7 @@ async function fetchAshby(src) {
   for (const j of jobs) {
     if (j.isListed === false) continue;
     const cycle = detectCycle(j.title, j.location);
-    if (cycle) out.push(normalize(src, j.title, j.jobUrl, j.location, cycle, j.workplaceType || null));
+    if (cycle) out.push(normalize(src, j.title, j.jobUrl, j.location, cycle, j.workplaceType || null, j.publishedAt));
   }
   return out;
 }
@@ -299,7 +299,7 @@ async function fetchSmartRecruiters(src) {
         || [p.location?.city, p.location?.region].filter(Boolean).join(", ");
       const cycle = detectCycle(p.name, location);
       if (!cycle) continue;
-      out.push(normalize(src, p.name, `https://jobs.smartrecruiters.com/${src.board}/${p.id}`, location, cycle));
+      out.push(normalize(src, p.name, `https://jobs.smartrecruiters.com/${src.board}/${p.id}`, location, cycle, null, p.releasedDate));
     }
     if (postings.length < 100) break;
   }
@@ -494,7 +494,20 @@ function authorityScore(item) {
 // / "OnSite") — not a guess, and more reliable than regexing the word
 // "remote" out of a location string, which is the fallback every other ATS
 // forces us to use because none of them expose it structurally.
-function normalize(src, title, url, location, cycle = "Summer 2027", workplaceType = null) {
+// Coerce an ATS-supplied posting date (ISO string or epoch ms) into an ISO
+// string, or null if it's missing / unparseable. This is the employer's OWN
+// stated post date — distinct from firstSeen (when Promptly first observed it).
+function toPostedIso(raw) {
+  if (raw == null) return null;
+  const t = typeof raw === "number" ? raw : Date.parse(raw);
+  if (!Number.isFinite(t)) return null;
+  // Guard against absurd values (epoch 0, far future) that would skew the timeline.
+  const year = new Date(t).getUTCFullYear();
+  if (year < 2015 || year > new Date().getUTCFullYear() + 1) return null;
+  return new Date(t).toISOString();
+}
+
+function normalize(src, title, url, location, cycle = "Summer 2027", workplaceType = null, postedAt = null) {
   const slug = src.board || src.tenant;
   const displayLocation = preferUsLocations(location);
   const remote = workplaceType ? workplaceType === "Remote" : /remote/i.test(String(location || ""));
@@ -515,6 +528,7 @@ function normalize(src, title, url, location, cycle = "Summer 2027", workplaceTy
     workplaceType: workplaceType || null,
     sourceLabel: `${src.company} – verified live posting`,
     sourceUrl: url,
+    postedAt: toPostedIso(postedAt),
     live: true,
   };
 }
