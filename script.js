@@ -1605,9 +1605,17 @@ function timelineColumns(now = new Date()) {
 // Year AND month. Returning just the month meant a posting first seen in
 // August 2025 landed in the August 2026 column — wrong, and increasingly wrong
 // the longer the pipeline runs.
+// Prefer the employer's OWN posting date (postedAt, from the ATS) over
+// firstSeen. This screen's whole claim is "when employers actually posted" —
+// the real post date is that, and it back-fills months from before Promptly
+// started watching. firstSeen is the honest fallback when the ATS gives no date.
+function cycleDateOf(item) {
+  return item.postedAt || item.firstSeen || null;
+}
 function observedPoint(item) {
-  if (!item.firstSeen) return null;
-  const time = Date.parse(item.firstSeen);
+  const raw = cycleDateOf(item);
+  if (!raw) return null;
+  const time = Date.parse(raw);
   if (!Number.isFinite(time)) return null;
   const date = new Date(time);
   return { year: date.getUTCFullYear(), month: date.getUTCMonth() };
@@ -1665,7 +1673,7 @@ function timelineRowKey(item) {
 // cards that were never actually observed going live.
 function timelinePool() {
   return openings.filter((item) => {
-    if (!item.firstSeen) return false;             // only things actually observed
+    if (!cycleDateOf(item)) return false;          // only things with a real date
     const status = listingStatus(item);
     return status !== "AWAITING" && status !== "BROWSE"; // keep OPEN, CLOSED, UPCOMING
   });
@@ -3638,7 +3646,7 @@ function openMonthDetails(year, month) {
         const fn = roleFunction(item.role);
         // Past/current: show the real opening date (when Promptly saw it go
         // live) and the closing date the employer published. Future: estimate.
-        const openedOn = item.firstSeen ? fmtCycleDate(item.firstSeen) : `${MONTH_LABELS[month]} ${year}`;
+        const openedOn = cycleDateOf(item) ? fmtCycleDate(cycleDateOf(item)) : `${MONTH_LABELS[month]} ${year}`;
         const closesOn = item.deadline && item.deadline !== "See posting" ? esc(item.deadline) : "see posting";
         const dates = future
           ? "Estimated drop — not open yet"
