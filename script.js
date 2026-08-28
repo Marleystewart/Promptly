@@ -994,6 +994,13 @@ function listingStatus(item) {
 function isAwaitingLike(item) {
   return listingStatus(item) !== "OPEN";
 }
+
+// An unmonitored placeholder cannot become an alert until the student gives
+// Promptly a careers page to watch. Treat that as a setup state, not as an
+// application error and never imply that saving the card activates an alert.
+function needsCareersLink(item) {
+  return listingStatus(item) === "AWAITING" && !isMonitored(item);
+}
 // True only for companies whose job system we actually pull (see monitored.js,
 // generated from the source registry). We must not promise an alert for an
 // employer we cannot read — firms like McKinsey and Apple publish no machine
@@ -1009,50 +1016,51 @@ function awaitingLine(item) {
     const location = studentLocationPreference();
     // Say which it is. A search that isn't location-filtered can return roles
     // anywhere in the world, and the student should know that before clicking.
-    const preface = `${item.company} does not publish a job feed Promptly can read, so we cannot confirm a specific opening.`;
-    if (browseIsLocationFiltered(item)) return `${preface} This opens their official careers search, filtered to ${location}.`;
-    if (browseIsUsScoped(item)) return `${preface} This opens their official US careers search — add a preferred location and we'll narrow it to your city.`;
-    return `${preface} This opens their official student careers page, which we can't filter by location — roles may be outside the US.`;
+    const preface = `Official ${item.company} careers search. Promptly cannot verify individual openings on this board yet.`;
+    if (browseIsLocationFiltered(item)) return `${preface} Results are filtered to ${location}.`;
+    if (browseIsUsScoped(item)) return `${preface} Results are limited to the US; add a preferred location to narrow them to your city.`;
+    return `${preface} This page is not location-filtered, so some roles may be outside the US.`;
   }
   if (status === "UPCOMING") return `Applications open ${new Date(parseOpeningDate(item)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}. Promptly will alert you when it is live.`;
   if (status === "CLOSED") return "Applications closed. Promptly will alert you when they reopen.";
   if (isMonitored(item)) return "Awaiting the 2027 posting. Promptly is watching their job system and will alert you the moment it opens.";
-  return "This employer does not publish a job feed Promptly can read, so we cannot promise an alert. Paste their careers link and we will watch it for you.";
+  return "No verified posting yet. Add the employer's careers page to watch it manually.";
 }
 
 function openingRow(item) {
   const match = openingMatch(item);
   const listingKey = alertIdentity(item);
   const isSaved = saved.has(listingKey);
+  const manualWatch = needsCareersLink(item);
   if (isAwaitingLike(item)) {
     return `
-    <article class="opening-row awaiting" data-company="${esc(item.company)}" data-field="${esc(item.field)}" data-open-details="${esc(listingKey)}" tabindex="0" role="button" aria-label="Track ${esc(item.company)} for 2027 postings">
+    <article class="opening-row awaiting" data-company="${esc(item.company)}" data-field="${esc(item.field)}" data-open-details="${esc(listingKey)}">
       ${logoMarkup(item)}
       <div>
         <span class="status-pill">${esc(item.field)}${item.subField ? " · " + esc(item.subField) : ""}</span>${statusPill(item)}
-        <h3>${esc(item.company)}</h3>
+        <h3><button class="opening-title-button" data-open-details-button="${esc(listingKey)}" type="button">${esc(item.company)}</button></h3>
         <p>${listingStatus(item) === "BROWSE"
           ? `Internship roles · ${esc(item.program)}`
           : `${esc(item.role)} · ${esc(item.program)}`}</p>
         <small class="awaiting-line">${esc(awaitingLine(item))}</small>
-        ${isAwaitingLike(item) && !isMonitored(item) && listingStatus(item) === "AWAITING"
-          ? `<button class="tiny-action watch-this-btn" data-watch-company-name="${esc(item.company)}" type="button">Watch ${esc(item.company)}</button>`
+        ${manualWatch
+          ? `<button class="tiny-action watch-this-btn" data-watch-company-name="${esc(item.company)}" type="button">Add careers link</button>`
           : ""}
       </div>
-      <div class="row-actions">
+      ${manualWatch ? "" : `<div class="row-actions">
         <button class="round-btn save-btn ${isSaved ? "saved" : ""}" aria-label="${isSaved ? "Untrack" : "Track"} ${esc(item.company)}" data-save="${esc(listingKey)}" aria-pressed="${isSaved}">
           <svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg>
         </button>
-      </div>
+      </div>`}
     </article>
   `;
   }
   return `
-    <article class="opening-row" data-company="${esc(item.company)}" data-field="${esc(item.field)}" data-open-details="${esc(listingKey)}" tabindex="0" role="button" aria-label="View ${esc(item.role)} at ${esc(item.company)}">
+    <article class="opening-row" data-company="${esc(item.company)}" data-field="${esc(item.field)}" data-open-details="${esc(listingKey)}">
       ${logoMarkup(item)}
       <div>
         <span class="status-pill">${esc(item.field)}</span>${statusPill(item)}
-        <h3>${esc(item.company)}</h3>
+        <h3><button class="opening-title-button" data-open-details-button="${esc(listingKey)}" type="button">${esc(item.company)}</button></h3>
         <p>${esc(item.role)} · ${esc(item.program)}</p>
         <small>Closes: ${esc(item.deadline)} · ${esc(item.opened)}</small>
         ${item.location ? `<small class="location-line">Location: ${esc(item.location)}</small>` : ""}
@@ -1376,6 +1384,19 @@ function matchingLiveOpenings() {
   });
 }
 
+// "New this week" is based only on the pipeline's observed first-seen stamp.
+// Curated phrases such as "Opened recently" have no defensible date and must
+// never be promoted into this time-bounded list.
+function recentOpenings(now = Date.now()) {
+  const cutoff = now - (7 * 24 * 60 * 60 * 1000);
+  return matchingLiveOpenings()
+    .filter((item) => {
+      const firstSeen = Date.parse(item.firstSeen || "");
+      return Number.isFinite(firstSeen) && firstSeen >= cutoff && firstSeen <= now;
+    })
+    .sort((a, b) => Date.parse(b.firstSeen) - Date.parse(a.firstSeen));
+}
+
 function readSeenAlerts() {
   try {
     const value = JSON.parse(localStorage.getItem(seenAlertsStorageKey) || "[]");
@@ -1444,6 +1465,15 @@ function renderRows(list) {
   return html;
 }
 
+// The dashboard promise is "Recent Openings", so placeholders, closed roles,
+// future programs, and browse-only company pages do not belong in this short
+// list. They remain discoverable in the full Openings view.
+function renderCompactOpenings(items) {
+  const live = items.filter((item) => listingStatus(item) === "OPEN").slice(0, 5);
+  if (live.length) return live.map(openingRow).join("");
+  return `<p class="empty-hint">No verified openings match your profile right now. Promptly will add them here as employers publish.</p>`;
+}
+
 // The explanation banner for whatever the radius logic had to do. Section 3's
 // rule: never silently return jobs hundreds of miles away.
 function locationNoticeHtml() {
@@ -1454,10 +1484,9 @@ function locationNoticeHtml() {
 
 function renderOpenings(items = preferredOpenings()) {
   const notice = locationNoticeHtml();
-  const compact = items.slice(0, 5).map(openingRow).join("");
   const full = renderRows(items);
   const empty = `<p class="empty-hint">No openings match this profile yet. Widen your fields or turn on <b>Willing to relocate</b> to see more.</p>`;
-  document.querySelector(".compact-list").innerHTML = notice + (compact || empty);
+  document.querySelector(".compact-list").innerHTML = notice + renderCompactOpenings(items);
   document.querySelector(".full-list").innerHTML = notice + (full || empty);
 }
 
@@ -1473,10 +1502,19 @@ function setFeatured() {
   const status = listingStatus(item);
   const title = document.querySelector("[data-feature-title]");
   const copy = document.querySelector("[data-feature-copy]");
+  const featureStatus = document.querySelector("[data-feature-status]");
+
+  if (featureStatus) {
+    featureStatus.textContent = status === "OPEN" ? "OPEN NOW" : status === "BROWSE" ? "CAREERS SEARCH" : "WATCHING";
+    featureStatus.className = `status-pill${status === "OPEN" ? "" : ` pill-${status.toLowerCase()}`}`;
+  }
 
   if (status === "OPEN") {
-    title.textContent = `${item.company} ${item.role} just opened.`;
-    copy.textContent = `${item.field} student alert · ${item.location ? `${item.location} · ` : ""}Deadline ${item.deadline}. ${item.opened}.`;
+    title.textContent = `${item.company} ${item.role} is open.`;
+    const timing = /^(opens|applications open)/i.test(String(item.deadline || "").trim())
+      ? item.opened
+      : `Deadline ${item.deadline}`;
+    copy.textContent = `${item.field} student alert · ${item.location ? `${item.location} · ` : ""}${timing}.`;
   } else if (status === "BROWSE") {
     title.textContent = `${item.company} is on Promptly's watch list.`;
     copy.textContent = `${item.field} student alert · ${item.company} doesn't publish a feed we can read, so we link their official careers search instead of claiming a posting.`;
@@ -1504,7 +1542,7 @@ function setFeatured() {
 // screen. Desktop keeps the full heading.
 function viewHeading(view) {
   const full = view.dataset.heading || "";
-  return isMobileDevice() ? full.replace(/^Student\s+/, "") : full;
+  return isMobileDevice() || isNarrowViewport() ? full.replace(/^Student\s+/, "") : full;
 }
 
 function setView(name) {
@@ -1906,6 +1944,8 @@ function openDetails(reference, estimateWhen = "") {
   if (!item) return;
   track("opening_view");
   const match = openingMatch(item);
+  const status = listingStatus(item);
+  const manualWatch = needsCareersLink(item);
   modal.dataset.company = item.company;
   modal.dataset.listingId = alertIdentity(item);
   modalCompany.textContent = item.company;
@@ -1933,20 +1973,21 @@ function openDetails(reference, estimateWhen = "") {
     if (typeof modal.showModal === "function" && !modal.open) modal.showModal();
     return;
   }
-  modal.querySelector("[data-modal-why]").textContent = `Why this alert: ${match.reasonText === "broad profile" ? "It fits your broader student alert profile." : `Matched ${match.reasonText} from your profile.`}`;
-  modal.querySelector("[data-modal-deadline]").textContent = item.deadline;
+  modal.querySelector("[data-modal-why]").textContent = manualWatch
+    ? awaitingLine(item)
+    : `Why this alert: ${match.reasonText === "broad profile" ? "It fits your broader student alert profile." : `Matched ${match.reasonText} from your profile.`}`;
+  modal.querySelector("[data-modal-deadline]").textContent = manualWatch ? "Not posted" : item.deadline;
   const statusEl = modal.querySelector("[data-modal-status]");
   if (statusEl) {
-    const st = listingStatus(item);
-    statusEl.textContent = st;
-    statusEl.className = `status-pill${st === "OPEN" ? "" : ` pill-${st.toLowerCase()}`}`;
+    statusEl.textContent = manualWatch ? "CAREERS LINK NEEDED" : status;
+    statusEl.className = `status-pill${status === "OPEN" ? "" : ` pill-${status.toLowerCase()}`}`;
   }
   // "Opened recently" is a curated string, not something we observed — don't
   // assert it for an employer we can't actually read.
-  modal.querySelector("[data-modal-opened]").textContent = listingStatus(item) === "BROWSE"
-    ? "Not confirmed"
-    : item.opened.replace("Opened ", "");
-  modal.querySelector("[data-modal-location]").textContent = item.location || "See posting";
+  modal.querySelector("[data-modal-opened]").textContent = manualWatch
+    ? "Not live"
+    : status === "BROWSE" ? "Not confirmed" : item.opened.replace("Opened ", "");
+  modal.querySelector("[data-modal-location]").textContent = manualWatch ? "Not available" : item.location || "See posting";
   modal.querySelector("[data-modal-field]").textContent = item.field;
   // Verification freshness. lastVerified is the timestamp of the most recent
   // refresh that still found this posting in the employer's own feed — the
@@ -1954,12 +1995,15 @@ function openDetails(reference, estimateWhen = "") {
   // the data. Absent on curated/browse cards, which were never feed-verified.
   const sourceCell = modal.querySelector("[data-modal-source]");
   if (sourceCell) {
-    const base = item.sourceLabel || "Official source";
+    const base = manualWatch
+      ? "Careers link needed"
+      : status === "AWAITING" && isMonitored(item)
+        ? "Promptly-monitored job system"
+        : item.sourceLabel || "Official source";
     const checked = item.lastVerified ? relativeTime(item.lastVerified) : "";
     sourceCell.textContent = checked ? `${base} · confirmed live ${checked}` : base;
   }
   const sourceLink = modal.querySelector("[data-modal-source-link]");
-  const status = listingStatus(item);
   // Show the link when there's a real destination: an OPEN posting, or an
   // UPCOMING program whose page is already live (e.g. Goldman's 2027 program).
   // Hide only for AWAITING placeholders (no real URL) and CLOSED (dead links).
@@ -1974,7 +2018,15 @@ function openDetails(reference, estimateWhen = "") {
   sourceLink.textContent = status === "UPCOMING"
     ? "View the Program Page"
     : item.browse ? `Browse ${item.company} Careers` : "Open Official Posting";
-  modal.querySelector("[data-save-modal]").textContent = saved.has(alertIdentity(item)) ? "Unsave Alert" : "Save Alert";
+  const modalAction = modal.querySelector("[data-save-modal]");
+  modalAction.removeAttribute("data-watch-company-name");
+  if (manualWatch) {
+    modalAction.setAttribute("data-watch-company-name", item.company);
+    modalAction.textContent = "Add careers link";
+  } else {
+    const noun = status === "BROWSE" ? "Company" : "Alert";
+    modalAction.textContent = saved.has(alertIdentity(item)) ? `Unsave ${noun}` : `Save ${noun}`;
+  }
   const modalLogo = modal.querySelector(".modal-logo");
   const modalLogoUrl = companyLogoUrl(item);
   modalLogo.className = `modal-logo ${modalLogoUrl ? "logo-tile" : item.logoClass}`;
@@ -3053,6 +3105,10 @@ function isMobileDevice() {
     && window.matchMedia("(hover: none)").matches;
 }
 
+function isNarrowViewport() {
+  return typeof window.matchMedia === "function" && window.matchMedia("(max-width: 640px)").matches;
+}
+
 // The one place that decides what a "notification" is called on this device.
 function pushCopy() {
   const mobile = isMobileDevice();
@@ -3457,16 +3513,18 @@ document.addEventListener("click", async (event) => {
     event.stopPropagation();
     const company = watchThisButton.dataset.watchCompanyName || "";
     setView("alerts");
-    window.setTimeout(() => {
-      const nameInput = document.querySelector("[data-watch-company]");
-      const urlInput = document.querySelector("[data-watch-url]");
-      if (nameInput) nameInput.value = company;
-      if (urlInput) {
-        urlInput.focus();
-        urlInput.scrollIntoView({ block: "center", behavior: "smooth" });
-      }
-      setWatchStatus(`Paste ${company}'s careers link and Promptly will watch it for you.`, "");
-    }, 60);
+    // The Alerts form is static markup, so it is ready as soon as setView()
+    // returns. A delayed prefill could be dropped by mobile Safari while the
+    // tab or scroll animation was transitioning, leaving the student on an
+    // unexplained blank form.
+    const nameInput = document.querySelector("[data-watch-company]");
+    const urlInput = document.querySelector("[data-watch-url]");
+    if (nameInput) nameInput.value = company;
+    if (urlInput) {
+      urlInput.focus();
+      urlInput.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+    setWatchStatus(`Paste ${company}'s careers link and Promptly will watch it for you.`, "");
     return;
   }
 
@@ -3623,7 +3681,7 @@ document.addEventListener("click", async (event) => {
 
     const list = field === "All" ? preferredOpenings() : field === "Saved" ? [...saved.values()] : openings.filter((item) => item.field === field).sort((a, b) => (isAwaitingLike(a) ? 1 : 0) - (isAwaitingLike(b) ? 1 : 0));
     const target = inSearchPanel ? document.querySelector(".full-list") : document.querySelector(".compact-list");
-    target.innerHTML = renderRows(list);
+    target.innerHTML = inSearchPanel ? renderRows(list) : renderCompactOpenings(list);
   }
 
   const subFilterChip = event.target.closest("[data-sub-field]");
@@ -4230,7 +4288,7 @@ applyDeviceNotificationCopy();
 // mid-word ("Search Google, Goldman, I"). A cut-off example reads as a bug,
 // so phones get a short version that fits.
 (function shortenSearchPlaceholderOnPhones() {
-  if (!isMobileDevice()) return;
+  if (!isMobileDevice() && !isNarrowViewport()) return;
   document.querySelectorAll('.search-panel input[type="search"]').forEach((input) => {
     input.placeholder = "Search companies";
   });

@@ -1303,7 +1303,7 @@ body.launch-active .onboarding-brand {
 
 /* Dynamic modal status pill */
 .status-pill.pill-closed { background: rgba(107,114,128,0.22); color: #9ca3af; }
-.status-pill.pill-awaiting { background: rgba(217,119,6,0.18); color: #d97706; }
+.status-pill.pill-awaiting { background: rgba(217,119,6,0.18); color: #f0c987; }
 .status-pill.pill-upcoming { background: rgba(14,165,233,0.18); color: #38bdf8; }
 /* Not a verified live posting — an employer we can't read, linked to their
    careers search. Deliberately neutral so it never reads as "open". */
@@ -1681,8 +1681,10 @@ body.launch-active .onboarding-brand {
 .search-watch-prompt p { margin: 0 0 10px; color: var(--muted); font-size: 13.5px; line-height: 1.5; }
 .search-watch-prompt b { color: var(--ink); }
 
-/* Awaiting-posting (watch-list) cards: clearly tracked, not yet live */
-.opening-row.awaiting { opacity: 0.82; }
+/* Awaiting-posting (watch-list) cards: clearly tracked, not yet live. Keep the
+   card itself fully readable; the previous opacity made normal states look
+   disabled and pushed supporting text below accessible contrast. */
+.opening-row.awaiting { opacity: 1; }
 .opening-row.awaiting .logo { filter: grayscale(0.35); }
 /* The 999px pill radius was written for a short one-line badge. These notes
    are full sentences ("<Company> does not publish a job feed Promptly can
@@ -1692,13 +1694,33 @@ body.launch-active .onboarding-brand {
    rather than a highlighter smear. */
 .awaiting-line {
   display: block;
-  color: #d98324;
+  color: #f0c987;
   background: rgba(217,119,6,0.12);
-  border: 1px solid rgba(217,119,6,0.25);
+  border: 1px solid rgba(240,201,135,0.28);
   padding: 8px 11px;
   border-radius: 12px;
   font-weight: 600;
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.opening-title-button {
+  max-width: 100%;
+  padding: 0;
+  color: inherit;
+  background: none;
+  font: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-align: left;
+}
+
+.opening-title-button:hover,
+.opening-title-button:focus-visible {
+  color: #d8d0ff;
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .logo img {
@@ -2324,7 +2346,7 @@ input[type="checkbox"] {
   .workspace {
     min-height: 100vh;
     border-radius: 26px;
-    padding-bottom: 88px;
+    padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
   }
 
   .home-grid,
@@ -2404,7 +2426,7 @@ input[type="checkbox"] {
     position: fixed;
     left: 10px;
     right: 10px;
-    bottom: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom, 0px));
     z-index: 20;
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -2613,6 +2635,19 @@ input[type="checkbox"] {
   .opening-row {
     gap: 12px;
     padding: 13px;
+  }
+
+  /* A one-button awaiting card used to stretch its star across the full card,
+     which looked like an empty disabled control. Keep single secondary actions
+     compact; the careers-link CTA carries the primary action. */
+  .opening-row.awaiting .row-actions {
+    grid-column: 2;
+    justify-content: flex-end;
+  }
+
+  .opening-row.awaiting .row-actions .round-btn {
+    flex: 0 0 44px;
+    width: 44px;
   }
 }
 
@@ -2833,6 +2868,20 @@ input[type="checkbox"] {
 .ap-launcher svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ap-launcher.ap-open { transform: scale(0.96); opacity: 0.9; }
 
+.top-actions .ap-launcher {
+  position: static;
+  right: auto;
+  bottom: auto;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  justify-content: center;
+  padding: 0;
+  border-radius: 16px;
+  box-shadow: none;
+}
+.top-actions .ap-launcher span { display: none; }
+
 .ap-panel {
   position: fixed;
   right: 20px;
@@ -2913,9 +2962,7 @@ input[type="checkbox"] {
 .ap-note a { color: var(--purple-2, var(--purple)); }
 
 @media (max-width: 720px) {
-  .ap-launcher { right: 14px; bottom: 84px; padding: 11px 15px; }
-  .ap-launcher span { display: none; }
-  .ap-launcher { padding: 13px; }
+  .top-actions .ap-launcher { width: 42px; height: 42px; flex-basis: 42px; border-radius: 14px; }
   .ap-panel { right: 12px; left: 12px; width: auto; bottom: 150px; height: min(60vh, 480px); }
 }
 body.onboarding-active .ap-launcher,

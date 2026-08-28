@@ -292,7 +292,12 @@
         <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.</p>`);
     panel.hidden = true;
 
-    document.body.appendChild(launcher);
+    // Keep the helper available without floating over listing content. The
+    // previous fixed launcher obscured the second card on a 393px iPhone.
+    // Docking it beside Search / Alerts / Profile also gives it one stable,
+    // predictable location across every view.
+    const actionDock = document.querySelector(".top-actions");
+    (actionDock || document.body).appendChild(launcher);
     document.body.appendChild(panel);
 
     const log = panel.querySelector(".ap-log");
