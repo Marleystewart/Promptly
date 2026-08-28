@@ -409,6 +409,20 @@ async function fetchUsaJobs(src) {
 // returning [{ title, url, location }, ...]. Use ONLY when a company has no
 // feed on one of the 7 standard systems above — see
 // company-scrapers/_template.js for the full how-to before adding one.
+// Oracle Taleo career sections. Reads the serialised job list out of the
+// delivered HTML — see _shared/taleo.js for why the REST endpoint is unusable.
+// Taleo carries the employer's own posting date, so postedAt is threaded here.
+async function fetchTaleo(src) {
+  const { fetchTaleoListings } = require("./taleo");
+  const raw = await fetchTaleoListings(src.tenant, src.section || "1");
+  const out = [];
+  for (const j of raw) {
+    const cycle = detectCycle(j.title, j.location, true, Boolean(src.studentBoard));
+    if (cycle) out.push(normalize(src, j.title, j.url, j.location, cycle, null, j.postedAt || null));
+  }
+  return out;
+}
+
 async function fetchCustom(src) {
   const fetchListings = require(`./company-scrapers/${src.handler}`);
   const raw = await fetchListings(src);
@@ -541,6 +555,7 @@ const FETCHERS = {
   smartrecruiters: fetchSmartRecruiters,
   florecruit: fetchFloRecruit,
   usajobs: fetchUsaJobs,
+  taleo: fetchTaleo,
   custom: fetchCustom,
 };
 

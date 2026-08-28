@@ -84,6 +84,7 @@ window.MONITORED_COMPANIES = [
   "Estée Lauder",
   "ExodusPoint",
   "Experian",
+  "Federal Reserve Board",
   "Fifth Third Bank",
   "Figma",
   "FIS",
@@ -282,8 +283,8 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 273,
-  "companies": 273,
+  "sources": 274,
+  "companies": 274,
   "byPlatform": {
     "greenhouse": 123,
     "custom": 38,
@@ -292,7 +293,8 @@ window.PROMPTLY_COVERAGE = {
     "ashby": 23,
     "smartrecruiters": 6,
     "florecruit": 11,
-    "usajobs": 1
+    "usajobs": 1,
+    "taleo": 1
   },
   "byField": {
     "Finance": 115,
@@ -307,6 +309,6 @@ window.PROMPTLY_COVERAGE = {
     "Sports": 1,
     "Real Estate": 5,
     "Law": 12,
-    "Government": 1
+    "Government": 2
   }
 };

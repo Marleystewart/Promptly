@@ -324,6 +324,15 @@ const SOURCES = [
   // NIH…) as the company.
   { company: "U.S. Federal Government", short: "GOV", logoClass: "gov", field: "Government", subField: "Federal", ats: "usajobs", hiringPath: "student;recent-graduates" },
 
+  // The Federal Reserve is NOT on USAJOBS — the Board and the twelve Reserve
+  // Banks hire independently of the federal civil service. The Board runs
+  // Oracle Taleo; see _shared/taleo.js. Verified live: the section parses and
+  // returns real reqs with the employer's own posting dates. It carries no
+  // student roles at the time of adding (Fed internships post in the autumn
+  // for the following summer), so this contributes nothing until they open —
+  // which is the point of adding it now rather than in November.
+  { company: "Federal Reserve Board", short: "FRB", logoClass: "gov", field: "Government", subField: "Central Banking", ats: "taleo", tenant: "frbog", section: "1" },
+
   // ═══ COVERAGE EXPANSION ═══════════════════════════════════════════════════
   // Probed live before shipping. (A source returning 0 matches today is fine —
   // it activates the moment that employer posts a student role.)

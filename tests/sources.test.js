@@ -24,6 +24,10 @@ const REQUIRED_KEYS = {
   florecruit: ["board"],
   workday: ["tenant", "dc", "site"],
   usajobs: ["hiringPath"],
+  // section defaults to "1" in the fetcher, but requiring it here keeps the
+  // career section explicit — a Taleo tenant can host several, and the wrong
+  // one silently returns a different employer's reqs.
+  taleo: ["tenant", "section"],
   custom: ["handler"],
 };
 
