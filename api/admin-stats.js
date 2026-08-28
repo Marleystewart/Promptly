@@ -9,6 +9,7 @@ const { listWatchedSources, listCoverageRequests } = require("./_shared/watched-
 const { listSourceHealth } = require("./_shared/source-health");
 const { listReports } = require("./_shared/reports");
 const { readEmailHealth } = require("./_shared/email-health");
+const { readIntegrationHealth } = require("./_shared/integration-health");
 const crypto = require("crypto");
 
 function mask(email) {
@@ -132,8 +133,14 @@ module.exports = async function handler(req, res) {
     let emailHealth = null;
     try { emailHealth = await readEmailHealth(); } catch {}
 
+    // Optional adapters that silently no-op without credentials. USAJOBS is
+    // the whole of federal coverage and returns [] when unset, so surface it.
+    let integrationHealth = null;
+    try { integrationHealth = readIntegrationHealth(); } catch {}
+
     return res.status(200).json({
       emailHealth,
+      integrationHealth,
       sourceHealth,
       sourceHealthCounts,
       reports: reports.slice(0, 50),

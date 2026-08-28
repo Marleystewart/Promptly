@@ -77,8 +77,20 @@ async function load() {
         ${eh.lastFailureAt ? `<div class="muted" style="margin-top:6px">Last failure (${escapeHtml(eh.lastFailureKind || "—")}) ${escapeHtml(eh.lastFailureAt)}: ${escapeHtml(eh.lastFailureReason || "—")}</div>` : ""}
         ${eh.lastSuccessAt ? `<div class="muted" style="margin-top:6px">Last successful send (${escapeHtml(eh.lastSuccessKind || "—")}) ${escapeHtml(eh.lastSuccessAt)}</div>` : `<div class="muted" style="margin-top:6px">No successful send recorded yet.</div>`}
       </div>`;
+    // Adapters that no-op without credentials look identical to "that source
+    // had nothing today", so an unconfigured one can sit dead for weeks.
+    const ih = d.integrationHealth;
+    const integrationBanner = !ih || !(ih.unconfigured || []).length ? "" : `
+      <div style="border:1px solid #a3341f;background:#2c1512;border-radius:10px;padding:14px 16px;margin:0 0 18px">
+        <strong style="color:#f0897c">Data integration not configured: ${escapeHtml((ih.unconfigured || []).join(", "))}</strong>
+        ${(ih.integrations || []).filter(i => !i.configured).map(i => `
+          <div class="muted" style="margin-top:6px">${escapeHtml(i.name)} — covers ${escapeHtml(i.covers)}</div>
+          <div style="margin-top:4px;color:#f0897c">${escapeHtml(i.blockedReason || "")}</div>
+        `).join("")}
+      </div>`;
     $("out").innerHTML = `
       ${emailBanner}
+      ${integrationBanner}
       <div class="cards">
         <div class="card"><div class="n">${d.totalAccounts}</div><div class="l">Accounts</div></div>
         <div class="card"><div class="n">${d.withEmail}</div><div class="l">With email</div></div>
