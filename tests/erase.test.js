@@ -10,6 +10,9 @@
 
 const assert = require("node:assert/strict");
 const Module = require("module");
+// Loaded before the Module._load patch below so the interception never sees them.
+const fs = require("fs");
+const path = require("path");
 
 // Minimal in-memory Redis. Only the operations erase.js uses.
 function fakeRedis() {
@@ -105,6 +108,27 @@ redis.hashes.set("promptly:listing-reports", new Map([
   await eraseSubscriber("nobody@example.edu");
   assert.equal(JSON.stringify(await redis.hgetall("promptly:watched-sources")), before,
     "erasing an unknown address must be a no-op");
+
+  // --- There must be exactly ONE erasure implementation --------------------
+  // store.js once had its own partial deleteSubscriber() while erase.js had the
+  // complete one, and the two drifted: the partial version missed coverage
+  // requests and the contact address on listing reports. Nothing called it, so
+  // the gap was invisible. It is now a thin alias, and this keeps it that way —
+  // a second implementation is a deletion promise waiting to be broken.
+  const storeSource = fs.readFileSync(path.join(__dirname, "..", "api/_shared/store.js"), "utf8");
+  const body = storeSource.slice(
+    storeSource.indexOf("async function deleteSubscriber(email)"),
+    storeSource.indexOf("\n}\n", storeSource.indexOf("async function deleteSubscriber(email)"))
+  );
+  assert.ok(
+    body.includes("eraseSubscriber"),
+    "deleteSubscriber() must delegate to eraseSubscriber(), not reimplement erasure"
+  );
+  assert.ok(
+    !/redis\.(del|srem|hset)\(/.test(body),
+    "deleteSubscriber() is doing its own key deletion again — that is a second, " +
+    "divergent erasure path. Route it through _shared/erase.js instead."
+  );
 
   console.log("Erasure tests passed. No shadow copy survives account deletion.");
 })();

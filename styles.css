@@ -3284,3 +3284,57 @@ body.onboarding-active .ap-panel { display: none; }
 }
 .month-modal::backdrop { background: rgba(6,8,16,0.62); backdrop-filter: blur(3px); }
 .month-modal .close-modal { position: absolute; top: 16px; right: 18px; }
+
+/* ══ APP-ONLY COMPACT DENSITY ═══════════════════════════════════════════════
+   Applies ONLY when Promptly runs as the installed app (Add to Home Screen /
+   standalone display-mode). Regular browser tabs — desktop or mobile web — never
+   match this, so the webview layout is completely unchanged. Goal: a tighter,
+   more LinkedIn-like density that fits more on screen without feeling clustered.
+   ════════════════════════════════════════════════════════════════════════ */
+@media (display-mode: standalone) {
+  body { font-size: 14px; }
+
+  /* Page heading — was oversized on the app (wrapped to 3 lines) */
+  .topbar h1 { font-size: clamp(21px, 5.6vw, 26px); line-height: 1.05; margin-top: 2px; }
+  /* Card titles that ran 3 lines tall */
+  .featured-card h2, .system-status h2, .settings-card h2, .system-status p, .card-copy h2 { font-size: 18px; line-height: 1.2; }
+  /* Catch the unclassed card titles inside each view (kept off .featured-card's hero) */
+  .view h3 { font-size: 17px; line-height: 1.25; }
+  .status-pill { font-size: 10px; padding: 4px 9px; }
+  .icon-btn, .profile-chip { width: 40px; height: 40px; border-radius: 13px; }
+
+  /* Uniform, tighter cards (one calm padding + radius everywhere) */
+  .featured-card { min-height: auto; padding: 18px; border-radius: 18px; gap: 14px; }
+  .featured-card h2, .featured-card [data-feature-title] { font-size: 22px; line-height: 1.15; }
+  .system-status, .settings-card, .peer-pulse, .card-copy { padding: 16px; border-radius: 16px; }
+
+  /* Section rhythm — pull the stacked blocks closer together */
+  .home-grid, .settings-grid { gap: 12px; }
+  .cycle-summary { gap: 10px; }
+  .cycle-summary article { padding: 12px 14px; border-radius: 14px; }
+  .cycle-summary strong { font-size: 22px; }
+
+  /* Openings list — denser rows, smaller type */
+  .opening-row { padding: 12px 14px; border-radius: 14px; }
+  .opening-row h3 { font-size: 15px; }
+  .opening-row p, .opening-row small { font-size: 12.5px; }
+
+  /* Filter chips a touch smaller so more fit on one line */
+  .filter-chip { min-height: 34px; padding: 0 13px; font-size: 13px; }
+  .section-head h2, .view h2 { font-size: 18px; }
+}
+
+/* Empty Student-Cycles window: keep the month calendar, show one quiet row. */
+.cycle-empty-row { min-height: 96px; }
+.cycle-empty-inline {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+  padding: 26px 20px;
+  max-width: 560px;
+  margin: 0 auto;
+}

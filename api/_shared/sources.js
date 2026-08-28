@@ -106,6 +106,56 @@ const SOURCES = [
   { company: "Betterment", short: "BTMT", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "betterment" },
   { company: "Interactive Brokers", short: "IBKR", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "custom", handler: "interactivebrokers" },
 
+  // ═══ ADDED Aug 2026 (trey/finance-completeness): major-firm coverage ══════
+  // Each probed live before adding. Big global boards mostly return 0 US
+  // student roles today (fall campus season) but activate the hour one posts.
+  // Hedge funds / prop trading (Greenhouse)
+  { company: "ExodusPoint", short: "EXPT", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "exoduspoint" },
+  { company: "Man Group", short: "EMG", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "mangroup" },
+  { company: "Geneva Trading", short: "GVA", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "genevatrading" },
+  { company: "DV Trading", short: "DV", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "dvtrading" },
+  // Fintech
+  { company: "Block", short: "XYZ", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "block" },
+  // Private equity / banking / exchanges (Workday tenants from careers redirects)
+  { company: "Apollo Global Management", short: "APO", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "athene", dc: "wd5", site: "Apollo_Careers" },
+  { company: "U.S. Bank", short: "USB", logoClass: "fin", field: "Finance", subField: "Banking", ats: "workday", tenant: "usbank", dc: "wd1", site: "US_Bank_Careers" },
+  // Hedge funds
+  { company: "Lone Pine Capital", short: "LP", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "lonepinecapital" },
+  { company: "Holocene Advisors", short: "HOL", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "holoceneadvisors" },
+  { company: "Winton", short: "WIN", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "winton" },
+  // Prop / quant
+  { company: "TransMarket Group", short: "TMG", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "transmarketgroup" },
+  { company: "Gelber Group", short: "GEL", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "gelbergroup" },
+  // Susquehanna (SIG) — Jibe careers site fronting iCIMS; custom scraper reads
+  // its /api/jobs endpoint. See company-scrapers/susquehanna.js + jibe.js.
+  { company: "Susquehanna (SIG)", short: "SIG", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "custom", handler: "susquehanna" },
+  // BlackRock runs a Radancy careers site — custom scraper via api/_shared/radancy.js.
+  { company: "BlackRock", short: "BLK", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "custom", handler: "blackrock" },
+  // Mastercard — Phenom careers site (global), custom scraper keeps US-only. See
+  // company-scrapers/mastercard.js + phenom.js fetchPhenomWidgets + us-location.js.
+  { company: "Mastercard", short: "MA", logoClass: "fin", field: "Finance", subField: "Payments", ats: "custom", handler: "mastercard" },
+  { company: "Fiserv", short: "FI", logoClass: "fin", field: "Finance", subField: "Payments", ats: "custom", handler: "fiserv" },
+  { company: "FIS", short: "FIS", logoClass: "fin", field: "Finance", subField: "Payments", ats: "custom", handler: "fisglobal" },
+  { company: "MassMutual", short: "MM", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "massmutual" },
+  // Private equity / credit
+  { company: "Sixth Street", short: "6ST", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "sixthstreet" },
+  { company: "KKR", short: "KKR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "stage" },
+  { company: "Carlyle", short: "CG", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "carlyle", dc: "wd1", site: "Carlyle" },
+  { company: "Blue Owl", short: "OWL", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "blueowl", dc: "wd1", site: "blueowl" },
+  { company: "Piper Sandler", short: "PIPR", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "pipersandler", dc: "wd501", site: "Piper_Sandler_Careers" },
+  { company: "GTCR", short: "GTCR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "gtcr" },
+  // Asset management
+  { company: "Artisan Partners", short: "APAM", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "greenhouse", board: "artisanpartners" },
+  // Advisory / boutique investment banks
+  { company: "Lincoln International", short: "LINC", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "greenhouse", board: "lincolninternational" },
+  { company: "LionTree", short: "LT", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "greenhouse", board: "liontree" },
+  // More PE + asset managers (Greenhouse + Workday tenants from careers pages)
+  { company: "TPG", short: "TPG", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "tpgcareers" },
+  { company: "Northern Trust", short: "NTRS", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "ntrs", dc: "wd1", site: "northerntrust" },
+  { company: "Ameriprise Financial", short: "AMP", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "ameriprise", dc: "wd5", site: "Ameriprise" },
+  { company: "Guggenheim Investments", short: "GGM", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "guggenheiminvestment", dc: "wd5", site: "External" },
+  { company: "PGIM", short: "PGIM", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "pru", dc: "wd5", site: "PGIM_Careers" },
+
   // ═══ TECHNOLOGY ══════════════════════════════════════════════════════════
   { company: "Anthropic", short: "ANTH", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "anthropic" },
   { company: "Databricks", short: "DBX", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "databricks" },

@@ -539,6 +539,22 @@ const openings = [
     sourceLabel: "Millennium – Investment Internship 2027",
     sourceUrl: null,
   },
+  // ── Browse-only finance firms (no machine-readable feed exists) ───────────
+  // These employers publish no ATS feed we can read, so we show one card per
+  // firm that links to their OWN official careers search — never a claimed req.
+  // Paired with a URL in browseCareers below; the browse loop relabels them
+  // honestly ("browse their careers search", not a specific opening).
+  { company: "Fidelity Investments", short: "FID", logoClass: "fin", field: "Finance", subField: "Asset Management", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Fidelity Careers", sourceUrl: null },
+  { company: "Evercore", short: "EVR", logoClass: "fin", field: "Finance", subField: "Investment Banking", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Evercore Careers", sourceUrl: null },
+  { company: "Centerview Partners", short: "CVP", logoClass: "fin", field: "Finance", subField: "Investment Banking", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Centerview Careers", sourceUrl: null },
+  { company: "Perella Weinberg", short: "PWP", logoClass: "fin", field: "Finance", subField: "Investment Banking", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Perella Weinberg Careers", sourceUrl: null },
+  { company: "Bridgewater Associates", short: "BW", logoClass: "fin", field: "Finance", subField: "Hedge Fund", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Bridgewater Careers", sourceUrl: null },
+  { company: "Coatue Management", short: "COA", logoClass: "fin", field: "Finance", subField: "Hedge Fund", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Coatue Careers", sourceUrl: null },
+  { company: "Tiger Global", short: "TGM", logoClass: "fin", field: "Finance", subField: "Hedge Fund", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Tiger Global Careers", sourceUrl: null },
+  { company: "Warburg Pincus", short: "WP", logoClass: "fin", field: "Finance", subField: "Private Equity", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Warburg Pincus Careers", sourceUrl: null },
+  { company: "Silver Lake", short: "SLK", logoClass: "fin", field: "Finance", subField: "Private Equity", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Silver Lake Careers", sourceUrl: null },
+  { company: "Thoma Bravo", short: "TB", logoClass: "fin", field: "Finance", subField: "Private Equity", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "Thoma Bravo Careers", sourceUrl: null },
+  { company: "PayPal", short: "PYPL", logoClass: "fin", field: "Finance", subField: "Fintech", role: "Internship roles", program: "Summer 2027", deadline: "See posting", opened: "Not confirmed", sourceLabel: "PayPal Careers", sourceUrl: null },
 ];
 
 // These postings were confirmed closed or redirected away from the role on
@@ -583,7 +599,6 @@ const browseCareers = {
   // ZERO results once a city filter is applied, which is worse than no filter.
   "Amazon": "https://www.amazon.jobs/en/search?base_query=intern",
   // Student & graduate category, rather than the corporate careers homepage.
-  "BlackRock": "https://careers.blackrock.com/category/students-and-graduates-jobs/45831/9022304/1",
   "Bain & Company": "https://www.bain.com/careers/",
   // Real job search, intern filter + US only. The country value must be the
   // full name — `countries=US` is silently ignored and returns Geneva, Paris
@@ -598,8 +613,23 @@ const browseCareers = {
   "AQR Capital Management": "https://careers.aqr.com/jobs/category/university-jobs",
   // Stable official program landing pages (not job-ID deep links) — kept as
   // the destination but relabeled honestly (program overviews, not one req).
+  // Goldman and J.P. Morgan both have live scrapers now, so isMonitored()
+  // short-circuits their browse cards and these URLs are effectively unused —
+  // keeping the searchable board links rather than the single-programme pages.
   "Goldman Sachs": "https://higher.gs.com/campus?EXPERIENCE_LEVEL=Summer%20Analyst",
   "J.P. Morgan": "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1001/requisitions?keyword=2027%20Summer%20Analyst",
+  // Big finance firms with no machine-readable feed — link to their own search.
+  "Fidelity Investments": "https://jobs.fidelity.com/en/jobs/?keywords=intern",
+  "Evercore": "https://www.evercore.com/careers/students-graduates/",
+  "Centerview Partners": "https://www.centerview.com/careers/",
+  "Perella Weinberg": "https://pwpartners.com/careers/",
+  "Bridgewater Associates": "https://www.bridgewater.com/working-at-bridgewater",
+  "Coatue Management": "https://www.coatue.com/careers",
+  "Tiger Global": "https://www.tigerglobal.com/careers",
+  "Warburg Pincus": "https://warburgpincus.com/careers/",
+  "Silver Lake": "https://www.silverlake.com/careers/",
+  "Thoma Bravo": "https://www.thomabravo.com/careers",
+  "PayPal": "https://careers.pypl.com/home/",
 };
 // Normalize a company name so spelling variants collapse to one key —
 // "J.P. Morgan" / "JPMorgan", "Moelis & Company" / "Moelis",
@@ -1597,6 +1627,15 @@ function cycleSortKey(cycle) {
 
 const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+// "2026-08-15..." -> "Aug 15, 2026". Used to show a real opening date on past
+// listings in the month drill-down.
+function fmtCycleDate(iso) {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return "";
+  const d = new Date(t);
+  return `${MONTH_LABELS[d.getUTCMonth()]} ${d.getUTCDate()}, ${d.getUTCFullYear()}`;
+}
+
 // A rolling window ending this month. A full calendar year would be mostly
 // empty columns — first-seen dates only exist for as long as the pipeline has
 // been running, so twelve columns read as "broken" rather than "new".
@@ -1609,11 +1648,31 @@ const cycleFilters = { track: "", industry: "", season: "" };
 // Clamped so the window END never goes past +12 months (1 year of estimates)
 // and the window START never goes before -36 months (3 years of history).
 let cycleWindowOffset = 0;
-const CYCLE_OFFSET_MAX = 12;                          // window end up to +1yr
-const CYCLE_OFFSET_MIN = -(36 - (TIMELINE_MONTHS - 1)); // window start back to -3yr
+// Forward-looking only: no navigating into past years, and reach out to the end
+// of next year (Dec 2027 from an Aug-2026 "now" ≈ +16 months) for estimated
+// drop windows. The current window still shows this year's already-observed
+// months; the arrows only move forward from there.
+const CYCLE_OFFSET_MAX = 16;  // window end reaches December of next year
+const CYCLE_OFFSET_MIN = 0;   // never page back into past years
 
 function clampCycleOffset(value) {
   return Math.max(CYCLE_OFFSET_MIN, Math.min(CYCLE_OFFSET_MAX, value));
+}
+
+// Where a nav arrow should land. The single arrows (±6) page the window by six
+// months. The DOUBLE arrows (±12) are a full-year jump that lands on the first
+// six months (Jan–Jun) of the next/previous year, so "»" from 2026 lands on
+// Jan–Jun 2027 rather than a rolling Mar–Aug 2027.
+function cycleNavTarget(step, now = new Date()) {
+  if (Math.abs(step) === 12) {
+    const firstColumnYear = timelineColumns(now)[0].year;
+    const targetYear = firstColumnYear + (step > 0 ? 1 : -1);
+    const nowIndex = now.getUTCFullYear() * 12 + now.getUTCMonth();
+    // Window END = now-month + offset; we want the window to END on June of the
+    // target year so its first column is January.
+    return clampCycleOffset((targetYear * 12 + 5) - nowIndex);
+  }
+  return clampCycleOffset(cycleWindowOffset + step);
 }
 
 // The columns to draw, oldest first, as {year, month, label, future}.
@@ -1637,9 +1696,17 @@ function timelineColumns(now = new Date()) {
 // Year AND month. Returning just the month meant a posting first seen in
 // August 2025 landed in the August 2026 column — wrong, and increasingly wrong
 // the longer the pipeline runs.
+// Prefer the employer's OWN posting date (postedAt, from the ATS) over
+// firstSeen. This screen's whole claim is "when employers actually posted" —
+// the real post date is that, and it back-fills months from before Promptly
+// started watching. firstSeen is the honest fallback when the ATS gives no date.
+function cycleDateOf(item) {
+  return item.postedAt || item.firstSeen || null;
+}
 function observedPoint(item) {
-  if (!item.firstSeen) return null;
-  const time = Date.parse(item.firstSeen);
+  const raw = cycleDateOf(item);
+  if (!raw) return null;
+  const time = Date.parse(raw);
   if (!Number.isFinite(time)) return null;
   const date = new Date(time);
   return { year: date.getUTCFullYear(), month: date.getUTCMonth() };
@@ -1691,8 +1758,16 @@ function timelineRowKey(item) {
   return item.field || "Other";
 }
 
+// The Cycles timeline is a historical record of WHEN employers dropped student
+// roles — so it keeps every real observed listing (anything with a firstSeen
+// date), open OR already closed, and only drops the browse/awaiting placeholder
+// cards that were never actually observed going live.
 function timelinePool() {
-  return openings.filter((item) => !isAwaitingLike(item) && listingStatus(item) === "OPEN");
+  return openings.filter((item) => {
+    if (!cycleDateOf(item)) return false;          // only things with a real date
+    const status = listingStatus(item);
+    return status !== "AWAITING" && status !== "BROWSE"; // keep OPEN, CLOSED, UPCOMING
+  });
 }
 
 function fillSelect(selector, values, current) {
@@ -1801,13 +1876,21 @@ function renderCyclesView() {
 
   // Only rows with at least one marker somewhere in the window, busiest first.
   const activeRows = Object.keys(rows).filter((label) => columns.some((column) => cellItems(rows[label], column).length));
-  if (!activeRows.length) {
-    grid.innerHTML = `<p class="empty-hint">Nothing to show in this window for these filters. Use the arrows to move to a month with observed postings, or look ahead to estimated drop windows.</p>`;
+  const ordered = activeRows.sort((a, b) => rows[b].length - rows[a].length || a.localeCompare(b));
+  const MAX_VISIBLE = 3;
+
+  // Keep the month-column calendar visible at EVERY window so paging always
+  // reads as a coherent timeline — never a blank "broken" panel. When a window
+  // has no markers, show one quiet inline row under the same columns.
+  if (!ordered.length) {
+    const anyFuture = columns.some((column) => column.future);
+    const msg = anyFuture
+      ? "No estimated drops for these months yet — projections fill in once Promptly has watched a full prior cycle."
+      : "No student postings observed in these months for these filters.";
+    grid.innerHTML = `<div class="cycle-scroll"><div class="cycle-table" role="grid" style="--cycle-cols:${columns.length}">${header}<div class="cycle-row cycle-empty-row" role="row"><div class="cycle-empty-inline">${esc(msg)}</div></div></div></div>`;
     renderCycleFootnote(undated);
     return;
   }
-  const ordered = activeRows.sort((a, b) => rows[b].length - rows[a].length || a.localeCompare(b));
-  const MAX_VISIBLE = 3;
 
   const body = ordered.map((label) => {
     const cells = columns.map((column) => {
@@ -1909,7 +1992,10 @@ function renderCycleFootnote(undated) {
   // Methodology (observed vs estimated) lives in the "How this works" box up
   // top — keep this line to a plain window summary.
   unknown.textContent = undated
-    ? `${undated} more live role${undated === 1 ? " was" : "s were"} first seen outside this window.`
+    // Don't promise the arrows reach these. Navigation is forward-only, and
+    // postedAt now back-fills real employer dates from before Promptly started
+    // watching, so some of this count sits in months the timeline never pages to.
+    ? `${undated} live role${undated === 1 ? " sits" : "s sit"} outside these months. Double-click any month to see every company in it.`
     : "Double-click a month to see every company that month.";
 }
 
@@ -1923,8 +2009,7 @@ function updateCycleWindowLabel(columns) {
     label.textContent = a.year === b.year ? `${b.year}` : `${a.year}–${String(b.year).slice(2)}`;
   }
   document.querySelectorAll("[data-cycle-nav]").forEach((btn) => {
-    const step = Number(btn.dataset.cycleNav);
-    btn.disabled = clampCycleOffset(cycleWindowOffset + step) === cycleWindowOffset;
+    btn.disabled = cycleNavTarget(Number(btn.dataset.cycleNav)) === cycleWindowOffset;
   });
 }
 
@@ -3819,7 +3904,7 @@ document.querySelector("[data-cycle-reset]")?.addEventListener("click", () => {
 // Timeline window navigation: ‹ › shift six months, « » shift a year.
 document.querySelectorAll("[data-cycle-nav]").forEach((btn) => {
   btn.addEventListener("click", () => {
-    cycleWindowOffset = clampCycleOffset(cycleWindowOffset + Number(btn.dataset.cycleNav));
+    cycleWindowOffset = cycleNavTarget(Number(btn.dataset.cycleNav));
     renderCyclesView();
   });
 });
@@ -3866,12 +3951,17 @@ function openMonthDetails(year, month) {
         const logo = companyLogoUrl(item);
         const initials = esc(String(item.short || item.company.slice(0, 2)).toUpperCase().slice(0, 3));
         const fn = roleFunction(item.role);
+        // Past/current: show the real opening date (when Promptly saw it go
+        // live) and the closing date the employer published. Future: estimate.
+        const openedOn = cycleDateOf(item) ? fmtCycleDate(cycleDateOf(item)) : `${MONTH_LABELS[month]} ${year}`;
+        const closesOn = item.deadline && item.deadline !== "See posting" ? esc(item.deadline) : "see posting";
         const dates = future
-          ? "Estimated drop"
-          : `Opened ${MONTH_LABELS[month]} ${year}${item.deadline && item.deadline !== "See posting" ? ` · Closes ${esc(item.deadline)}` : " · Closes: see posting"}`;
+          ? "Estimated drop — not open yet"
+          : `Opened ${esc(openedOn)} · Closes ${closesOn}`;
         // Keyed by listing identity, not company: a company with several roles
         // in one month would otherwise open whichever row matched first.
         return `<button class="month-row" data-open-details="${esc(alertIdentity(item))}">
+
             <span class="month-logo logo ${esc(item.logoClass || "")}">${logo ? `<img src="${esc(logo)}" alt="" data-short="${initials}" data-lc="${esc(item.logoClass || "")}" data-logo-img />` : initials}</span>
             <span class="month-info">
               <b>${esc(item.company)}</b>

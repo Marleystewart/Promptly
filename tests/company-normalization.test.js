@@ -70,9 +70,15 @@ const collisions = [...byKey.entries()]
   .map(([key]) => key)
   .sort();
 
-// Reviewed 24 Aug 2026: each of these is one firm written two ways, so
-// collapsing them is correct and is the whole point of the normalizer.
-const KNOWN_SAFE = ["aqrcapital", "deshaw", "jpmorgan", "moelis", "nvidia"].sort();
+// Each of these is ONE firm written two ways, so collapsing them is correct and
+// is the whole point of the normalizer. Add a key here only after confirming the
+// names really are the same employer.
+//   Reviewed 24 Aug 2026: aqrcapital, deshaw, jpmorgan, moelis, nvidia
+//   Reviewed 25 Aug 2026: carlyle ("Carlyle" / "Carlyle Group"),
+//                         sixthstreet ("Sixth Street" / "Sixth Street Partners")
+const KNOWN_SAFE = [
+  "aqrcapital", "carlyle", "deshaw", "jpmorgan", "moelis", "nvidia", "sixthstreet",
+].sort();
 
 assert.deepEqual(
   collisions,

@@ -52,6 +52,7 @@ async function fetchListings() {
           title,
           url,
           location: String(job.PrimaryLocation || "").replace(/\s+/g, " ").trim(),
+          postedAt: job.PostedDate || null, // Oracle's real post date
         });
       }
       if (!result.jobs.length || offset + PAGE_SIZE >= result.total) break;

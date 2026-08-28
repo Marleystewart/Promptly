@@ -213,14 +213,14 @@ async function removeSubscriberWatch(email, id) {
 }
 
 async function deleteSubscriber(email) {
-  const redis = await getRedis();
-  const normalizedEmail = String(email || "").trim().toLowerCase();
-  if (!redis || !normalizedEmail) return { removed: false };
-  await Promise.all([
-    redis.del(`promptly:subscriber:${normalizedEmail}`),
-    redis.srem("promptly:subscribers", normalizedEmail),
-  ]);
-  return { removed: true };
+  // Single source of truth for erasure lives in _shared/erase.js, which also
+  // scrubs coverage requests and the contact address on listing reports. This
+  // stayed a partial implementation for a while and the two drifted; keeping it
+  // as a thin alias means a caller can never reach the weaker version by
+  // accident. Required lazily because erase.js requires this module.
+  const { eraseSubscriber } = require("./erase");
+  const { erased } = await eraseSubscriber(email);
+  return { removed: Boolean(erased) };
 }
 
 // Remove a dead push subscription (endpoint returned 404/410) so we stop
