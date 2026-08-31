@@ -3338,3 +3338,247 @@ body.onboarding-active .ap-panel { display: none; }
   max-width: 560px;
   margin: 0 auto;
 }
+
+/* ══ PHONE CYCLES ══════════════════════════════════════════════════════════
+   A different presentation of the same data, not a squeezed grid. Everything
+   here is inside the phone breakpoint, so the desktop timeline is untouched.
+   ═════════════════════════════════════════════════════════════════════════ */
+.cycle-mobile { display: none; }
+
+@media (max-width: 720px) {
+  /* The six-column table cannot be made legible this narrow — replace it. */
+  .cycle-grid,
+  .cycle-window-nav { display: none; }
+  .cycle-mobile { display: block; }
+  .cycle-mobile[hidden] { display: none; }
+
+  /* One shell around the month view instead of cards inside cards. */
+  .timeline-card {
+    padding: 12px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.03);
+  }
+
+  /* Metrics: three compact tiles, no wrapping to a second row. */
+  .cycle-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .cycle-summary article { padding: 10px 8px; border-radius: 14px; min-height: 0; }
+  .cycle-summary strong { font-size: 20px; line-height: 1.1; }
+  .cycle-summary p { font-size: 10.5px; line-height: 1.25; margin: 2px 0 0; }
+
+  /* Filters as a single scrollable row of chip-shaped selects. */
+  .cycle-toolbar { display: block; margin-bottom: 10px; }
+  .cycle-selects {
+    display: flex;
+    /* The desktop rule wraps and stretches each select to full width, which
+       stacks them into three tall rows on a phone. One scrolling row instead. */
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .cycle-selects::-webkit-scrollbar { display: none; }
+  .cycle-selects select {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 0;
+    max-width: 58vw;
+    min-height: 40px;
+    padding: 0 30px 0 13px;
+    border-radius: 999px;
+    font-size: 13px;
+    background-position: right 11px center;
+  }
+
+  /* ── Month navigation ─────────────────────────────────────────────────── */
+  .cycm-monthnav {
+    display: grid;
+    grid-template-columns: 48px 1fr 48px;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 0 14px;
+  }
+  .cycm-arrow {
+    min-height: 48px;
+    border-radius: 15px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.06);
+    color: var(--ink);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .cycm-arrow:disabled { opacity: 0.3; cursor: default; }
+  .cycm-month {
+    min-height: 48px;
+    border: 0;
+    background: none;
+    color: var(--ink);
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .cycm-now,
+  .cycm-est {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border-radius: 999px;
+  }
+  .cycm-now { background: rgba(94,234,171,0.16); color: #6fd3a3; }
+  .cycm-est { background: rgba(255,255,255,0.09); color: var(--muted); }
+
+  /* ── Industry sections ────────────────────────────────────────────────── */
+  .cycm-group { padding: 14px 0; border-top: 1px solid var(--line); }
+  .cycm-group:first-child { border-top: 0; padding-top: 2px; }
+  .cycm-group-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .cycm-group-head h3 { margin: 0; font-size: 15px; font-weight: 750; }
+  .cycm-group-head span { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+  /* Two named chips per row at phone widths — readable, never overlapping. */
+  .cycm-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .cycm-chip {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 48px;
+    padding: 7px 10px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.045);
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+    min-width: 0;
+  }
+  .cycm-chip.is-mine { border-color: rgba(124,92,255,0.55); background: rgba(124,92,255,0.12); }
+  .cycm-chip.is-est { border-style: dashed; }
+  /* Wrap to a second line rather than truncating. "American E…" and
+     "Arrowstreet…" are not identifiable, which defeats the point of naming the
+     chips at all; two short lines are. Three lines is where it stops. */
+  .cycm-chip-name {
+    font-size: 12.5px;
+    font-weight: 650;
+    line-height: 1.2;
+    min-width: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+  .cycm-badge {
+    position: relative;
+    flex: 0 0 30px;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }
+  .cycm-badge.lg { flex-basis: 46px; width: 46px; height: 46px; border-radius: 13px; }
+  .cycm-initials { font-size: 11px; font-weight: 800; letter-spacing: 0.02em; }
+  .cycm-badge.lg .cycm-initials { font-size: 15px; }
+  .cycm-badge img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 3px;
+    background: inherit;
+  }
+
+  .cycm-more {
+    margin-top: 9px;
+    min-height: 40px;
+    width: 100%;
+    border-radius: 12px;
+    border: 1px dashed var(--line-strong, rgba(255,255,255,0.24));
+    background: none;
+    color: var(--muted);
+    font-size: 12.5px;
+    font-weight: 650;
+    cursor: pointer;
+  }
+
+  .cycm-empty {
+    margin: 0;
+    padding: 26px 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* The last industry must clear the fixed bottom navigation. */
+  #view-cycles { padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ── Company sheet ──────────────────────────────────────────────────────── */
+.cycm-sheet {
+  border: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 560px;
+  color: var(--ink);
+  background: transparent;
+}
+.cycm-sheet::backdrop { background: rgba(6,8,16,0.66); backdrop-filter: blur(3px); }
+
+@media (max-width: 720px) {
+  .cycm-sheet {
+    /* Anchored to the bottom edge like a native sheet. */
+    margin: auto auto 0;
+    max-height: 88vh;
+    border-radius: 22px 22px 0 0;
+  }
+}
+
+.cycm-sheet > div {
+  position: relative;
+  padding: 22px 18px calc(22px + env(safe-area-inset-bottom, 0px));
+  border-radius: 22px 22px 0 0;
+  background: #141428;
+  border: 1px solid var(--line);
+  border-bottom: 0;
+}
+.cycm-sheet-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 2;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.07);
+  color: var(--ink);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+}
+.cycm-sheet-head { display: flex; align-items: center; gap: 13px; padding-right: 44px; }
+.cycm-sheet-head h3 { margin: 0; font-size: 19px; font-weight: 780; }
+.cycm-sheet-head p { margin: 3px 0 0; font-size: 12.5px; color: var(--muted); }
+.cycm-facts { margin: 18px 0 0; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.cycm-facts > div { display: flex; justify-content: space-between; gap: 14px; padding: 11px 13px; background: #141428; }
+.cycm-facts dt { margin: 0; font-size: 12.5px; color: var(--muted); }
+.cycm-facts dd { margin: 0; font-size: 12.5px; font-weight: 700; text-align: right; }
+.cycm-sheet-actions { display: grid; gap: 9px; margin-top: 16px; }
+.cycm-sheet-actions button { min-height: 48px; width: 100%; }

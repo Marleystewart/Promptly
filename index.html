@@ -29,7 +29,7 @@
     <meta name="twitter:title" content="Promptly | Never miss an internship opening" />
     <meta name="twitter:description" content="Alerts students the moment an internship opens. 274 employers monitored, refreshed hourly." />
     <meta name="twitter:image" content="https://app.joinpromptly.co/assets/og-card.png" />
-    <link rel="stylesheet" href="styles.css?v=20260828c" />
+    <link rel="stylesheet" href="styles.css?v=20260828f" />
   </head>
   <body class="onboarding-active launch-active">
     <section class="onboarding-shell" aria-label="Promptly sign up">
@@ -330,6 +330,17 @@
               <button type="button" class="cyc-nav" data-cycle-nav="12" aria-label="Forward one year" title="Forward one year">»</button>
             </div>
 
+            <!-- Phone-only single-month view. Rendered from the SAME filtered
+                 pool as the desktop grid; CSS decides which one is visible. -->
+            <div class="cycle-mobile" data-cycle-mobile hidden>
+              <div class="cycm-monthnav" role="group" aria-label="Change month">
+                <button type="button" class="cycm-arrow" data-cycm-step="-1" aria-label="Previous month">‹</button>
+                <button type="button" class="cycm-month" data-cycm-label aria-live="polite"></button>
+                <button type="button" class="cycm-arrow" data-cycm-step="1" aria-label="Next month">›</button>
+              </div>
+              <div class="cycm-list" data-cycm-list></div>
+            </div>
+
             <div class="cycle-grid" data-cycle-grid></div>
             <p class="cycle-unknown" data-cycle-unknown hidden></p>
           </div>
@@ -459,6 +470,13 @@
       <button class="nav-item" data-view="profile"><svg viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg><span>Profile</span></button>
     </nav>
 
+    <!-- Phone company sheet for the Cycles view. Every value inside is computed
+         from the same live pool the grid uses — nothing here is invented. -->
+    <dialog class="cycm-sheet" data-cycm-sheet aria-label="Company cycle detail">
+      <button type="button" class="cycm-sheet-close close-modal" aria-label="Close">×</button>
+      <div data-cycm-sheet-body></div>
+    </dialog>
+
     <dialog class="profile-modal" data-profile-modal>
       <button class="close-modal" data-close-profile-modal aria-label="Close profile editor">×</button>
       <span class="status-pill">MATCH PROFILE</span>
@@ -554,7 +572,7 @@
          pipeline. Must load before script.js, which uses it on first render. -->
     <script src="geo.js?v=20260804a"></script>
     <script src="listing-state.js?v=20260825c"></script>
-    <script src="script.js?v=20260828c"></script>
-    <script src="assistant.js?v=20260828c"></script>
+    <script src="script.js?v=20260828f"></script>
+    <script src="assistant.js?v=20260828f"></script>
   </body>
 </html>

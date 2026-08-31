@@ -1874,6 +1874,18 @@ function renderCyclesView() {
       ${columns.map((column) => `<button type="button" class="cycle-month${isCurrent(column) ? " is-now" : ""}${column.future ? " is-future" : ""}" role="columnheader" data-cycle-month data-col-year="${column.year}" data-col-month="${column.month}" title="Double-click to see every company this month">${column.label}${isCurrent(column) ? `<span class="cycle-now-tag">now</span>` : column.future ? `<span class="cycle-est-tag">est.</span>` : ""}</button>`).join("")}
     </div>`;
 
+  // Phones render the same `filtered` pool as a single-month stack instead of
+  // the six-column grid. Both containers stay in the DOM; CSS shows one.
+  const mobileWrap = document.querySelector("[data-cycle-mobile]");
+  const phone = isPhoneCycles();
+  if (mobileWrap) mobileWrap.hidden = !phone;
+  if (phone) {
+    renderCyclesMobile(filtered);
+    grid.innerHTML = "";
+    renderCycleFootnote(0); // the month stack has no out-of-window remainder
+    return;
+  }
+
   // Only rows with at least one marker somewhere in the window, busiest first.
   const activeRows = Object.keys(rows).filter((label) => columns.some((column) => cellItems(rows[label], column).length));
   const ordered = activeRows.sort((a, b) => rows[b].length - rows[a].length || a.localeCompare(b));
@@ -1967,6 +1979,177 @@ function roleFunction(role) {
   return "";
 }
 
+// ─── Phone Cycles view ──────────────────────────────────────────────────────
+// The desktop grid shows six months at once. On a phone that becomes columns a
+// few pixels wide with overlapping markers, so phones get a different
+// PRESENTATION of the same data: one month, industries stacked, named company
+// chips. No separate data path — renderCyclesView() hands this the identical
+// filtered pool, so every filter and every count stays in agreement.
+
+const CYCM_QUERY = "(max-width: 720px)";
+const CYCM_MIN_OFFSET = -36; // three years back — postedAt back-fills real history
+const CYCM_MAX_OFFSET = 16;  // matches the desktop window's forward reach
+const CYCM_VISIBLE = 6;      // companies shown before "+N more"
+
+function isPhoneCycles() {
+  return typeof window.matchMedia === "function" && window.matchMedia(CYCM_QUERY).matches;
+}
+
+// Months from the current month. 0 = now; negative = past.
+let cycmOffset = 0;
+const cycmExpanded = new Set(); // industries the student opened via "+N more"
+
+function cycmPoint(offset = cycmOffset, now = new Date()) {
+  const index = now.getUTCFullYear() * 12 + now.getUTCMonth() + offset;
+  return { year: Math.floor(index / 12), month: ((index % 12) + 12) % 12 };
+}
+
+function cycmIsNow(point, now = new Date()) {
+  return point.year === now.getUTCFullYear() && point.month === now.getUTCMonth();
+}
+
+function cycmIsFuture(point, now = new Date()) {
+  return point.year * 12 + point.month > now.getUTCFullYear() * 12 + now.getUTCMonth();
+}
+
+// Same rule the desktop cells use: a past/current month shows what was actually
+// observed then; a future month shows companies seen in that calendar month in
+// an earlier year, as an estimate.
+function cycmItemsFor(items, point, future) {
+  const seen = new Set();
+  const out = [];
+  for (const item of items) {
+    const at = observedPoint(item);
+    if (!at) continue;
+    const hit = future
+      ? at.month === point.month && at.year < point.year
+      : at.year === point.year && at.month === point.month;
+    if (!hit || seen.has(item.company)) continue;
+    seen.add(item.company);
+    out.push(item);
+  }
+  return out.sort((a, b) => String(a.company).localeCompare(String(b.company)));
+}
+
+function cycmInitials(item) {
+  const source = item.short || String(item.company || "").replace(/[^A-Za-z ]/g, "");
+  const words = String(source).trim().split(/\s+/).filter(Boolean);
+  const letters = words.length > 1
+    ? words.slice(0, 2).map((w) => w[0]).join("")
+    : String(source).slice(0, 2);
+  return esc(letters.toUpperCase());
+}
+
+// A named chip, not a bare monogram. The logo is decoration; the company name
+// is the thing a student actually reads.
+function cycmChip(item, future) {
+  const logo = companyLogoUrl(item);
+  const initials = cycmInitials(item);
+  const mine = cycleMatchesProfile(item) ? " is-mine" : "";
+  return `<button type="button" class="cycm-chip${mine}${future ? " is-est" : ""}" data-cycm-company="${esc(alertIdentity(item))}">
+      <span class="cycm-badge logo ${esc(item.logoClass || "")}" aria-hidden="true">
+        <span class="cycm-initials">${initials}</span>
+        ${logo ? `<img src="${esc(logo)}" alt="" loading="lazy" data-short="${initials}" data-lc="${esc(item.logoClass || "")}" data-logo-img />` : ""}
+      </span>
+      <span class="cycm-chip-name">${esc(item.company)}</span>
+    </button>`;
+}
+
+function cycmMonthLabel(point) {
+  return `${MONTH_LABELS[point.month]} ${point.year}`;
+}
+
+function renderCyclesMobile(filtered) {
+  const wrap = document.querySelector("[data-cycle-mobile]");
+  const list = document.querySelector("[data-cycm-list]");
+  if (!wrap || !list) return;
+
+  const point = cycmPoint();
+  const future = cycmIsFuture(point);
+  const label = document.querySelector("[data-cycm-label]");
+  if (label) {
+    label.innerHTML = `${esc(cycmMonthLabel(point))}${cycmIsNow(point) ? `<span class="cycm-now">now</span>` : future ? `<span class="cycm-est">est.</span>` : ""}`;
+  }
+  document.querySelectorAll("[data-cycm-step]").forEach((btn) => {
+    const next = cycmOffset + Number(btn.dataset.cycmStep);
+    btn.disabled = next < CYCM_MIN_OFFSET || next > CYCM_MAX_OFFSET;
+  });
+
+  // Group into industries, drop the empty ones entirely rather than reserving
+  // rows for them, and lead with the busiest.
+  const groups = new Map();
+  for (const item of cycmItemsFor(filtered, point, future)) {
+    const key = timelineRowKey(item);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
+  const ordered = [...groups.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+
+  if (!ordered.length) {
+    list.innerHTML = `<p class="cycm-empty">${esc(future
+      ? "No estimated drops for this month yet — projections appear once Promptly has watched a full prior cycle."
+      : "No student postings observed in this month for these filters.")}</p>`;
+    return;
+  }
+
+  list.innerHTML = ordered.map(([name, items]) => {
+    const open = cycmExpanded.has(name);
+    const shown = open ? items : items.slice(0, CYCM_VISIBLE);
+    const hidden = items.length - shown.length;
+    return `<section class="cycm-group">
+        <header class="cycm-group-head">
+          <h3>${esc(name)}</h3>
+          <span>${items.length} employer${items.length === 1 ? "" : "s"}</span>
+        </header>
+        <div class="cycm-chips">${shown.map((item) => cycmChip(item, future)).join("")}</div>
+        ${hidden > 0
+          ? `<button type="button" class="cycm-more" data-cycm-expand="${esc(name)}">+${hidden} more</button>`
+          : open && items.length > CYCM_VISIBLE
+            ? `<button type="button" class="cycm-more" data-cycm-expand="${esc(name)}">Show fewer</button>`
+            : ""}
+      </section>`;
+  }).join("");
+}
+
+// Bottom sheet for one company. Every line is derived from the live pool —
+// where Promptly has nothing to say, the line is omitted rather than filled in.
+function openCycmSheet(reference) {
+  const sheet = document.querySelector("[data-cycm-sheet]");
+  const body = document.querySelector("[data-cycm-sheet-body]");
+  const item = findOpening(reference);
+  if (!sheet || !body || !item) return;
+
+  const pool = timelinePool().filter((o) => o.company === item.company);
+  const months = [...new Set(pool.map((o) => observedPoint(o)).filter(Boolean).map((p) => p.month))].sort((a, b) => a - b);
+  const liveNow = pool.filter((o) => listingStatus(o) === "OPEN");
+  const relevant = cycleMatchesProfile(item);
+  const logo = companyLogoUrl(item);
+
+  body.innerHTML = `
+    <div class="cycm-sheet-head">
+      <span class="cycm-badge lg logo ${esc(item.logoClass || "")}" aria-hidden="true">
+        <span class="cycm-initials">${cycmInitials(item)}</span>
+        ${logo ? `<img src="${esc(logo)}" alt="" data-short="${cycmInitials(item)}" data-lc="${esc(item.logoClass || "")}" data-logo-img />` : ""}
+      </span>
+      <div>
+        <h3>${esc(item.company)}</h3>
+        <p>${esc([item.field, item.subField].filter(Boolean).join(" · ") || "Student roles")}</p>
+      </div>
+    </div>
+    <dl class="cycm-facts">
+      ${months.length ? `<div><dt>Observed posting in</dt><dd>${months.map((m) => esc(MONTH_LABELS[m])).join(", ")}</dd></div>` : ""}
+      <div><dt>Live student roles now</dt><dd>${liveNow.length}</dd></div>
+      ${item.cycle ? `<div><dt>Cycle</dt><dd>${esc(item.cycle)}</dd></div>` : ""}
+      ${relevant && profile.gradYear ? `<div><dt>Relevant to</dt><dd>Class of ${esc(profile.gradYear)}</dd></div>` : ""}
+    </dl>
+    <div class="cycm-sheet-actions">
+      <button type="button" class="primary-action" data-cycm-open="${esc(alertIdentity(item))}">View opening</button>
+      <button type="button" class="soft-action" data-save="${esc(alertIdentity(item))}">${saved.has(alertIdentity(item)) ? "Saved" : "Save alert"}</button>
+    </div>`;
+
+  if (typeof sheet.showModal === "function" && !sheet.open) sheet.showModal();
+}
+
 // Active filters as removable chips, so what is applied is always visible.
 function renderCycleChips() {
   const wrap = document.querySelector("[data-cycle-chips]");
@@ -1989,6 +2172,12 @@ function renderCycleFootnote(undated) {
   const unknown = document.querySelector("[data-cycle-unknown]");
   if (!unknown) return;
   unknown.hidden = false;
+  // The phone view has no month headers to double-click and shows one month at
+  // a time, so neither the desktop hint nor an out-of-window count applies.
+  if (isPhoneCycles()) {
+    unknown.textContent = "Tap any company for its posting history and live roles.";
+    return;
+  }
   // Methodology (observed vs estimated) lives in the "How this works" box up
   // top — keep this line to a plain window summary.
   unknown.textContent = undated
@@ -3908,6 +4097,62 @@ document.querySelectorAll("[data-cycle-nav]").forEach((btn) => {
     renderCyclesView();
   });
 });
+
+// Phone month stepper. Offsets are month counts, so December → January crosses
+// the year automatically without any special case.
+document.querySelectorAll("[data-cycm-step]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const next = cycmOffset + Number(btn.dataset.cycmStep);
+    if (next < CYCM_MIN_OFFSET || next > CYCM_MAX_OFFSET) return;
+    cycmOffset = next;
+    cycmExpanded.clear(); // a new month starts collapsed
+    renderCyclesView();
+  });
+});
+
+// Tapping the month label jumps back to the current month — the fast way home
+// after paging, without adding a second row of controls.
+document.querySelector("[data-cycm-label]")?.addEventListener("click", () => {
+  if (cycmOffset === 0) return;
+  cycmOffset = 0;
+  cycmExpanded.clear();
+  renderCyclesView();
+});
+
+document.querySelector("[data-cycm-list]")?.addEventListener("click", (event) => {
+  const expand = event.target.closest("[data-cycm-expand]");
+  if (expand) {
+    const key = expand.dataset.cycmExpand;
+    if (cycmExpanded.has(key)) cycmExpanded.delete(key);
+    else cycmExpanded.add(key);
+    renderCyclesView();
+    return;
+  }
+  const chip = event.target.closest("[data-cycm-company]");
+  if (chip) openCycmSheet(chip.dataset.cycmCompany);
+});
+
+// Sheet actions. "View opening" hands off to the existing details modal rather
+// than duplicating it.
+document.querySelector("[data-cycm-sheet]")?.addEventListener("click", (event) => {
+  const sheet = document.querySelector("[data-cycm-sheet]");
+  const open = event.target.closest("[data-cycm-open]");
+  if (open) {
+    sheet?.close();
+    openDetails(open.dataset.cycmOpen);
+    return;
+  }
+  if (event.target.closest(".close-modal")) sheet?.close();
+});
+
+// Crossing the phone breakpoint (rotation, or a desktop window being resized)
+// must swap presentations, not leave the wrong one on screen.
+if (typeof window.matchMedia === "function") {
+  const phoneQuery = window.matchMedia(CYCM_QUERY);
+  const onBreakpointChange = () => renderCyclesView();
+  if (typeof phoneQuery.addEventListener === "function") phoneQuery.addEventListener("change", onBreakpointChange);
+  else if (typeof phoneQuery.addListener === "function") phoneQuery.addListener(onBreakpointChange);
+}
 
 // Double-click a month header → every company + role for that month.
 document.querySelector("[data-cycle-grid]")?.addEventListener("dblclick", (event) => {
