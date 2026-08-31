@@ -59,7 +59,7 @@ module.exports = async function handler(req, res) {
     const { subscribers = [], setupRequired } = await listSubscribers();
 
     const bySchool = {}, byGradYear = {}, byField = {};
-    let withEmail = 0, withPush = 0;
+    let withEmail = 0, withPush = 0, withEduEmail = 0;
     for (const s of subscribers) {
       const school = (s.school || "").trim() || "Unknown";
       bySchool[school] = (bySchool[school] || 0) + 1;
@@ -68,6 +68,9 @@ module.exports = async function handler(req, res) {
       (Array.isArray(s.fields) ? s.fields : []).forEach((f) => { byField[f] = (byField[f] || 0) + 1; });
       if (s.email) withEmail += 1;
       if (s.pushSubscription) withPush += 1;
+      // How many accounts are institutionally confirmed. Real signal for
+      // school conversations — and a check that .edu detection is working.
+      if (s.studentVerified === true) withEduEmail += 1;
     }
     const sortDesc = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]);
 
@@ -152,6 +155,7 @@ module.exports = async function handler(req, res) {
       verify,
       totalAccounts: subscribers.length,
       withEmail,
+      withEduEmail,
       withPush,
       bySchool: sortDesc(bySchool),
       byGradYear: sortDesc(byGradYear),

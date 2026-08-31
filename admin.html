@@ -94,6 +94,7 @@ async function load() {
       <div class="cards">
         <div class="card"><div class="n">${d.totalAccounts}</div><div class="l">Accounts</div></div>
         <div class="card"><div class="n">${d.withEmail}</div><div class="l">With email</div></div>
+        <div class="card"><div class="n">${d.withEduEmail || 0}</div><div class="l">.edu verified</div></div>
         <div class="card"><div class="n">${d.withPush}</div><div class="l">Push enabled</div></div>
         <div class="card"><div class="n">${live.appOpensToday || 0}</div><div class="l">App opens today</div></div>
         <div class="card"><div class="n">${live.signupsToday || 0}</div><div class="l">Signups today</div></div>

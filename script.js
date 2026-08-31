@@ -2589,10 +2589,21 @@ function saveProfile() {
   scheduleAccountSync();
 }
 
+// A .edu address confirms the institution, nothing more. It never gates
+// signup — a student whose only address is a personal Gmail is still a
+// student — so this is stored as a signal, not a permission.
+function studentStatusFor(email) {
+  const api = typeof window !== "undefined" && window.PromptlyStudentEmail;
+  return api ? api.studentStatus(email) : { verified: false, source: null, domain: "" };
+}
+
 function accountProfile() {
+  const student = studentStatusFor(profile.email);
   return {
     name: profile.name,
     email: profile.email,
+    studentVerified: student.verified,
+    studentDomain: student.domain,
     school: profile.school,
     gradYear: profile.gradYear,
     major: profile.major,
@@ -2884,6 +2895,28 @@ async function handleAuthSubmit() {
     status.textContent = "Check your email to confirm your account, then return here and sign in.";
   }
 }
+
+// Live feedback while typing an email at signup. A .edu address is confirmed
+// as institutional; anything else says plainly that it is still welcome, so
+// the absence of a badge never reads as a rejection.
+function renderStudentHint() {
+  const hint = document.querySelector("[data-student-hint]");
+  const input = document.querySelector("[data-email-input]");
+  if (!hint || !input) return;
+  const value = input.value.trim();
+  if (!value || !value.includes("@")) {
+    hint.hidden = true;
+    return;
+  }
+  const student = studentStatusFor(value);
+  hint.hidden = false;
+  hint.className = `student-hint${student.verified ? " is-student" : ""}`;
+  hint.textContent = student.verified
+    ? `Student email recognised — ${student.domain}`
+    : "Not a school address — that's fine, you can still sign up.";
+}
+
+document.querySelector("[data-email-input]")?.addEventListener("input", renderStudentHint);
 
 async function signInWithGoogle() {
   if (!authClient) return;

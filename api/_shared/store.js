@@ -1,3 +1,5 @@
+const { studentStatus } = require("../../student-email.js");
+
 function readBody(req) {
   if (typeof req.body === "string") return JSON.parse(req.body || "{}");
   return req.body || {};
@@ -57,9 +59,16 @@ function normalizeSubscriber(profile = {}, subscription = null) {
       ats: String(w.ats || "").trim(),
     })).filter((w) => w.company)
     : [];
+  // Derived from the address the SERVER holds, never copied from the client —
+  // a browser could otherwise claim studentVerified for any inbox. Same shared
+  // module the signup badge uses, so the two can never disagree.
+  const student = studentStatus(email);
+
   return {
     email,
     watches,
+    studentVerified: student.verified,
+    studentDomain: student.domain,
     name: String(profile.name || "").trim() || "there",
     school: String(profile.school || "").trim(),
     gradYear: String(profile.gradYear || "").trim(),
