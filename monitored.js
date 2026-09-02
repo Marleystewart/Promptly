@@ -328,9 +328,9 @@ window.PROMPTLY_COVERAGE = {
   "sources": 316,
   "companies": 316,
   "byPlatform": {
-    "greenhouse": 134,
+    "greenhouse": 133,
     "custom": 38,
-    "workday": 90,
+    "workday": 91,
     "lever": 7,
     "ashby": 25,
     "smartrecruiters": 9,
