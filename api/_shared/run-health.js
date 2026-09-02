@@ -42,6 +42,24 @@ async function recordRun(name, { ok, stats = {}, error = null } = {}) {
   } catch {}
 }
 
+// Upstash's REST client JSON-parses every value it reads back, so what hset
+// wrote is not always the type that comes out: the string "1" returns as the
+// NUMBER 1, and a JSON string returns as an already-parsed OBJECT.
+//
+// This is not theoretical. Comparing lastOk with === "1" reported every
+// SUCCESSFUL run as a failure, so /admin.html showed both crons red while the
+// feed was demonstrably updating on schedule. A monitor that cries wolf is
+// worse than no monitor: it trains you to ignore the one real alert.
+function readFlag(value) {
+  return value === 1 || value === "1" || value === true || value === "true";
+}
+
+function readJson(value) {
+  if (!value) return {};
+  if (typeof value === "object") return value; // already deserialized for us
+  try { return JSON.parse(value); } catch { return {}; }
+}
+
 function ageMs(iso, now) {
   const t = Date.parse(iso || "");
   return Number.isFinite(t) ? now - t : null;
@@ -58,10 +76,8 @@ async function readRun(name, now = Date.now()) {
     return { name, everRan: false, ok: false, stale: true, problem: `${name} has no recorded run.` };
   }
 
-  let stats = {};
-  try { stats = JSON.parse(raw.lastStats || "{}"); } catch {}
-
-  const ok = raw.lastOk === "1";
+  const stats = readJson(raw.lastStats);
+  const ok = readFlag(raw.lastOk);
   const age = ageMs(raw.lastRunAt, now);
   const stale = age === null || age > (STALE_AFTER_MS[name] || 30 * 60 * 60 * 1000);
 
@@ -91,4 +107,4 @@ async function readRunHealth(now = Date.now()) {
   return { runs, problems, healthy: problems.length === 0 };
 }
 
-module.exports = { recordRun, readRun, readRunHealth, STALE_AFTER_MS };
+module.exports = { recordRun, readRun, readRunHealth, readFlag, readJson, STALE_AFTER_MS };
