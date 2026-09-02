@@ -84,6 +84,7 @@ window.MONITORED_COMPANIES = [
   "Dentsu",
   "Discord",
   "Disney",
+  "Doctors Without Borders",
   "Dodge & Cox",
   "DoorDash",
   "Dropbox",
@@ -324,10 +325,10 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 315,
-  "companies": 315,
+  "sources": 316,
+  "companies": 316,
   "byPlatform": {
-    "greenhouse": 133,
+    "greenhouse": 134,
     "custom": 38,
     "workday": 90,
     "lever": 7,
@@ -346,7 +347,7 @@ window.PROMPTLY_COVERAGE = {
     "Engineering": 19,
     "Media": 15,
     "Consumer": 15,
-    "Nonprofit": 6,
+    "Nonprofit": 7,
     "Sports": 2,
     "Real Estate": 6,
     "Law": 13,
