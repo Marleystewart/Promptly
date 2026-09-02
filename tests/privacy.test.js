@@ -20,17 +20,27 @@ assert.doesNotMatch(script, /JSON\.stringify\(\{\s*company:\s*item\.company,\s*s
   "application progress must not leave the device");
 
 // API requests use a narrow allowlist instead of serializing the entire local
-// profile, which contains résumé text and a profile photo.
+// profile, which contains a profile photo and device-only UI state.
 const start = script.indexOf("function serverAlertProfile(");
 const end = script.indexOf("\n}\n", start);
 const allowlist = script.slice(start, end);
 assert.ok(start >= 0, "serverAlertProfile allowlist must exist");
 assert.doesNotMatch(allowlist, /resumeText|photoDataUrl|resumeName/, "device-only fields must not be allowlisted");
+
+// Résumé upload was removed for privacy: it invited exactly the kind of personal
+// detail Promptly has no reason to hold. Nothing may reintroduce it, and any
+// text an earlier version stored must be deleted from the device on upgrade.
+assert.doesNotMatch(script, /data-resume-|PromptlyResume|extractResumeText/,
+  "the resume upload feature must stay removed");
+assert.match(script, /delete profile\.resumeText;[\s\S]*delete profile\.resumeName;/,
+  "a resume stored by an earlier version must be purged from localStorage on load");
+assert.match(script, /if \("resumeText" in profile \|\| "resumeName" in profile\)[\s\S]*localStorage\.setItem\(profileStorageKey/,
+  "the purge must be written back, not left until the next save");
 assert.match(script, /profile:\s*serverAlertProfile\(\)/, "test-email requests must use the allowlist");
 
 // Sign-out must remove local data before another person uses the same browser.
 // This now also covers the device-only profile, which has no Supabase session
-// to end but holds the résumé, photo and saved alerts locally.
+// to end but holds the photo and saved alerts locally.
 const signOutBlock = script.match(/async function signOutAndReset\(\)[\s\S]*?\n}\n/)[0];
 assert.match(signOutBlock, /clearPromptlyClientState\(localStorage, sessionStorage\)/);
 assert.match(signOutBlock, /resettingClientState = true/,

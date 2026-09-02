@@ -29,7 +29,7 @@
     <meta name="twitter:title" content="Promptly | Never miss an internship opening" />
     <meta name="twitter:description" content="Alerts students the moment an internship opens. 315 employers monitored, refreshed hourly." />
     <meta name="twitter:image" content="https://app.joinpromptly.co/assets/og-card.png" />
-    <link rel="stylesheet" href="styles.css?v=20260902f" />
+    <link rel="stylesheet" href="styles.css?v=20260902g" />
   </head>
   <body class="onboarding-active launch-active">
     <section class="onboarding-shell" aria-label="Promptly sign up">
@@ -61,7 +61,7 @@
         <p class="auth-status" data-auth-status>Checking secure account setup...</p>
         <p class="signup-privacy-note">
           Before you continue: account and alert information is stored with our account and
-          alert providers; your résumé and photo stay on this device. Read
+          alert providers; your profile photo stays on this device. Read
           <a href="/privacy">Privacy</a> and <a href="/terms">Terms</a>.
         </p>
       </div>
@@ -85,23 +85,6 @@
         <div class="preference-options" aria-label="Location flexibility">
           <label><input data-remote-input type="checkbox" checked /> Open to remote roles</label>
           <label><input data-relocate-input type="checkbox" /> Willing to relocate</label>
-        </div>
-        <div class="resume-upload">
-          <span class="field-label wide">Résumé (optional — sharpens your matches)</span>
-          <div class="resume-drop" data-resume-drop>
-            <input type="file" data-resume-file accept=".pdf,.docx,.txt,.md,.rtf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" hidden />
-            <p class="resume-drop-main">Drag your résumé here, or <button type="button" class="link-button" data-resume-browse>choose a file</button></p>
-            <p class="resume-drop-sub">PDF, Word (.docx), or plain text</p>
-          </div>
-          <p class="resume-file-row" data-resume-file-row hidden>
-            <span data-resume-file-name></span>
-            <button type="button" class="link-button" data-resume-clear>Remove</button>
-          </p>
-          <details class="resume-paste" data-resume-paste>
-            <summary>Or paste the text instead</summary>
-            <textarea data-resume-input rows="4" placeholder="Paste your résumé text here. Promptly reads it to auto-detect your fields and rank the right openings first."></textarea>
-          </details>
-          <p data-resume-status>Private by design: your résumé never leaves this device. It is read right here in your browser and only decides which alerts rise first.</p>
         </div>
         <p class="form-error" data-academic-error hidden></p>
         <div class="step-actions">
@@ -434,7 +417,7 @@
                 <span class="status-pill">YOUR DATA AND SAFETY</span>
                 <h2>What Promptly does with your information</h2>
                 <ul class="trust-list">
-                  <li><b>Your résumé and photo never leave this device.</b> They are stored in your browser only — we have no copy.</li>
+                  <li><b>Your profile photo never leaves this device.</b> It is stored in your browser only — we have no copy.</li>
                   <li><b>We never sell your data.</b> Not to advertisers, not to data brokers, not to recruiters.</li>
                   <li><b>We never apply for you.</b> Every alert links to the employer's own official posting.</li>
                   <li><b>Promptly is free, and always will be for students.</b> If any posting asks you to pay to apply, it is a scam — tell us and we will pull the source.</li>
@@ -563,16 +546,13 @@
          auth is switched on, so a parked-auth build makes no third-party requests. -->
     <script src="watchlist.js?v=20260729a"></script>
     <script src="monitored.js?v=20260728b"></script>
-    <script src="auth-routing.js?v=20260902f"></script>
-    <!-- Résumé files are parsed in the browser. pdf.js itself is self-hosted and
-         imported on demand by resume-parser.js, only when a PDF is uploaded. -->
-    <script src="resume-parser.js?v=20260803b"></script>
+    <script src="auth-routing.js?v=20260902g"></script>
     <!-- Location resolution + great-circle distance, shared with the alert
          pipeline. Must load before script.js, which uses it on first render. -->
     <script src="geo.js?v=20260804a"></script>
     <script src="student-email.js?v=20260828a"></script>
     <script src="listing-state.js?v=20260825c"></script>
-    <script src="script.js?v=20260902f"></script>
-    <script src="assistant.js?v=20260902f"></script>
+    <script src="script.js?v=20260902g"></script>
+    <script src="assistant.js?v=20260902g"></script>
   </body>
 </html>

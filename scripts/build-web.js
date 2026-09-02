@@ -38,7 +38,6 @@ const WEB_FILES = [
   "student-email.js",
   "listing-state.js",
   "monitored.js",
-  "resume-parser.js",
   "watchlist.js",
 ];
 

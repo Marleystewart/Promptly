@@ -831,11 +831,9 @@ const profile = {
   willingToRelocate: false,
   interests: "",
   photoDataUrl: "",
-  resumeName: "",
-  resumeText: "",
   fields: [],
   // Fields the student turned on/off by hand, kept apart from the ones inferred
-  // from their major, interests, and résumé (see syncInferredFields).
+  // from their major and interests (see syncInferredFields).
   manualFieldsOn: [],
   manualFieldsOff: [],
   savedAlerts: [],
@@ -1162,7 +1160,7 @@ function preferredOpenings() {
 }
 
 function profileMatchText() {
-  return [profile.major, profile.interests, profile.school, profile.preferredLocation, profile.fields.join(" "), profile.resumeText].join(" ").toLowerCase();
+  return [profile.major, profile.interests, profile.school, profile.preferredLocation, profile.fields.join(" ")].join(" ").toLowerCase();
 }
 
 // ── Location search ───────────────────────────────────────────────────────
@@ -2579,7 +2577,7 @@ function inferFieldsFromText(value) {
   return fieldOptions.filter((field) => interestKeywords[field].some((keyword) => keywordInText(keyword, text)));
 }
 
-// A résumé mentions a lot of things in passing, so raw keyword matching can
+// Free text mentions a lot of things in passing, so raw keyword matching can
 // light up half the grid and stop meaning anything. Rank by how many distinct
 // keywords actually hit, and keep only the strongest few.
 const MAX_AUTO_FIELDS = 4;
@@ -2599,23 +2597,14 @@ function rankedInferredFields(value) {
 // Everything the student has told us in their own words. These are the only
 // inputs field inference is allowed to read, so "what's selected" always has a
 // visible cause the student can point at.
-// Section headings are résumé structure, not things the student is into.
-// Every résumé has an "EDUCATION" heading and most have "SKILLS" — matching on
-// those says nothing about the person.
-const RESUME_SECTION_HEADING = /^[ \t]*(education|academic background|professional experience|work experience|experience|employment|entrepreneurship|technical skills|skills|certifications?|awards?|honou?rs?|leadership[^\n]{0,40}|extracurriculars?|activities|projects?|summary|objective|profile|references|coursework|relevant coursework|volunteer(?: experience)?)[ \t]*:?[ \t]*$/gim;
-
-function resumeInferenceText() {
-  return String(profile.resumeText || "").replace(RESUME_SECTION_HEADING, " ");
-}
-
 function inferenceSourceText() {
-  return [profile.major, profile.interests, resumeInferenceText()].filter(Boolean).join(" ");
+  return [profile.major, profile.interests].filter(Boolean).join(" ");
 }
 
 // Recompute the selected fields from the CURRENT text.
 //
 // This used to be a union that only ever grew (mergeFields), which meant
-// deleting your résumé left every field it had picked still switched on — the
+// clearing your interests left every field they had picked still switched on — the
 // selection stopped matching the thing it claimed to be based on. Now the
 // inferred set is derived fresh each time, and the student's own taps are kept
 // separately so re-inferring can never silently undo a deliberate choice:
@@ -2625,7 +2614,7 @@ function syncInferredFields() {
   const ranked = rankedInferredFields(inferenceSourceText());
   // Cap what we switch on automatically. Everything stays tappable, and
   // "show all" (below) opts into the rest — but we don't decide for them that
-  // eight fields matter just because their résumé said the words.
+  // eight fields matter just because their interests mentioned the words.
   const inferred = profile.showAllInferredFields ? ranked : ranked.slice(0, MAX_AUTO_FIELDS);
   const manualOn = Array.isArray(profile.manualFieldsOn) ? profile.manualFieldsOn : [];
   const manualOff = Array.isArray(profile.manualFieldsOff) ? profile.manualFieldsOff : [];
@@ -2707,7 +2696,7 @@ function accountProfile() {
 }
 
 // Exact allowlist for Promptly's alert API. Do not serialize the whole profile:
-// it also contains résumé text, a photo data URL, and device-only UI state.
+// it also contains a photo data URL and device-only UI state.
 function serverAlertProfile() {
   return {
     ...accountProfile(),
@@ -2755,9 +2744,6 @@ function fillProfileInputs() {
   document.querySelector("[data-remote-input]").checked = profile.remoteOkay !== false;
   document.querySelector("[data-relocate-input]").checked = profile.willingToRelocate === true;
   document.querySelector("[data-interests-input]").value = profile.interests || "";
-  const resumeInput = document.querySelector("[data-resume-input]");
-  if (resumeInput) resumeInput.value = profile.resumeText || "";
-  showResumeFile(profile.resumeName || "");
 }
 
 function updateAccountUI(message = "") {
@@ -2782,10 +2768,10 @@ async function signOutAndReset() {
 
   // An account keeps its profile and saved alerts server-side and can simply
   // sign back in. A device-only profile has no such copy, so this discards it —
-  // say so rather than letting someone lose a résumé they cannot get back.
+  // say so rather than letting someone lose a profile they cannot get back.
   if (!authUser) {
     const confirmed = window.confirm(
-      "This profile is stored on this device only, so starting over clears it — including your résumé, photo and saved alerts. Continue?"
+      "This profile is stored on this device only, so starting over clears it — including your photo and saved alerts. Continue?"
     );
     if (!confirmed) return;
   }
@@ -2808,7 +2794,7 @@ async function signOutAndReset() {
   }
 
   authUser = null;
-  // A shared computer must not reveal the previous account's résumé, photo,
+  // A shared computer must not reveal the previous account's photo,
   // profile, saved jobs, or Supabase session to the next person. Stop anything
   // that could write state back after the wipe.
   resettingClientState = true;
@@ -2867,9 +2853,7 @@ function applyAccountUser(user) {
       willingToRelocate: false,
       interests: "",
       photoDataUrl: "",
-      resumeName: "",
-  resumeText: "",
-      fields: [],
+          fields: [],
       manualFieldsOn: [],
       manualFieldsOff: [],
       savedAlerts: [],
@@ -3478,6 +3462,16 @@ function restoreProfile() {
     const savedProfile = JSON.parse(localStorage.getItem(profileStorageKey) || "null");
     if (!savedProfile) return false;
     Object.assign(profile, savedProfile);
+    // Résumé upload has been removed. Anyone who used it still has the extracted
+    // text sitting in this browser's storage, so dropping the feature is not
+    // enough — the data has to go. Deleted here on first load after the update,
+    // and written straight back so it cannot survive a crash before the next
+    // save. It never left the device, so this is the only copy there is.
+    if ("resumeText" in profile || "resumeName" in profile) {
+      delete profile.resumeText;
+      delete profile.resumeName;
+      localStorage.setItem(profileStorageKey, JSON.stringify(profile));
+    }
     // Profiles saved before fields tracked manual intent have no record of WHY
     // anything was selected. Work it out instead of guessing: anything their
     // own text explains is treated as inferred (so it now clears when that text
@@ -3490,10 +3484,6 @@ function restoreProfile() {
     fillProfileInputs();
     // Résumé matching is live now — reflect the saved file instead of the old
     // "coming soon" placeholder this used to show.
-    if (profile.resumeName) {
-      showResumeFile(profile.resumeName);
-      setResumeStatus(`Using ${profile.resumeName} — stored on this device only.`, "ok");
-    }
     applyProfileToUI();
     setView("home");
     return true;
@@ -3509,14 +3499,10 @@ function enterApp() {
   const typedName = document.querySelector("[data-name-input]").value.trim();
   const typedEmail = document.querySelector("[data-email-input]").value.trim();
   const typedInterests = document.querySelector("[data-interests-input]").value.trim();
-  const typedResume = document.querySelector("[data-resume-input]")?.value.trim() || "";
   if (!validateSignup() || !validateAcademicProfile()) return;
   if (typedName) profile.name = typedName;
   if (typedEmail) profile.email = typedEmail;
   profile.interests = typedInterests;
-  // An uploaded file already set resumeText; don't let the textarea (which
-  // mirrors it) be the authority when a real file is attached.
-  if (!profile.resumeName) profile.resumeText = typedResume.slice(0, 8000);
   syncInferredFields();
   saveProfile();
   saveSubscriber();
@@ -4165,7 +4151,7 @@ document.addEventListener("click", async (event) => {
 document.querySelector("[data-email-input]")?.addEventListener("input", () => setSignupError());
 document.querySelector("[data-name-input]")?.addEventListener("input", () => setSignupError());
 // Typing is the other way to tell Promptly what you want, so it has to drive
-// the same inference the résumé does — and update as the text shrinks, not just
+// the same inference the interests box does — and update as the text shrinks, not just
 // as it grows. Debounced so it doesn't recompute on every keystroke.
 let inferenceTimer = null;
 function scheduleFieldInference() {
@@ -4173,10 +4159,6 @@ function scheduleFieldInference() {
   inferenceTimer = setTimeout(() => {
     profile.interests = document.querySelector("[data-interests-input]")?.value.trim() || "";
     profile.major = document.querySelector("[data-major-input]")?.value.trim() || profile.major;
-    const pasted = document.querySelector("[data-resume-input]")?.value.trim() || "";
-    // Only adopt pasted text as the résumé when no uploaded file is in play,
-    // otherwise clearing the box would wipe out the file's extracted text.
-    if (!profile.resumeName) profile.resumeText = pasted.slice(0, 8000);
     syncInferredFields();
     saveProfile();
   }, 350);
@@ -4454,7 +4436,6 @@ document.addEventListener("keydown", (event) => {
 });
 
 document.querySelector("[data-interests-input]")?.addEventListener("input", scheduleFieldInference);
-document.querySelector("[data-resume-input]")?.addEventListener("input", scheduleFieldInference);
 document.querySelector("[data-major-input]")?.addEventListener("input", scheduleFieldInference);
 
 document.querySelector("[data-school-input]")?.addEventListener("input", () => setAcademicError());
@@ -4486,134 +4467,6 @@ document.querySelector("[data-photo-input]")?.addEventListener("change", (event)
   });
   reader.readAsDataURL(file);
 });
-
-// --- Résumé upload -----------------------------------------------------------
-// The file is read by resume-parser.js in this browser and never uploaded. What
-// we keep is the extracted text (same field pasting has always filled), so the
-// existing matching logic picks it up with no changes.
-const RESUME_PRIVACY_NOTE =
-  "Private by design: your résumé never leaves this device. It is read right here in your browser and only decides which alerts rise first.";
-
-function setResumeStatus(message, tone = "") {
-  const status = document.querySelector("[data-resume-status]");
-  if (!status) return;
-  status.textContent = message;
-  status.dataset.tone = tone;
-}
-
-function showResumeFile(name) {
-  const row = document.querySelector("[data-resume-file-row]");
-  const label = document.querySelector("[data-resume-file-name]");
-  if (!row || !label) return;
-  if (name) {
-    label.textContent = name;
-    row.hidden = false;
-  } else {
-    row.hidden = true;
-  }
-}
-
-async function handleResumeFile(file) {
-  if (!file || !window.PromptlyResume) return;
-  setResumeStatus(`Reading ${file.name}…`);
-
-  const result = await window.PromptlyResume.extractResumeText(file);
-  if (!result.ok) {
-    showResumeFile("");
-    setResumeStatus(result.reason, "error");
-    // Open the paste fallback so the student has an obvious way forward.
-    const paste = document.querySelector("[data-resume-paste]");
-    if (paste) paste.open = true;
-    return;
-  }
-
-  profile.resumeName = file.name;
-  profile.resumeText = result.text;
-  const textarea = document.querySelector("[data-resume-input]");
-  if (textarea) textarea.value = result.text;
-
-  // The résumé already states school, major, and graduation year. Fill those in
-  // when they're blank rather than making the student retype them — but never
-  // overwrite something they typed themselves.
-  const filled = [];
-  const education = window.PromptlyResume.detectEducation
-    ? window.PromptlyResume.detectEducation(result.text)
-    : {};
-  const educationFields = [
-    ["school", "[data-school-input]", "school"],
-    ["major", "[data-major-input]", "major"],
-    ["gradYear", "[data-grad-year-input]", "graduation year"],
-  ];
-  for (const [key, selector, label] of educationFields) {
-    if (!education[key] || String(profile[key] || "").trim()) continue;
-    profile[key] = education[key];
-    const input = document.querySelector(selector);
-    if (input) input.value = education[key];
-    filled.push(label);
-  }
-
-  // Runs after the education fill so a major read off the résumé counts too.
-  syncInferredFields();
-  saveProfile();
-  saveSubscriber();
-
-  showResumeFile(file.name);
-  const words = result.text.split(/\s+/).filter(Boolean).length;
-  // Say what was auto-filled — a field that changes on its own is unnerving
-  // unless you're told why, and the student may want to correct it.
-  const filledNote = filled.length ? ` Filled in your ${filled.join(", ")} from it — edit if any of it is off.` : "";
-  setResumeStatus(
-    `Read ${words.toLocaleString()} words from ${file.name}${result.truncated ? " (first 8,000 characters used)" : ""}.${filledNote} Your matches now use it. It stayed on this device.`,
-    "ok"
-  );
-}
-
-document.querySelector("[data-resume-browse]")?.addEventListener("click", () => {
-  document.querySelector("[data-resume-file]")?.click();
-});
-
-document.querySelector("[data-resume-file]")?.addEventListener("change", (event) => {
-  const file = event.target.files?.[0];
-  if (file) handleResumeFile(file);
-  event.target.value = ""; // let the same file be re-picked after a failure
-});
-
-document.querySelector("[data-resume-clear]")?.addEventListener("click", () => {
-  profile.resumeName = "";
-  profile.resumeText = "";
-  const textarea = document.querySelector("[data-resume-input]");
-  if (textarea) textarea.value = "";
-  // The résumé is gone, so the fields it alone justified have to go with it.
-  syncInferredFields();
-  saveProfile();
-  saveSubscriber();
-  showResumeFile("");
-  setResumeStatus(RESUME_PRIVACY_NOTE);
-});
-
-const resumeDrop = document.querySelector("[data-resume-drop]");
-if (resumeDrop) {
-  resumeDrop.addEventListener("click", (event) => {
-    // The whole panel is a target, but don't double-fire on the browse button.
-    if (event.target.closest("[data-resume-browse]")) return;
-    document.querySelector("[data-resume-file]")?.click();
-  });
-  ["dragenter", "dragover"].forEach((type) => {
-    resumeDrop.addEventListener(type, (event) => {
-      event.preventDefault();
-      resumeDrop.classList.add("is-dragging");
-    });
-  });
-  ["dragleave", "dragend"].forEach((type) => {
-    resumeDrop.addEventListener(type, () => resumeDrop.classList.remove("is-dragging"));
-  });
-  resumeDrop.addEventListener("drop", (event) => {
-    event.preventDefault();
-    resumeDrop.classList.remove("is-dragging");
-    const file = event.dataTransfer?.files?.[0];
-    if (file) handleResumeFile(file);
-  });
-}
 
 document.querySelector(".search-panel input")?.addEventListener("input", (event) => {
   const query = event.target.value.trim();
