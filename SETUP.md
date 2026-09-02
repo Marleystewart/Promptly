@@ -21,3 +21,23 @@ For launch, configure custom SMTP in Supabase so confirmation and password-reset
 ## Alert delivery
 
 Email alerts use Resend. Phone notifications use Web Push and the VAPID variables documented in `.env.example`. New openings are collected from employer ATS feeds, and each delivered alert links to the exact HTTPS posting returned by that feed.
+
+## Shipping a change to CSS or JS
+
+Promptly is a static site with no bundler, so browsers are told a file changed
+by the `?v=` query string on its `<script>`/`<link>` tag. Skip that and your fix
+never reaches anyone who already has the app open — it will look as though the
+change did nothing, which is a miserable thing to debug.
+
+Every asset shares one version. Bump it with:
+
+```bash
+npm run bump
+```
+
+That rewrites every `?v=` across all pages and sets the service-worker cache
+name to match, so the two can never drift apart. Pass an explicit version if you
+need one (`node scripts/bump-version.js 20260902k`).
+
+`npm test` fails if the versions disagree, so a forgotten bump is caught before
+it ships rather than by a returning user.
