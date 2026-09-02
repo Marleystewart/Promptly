@@ -154,3 +154,25 @@ assert.doesNotMatch(markup, /Coming next with SMS setup/, "the dead SMS checkbox
     `Settings must not offer a control nobody can use. Found: ${disabled.join(" ")}`
   );
 }
+
+// Onboarding must not let someone finish with zero fields.
+//
+// Alerts are matched on fields, so an account with none matches nothing and can
+// never receive a single alert — silently, forever. Inference covers "Computer
+// Science" but returns nothing for "Undeclared", "General Studies" or "Liberal
+// Arts", which is exactly the underclassmen Promptly is built for. The signup
+// funnel found one confirmed account in precisely this state.
+assert.match(script, /function validateInterests\(\)/, "onboarding needs a fields check");
+assert.match(
+  script,
+  /syncInferredFields\(\);\s*\n\s*if \(!validateInterests\(\)\) return;/,
+  "fields must be inferred first, then validated — otherwise we ask for something they just supplied"
+);
+assert.match(markup, /data-interests-error/, "the fields step needs somewhere to show the error");
+{
+  const enterApp = script.match(/function enterApp\(\)[\s\S]*?\n}/)[0];
+  assert.ok(
+    enterApp.indexOf("validateInterests") < enterApp.indexOf("saveSubscriber"),
+    "the check must run before the account is saved, not after"
+  );
+}
