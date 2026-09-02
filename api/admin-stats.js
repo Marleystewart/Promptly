@@ -11,6 +11,7 @@ const { listReports } = require("./_shared/reports");
 const { readEmailHealth } = require("./_shared/email-health");
 const { readIntegrationHealth, probeUsaJobs } = require("./_shared/integration-health");
 const { readRunHealth } = require("./_shared/run-health");
+const { buildFunnel } = require("./_shared/funnel");
 const crypto = require("crypto");
 
 function mask(email) {
@@ -82,6 +83,10 @@ module.exports = async function handler(req, res) {
 
     const live = await getStats();
 
+    // Where people drop. Exact record counts, never blended with the anonymous
+    // daily activity counters below — see funnel.js for why that matters.
+    const funnel = buildFunnel(subscribers, Date.now());
+
     // "Watch any company" intent data — what users asked Promptly to track.
     // Watched = a real ATS board now in the pipeline; coverage = a page we
     // couldn't auto-read (a demand signal for sources worth adding).
@@ -151,6 +156,7 @@ module.exports = async function handler(req, res) {
     try { runHealth = await readRunHealth(); } catch {}
 
     return res.status(200).json({
+      funnel,
       runHealth,
       emailHealth,
       integrationHealth,

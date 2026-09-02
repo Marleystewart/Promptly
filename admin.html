@@ -77,6 +77,47 @@ async function load() {
         ${eh.lastFailureAt ? `<div class="muted" style="margin-top:6px">Last failure (${escapeHtml(eh.lastFailureKind || "—")}) ${escapeHtml(eh.lastFailureAt)}: ${escapeHtml(eh.lastFailureReason || "—")}</div>` : ""}
         ${eh.lastSuccessAt ? `<div class="muted" style="margin-top:6px">Last successful send (${escapeHtml(eh.lastSuccessKind || "—")}) ${escapeHtml(eh.lastSuccessAt)}</div>` : `<div class="muted" style="margin-top:6px">No successful send recorded yet.</div>`}
       </div>`;
+    // Where people drop. Each stage is a subset of the one above, so the gap
+    // between two rows is a real number of people.
+    const fn = d.funnel;
+    const funnelPanel = !fn ? "" : (() => {
+      const top = fn.stages[0].count || 0;
+      const bars = fn.stages.map((st, i) => {
+        const prev = i ? fn.stages[i - 1].count : st.count;
+        const lost = prev - st.count;
+        const width = top ? Math.max(2, Math.round((st.count / top) * 100)) : 2;
+        return `
+          <div style="margin-bottom:10px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:13px">
+              <span>${escapeHtml(st.label)}</span>
+              <span><strong style="font-size:16px">${st.count}</strong> <span class="muted">${st.pct}%</span></span>
+            </div>
+            <div style="height:8px;border-radius:4px;background:#1b1e33;margin-top:4px;overflow:hidden">
+              <div style="height:100%;width:${width}%;background:${i === fn.stages.length - 1 ? "#6fd3a3" : "#7c5cff"}"></div>
+            </div>
+            ${i && lost > 0 ? `<div class="muted" style="font-size:12px;margin-top:3px">&minus;${lost} lost here</div>` : ""}
+          </div>`;
+      }).join("");
+      const s2 = fn.stuck;
+      const todo = [
+        s2.unconfirmed ? `${s2.unconfirmed} never confirmed their email${s2.unconfirmedExpiringSoon ? ` (${s2.unconfirmedExpiringSoon} deleted within 3 days)` : ""}` : "",
+        s2.confirmedNeverAlerted ? `${s2.confirmedNeverAlerted} confirmed but have never been sent an alert` : "",
+        s2.noFields ? `${s2.noFields} have no fields set, so nothing can match them` : "",
+        s2.alertsOff ? `${s2.alertsOff} have switched all alerts off` : "",
+      ].filter(Boolean);
+      return `
+        <div style="border:1px solid #2a2f4a;background:#12142a;border-radius:10px;padding:16px 18px;margin:0 0 18px">
+          <strong style="display:block;margin-bottom:14px">Signup funnel</strong>
+          ${bars}
+          ${todo.length ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid #2a2f4a">
+            ${todo.map(t => `<div class="muted" style="margin-bottom:4px">${escapeHtml(t)}</div>`).join("")}
+          </div>` : ""}
+          <div class="muted" style="font-size:12px;margin-top:12px">
+            Exact account counts. App opens and posting clicks are anonymous daily
+            counters and are reported separately &mdash; they are not part of this funnel.
+          </div>
+        </div>`;
+    })();
     // Did the scheduled jobs actually run? A cron failing nightly is
     // indistinguishable from a quiet week without this.
     const rh = d.runHealth;
@@ -120,6 +161,7 @@ async function load() {
         `).join("")}
       </div>`;
     $("out").innerHTML = `
+      ${funnelPanel}
       ${runBanner}
       ${emailBanner}
       ${integrationBanner}
