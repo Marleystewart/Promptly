@@ -1,4 +1,4 @@
-const cacheName = "opening-20260902w";
+const cacheName = "opening-20260902x";
 // pdf.js (assets/vendor/*) is deliberately NOT precached — it's ~1.7MB and only
 // needed if someone uploads a PDF. The fetch handler below caches it lazily on
 // first real use.
