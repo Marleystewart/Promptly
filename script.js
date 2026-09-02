@@ -657,6 +657,7 @@ const COMPANY_ALIASES = {
   federalreserve: "federalreserveboard", // registry names the Board specifically
   nbcuniversal: "comcastnbcuniversal",   // NBCU hires through Comcast's board
   waltdisney: "disney",                  // "The Walt Disney Company" on the card
+  fisglobal: "fis",                      // registry uses the legal short name
 };
 
 function normalizeCompanyName(name) {
