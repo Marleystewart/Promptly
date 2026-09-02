@@ -262,7 +262,7 @@ window.WATCHLIST = [
   { company: "Prologis", short: "PLD", logoClass: "consumer", field: "Real Estate", subField: "Development" },
   { company: "Related Companies", short: "REL", logoClass: "consumer", field: "Real Estate", subField: "Development" },
   { company: "Zillow", short: "ZG", logoClass: "tech", field: "Real Estate", subField: "Property Technology" },
-  { company: "Blackstone Real Estate", short: "BXRE", logoClass: "fin", field: "Real Estate", subField: "Investment" },
+  { company: "Blackstone", short: "BX", logoClass: "bx", field: "Finance", subField: "Private Equity" },
 
   // ── Live-feed companies (Ashby/SmartRecruiters, added Jul 2026) ──────────
   // These have verified live pipelines; cards show as awaiting until their
@@ -306,7 +306,7 @@ window.COMPANY_DOMAINS = {
   "BCG": "bcg.com", "Bain & Company": "bain.com", "Bain Capital": "baincapital.com",
   "Bank of America": "bankofamerica.com", "Barclays": "barclays.com", "Benefit Street Partners": "benefitstreetpartners.com",
   "Betterment": "betterment.com", "BlackRock": "blackrock.com", "Blackstone": "blackstone.com",
-  "Blackstone Real Estate": "blackstone.com", "Blend": "blend.com", "Block (Square)": "block.xyz",
+  "Blend": "blend.com", "Block (Square)": "block.xyz",
   "Bloomberg": "bloomberg.com", "Blue Owl Capital": "blueowl.com", "Boeing": "boeing.com",
   "Booz Allen Hamilton": "boozallen.com", "Bottomline Technologies": "bottomline.com", "Bread Financial": "breadfinancial.com",
   "Brex": "brex.com", "Bristol Myers Squibb": "bms.com", "Broad Institute": "broadinstitute.org",
