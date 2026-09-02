@@ -141,3 +141,16 @@ assert.match(assistant, /querySelector\("\.top-actions"\)/, "Ask Promptly must b
 assert.match(css, /\.top-actions \.ap-launcher\s*\{[\s\S]*position:\s*static/, "the docked helper must not float over cards");
 
 console.log("Mobile UI regression tests passed.");
+
+// No permanently disabled controls. A checkbox that can never be ticked reads
+// as an abandoned product, and "Coming next with SMS setup" had been sitting in
+// Settings unbuilt. Ship the feature or remove the control.
+const markup = fs.readFileSync(path.join(root, "index.html"), "utf8");
+assert.doesNotMatch(markup, /Coming next with SMS setup/, "the dead SMS checkbox must stay removed");
+{
+  const disabled = markup.match(/<input[^>]*\bdisabled\b[^>]*>/g) || [];
+  assert.equal(
+    disabled.length, 0,
+    `Settings must not offer a control nobody can use. Found: ${disabled.join(" ")}`
+  );
+}
