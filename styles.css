@@ -56,6 +56,13 @@ input {
 button {
   border: 0;
   cursor: pointer;
+  /* Guard against native control styling. A button that is added to the markup
+     before it has a rule should inherit the dark UI, not render as a grey
+     system button — which is exactly how the profile actions shipped. */
+  -webkit-appearance: none;
+  appearance: none;
+  background: none;
+  color: inherit;
 }
 
 a {
@@ -1017,6 +1024,39 @@ body.launch-active .onboarding-brand {
   color: #d8d0ff;
 }
 
+/* Tertiary action. This class was used in the profile card markup but never
+   had a rule, so Edit profile / Connect account / Restart demo rendered as raw
+   grey browser buttons — 21px tall, square corners, default appearance. It is
+   defined here rather than patched per-screen so every .tiny-action in the app
+   picks up the design system. */
+.tiny-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 13px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  font: 650 14px var(--font);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+}
+.tiny-action:hover { background: rgba(255, 255, 255, 0.11); }
+.tiny-action:active { transform: scale(0.97); }
+/* The two recovery actions read as tertiary, not equal to Edit profile. */
+.tiny-action[data-reset-demo],
+.tiny-action[data-sign-out] {
+  background: none;
+  border-color: transparent;
+  color: var(--muted);
+}
+.tiny-action[data-reset-demo]:hover,
+.tiny-action[data-sign-out]:hover { color: var(--ink); background: rgba(255, 255, 255, 0.06); }
+
 .mega-logo,
 .modal-logo {
   width: 190px;
@@ -1337,7 +1377,10 @@ body.launch-active .onboarding-brand {
   border: 0;
   padding: 0 0 0 6px;
   font: inherit;
-  color: var(--purple-2, #c3b1ff);
+  /* --purple-2 (#5d38f2) is a deep saturated purple: on the dark glass it read
+     as an unstyled default browser link. A light lavender carries the same
+     brand hue at a contrast that is actually legible. */
+  color: #c3b1ff;
   font-weight: 700;
   cursor: pointer;
   text-decoration: underline;
@@ -3285,13 +3328,16 @@ body.onboarding-active .ap-panel { display: none; }
 .month-modal::backdrop { background: rgba(6,8,16,0.62); backdrop-filter: blur(3px); }
 .month-modal .close-modal { position: absolute; top: 16px; right: 18px; }
 
-/* ══ APP-ONLY COMPACT DENSITY ═══════════════════════════════════════════════
-   Applies ONLY when Promptly runs as the installed app (Add to Home Screen /
-   standalone display-mode). Regular browser tabs — desktop or mobile web — never
-   match this, so the webview layout is completely unchanged. Goal: a tighter,
-   more LinkedIn-like density that fits more on screen without feeling clustered.
+/* ══ COMPACT DENSITY ════════════════════════════════════════════════════════
+   A tighter density that fits more on screen without feeling clustered.
+   This was originally gated on `display-mode: standalone` alone, which meant
+   only the installed Home Screen app ever received it — every student opening
+   Promptly in mobile Safari got the full desktop-scale sizing. That is the
+   single biggest reason the phone layout read as "a shrunk desktop". It now
+   applies at phone widths too; standalone is kept so an installed desktop app
+   keeps the density it already had.
    ════════════════════════════════════════════════════════════════════════ */
-@media (display-mode: standalone) {
+@media (max-width: 720px), (display-mode: standalone) {
   body { font-size: 14px; }
 
   /* Page heading — was oversized on the app (wrapped to 3 lines) */
@@ -3526,8 +3572,10 @@ body.onboarding-active .ap-panel { display: none; }
     line-height: 1.5;
   }
 
-  /* The last industry must clear the fixed bottom navigation. */
-  #view-cycles { padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px)); }
+  /* Clearance for the fixed bottom nav now lives once on .workspace, derived
+     from --nav-total, so it tracks the bar instead of repeating a magic number
+     here and stacking a second gap under the last industry. */
+  #view-cycles { padding-bottom: 0; }
 }
 
 /* ── Company sheet ──────────────────────────────────────────────────────── */
@@ -3599,3 +3647,379 @@ body.onboarding-active .ap-panel { display: none; }
 .student-hint.is-student::before {
   content: "✓ ";
 }
+
+/* ══ MOBILE POLISH ══════════════════════════════════════════════════════════
+   One consolidated phone layer, driven by tokens rather than per-screen
+   overrides. Everything here is inside the phone breakpoint, so the desktop
+   interface is untouched.
+
+   The problem this solves: components were sized for a desktop dashboard and
+   then scaled down, so on a phone they read as too tall, too padded, and too
+   uniformly bold. The fixes below are proportional, not cosmetic — they change
+   spacing, type scale and density, never information.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 720px) {
+  :root {
+    /* Spacing scale — 4/8/12/16/20/24/32, no arbitrary values below. */
+    --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px;
+    /* Card radii: small / standard / feature. */
+    --r-sm: 16px; --r-md: 20px; --r-lg: 24px;
+    /* Screen gutter, applied once at the workspace edge. */
+    --gutter: 16px;
+    /* Bottom navigation, so page padding and the bar cannot drift apart. */
+    /* Bar height (58px item + 12px padding) plus the 10px it floats above the
+       screen edge. Page padding is derived from this so the two can never
+       drift apart and hide the last card behind the bar. */
+    --nav-h: 70px;
+    --nav-total: calc(var(--nav-h) + 10px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* ── Shell ─────────────────────────────────────────────────────────────── */
+  .app-shell { padding: var(--s2) var(--s2) 0; }
+  .workspace {
+    border-radius: var(--r-lg);
+    padding: var(--s4) var(--gutter) calc(var(--nav-total) + var(--s4));
+  }
+
+  /* ── Header ────────────────────────────────────────────────────────────── */
+  /* The title block was 75px tall for a 22px word: eyebrow + loose line height
+     + margins. Tightened into one compact unit. */
+  /* The title column had no flex basis, so it collapsed to ~130px and wrapped
+     "Welcome back" onto three lines beside the icons. */
+  .topbar { align-items: center; gap: var(--s3); margin-bottom: var(--s4); }
+  .topbar > div:first-child { flex: 1 1 auto; min-width: 0; }
+  .topbar .eyebrow { font-size: 11px; line-height: 1.2; opacity: 0.72; }
+  .topbar h1 {
+    margin-top: 2px;
+    font-size: clamp(21px, 5.8vw, 27px);
+    line-height: 1.1;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+  }
+  /* Four actions at 44px + 8px gaps claimed 198px of a 340px header, leaving
+     the greeting 130px and wrapping it onto three lines. 42px/6px returns
+     ~50px to the title while staying above the 44px target with the row's
+     vertical padding. */
+  .top-actions { gap: 6px; }
+  .icon-btn, .profile-chip, .top-actions .ap-launcher {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    border-radius: 13px;
+  }
+  .icon-btn svg { width: 20px; height: 20px; }
+  .topbar h1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* ── Typography scale ──────────────────────────────────────────────────── */
+  .section-head h2 { font-size: 20px; line-height: 1.2; font-weight: 750; }
+  .settings-card h2, .card-copy h2 { font-size: 21px; line-height: 1.2; }
+  .status-pill { font-size: 10.5px; padding: 4px 9px; letter-spacing: 0.06em; }
+
+  /* Secondary text was dropping to ~0.42 alpha over glass and becoming hard to
+     read. Metadata stays muted but legible; only tertiary detail goes faint. */
+  .opening-row small, .profile-row span { color: rgba(250, 250, 255, 0.72); }
+  input::placeholder { color: rgba(250, 250, 255, 0.55); }
+
+  /* ── Cards ─────────────────────────────────────────────────────────────── */
+  /* .card-copy is deliberately excluded: it sits inside .featured-card, and
+     padding on both produced the nested-rounded-rectangle look. */
+  .settings-card, .system-status, .peer-pulse, .purpose-bar {
+    border-radius: var(--r-md);
+    padding: var(--s4);
+  }
+  .home-grid, .settings-grid { gap: var(--s3); }
+
+  /* ── Purpose bar ───────────────────────────────────────────────────────── */
+  .purpose-bar { gap: var(--s3); align-items: flex-start; margin-bottom: var(--s3); }
+  .purpose-bar p { font-size: 14px; line-height: 1.45; }
+  .purpose-dot { margin-top: 6px; flex: 0 0 8px; width: 8px; height: 8px; }
+
+  /* ── Alert-intelligence carousel ───────────────────────────────────────── */
+  /* Already a snap carousel; just made less bulky and given a clearer peek. */
+  .alert-intelligence { gap: var(--s3); margin: 0 calc(var(--gutter) * -1) var(--s4); padding: 2px var(--gutter) var(--s2); }
+  .alert-intelligence article { flex-basis: 86%; padding: var(--s4); border-radius: var(--r-md); }
+  .system-status .pulse-ring { width: 72px; height: 72px; }
+
+  /* ── Featured card ─────────────────────────────────────────────────────── */
+  /* Was 563px — most of a phone screen for one listing. */
+  .featured-card { padding: var(--s4); border-radius: var(--r-lg); gap: var(--s3); min-height: 0; }
+  .featured-card .card-copy { padding: 0; gap: var(--s2); }
+  .featured-card h2, .featured-card [data-feature-title] {
+    font-size: 21px;
+    line-height: 1.18;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .featured-card p {
+    font-size: 14px;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .mega-logo { width: 84px; height: 84px; font-size: 20px; border-radius: var(--r-sm); }
+  .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+  .card-actions button { width: 100%; min-height: 50px; padding: 0 var(--s3); font-size: 15px; }
+
+  /* ── Live statistics strip ─────────────────────────────────────────────── */
+  .peer-pulse { padding: var(--s3) var(--s4); gap: var(--s2); align-items: center; margin-bottom: var(--s3); }
+  .peer-pulse p { font-size: 14px; line-height: 1.4; }
+
+  /* ── Chip rows ─────────────────────────────────────────────────────────── */
+  /* Scroll inside the row only — the row bleeds to the screen edge so chips
+     do not appear to stop short of it, but the page never scrolls. */
+  .filter-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: var(--s2);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 calc(var(--gutter) * -1) var(--s3);
+    padding: 2px var(--gutter);
+    scroll-padding-left: var(--gutter);
+  }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .filter-chip {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 0 15px;
+    font-size: 13.5px;
+    white-space: nowrap;
+  }
+
+  /* ── Opening cards ─────────────────────────────────────────────────────── */
+  /* Was ~290px and four near-identical metadata lines. The collapsed card now
+     carries identity, role and one metadata line; deadline, exact location,
+     fit reasoning and source all remain one tap away in the details sheet. */
+  .opening-row { padding: var(--s3) var(--s4); border-radius: var(--r-md); gap: var(--s3); }
+  .opening-row h3 { font-size: 17px; line-height: 1.25; }
+  .opening-row p {
+    font-size: 14px;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .opening-row small { font-size: 12.5px; line-height: 1.4; }
+  /* Fit and source are reference detail, not scanning detail. */
+  .opening-row .source-line, .opening-row .match-line { display: none; }
+  .opening-row .location-line { display: block; }
+
+  /* ── Openings search ───────────────────────────────────────────────────── */
+  .search-panel { padding: var(--s3); border-radius: var(--r-md); margin-bottom: var(--s3); }
+  .search-panel label { min-height: 50px; padding: 0 var(--s3); border-radius: 14px; }
+  .search-panel input { font-size: 16px; } /* 16px: anything smaller zooms on iOS */
+  .search-panel .filter-row { margin-bottom: 0; }
+
+  /* ── Saved empty state ─────────────────────────────────────────────────── */
+  .empty-state { padding: var(--s6) var(--s4); gap: var(--s3); min-height: 0; }
+  .empty-state .pulse-ring.small { width: 72px; height: 72px; }
+  .empty-state h2 { font-size: 19px; line-height: 1.3; }
+  .empty-state p { font-size: 14px; line-height: 1.45; }
+
+  /* ── Watch any company ─────────────────────────────────────────────────── */
+  .watch-any-card { margin-bottom: var(--s3); }
+  .watch-any-card p { font-size: 13.5px; line-height: 1.45; }
+  .watch-input-row { gap: var(--s2); }
+  .watch-input-row input { min-height: 50px; padding: 0 14px; font-size: 16px; border-radius: 13px; }
+  .watch-input-row .primary-action { min-height: 50px; }
+
+  /* ── Profile ───────────────────────────────────────────────────────────── */
+  .profile-tabs { width: 100%; padding: var(--s1); border-radius: 14px; margin-bottom: var(--s4); }
+  .profile-tab { flex: 1; min-height: 40px; padding: 0 var(--s3); font-size: 14px; border-radius: 11px; }
+  .profile-photo-row { gap: var(--s3); align-items: center; }
+  .profile-photo { width: 64px; height: 64px; flex: 0 0 64px; font-size: 22px; }
+  .profile-photo-row strong { font-size: 15px; }
+  .profile-photo-row small { font-size: 13px; }
+  .profile-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s4);
+    padding: 14px 0;
+  }
+  .profile-row span { flex: 0 0 auto; font-size: 13.5px; }
+  .profile-row strong { min-width: 0; text-align: right; font-size: 14.5px; overflow-wrap: anywhere; }
+  .profile-actions { gap: var(--s2); margin-top: var(--s4); }
+  .profile-actions .tiny-action { flex: 1 1 auto; }
+
+  /* ── Buttons ───────────────────────────────────────────────────────────── */
+  .primary-action, .soft-action { min-height: 50px; border-radius: 14px; font-size: 15px; }
+  .primary-action:active, .soft-action:active, .filter-chip:active { transform: scale(0.98); }
+
+  /* ── Bottom navigation ─────────────────────────────────────────────────── */
+  /* Was 56px items + 16px padding = 72px of bar for six labels. Trimmed to a
+     70px bar; each tab is still a 44px+ touch target. */
+  .mobile-nav {
+    padding: 6px var(--s1);
+    border-radius: 22px;
+    gap: 2px;
+  }
+  .mobile-nav .nav-item {
+    min-height: 58px;
+    align-content: center;
+    gap: 3px;
+    min-width: 0;
+    padding: 0 2px;
+    border-radius: 14px;
+  }
+  .mobile-nav .nav-item svg { width: 23px; height: 23px; }
+  .mobile-nav .nav-item span { font-size: 11px; line-height: 1.1; font-weight: 600; }
+
+  /* ── Motion ────────────────────────────────────────────────────────────── */
+  .nav-item, .filter-chip, .opening-row { transition: background 0.18s ease, transform 0.14s ease, border-color 0.18s ease; }
+}
+
+/* Very narrow phones (iPhone SE / mini). Small proportional trims only — no
+   layout that depends on one specific device width. */
+@media (max-width: 380px) {
+  .topbar h1 { font-size: 23px; }
+  .icon-btn, .profile-chip { width: 41px; height: 41px; flex-basis: 41px; }
+  .nav-item span { font-size: 10px; }
+  .nav-item svg { width: 22px; height: 22px; }
+  .card-actions { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary-action:active, .soft-action:active, .filter-chip:active, .tiny-action:active { transform: none; }
+}
+
+/* ── Confirmation banner, phone ────────────────────────────────────────────
+   A compact system notification instead of a centred four-line amber block:
+   text left-aligned in a column, resend button held on the same row. */
+@media (max-width: 720px) {
+  .verify-banner {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    gap: 12px;
+    padding: 10px 14px;
+  }
+  .verify-banner [data-verify-banner-text] {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .verify-banner [data-verify-banner-text] b {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+  .verify-banner [data-verify-banner-text] small {
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1.3;
+    opacity: 0.78;
+  }
+  .verify-resend {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+}
+
+/* ── Touch targets, phone ──────────────────────────────────────────────────
+   Every control the audit found under the 44px minimum. Chips are exempt by
+   design at 38px: they sit in a scrolling row with generous horizontal hit
+   area, and 44px chips crowd the screen. */
+@media (max-width: 720px) {
+  /* Height only — the width comes from the existing stretched two-button row. */
+  .opening-row .round-btn { min-height: 44px; }
+  .profile-tab { min-height: 44px; }
+  .cycm-more { min-height: 44px; }
+  /* Padded for a comfortable tap without leaving the sentence it sits in. */
+  .cycle-info { padding: 6px 4px 6px 6px; }
+  .section-head .text-button { min-height: 44px; padding: 0 10px; margin-right: -10px; }
+  /* The company name inside a card is a text button, not a control surface —
+     the whole row is tappable — so it gets the row's target, not its own. */
+  .opening-title-button { text-align: left; padding: 0; }
+}
+
+/* Hover styling belongs to devices that can hover. On iOS a tap leaves the
+   :hover state applied until you tap elsewhere, so a tapped nav tab or card
+   stayed highlighted and read as a second selected item.
+   Only the controls whose resting background is transparent are neutralised
+   here, so nothing loses its base surface. */
+@media (hover: none) {
+  .mobile-nav .nav-item:not(.active):hover { background: none; }
+  .tiny-action:not(:active):hover { background: rgba(255, 255, 255, 0.06); }
+  .tiny-action[data-sign-out]:not(:active):hover { background: none; color: var(--muted); }
+}
+
+/* An empty Saved screen reads better centred in the space it has than pinned
+   to the top with a screen of void beneath it. */
+@media (max-width: 720px) {
+  #view-saved .empty-state {
+    min-height: min(58vh, 420px);
+    align-content: center;
+  }
+}
+
+/* Replaces three inline style= attributes that overrode every responsive rule
+   (an inline font-size cannot be tuned per breakpoint). */
+.card-lede {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 8px 0 14px;
+}
+.stacked-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* A pill should hug its label, not stretch to the card width. */
+.status-pill { width: fit-content; }
+
+@media (max-width: 720px) {
+  .card-lede { font-size: 13.5px; line-height: 1.45; margin: 6px 0 12px; }
+  .stacked-actions { gap: 8px; margin-top: 12px; }
+
+  /* Watch any company: a compact mobile form rather than a hero. */
+  .watch-any-card h2 { font-size: 19px; line-height: 1.22; }
+  .watch-any-card .status-pill { margin-bottom: 2px; }
+  .watch-any-card .watch-list { margin-top: 12px; font-size: 13px; line-height: 1.45; }
+}
+
+/* ── Alerts: "New this week" category chips ────────────────────────────────
+   The same chip control the Openings screen uses, so the two screens are
+   filtered the same way. The count rides inside the chip. */
+.alert-fields { margin-bottom: 14px; }
+.alert-fields .filter-chip b {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 0.85em;
+  font-weight: 800;
+}
+.alert-fields .filter-chip.active b { background: rgba(255, 255, 255, 0.26); }
+
+/* The banner text is two elements (action, then consequence). Without an
+   explicit gap they butt together on one line: "…email alerts.Unconfirmed…". */
+.verify-banner [data-verify-banner-text] {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px 8px;
+}
+.verify-banner [data-verify-banner-text] small { font-weight: 500; opacity: 0.82; }

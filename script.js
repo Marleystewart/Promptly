@@ -1057,6 +1057,39 @@ function awaitingLine(item) {
   return "No verified posting yet. Add the employer's careers page to watch it manually.";
 }
 
+// One metadata line for a collapsed card. `deadline` and `opened` frequently
+// restate each other — "Closes: Opens Aug 15, 2026 · Applications open Aug 15,
+// 2026" is one date printed twice — so near-duplicate parts are dropped rather
+// than shown side by side. The full, unmerged values stay in the details sheet.
+function cardMetaLine(item) {
+  const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const deadline = String(item.deadline || "").trim();
+  // The card already has a dedicated Location line, but `opened` often ends
+  // with the same place — "Live • Columbus" above "Location: Columbus, OH".
+  // Drop the segment that repeats it, keeping the part that does not ("Live").
+  const place = norm(item.location);
+  const opened = String(item.opened || "")
+    .split(/\s*[•·]\s*/)
+    .filter((part) => {
+      const p = norm(part);
+      return p && !(place && (place.startsWith(p) || p.startsWith(place)));
+    })
+    .join(" • ")
+    .trim();
+  // The date each half is talking about, if any. Two strings naming the same
+  // date are the same fact however differently they are worded.
+  const dateOf = (s) => {
+    const m = String(s).match(/([A-Za-z]{3,9})\s+(\d{1,2}),\s*(20\d{2})/);
+    return m ? `${m[1].slice(0, 3).toLowerCase()}${m[2]}${m[3]}` : null;
+  };
+  const parts = [];
+  if (deadline) parts.push(/^(opens|rolling)/i.test(deadline) ? deadline : `Closes: ${deadline}`);
+  const sameDate = dateOf(deadline) && dateOf(deadline) === dateOf(opened);
+  const sameText = norm(deadline) && norm(deadline) === norm(opened);
+  if (opened && !sameDate && !sameText) parts.push(opened);
+  return parts.join(" · ");
+}
+
 function openingRow(item) {
   const match = openingMatch(item);
   const listingKey = alertIdentity(item);
@@ -1092,7 +1125,7 @@ function openingRow(item) {
         <span class="status-pill">${esc(item.field)}</span>${statusPill(item)}
         <h3><button class="opening-title-button" data-open-details-button="${esc(listingKey)}" type="button">${esc(item.company)}</button></h3>
         <p>${esc(item.role)} · ${esc(item.program)}</p>
-        <small>Closes: ${esc(item.deadline)} · ${esc(item.opened)}</small>
+        <small class="meta-line">${esc(cardMetaLine(item))}</small>
         ${item.location ? `<small class="location-line">Location: ${esc(item.location)}</small>` : ""}
         <small class="match-line">Student fit: ${esc(match.label)}</small>
         <small class="source-line">Verified source: ${esc(item.sourceLabel || "Official careers page")}</small>
@@ -1495,6 +1528,68 @@ function renderRows(list, overflowHint = "Use the tabs or search to find a speci
   return html;
 }
 
+// "New this week" grouped by field instead of one endless flat list. With ~590
+// listings inside the 7-day window, a single stream scrolls forever and a
+// student cannot tell where their own field starts. Their own fields lead, then
+// the largest groups. Each group shows a few and says how many more there are;
+// the whole screen still renders at most MAX_ROWS cards, which is what keeps it
+// inside mobile Safari's memory budget.
+// Which category the Alerts screen is showing. Null until the first render
+// picks the student's strongest field.
+let alertsField = null;
+
+// Recent openings bucketed by field, the student's own fields first, then the
+// biggest buckets. Ties break alphabetically so the order is stable between
+// renders rather than shuffling as the feed changes.
+function alertFieldGroups(list) {
+  const groups = new Map();
+  list.forEach((item) => {
+    const field = item.field || "Other";
+    if (!groups.has(field)) groups.set(field, []);
+    groups.get(field).push(item);
+  });
+
+  const mine = new Set((profile.fields || []).map((f) => String(f).toLowerCase()));
+  return [...groups.entries()].sort((a, b) => {
+    const rank = (name) => (mine.has(name.toLowerCase()) ? 0 : 1);
+    return rank(a[0]) - rank(b[0]) || b[1].length - a[1].length || a[0].localeCompare(b[0]);
+  });
+}
+
+// "New this week" as category chips over one list, the same control the
+// Openings screen uses. A flat stream of every recent match scrolls forever and
+// buries the field a student actually cares about; picking a category shows
+// that category's employers and nothing else.
+function renderAlertGroups(list) {
+  const ordered = alertFieldGroups(list);
+  if (!ordered.length) return "<p class='list-note'>No new openings in the last 7 days.</p>";
+
+  // Keep the current pick if it still has listings, otherwise lead with the
+  // strongest field.
+  if (!ordered.some(([field]) => field === alertsField)) alertsField = ordered[0][0];
+
+  const chips = ordered
+    .map(([field, items]) => {
+      const on = field === alertsField;
+      return `<button class="filter-chip${on ? " active" : ""}" type="button" data-alert-field="${esc(field)}" aria-pressed="${on}">${esc(field)} <b>${items.length}</b></button>`;
+    })
+    .join("");
+
+  const selected = ordered.find(([field]) => field === alertsField);
+  const items = selected ? selected[1] : [];
+
+  return `<div class="filter-row alert-fields" role="group" aria-label="Alert categories">${chips}</div>`
+    + renderRows(items, `Open the Openings tab for the rest of ${esc(alertsField)}.`);
+}
+
+// Redraw the Alerts list in place. Used by the category chips, which must not
+// scroll the page back to the top the way setView() does.
+function renderAlertsList() {
+  const list = document.querySelector(".alerts-recent-list");
+  if (!list) return;
+  list.innerHTML = renderAlertGroups(recentOpenings());
+}
+
 // The dashboard promise is "Recent Openings", so placeholders, closed roles,
 // future programs, and browse-only company pages do not belong in this short
 // list. They remain discoverable in the full Openings view.
@@ -1589,15 +1684,7 @@ function setView(name) {
   if (name === "openings") markMatchingAlertsSeen();
   if (name === "cycles") renderCyclesView();
 
-  if (name === "alerts") {
-    const list = document.querySelector(".alerts-recent-list");
-    if (list) {
-      const recent = recentOpenings();
-      list.innerHTML = recent.length
-        ? renderRows(recent, "Open the Openings tab to browse the rest.")
-        : "<p style='color:var(--muted);padding:16px 0'>No new openings in the last 7 days.</p>";
-    }
-  }
+  if (name === "alerts") renderAlertsList();
 }
 
 // Data-driven Cycles view: replaces the old hardcoded 3-industry timeline.
@@ -2675,10 +2762,8 @@ function fillProfileInputs() {
 
 function updateAccountUI(message = "") {
   const status = document.querySelector("[data-account-status]");
-  const connect = document.querySelector("[data-connect-account]");
   const signOut = document.querySelector("[data-sign-out]");
   if (status) status.textContent = authUser ? (message || authUser.email || "Connected") : "Local profile";
-  if (connect) connect.hidden = Boolean(authUser);
   if (signOut) signOut.hidden = !authUser;
 }
 
@@ -2968,41 +3053,6 @@ async function sendPasswordReset() {
   document.querySelector("[data-auth-status]").textContent = error ? error.message : "Password reset email sent.";
 }
 
-async function restartDemo() {
-  const resetButton = document.querySelector("[data-reset-demo]");
-  if (resetButton) {
-    resetButton.disabled = true;
-    resetButton.textContent = "Restarting...";
-  }
-
-  if (authClient) {
-    const { error } = await authClient.auth.signOut();
-    if (error) {
-      if (resetButton) {
-        resetButton.disabled = false;
-        resetButton.textContent = "Restart demo";
-      }
-      updateAccountUI("Could not sign out. Please try again.");
-      return;
-    }
-  }
-
-  authUser = null;
-
-  // Stop anything that could write state back after the wipe: a pending
-  // field-inference save, an account sync, or a queued profile save.
-  resettingClientState = true;
-  window.clearTimeout(inferenceTimer);
-  window.clearTimeout(accountSyncTimer);
-
-  // Remove EVERYTHING this origin stored, not a hand-maintained list of keys.
-  // The old list missed promptlyStatuses, promptlySeenAlerts and the analytics
-  // session id, so application statuses and "already seen" markers survived a
-  // restart that promises a clean slate.
-  window.PromptlyAuthRouting.clearPromptlyClientState(localStorage, sessionStorage);
-  window.location.replace(`${window.location.origin}/`);
-}
-
 async function deleteAccount() {
   const button = document.querySelector("[data-delete-account]");
   const status = document.querySelector("[data-delete-account-status]");
@@ -3140,7 +3190,13 @@ function timeGreeting() {
   return "Good Evening";
 }
 
+// "Good Afternoon, Marley" needs ~220px. Beside four header actions a phone
+// leaves the title about 140px, so the full greeting truncated to
+// "Good Afternoon,…" — the name, the part that matters, was the bit cut. On a
+// phone we greet by name and drop the time of day, the same shorten-on-mobile
+// convention viewHeading() already uses for section titles.
 function greetingText() {
+  if (isMobileDevice() || isNarrowViewport()) return `Hi, ${displayName()}`;
   return `${timeGreeting()}, ${displayName()}`;
 }
 
@@ -3522,7 +3578,15 @@ function renderVerificationNotice() {
   if (!banner) return;
   banner.hidden = hide;
   if (!hide && text) {
-    text.textContent = `Confirm ${profile.email} to switch on email alerts. Unconfirmed profiles are deleted after 14 days.`;
+    // Two lines rather than one long sentence: the action reads first, the
+    // consequence second and quieter. On a phone the single sentence wrapped
+    // into a four-line block of uniformly bold amber text.
+    text.textContent = "";
+    const lead = document.createElement("b");
+    lead.textContent = `Confirm ${profile.email} to switch on email alerts.`;
+    const note = document.createElement("small");
+    note.textContent = "Unconfirmed profiles are deleted after 14 days.";
+    text.append(lead, note);
   }
 }
 
@@ -3849,7 +3913,6 @@ document.addEventListener("click", async (event) => {
   const sendTestAlertButton = event.target.closest("[data-send-test-alert]");
   const sendWeeklyRecapButton = event.target.closest("[data-send-weekly-recap]");
   const saveModalButton = event.target.closest("[data-save-modal]");
-  const resetDemoButton = event.target.closest("[data-reset-demo]");
   const photoButton = event.target.closest("[data-photo-button]");
   const editProfileButton = event.target.closest("[data-edit-profile]");
   const saveProfileButton = event.target.closest("[data-save-profile-edits]");
@@ -3858,7 +3921,6 @@ document.addEventListener("click", async (event) => {
   const authSubmitButton = event.target.closest("[data-auth-submit]");
   const googleAuthButton = event.target.closest("[data-google-auth]");
   const forgotPasswordButton = event.target.closest("[data-forgot-password]");
-  const connectAccountButton = event.target.closest("[data-connect-account]");
   const signOutButton = event.target.closest("[data-sign-out]");
   const deleteAccountButton = event.target.closest("[data-delete-account]");
 
@@ -3866,11 +3928,6 @@ document.addEventListener("click", async (event) => {
   if (authSubmitButton) handleAuthSubmit();
   if (googleAuthButton) signInWithGoogle();
   if (forgotPasswordButton) sendPasswordReset();
-  if (connectAccountButton) {
-    sessionStorage.setItem("promptlyMigrateLocal", "1");
-    document.body.classList.add("onboarding-active");
-    setOnboardingStep(1);
-  }
   if (signOutButton && authClient) {
     authClient.auth.signOut().then(() => {
       authUser = null;
@@ -3936,11 +3993,6 @@ document.addEventListener("click", async (event) => {
     return;
   }
 
-  if (resetDemoButton) {
-    await restartDemo();
-    return;
-  }
-
   if (photoButton) {
     document.querySelector("[data-photo-input]").click();
   }
@@ -3965,6 +4017,15 @@ document.addEventListener("click", async (event) => {
 
   if (detailsButton) {
     openDetails(detailsButton.dataset.openDetails || detailsButton.dataset.openDetailsButton, detailsButton.dataset.estimate || "");
+  }
+
+  // Alerts category chips reuse .filter-chip for their look, so they have to be
+  // handled before the openings-filter branch below claims the click.
+  const alertFieldButton = event.target.closest("[data-alert-field]");
+  if (alertFieldButton) {
+    alertsField = alertFieldButton.dataset.alertField;
+    renderAlertsList();
+    return;
   }
 
   if (filterButton) {

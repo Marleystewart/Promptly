@@ -32,18 +32,97 @@ assert.match(
   /function recentOpenings\(now = Date\.now\(\)\)[\s\S]*Date\.parse\(item\.firstSeen/,
   "the Alerts view needs a defined, observed-date recent-openings selector"
 );
+// A collapsed card must not print the same date twice ("Closes: Opens Aug 15,
+// 2026 · Applications open Aug 15, 2026").
+assert.match(script, /function cardMetaLine\(item\)/, "collapsed cards need one deduplicated metadata line");
+{
+  const source = script.match(/function cardMetaLine[\s\S]*?\n}\n/)[0];
+  const metaLine = new Function("item", source + "return cardMetaLine(item);");
+  assert.equal(
+    metaLine({ deadline: "Opens Aug 15, 2026", opened: "Applications open Aug 15, 2026" }),
+    "Opens Aug 15, 2026",
+    "one date worded two ways must collapse to one"
+  );
+  assert.equal(
+    metaLine({ deadline: "See posting", opened: "Live • San Francisco" }),
+    "Closes: See posting · Live • San Francisco",
+    "a second part that adds information must survive"
+  );
+  assert.equal(metaLine({ deadline: "Rolling", opened: "" }), "Rolling", "a missing half must not leave a dangling separator");
+  assert.equal(
+    metaLine({ deadline: "See posting", opened: "Live • Columbus", location: "Columbus, OH" }),
+    "Closes: See posting · Live",
+    "a place already shown on the Location line must not repeat in the meta line"
+  );
+  assert.equal(
+    metaLine({ deadline: "See posting", opened: "Live • Boston", location: "Seattle, WA" }),
+    "Closes: See posting · Live • Boston",
+    "a genuinely different place must survive — this is dedup, not truncation"
+  );
+}
+
+// The mobile layer must reach mobile browsers, not only the installed app.
+assert.match(
+  css,
+  /@media \(max-width: 720px\), \(display-mode: standalone\)/,
+  "compact density must apply at phone widths, not only in standalone"
+);
+// Tertiary buttons must never fall back to native browser styling.
+assert.match(css, /\.tiny-action\s*\{[\s\S]*appearance: none/, ".tiny-action must be styled, not a default browser button");
+// Page clearance and the nav bar must come from one number.
+assert.match(css, /--nav-total:/, "bottom-nav clearance must be derived from a token");
+
 // 590 of 788 live listings were first seen inside the 7-day window, so an
 // uncapped Alerts list crashed mobile Safari out of memory.
 assert.match(
   script,
-  /if \(name === "alerts"\)[\s\S]*renderRows\(recent/,
-  "the Alerts view must render through the row cap, not map every match"
+  /if \(name === "alerts"\) renderAlertsList\(\);/,
+  "the Alerts view must render through the capped, chip-filtered renderer"
+);
+assert.match(
+  script,
+  /function renderAlertsList\(\)[\s\S]*renderAlertGroups\(recentOpenings\(\)\)/,
+  "the Alerts list must be redrawable in place without a full view change"
 );
 assert.doesNotMatch(
   script,
   /recent\.map\(openingRow\)/,
   "the Alerts view must never render an uncapped row list"
 );
+// Alerts filters by category chip rather than stacking every field at once.
+assert.match(script, /data-alert-field=/, "Alerts needs category chips");
+assert.match(
+  script,
+  /const alertFieldButton = event\.target\.closest\("\[data-alert-field\]"\);[\s\S]*renderAlertsList\(\);\s*return;/,
+  "alert chips must be handled before the openings .filter-chip branch claims the click"
+);
+{
+  const groupSrc = script.match(/function alertFieldGroups\(list\)[\s\S]*?\n}\n/)[0];
+  const renderSrc = script.match(/function renderAlertGroups\(list\)[\s\S]*?\n}\n/)[0];
+  const render = new Function(
+    "profile", "MAX_ROWS", "esc", "openingRow", "renderRows", "list",
+    "let alertsField = null;" + groupSrc + renderSrc + "return renderAlertGroups(list);"
+  );
+  const make = (field, n) => Array.from({ length: n }, (_, i) => ({ field, role: `${field} ${i}` }));
+  const listings = [...make("Finance", 40), ...make("Technology", 30), ...make("Law", 3)];
+  const html = render(
+    { fields: ["Law"] },
+    60,
+    (s) => String(s),
+    (item) => `<article>${item.role}</article>`,
+    (rows) => rows.slice(0, 60).map((r) => `<article>${r.role}</article>`).join(""),
+    listings
+  );
+  const chips = (html.match(/data-alert-field="/g) || []).length;
+  assert.equal(chips, 3, "one chip per category present in the feed");
+  assert.ok(
+    html.indexOf('data-alert-field="Law"') < html.indexOf('data-alert-field="Finance"'),
+    "a field the student follows must lead, ahead of larger categories"
+  );
+  assert.match(html, /data-alert-field="Law"[^>]*aria-pressed="true"/, "the leading category is selected by default");
+  const cards = (html.match(/<article>/g) || []).length;
+  assert.equal(cards, 3, "only the selected category's listings render, not every category at once");
+}
 assert.doesNotMatch(
   script,
   /This employer does not publish a job feed Promptly can read/,
