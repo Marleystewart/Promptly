@@ -333,6 +333,32 @@ const SOURCES = [
   // which is the point of adding it now rather than in November.
   { company: "Federal Reserve Board", short: "FRB", logoClass: "gov", field: "Government", subField: "Central Banking", ats: "taleo", tenant: "frbog", section: "1" },
 
+
+  // ═══ PLACEHOLDER CONVERSIONS ══════════════════════════════════════════════
+  // These employers previously showed a "no verified posting yet" card because
+  // Promptly could not read them. Each board below was probed live AND had its
+  // identity confirmed against the board's own stated name — a resolving slug
+  // is not proof of ownership: "greenhouse:general" answers for neither GM nor
+  // GE, ashby:silver is Silver.dev, ashby:eli is Eli Health, and lever:blue is
+  // BlueCloud. Those were all rejected rather than guessed at.
+  { company: "Snowflake", short: "SNOW", logoClass: "tech", field: "Technology", subField: "Enterprise Software", ats: "ashby", board: "snowflake" },
+  { company: "Plaid", short: "PLD", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "ashby", board: "plaid" },
+  { company: "WPP", short: "WPP", logoClass: "mkt", field: "Marketing", subField: "Advertising", ats: "greenhouse", board: "wpp" },
+  { company: "Ogilvy", short: "OGV", logoClass: "mkt", field: "Marketing", subField: "Advertising", ats: "greenhouse", board: "ogilvy" },
+  { company: "Roland Berger", short: "RB", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "smartrecruiters", board: "rolandberger" },
+  { company: "Enova International", short: "ENVA", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "enova" },
+  { company: "Bottomline Technologies", short: "EPAY", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "bottomlinetechnologies" },
+  { company: "Blend", short: "BLND", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "blend" },
+  { company: "Prosper Marketplace", short: "PRSP", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "lever", board: "prosper" },
+  { company: "Audax Private Equity", short: "AUD", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "audaxprivateequity" },
+  { company: "Roark Capital Group", short: "ROARK", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "roarkcapitalgroup" },
+  { company: "American Securities", short: "AS", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "americansecurities" },
+  { company: "LoanCore Capital", short: "LC2", logoClass: "fin", field: "Finance", subField: "Private Credit", ats: "greenhouse", board: "loancore" },
+  { company: "FS Investments", short: "FS", logoClass: "fin", field: "Finance", subField: "Private Credit", ats: "smartrecruiters", board: "fsinvestments" },
+  { company: "Paul, Weiss", short: "PW", logoClass: "law", field: "Law", subField: "Corporate Law", ats: "greenhouse", board: "paulweiss" },
+  { company: "Brookings Institution", short: "BROOK", logoClass: "gov", field: "Government", subField: "Policy Research", ats: "lever", board: "brookings" },
+  { company: "Uber", short: "UBER", logoClass: "tech", field: "Technology", subField: "Consumer Internet", ats: "smartrecruiters", board: "uber" },
+
   // ═══ COVERAGE EXPANSION ═══════════════════════════════════════════════════
   // Probed live before shipping. (A source returning 0 matches today is fine —
   // it activates the moment that employer posts a student role.)
