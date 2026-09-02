@@ -2840,6 +2840,14 @@ function setAuthMode(mode) {
   document.querySelector("[data-auth-submit]").textContent = authMode === "signin" ? "Sign In" : "Create Account";
   document.querySelector("[data-forgot-password]").hidden = authMode !== "signin" || !authClient;
   document.querySelector("[data-password-input]").autocomplete = authMode === "signin" ? "current-password" : "new-password";
+  // The divider sits under the Google button and above the email form, so it
+  // has to follow the tab or it reads as the wrong offer on the Sign in tab.
+  const divider = document.querySelector("[data-auth-divider-label]");
+  if (divider) divider.textContent = authMode === "signin" ? "or sign in with email" : "or sign up with email";
+  // Google is the same one tap in both modes — there is no separate account to
+  // create — but "nothing to confirm" is only a selling point when signing up.
+  const fastNote = document.querySelector("[data-auth-fast-note]");
+  if (fastNote) fastNote.hidden = authMode === "signin";
   setSignupError();
 }
 
@@ -2972,6 +2980,11 @@ async function initializeAuth() {
       pendingOAuthCallback = false;
       document.querySelector("[data-auth-password-group]").hidden = true;
       document.querySelector("[data-google-auth]").hidden = true;
+      // The note and divider only make sense underneath a Google button. With
+      // accounts parked they were left dangling above the email fields, so the
+      // card promised a fast path that was not on screen.
+      document.querySelector("[data-auth-fast-note]").hidden = true;
+      document.querySelector(".auth-divider").hidden = true;
       document.querySelector(".auth-tabs").hidden = true;
       authStatus.textContent = "Secure accounts are not connected yet. You can continue with a profile on this device.";
       document.querySelector("[data-auth-submit]").textContent = "Continue";

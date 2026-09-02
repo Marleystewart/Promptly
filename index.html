@@ -29,7 +29,7 @@
     <meta name="twitter:title" content="Promptly | Never miss an internship opening" />
     <meta name="twitter:description" content="Alerts students the moment an internship opens. 315 employers monitored, refreshed hourly." />
     <meta name="twitter:image" content="https://app.joinpromptly.co/assets/og-card.png" />
-    <link rel="stylesheet" href="styles.css?v=20260902q" />
+    <link rel="stylesheet" href="styles.css?v=20260902t" />
   </head>
   <body class="onboarding-active launch-active">
     <section class="onboarding-shell" aria-label="Promptly sign up">
@@ -50,13 +50,15 @@
           <button class="active" type="button" data-auth-mode="signup">Sign up</button>
           <button type="button" data-auth-mode="signin">Sign in</button>
         </div>
+        <button class="primary-action wide auth-google" type="button" data-google-auth>Continue with Google</button>
+        <p class="auth-fast-note" data-auth-fast-note>Fastest way in — nothing to confirm, no email to wait for.</p>
+        <div class="auth-divider"><span data-auth-divider-label>or sign up with email</span></div>
         <label class="field-label" data-auth-name-group>Name<input data-name-input type="text" placeholder="Your name" autocomplete="name" /></label>
         <label class="field-label">Email<input data-email-input type="email" placeholder="you@example.com" autocomplete="email" /></label>
         <p class="student-hint" data-student-hint hidden></p>
         <label class="field-label" data-auth-password-group>Password<input data-password-input type="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" /></label>
         <p class="form-error" data-signup-error hidden></p>
-        <button class="primary-action wide" type="button" data-auth-submit>Create Account</button>
-        <button class="soft-action wide auth-google" type="button" data-google-auth>Continue with Google</button>
+        <button class="soft-action wide" type="button" data-auth-submit>Create Account</button>
         <button class="text-action" type="button" data-forgot-password hidden>Forgot password?</button>
         <p class="auth-status" data-auth-status>Checking secure account setup...</p>
         <p class="signup-privacy-note">
@@ -544,15 +546,15 @@
 
     <!-- Supabase is loaded on demand (see loadSupabaseSdk in script.js) only when
          auth is switched on, so a parked-auth build makes no third-party requests. -->
-    <script src="watchlist.js?v=20260902q"></script>
-    <script src="monitored.js?v=20260902q"></script>
-    <script src="auth-routing.js?v=20260902q"></script>
+    <script src="watchlist.js?v=20260902t"></script>
+    <script src="monitored.js?v=20260902t"></script>
+    <script src="auth-routing.js?v=20260902t"></script>
     <!-- Location resolution + great-circle distance, shared with the alert
          pipeline. Must load before script.js, which uses it on first render. -->
-    <script src="geo.js?v=20260902q"></script>
-    <script src="student-email.js?v=20260902q"></script>
-    <script src="listing-state.js?v=20260902q"></script>
-    <script src="script.js?v=20260902q"></script>
-    <script src="assistant.js?v=20260902q"></script>
+    <script src="geo.js?v=20260902t"></script>
+    <script src="student-email.js?v=20260902t"></script>
+    <script src="listing-state.js?v=20260902t"></script>
+    <script src="script.js?v=20260902t"></script>
+    <script src="assistant.js?v=20260902t"></script>
   </body>
 </html>

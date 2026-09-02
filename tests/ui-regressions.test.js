@@ -176,3 +176,43 @@ assert.match(markup, /data-interests-error/, "the fields step needs somewhere to
     "the check must run before the account is saved, not after"
   );
 }
+
+// Google leads the signup card. It is the only path that skips email
+// confirmation — Google hands Supabase an already-verified address — and
+// confirmation is where the funnel was losing most signups (4 signed up, 1
+// confirmed). Demoting it back below the email form would put the slowest,
+// most failure-prone route first.
+{
+  const google = markup.indexOf("data-google-auth");
+  const emailSubmit = markup.indexOf("data-auth-submit");
+  const passwordField = markup.indexOf("data-password-input");
+  assert.ok(google > 0 && emailSubmit > 0, "both signup paths must exist");
+  assert.ok(google < passwordField, "Google must come before the email form");
+  assert.ok(google < emailSubmit, "Google must come before Create Account");
+  assert.match(
+    markup,
+    /class="primary-action wide auth-google"/,
+    "Google must carry the primary button style"
+  );
+  assert.match(
+    markup,
+    /class="soft-action wide" type="button" data-auth-submit/,
+    "the email path must be the secondary style"
+  );
+}
+// The divider sits between the two, so its wording has to follow the tab.
+assert.match(
+  script,
+  /divider\.textContent = authMode === "signin" \? "or sign in with email" : "or sign up with email"/,
+  "the divider must not say \"sign up\" on the Sign in tab"
+);
+
+// With accounts parked there is no Google button, so the note and divider that
+// introduce it must go too — otherwise the card promises a fast path that is
+// not on screen, above an email form that is the only option.
+{
+  const parked = script.match(/if \(!config\.enabled \|\| !window\.supabase\?\.createClient\)[\s\S]*?\n    \}/)[0];
+  for (const selector of ["data-google-auth", "data-auth-fast-note", "auth-divider", "auth-tabs"]) {
+    assert.ok(parked.includes(selector), `the parked-auth path must hide ${selector}`);
+  }
+}
