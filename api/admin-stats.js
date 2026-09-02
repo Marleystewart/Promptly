@@ -9,7 +9,7 @@ const { listWatchedSources, listCoverageRequests } = require("./_shared/watched-
 const { listSourceHealth } = require("./_shared/source-health");
 const { listReports } = require("./_shared/reports");
 const { readEmailHealth } = require("./_shared/email-health");
-const { readIntegrationHealth } = require("./_shared/integration-health");
+const { readIntegrationHealth, probeUsaJobs } = require("./_shared/integration-health");
 const crypto = require("crypto");
 
 function mask(email) {
@@ -140,6 +140,9 @@ module.exports = async function handler(req, res) {
     // the whole of federal coverage and returns [] when unset, so surface it.
     let integrationHealth = null;
     try { integrationHealth = readIntegrationHealth(); } catch {}
+    // Actually call USAJOBS rather than trusting that the variables exist — a
+    // present-but-wrong key is invisible from inside the process.
+    try { integrationHealth.usajobsProbe = await probeUsaJobs(); } catch {}
 
     return res.status(200).json({
       emailHealth,

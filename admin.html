@@ -80,6 +80,19 @@ async function load() {
     // Adapters that no-op without credentials look identical to "that source
     // had nothing today", so an unconfigured one can sit dead for weeks.
     const ih = d.integrationHealth;
+    // "Set" is not "working" — a present-but-wrong key looks identical to a
+    // quiet day from inside the app, so show what USAJOBS actually answered.
+    const probe = ih && ih.usajobsProbe;
+    const probeBanner = !probe || probe.ok ? "" : `
+      <div style="border:1px solid #a3341f;background:#2c1512;border-radius:10px;padding:14px 16px;margin:0 0 18px">
+        <strong style="color:#f0897c">USAJOBS credentials are set but NOT working</strong>
+        <div class="muted" style="margin-top:6px">${escapeHtml(probe.reason || "")}${probe.status ? ` (HTTP ${probe.status})` : ""}</div>
+        ${probe.shape ? `<div class="muted" style="margin-top:6px">key length ${probe.shape.keyLength}${probe.shape.keyLength !== 44 ? " — expected 44" : ""}${probe.shape.keyLooksLikeWholeLine ? " · value still contains \"USAJOBS_API_KEY=\" (paste grabbed the whole line)" : ""}${probe.shape.keyHasWhitespace ? " · has leading/trailing whitespace" : ""}${probe.shape.emailHasAt ? "" : " · email has no @"}</div>` : ""}
+      </div>`;
+    const okProbeBanner = probe && probe.ok ? `
+      <div style="border:1px solid #1c7a52;background:#0f2a1f;border-radius:10px;padding:12px 16px;margin:0 0 18px">
+        <strong style="color:#6fd3a3">USAJOBS credentials verified working</strong>
+      </div>` : "";
     const integrationBanner = !ih || !(ih.unconfigured || []).length ? "" : `
       <div style="border:1px solid #a3341f;background:#2c1512;border-radius:10px;padding:14px 16px;margin:0 0 18px">
         <strong style="color:#f0897c">Data integration not configured: ${escapeHtml((ih.unconfigured || []).join(", "))}</strong>
@@ -91,6 +104,8 @@ async function load() {
     $("out").innerHTML = `
       ${emailBanner}
       ${integrationBanner}
+      ${probeBanner}
+      ${okProbeBanner}
       <div class="cards">
         <div class="card"><div class="n">${d.totalAccounts}</div><div class="l">Accounts</div></div>
         <div class="card"><div class="n">${d.withEmail}</div><div class="l">With email</div></div>

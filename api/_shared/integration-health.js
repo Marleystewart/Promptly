@@ -24,6 +24,47 @@ function usaJobsState() {
   };
 }
 
+// "Set" is not "working". A key that is present but wrong looks identical from
+// inside the process: fetchUsaJobs throws, Promise.allSettled swallows it, and
+// the feed simply has no federal listings — the same shape as a quiet day.
+// This spent a whole debugging session looking like a missing variable when it
+// was a bad value, so the check actually calls USAJOBS and reports what it got.
+//
+// Shape hints are included because the value cannot be read back out of Vercel:
+// a length far off 44, or a value still carrying "USAJOBS_API_KEY=", is almost
+// always a paste that grabbed the whole line instead of just the value.
+async function probeUsaJobs() {
+  const key = String(process.env.USAJOBS_API_KEY || "");
+  const email = String(process.env.USAJOBS_EMAIL || "");
+  if (!key || !email) return { ok: false, reason: "not set" };
+
+  const shape = {
+    keyLength: key.length,
+    keyLooksLikeWholeLine: /USAJOBS_API_KEY\s*=/.test(key),
+    keyHasWhitespace: key !== key.trim(),
+    emailLooksLikeWholeLine: /USAJOBS_EMAIL\s*=/.test(email),
+    emailHasAt: email.includes("@"),
+  };
+
+  try {
+    const res = await fetch("https://data.usajobs.gov/api/search?ResultsPerPage=1&HiringPath=student", {
+      headers: { Host: "data.usajobs.gov", "User-Agent": email, "Authorization-Key": key },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (res.status === 200) return { ok: true, status: 200, shape };
+    return {
+      ok: false,
+      status: res.status,
+      shape,
+      reason: res.status === 401
+        ? "USAJOBS rejected the credentials. The variables are set but the value is wrong."
+        : `USAJOBS answered ${res.status}.`,
+    };
+  } catch (error) {
+    return { ok: false, shape, reason: `Could not reach USAJOBS: ${String(error.message).slice(0, 60)}` };
+  }
+}
+
 function readIntegrationHealth() {
   const integrations = [usaJobsState()];
   return {
@@ -32,4 +73,4 @@ function readIntegrationHealth() {
   };
 }
 
-module.exports = { readIntegrationHealth, usaJobsState };
+module.exports = { readIntegrationHealth, usaJobsState, probeUsaJobs };
