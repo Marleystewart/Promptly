@@ -41,3 +41,23 @@ need one (`node scripts/bump-version.js 20260902k`).
 
 `npm test` fails if the versions disagree, so a forgotten bump is caught before
 it ships rather than by a returning user.
+
+## Daily health email
+
+The daily cron sends a short status email so a broken pipeline reaches a person
+without anyone remembering to open `/admin.html`. It goes to
+`help.promptly@gmail.com` unless `ADMIN_ALERT_EMAIL` is set in Vercel.
+
+It sends **every day**, healthy or not, and the subject carries the state:
+
+```
+Promptly OK — 872 listings live
+Promptly NEEDS ATTENTION — 2 problems
+```
+
+That is deliberate. An alerts-only design cannot tell "everything is fine" apart
+from "the thing that sends the alerts is dead" — silence looks the same in both
+cases. **If the email stops arriving, treat that as the alert.**
+
+It reports zero-listing feeds, email that cannot reach students, a cron that has
+failed or stopped firing, and how many digests actually went out.

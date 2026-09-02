@@ -10,6 +10,7 @@ const { listSourceHealth } = require("./_shared/source-health");
 const { listReports } = require("./_shared/reports");
 const { readEmailHealth } = require("./_shared/email-health");
 const { readIntegrationHealth, probeUsaJobs } = require("./_shared/integration-health");
+const { readRunHealth } = require("./_shared/run-health");
 const crypto = require("crypto");
 
 function mask(email) {
@@ -144,7 +145,13 @@ module.exports = async function handler(req, res) {
     // present-but-wrong key is invisible from inside the process.
     try { integrationHealth.usajobsProbe = await probeUsaJobs(); } catch {}
 
+    // Did the two scheduled jobs actually run, and what did they do? Without
+    // this, a cron failing every night is indistinguishable from a quiet week.
+    let runHealth = null;
+    try { runHealth = await readRunHealth(); } catch {}
+
     return res.status(200).json({
+      runHealth,
       emailHealth,
       integrationHealth,
       sourceHealth,

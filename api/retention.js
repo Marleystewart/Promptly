@@ -7,6 +7,8 @@ const { getLiveOpenings, takeDigestItems, queueDigestItems } = require("./_share
 const { sendDailyDigest, sendWeeklyRecap, sendDeadlineReminder, sendDeadlinePush, matchesOpening } = require("./_shared/alerts");
 const { getOrCreateUnsubToken, createVerifyToken, purgeUnverified } = require("./_shared/tokens");
 const { sendVerificationReminder } = require("./_shared/alerts");
+const { recordRun } = require("./_shared/run-health");
+const { sendHeartbeat } = require("./_shared/heartbeat");
 
 // An unconfirmed profile is data we were never given permission to keep.
 // Remind on days 3 and 10, delete on day 14.
@@ -198,8 +200,18 @@ module.exports = async function handler(req, res) {
     }
     });
 
-    return res.status(200).json({ ok: true, ...stats, weeklyRun: shouldSendWeekly, linkCheck, privacyCleanup });
+    await recordRun("retention", { ok: true, stats });
+    // Sent after the work, so the numbers reported are this run's. Never allowed
+    // to fail the cron — a broken status email must not stop real alerts.
+    const heartbeat = await sendHeartbeat({ retentionStats: stats }).catch(() => ({ sent: false }));
+
+    return res.status(200).json({ ok: true, ...stats, weeklyRun: shouldSendWeekly, linkCheck, privacyCleanup, heartbeat });
   } catch (error) {
+    // Record the failure BEFORE responding. A cron whose only symptom is a 500
+    // in a log nobody reads is exactly how alerts stop reaching students
+    // without anyone noticing.
+    await recordRun("retention", { ok: false, error: error.message });
+    await sendHeartbeat({ retentionStats: null }).catch(() => {});
     return res.status(500).json({ error: error.message || "Retention alerts failed." });
   }
 };
