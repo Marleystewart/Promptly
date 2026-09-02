@@ -156,3 +156,21 @@ sessionScenarios().then(() => {
 }
 
 console.log("Auth callback landing tests passed.");
+
+// iOS cannot deliver an emailed link into an installed web app, so a student
+// who added Promptly to their Home Screen confirms in Safari and returns to an
+// app that is still signed out. The copy has to say so.
+{
+  const script = require("fs").readFileSync(require("path").join(__dirname, "..", "script.js"), "utf8");
+  assert.match(script, /function isStandaloneApp\(\)/, "standalone detection is needed to word the handoff");
+  const note = script.match(/function homeScreenHandoffNote[\s\S]*?\n}\n/)[0];
+  assert.match(note, /isIOSDevice\(\) && !isStandaloneApp\(\)/,
+    "the Home Screen hint must only show on iOS outside the installed app");
+  // Both places a student is told to come back and sign in must carry it.
+  assert.match(script, /Email confirmed\. Sign in to finish setting up your alerts\.\$\{homeScreenHandoffNote\(\)\}/);
+  assert.match(script, /come back and sign in\.\$\{homeScreenHandoffNote\(\)\}/);
+  assert.match(script, /function prefillPendingEmail\(\)[\s\S]*promptlyPendingMigrationEmail/,
+    "the confirmed address must be put back in the field");
+}
+
+console.log("iOS confirmation handoff tests passed.");
