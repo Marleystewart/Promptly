@@ -32,6 +32,18 @@ assert.match(
   /function recentOpenings\(now = Date\.now\(\)\)[\s\S]*Date\.parse\(item\.firstSeen/,
   "the Alerts view needs a defined, observed-date recent-openings selector"
 );
+// 590 of 788 live listings were first seen inside the 7-day window, so an
+// uncapped Alerts list crashed mobile Safari out of memory.
+assert.match(
+  script,
+  /if \(name === "alerts"\)[\s\S]*renderRows\(recent/,
+  "the Alerts view must render through the row cap, not map every match"
+);
+assert.doesNotMatch(
+  script,
+  /recent\.map\(openingRow\)/,
+  "the Alerts view must never render an uncapped row list"
+);
 assert.doesNotMatch(
   script,
   /This employer does not publish a job feed Promptly can read/,

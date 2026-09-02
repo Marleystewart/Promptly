@@ -1484,13 +1484,13 @@ function markMatchingAlertsSeen() {
 // Cap how many rows render at once. 200+ image rows crashes mobile Safari
 // (out of memory). Show a hint to narrow with tabs/search for the rest.
 const MAX_ROWS = 60;
-function renderRows(list) {
+function renderRows(list, overflowHint = "Use the tabs or search to find a specific company.") {
   if (!list.length) {
     return `<p class="list-note" style="text-align:center;padding:36px 16px;color:var(--muted)">No openings match this yet. Try another company or field — Promptly adds new ones every day.</p>`;
   }
   let html = list.slice(0, MAX_ROWS).map(openingRow).join("");
   if (list.length > MAX_ROWS) {
-    html += `<p class="list-note">Showing ${MAX_ROWS} of ${list.length}. Use the tabs or search to find a specific company.</p>`;
+    html += `<p class="list-note">Showing ${MAX_ROWS} of ${list.length}. ${overflowHint}</p>`;
   }
   return html;
 }
@@ -1594,7 +1594,7 @@ function setView(name) {
     if (list) {
       const recent = recentOpenings();
       list.innerHTML = recent.length
-        ? recent.map(openingRow).join("")
+        ? renderRows(recent, "Open the Openings tab to browse the rest.")
         : "<p style='color:var(--muted);padding:16px 0'>No new openings in the last 7 days.</p>";
     }
   }
