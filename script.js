@@ -2901,6 +2901,18 @@ function applyAccountUser(user) {
 
 // After a failed or empty OAuth exchange, land the user on the sign-up step
 // (only if they're still stuck on the onboarding launch screen).
+// Put the address they just confirmed back in the field. They have already
+// typed it once and just proved they own it; making them type it again is the
+// kind of small friction that loses people at the last step.
+function prefillPendingEmail() {
+  const input = document.querySelector("[data-email-input]");
+  const pending = localStorage.getItem("promptlyPendingMigrationEmail") || "";
+  if (input && pending && !input.value) {
+    input.value = pending;
+    renderStudentHint();
+  }
+}
+
 function showAuthEntryFallback(mode) {
   if (authUser || !document.body.classList.contains("onboarding-active")) return;
   // Landing on "Create Account" after confirming an email reads as though the
@@ -2990,7 +3002,8 @@ async function initializeAuth() {
         // device, so send them to sign in rather than sign up again.
         showAuthEntryFallback("signin");
         setSignupError();
-        authStatus.textContent = "Email confirmed. Sign in to finish setting up your alerts.";
+        prefillPendingEmail();
+        authStatus.textContent = `Email confirmed. Sign in to finish setting up your alerts.${homeScreenHandoffNote()}`;
       } else {
         setSignupError("Google sign-in did not complete. Please try again.");
         showAuthEntryFallback();
@@ -3044,7 +3057,9 @@ async function handleAuthSubmit() {
     routeAuthenticatedUser(result.data.session.user);
   } else {
     saveProfile();
-    status.textContent = "Check your email to confirm your account, then return here and sign in.";
+    // On iPhone the confirmation link opens Safari, never the Home Screen app,
+    // so "return here" is not something the student can simply tap back to.
+    status.textContent = `Check your email to confirm your account, then come back and sign in.${homeScreenHandoffNote()}`;
   }
 }
 
@@ -3523,6 +3538,23 @@ function isIOSDevice() {
   // real iPad from a desktop Safari.
   return /iPad|iPhone|iPod/.test(ua)
     || (/Macintosh/.test(ua) && typeof navigator.maxTouchPoints === "number" && navigator.maxTouchPoints > 1);
+}
+
+// Running from the Home Screen icon rather than a browser tab.
+function isStandaloneApp() {
+  return window.navigator.standalone === true
+    || (typeof window.matchMedia === "function" && window.matchMedia("(display-mode: standalone)").matches);
+}
+
+// iOS has no way to send an emailed link into an installed web app — tapping a
+// confirmation link always opens Safari, and the session it creates lives in
+// Safari's storage, not the Home Screen app's. Nothing in our code can change
+// that, so the honest move is to tell the student what to do next rather than
+// let them return to the icon and find themselves still signed out.
+function homeScreenHandoffNote() {
+  return isIOSDevice() && !isStandaloneApp()
+    ? " If you added Promptly to your Home Screen, open it from that icon and sign in there too."
+    : "";
 }
 
 function isMobileDevice() {
