@@ -12,6 +12,7 @@ const { forEachSubscriberBatch } = require("./_shared/store");
 const { sendPushAlert, matchesOpening } = require("./_shared/alerts");
 const { recordNewListings } = require("./_shared/analytics");
 const { recordSourceHealth } = require("./_shared/source-health");
+const { recordRun } = require("./_shared/run-health");
 
 // Don't blast more than this many alerts in a single run (safety valve).
 const MAX_NOTIFY_OPENINGS = 25;
@@ -128,6 +129,17 @@ module.exports = async function handler(req, res) {
     const notify = isFirstRun ? { notified: 0, emailQueued: 0, pushSent: 0, seeded: true } : await notifySubscribers(newOpenings);
     if (!isFirstRun) await recordNewListings(newOpenings.length);
 
+    await recordRun("refresh-openings", {
+      ok: true,
+      stats: {
+        listings: payload.count,
+        newListings: newOpenings.length,
+        droppedListings: dropped.length,
+        pushSent: notify.pushSent || 0,
+        emailQueued: notify.emailQueued || 0,
+      },
+    });
+
     return res.status(200).json({
       ok: true,
       stored: saved.saved,
@@ -139,6 +151,9 @@ module.exports = async function handler(req, res) {
       sources: result.sourceStatus,
     });
   } catch (error) {
+    // Recorded before responding: a cron whose only trace is a 500 in a log
+    // nobody reads is how the feed goes stale without anyone noticing.
+    await recordRun("refresh-openings", { ok: false, error: error.message });
     return res.status(500).json({ error: error.message || "Refresh failed" });
   }
 };

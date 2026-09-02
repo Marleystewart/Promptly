@@ -77,6 +77,24 @@ async function load() {
         ${eh.lastFailureAt ? `<div class="muted" style="margin-top:6px">Last failure (${escapeHtml(eh.lastFailureKind || "—")}) ${escapeHtml(eh.lastFailureAt)}: ${escapeHtml(eh.lastFailureReason || "—")}</div>` : ""}
         ${eh.lastSuccessAt ? `<div class="muted" style="margin-top:6px">Last successful send (${escapeHtml(eh.lastSuccessKind || "—")}) ${escapeHtml(eh.lastSuccessAt)}</div>` : `<div class="muted" style="margin-top:6px">No successful send recorded yet.</div>`}
       </div>`;
+    // Did the scheduled jobs actually run? A cron failing nightly is
+    // indistinguishable from a quiet week without this.
+    const rh = d.runHealth;
+    const runBanner = !rh ? "" : `
+      <div style="border:1px solid ${rh.healthy ? "#1c7a52" : "#a3341f"};background:${rh.healthy ? "#0f2a1f" : "#2c1512"};border-radius:10px;padding:14px 16px;margin:0 0 18px">
+        <strong style="color:${rh.healthy ? "#6fd3a3" : "#f0897c"}">
+          ${rh.healthy ? "Scheduled jobs are running" : "Scheduled jobs need attention"}
+        </strong>
+        ${(rh.problems || []).map(p => `<div style="margin-top:6px;color:#f0897c">${escapeHtml(p)}</div>`).join("")}
+        ${(rh.runs || []).map(run => {
+          const detail = Object.entries(run.stats || {})
+            .filter(([, v]) => typeof v === "number" && v > 0)
+            .map(([k, v]) => `${escapeHtml(k)} ${v}`).join(", ");
+          return `<div class="muted" style="margin-top:6px">${escapeHtml(run.name)} — ${
+            run.everRan ? `${run.ageMinutes} min ago${run.ok ? "" : " (FAILED)"}${detail ? ` · ${detail}` : ""}` : "never run"
+          }</div>`;
+        }).join("")}
+      </div>`;
     // Adapters that no-op without credentials look identical to "that source
     // had nothing today", so an unconfigured one can sit dead for weeks.
     const ih = d.integrationHealth;
@@ -102,6 +120,7 @@ async function load() {
         `).join("")}
       </div>`;
     $("out").innerHTML = `
+      ${runBanner}
       ${emailBanner}
       ${integrationBanner}
       ${probeBanner}

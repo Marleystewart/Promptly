@@ -141,10 +141,16 @@ function unsubscribeFooter(unsubToken) {
   </p>`;
 }
 
-async function sendEmail({ to, subject, html, unsubToken, kind }) {
+// `record: false` keeps a send OUT of the email-health record. Operational mail
+// to the founder must never count as evidence that student email works: it goes
+// to the Resend account owner, which is the one address the broken sandbox
+// sender could always reach. Counting it would mask the exact outage the health
+// record exists to catch.
+async function sendEmail({ to, subject, html, unsubToken, kind, record = true }) {
+  const note = (outcome) => (record ? recordEmailOutcome(kind, outcome) : Promise.resolve());
   if (!process.env.RESEND_API_KEY) {
     const result = { sent: false, setupRequired: "Add RESEND_API_KEY in Vercel." };
-    await recordEmailOutcome(kind, result);
+    await note(result);
     return result;
   }
   const { Resend } = await import("resend");
@@ -164,11 +170,11 @@ async function sendEmail({ to, subject, html, unsubToken, kind }) {
   const { data, error } = await resend.emails.send(payload);
   if (error) {
     const failure = { sent: false, error: error.message || "Email failed." };
-    await recordEmailOutcome(kind, failure);
+    await note(failure);
     return failure;
   }
   const success = { sent: true, id: data && data.id };
-  await recordEmailOutcome(kind, success);
+  await note(success);
   return success;
 }
 
@@ -400,6 +406,7 @@ async function sendListingReport(report) {
 }
 
 module.exports = {
+  sendEmail,
   sendVerificationEmail,
   sendVerificationReminder,
   sendListingReport,
