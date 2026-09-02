@@ -29,7 +29,7 @@
     <meta name="twitter:title" content="Promptly | Never miss an internship opening" />
     <meta name="twitter:description" content="Alerts students the moment an internship opens. 315 employers monitored, refreshed hourly." />
     <meta name="twitter:image" content="https://app.joinpromptly.co/assets/og-card.png" />
-    <link rel="stylesheet" href="styles.css?v=20260902p" />
+    <link rel="stylesheet" href="styles.css?v=20260902q" />
   </head>
   <body class="onboarding-active launch-active">
     <section class="onboarding-shell" aria-label="Promptly sign up">
@@ -100,6 +100,7 @@
         <label class="field-label">Interests<textarea data-interests-input placeholder="Example: product design, sports marketing, climate internships, hospital research, Google APM"></textarea></label>
         <div class="field-grid" data-field-grid></div>
         <button class="soft-action wide more-fields" type="button" data-more-fields hidden></button>
+        <p class="form-error" data-interests-error hidden></p>
         <div class="step-actions">
           <button class="soft-action" data-next-step="2">Back</button>
           <button class="primary-action" data-finish-onboarding>Enter Promptly</button>
@@ -543,15 +544,15 @@
 
     <!-- Supabase is loaded on demand (see loadSupabaseSdk in script.js) only when
          auth is switched on, so a parked-auth build makes no third-party requests. -->
-    <script src="watchlist.js?v=20260902p"></script>
-    <script src="monitored.js?v=20260902p"></script>
-    <script src="auth-routing.js?v=20260902p"></script>
+    <script src="watchlist.js?v=20260902q"></script>
+    <script src="monitored.js?v=20260902q"></script>
+    <script src="auth-routing.js?v=20260902q"></script>
     <!-- Location resolution + great-circle distance, shared with the alert
          pipeline. Must load before script.js, which uses it on first render. -->
-    <script src="geo.js?v=20260902p"></script>
-    <script src="student-email.js?v=20260902p"></script>
-    <script src="listing-state.js?v=20260902p"></script>
-    <script src="script.js?v=20260902p"></script>
-    <script src="assistant.js?v=20260902p"></script>
+    <script src="geo.js?v=20260902q"></script>
+    <script src="student-email.js?v=20260902q"></script>
+    <script src="listing-state.js?v=20260902q"></script>
+    <script src="script.js?v=20260902q"></script>
+    <script src="assistant.js?v=20260902q"></script>
   </body>
 </html>

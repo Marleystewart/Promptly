@@ -3219,6 +3219,29 @@ function setAcademicError(message = "") {
   setFormError("[data-academic-error]", message);
 }
 
+function setInterestsError(message = "") {
+  setFormError("[data-interests-error]", message);
+}
+
+// Alerts are matched on fields. An account with none matches nothing, so it can
+// never receive a single alert — and nothing anywhere says so.
+//
+// Fields are normally inferred from the major and interests, which works for
+// "Computer Science" or "Political Science" but produces NOTHING for
+// "Undeclared", "General Studies" or "Liberal Arts" — precisely the
+// underclassmen Promptly is for. Those students were completing onboarding,
+// confirming their email, and then waiting forever. The signup funnel is what
+// surfaced it: one confirmed account, zero able to be alerted.
+function validateInterests() {
+  const chosen = Array.isArray(profile.fields) ? profile.fields.filter(Boolean) : [];
+  if (chosen.length) {
+    setInterestsError();
+    return true;
+  }
+  setInterestsError("Pick at least one field below, or describe what you want above — Promptly matches alerts to these.");
+  return false;
+}
+
 function validateSignup() {
   const nameInput = document.querySelector("[data-name-input]");
   const emailInput = document.querySelector("[data-email-input]");
@@ -3532,7 +3555,10 @@ function enterApp() {
   if (typedName) profile.name = typedName;
   if (typedEmail) profile.email = typedEmail;
   profile.interests = typedInterests;
+  // Infer BEFORE validating: what they just typed may well supply the fields,
+  // so we only ask when inference genuinely came back empty.
   syncInferredFields();
+  if (!validateInterests()) return;
   saveProfile();
   saveSubscriber();
   track("signup");
