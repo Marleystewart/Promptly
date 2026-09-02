@@ -138,7 +138,10 @@ const SOURCES = [
   { company: "FIS", short: "FIS", logoClass: "fin", field: "Finance", subField: "Payments", ats: "custom", handler: "fisglobal" },
   { company: "MassMutual", short: "MM", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "massmutual" },
   // Private equity / credit
-  { company: "Sixth Street", short: "6ST", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "sixthstreet" },
+  // Moved off Greenhouse — boards-api returned 404 for sixthstreet and every
+  // variant. The live board is a Workday iframe on /current-opportunities/,
+  // which is only visible once that page's JavaScript runs.
+  { company: "Sixth Street", short: "6ST", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "sixthstreet", dc: "wd1", site: "sixthstreetcareers" },
   { company: "KKR", short: "KKR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "stage" },
   { company: "Carlyle", short: "CG", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "carlyle", dc: "wd1", site: "Carlyle" },
   { company: "Blue Owl", short: "OWL", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "blueowl", dc: "wd1", site: "blueowl" },
