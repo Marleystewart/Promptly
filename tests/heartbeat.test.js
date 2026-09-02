@@ -21,10 +21,14 @@ Module._load = function load(request, parent, isMain) {
   return originalLoad(request, parent, isMain);
 };
 
-function withState({ runs = [], problems = [], listings = 100, email = null }) {
+function withState({ runs = [], problems = [], listings = 100, email = null, sources = [] }) {
   stubs.set("./openings-store", { getLiveOpenings: async () => ({ openings: new Array(listings).fill({}) }) });
   stubs.set("./email-health", { readEmailHealth: async () => email });
   stubs.set("./run-health", { readRunHealth: async () => ({ runs, problems, healthy: !problems.length }) });
+  stubs.set("./source-health", {
+    listSourceHealth: async () => sources,
+    stateFor: (e) => e.state,
+  });
   stubs.set("./alerts", {
     sendEmail: async () => ({ sent: true }),
     DEFAULT_REPORT_TO_EMAIL: "help.promptly@gmail.com",
@@ -95,7 +99,44 @@ async function run() {
     assert.match(report.problems.join(" "), /No email has sent successfully/);
   }
 
-  // 6. Several problems at once are all reported, not just the first.
+  // 6. A broken source is the failure that degrades Promptly gradually: one
+  //    employer quietly vanishes and every other number still looks fine.
+  {
+    const { collectHeartbeat, buildHeartbeatEmail } = withState({
+      email: HEALTHY_EMAIL,
+      sources: [
+        { company: "Citadel", state: "broken", brokeAt: "2026-08-30T00:00:00.000Z" },
+        { company: "Millennium", state: "broken", brokeAt: "2026-09-01T00:00:00.000Z" },
+        { company: "Jane Street", state: "ok" },
+        { company: "Fidelity", state: "quiet" },
+      ],
+    });
+    const report = await collectHeartbeat({});
+    assert.equal(report.healthy, false, "broken sources are not healthy");
+    assert.match(report.problems.join(" "), /2 sources stopped producing/);
+    // Longest-broken first: that is the one that has been wrong the longest.
+    assert.match(report.problems.join(" "), /Citadel, Millennium/);
+    assert.match(buildHeartbeatEmail(report).html, /2\/4 healthy/);
+  }
+
+  // 7. "Quiet" must NOT count as broken. Most campus boards are genuinely empty
+  //    outside Sept–Nov, and crying wolf every summer trains people to ignore
+  //    the email entirely.
+  {
+    const { collectHeartbeat } = withState({
+      email: HEALTHY_EMAIL,
+      sources: [
+        { company: "Fidelity", state: "quiet" },
+        { company: "Evercore", state: "quiet" },
+        { company: "Jane Street", state: "ok" },
+      ],
+    });
+    const report = await collectHeartbeat({});
+    assert.equal(report.healthy, true, "quiet sources are seasonal, not a fault");
+    assert.doesNotMatch(report.problems.join(" "), /stopped producing/);
+  }
+
+  // 8. Several problems at once are all reported, not just the first.
   {
     const { collectHeartbeat, buildHeartbeatEmail } = withState({
       listings: 0,

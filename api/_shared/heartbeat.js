@@ -14,6 +14,7 @@
 const { getLiveOpenings } = require("./openings-store");
 const { readEmailHealth } = require("./email-health");
 const { readRunHealth } = require("./run-health");
+const { listSourceHealth, stateFor } = require("./source-health");
 const { sendEmail, DEFAULT_REPORT_TO_EMAIL, appBaseUrl } = require("./alerts");
 
 function escapeHtml(value) {
@@ -57,6 +58,33 @@ async function collectHeartbeat({ now = Date.now(), retentionStats = null } = {}
   if (email && email.lastSuccessAt && successAge > 48) {
     problems.push(`No email has sent successfully in ${Math.round(successAge)} hours.`);
   }
+
+  // Broken sources are the failure that degrades Promptly gradually rather than
+  // all at once: a custom scraper stops reading one employer after a redesign,
+  // that company quietly vanishes from the feed, and every other number still
+  // looks fine. "Quiet" is deliberately NOT counted — most campus boards are
+  // genuinely empty outside Sept–Nov, and treating that as breakage would make
+  // the heartbeat cry wolf every summer until nobody reads it.
+  try {
+    const sources = await listSourceHealth();
+    const broken = sources.filter((s) => stateFor(s) === "broken");
+    facts.sources = {
+      total: sources.length,
+      broken: broken.length,
+      quiet: sources.filter((s) => stateFor(s) === "quiet").length,
+    };
+    if (broken.length) {
+      const worst = [...broken]
+        .sort((a, b) => Date.parse(a.brokeAt || 0) - Date.parse(b.brokeAt || 0))
+        .slice(0, 5)
+        .map((s) => s.company)
+        .join(", ");
+      problems.push(
+        `${broken.length} source${broken.length === 1 ? "" : "s"} stopped producing listings` +
+        `${worst ? ` (${worst}${broken.length > 5 ? ", …" : ""})` : ""}.`
+      );
+    }
+  } catch {}
 
   if (retentionStats) facts.retention = retentionStats;
 
@@ -111,6 +139,7 @@ function buildHeartbeatEmail({ healthy, problems, facts }, now = Date.now()) {
       ${problemList}
       <table style="border-collapse:collapse;font-size:14px;width:100%">
         ${row("Listings live", String(facts.listings))}
+        ${facts.sources ? row("Sources", `${facts.sources.total - facts.sources.broken}/${facts.sources.total} healthy${facts.sources.quiet ? ` · ${facts.sources.quiet} quiet` : ""}`) : ""}
         ${row("Email", emailLine)}
         ${runRows}
       </table>
