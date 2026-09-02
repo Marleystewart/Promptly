@@ -359,6 +359,39 @@ const SOURCES = [
   { company: "Brookings Institution", short: "BROOK", logoClass: "gov", field: "Government", subField: "Policy Research", ats: "lever", board: "brookings" },
   { company: "Uber", short: "UBER", logoClass: "tech", field: "Technology", subField: "Consumer Internet", ats: "smartrecruiters", board: "uber" },
 
+  // ═══ WORKDAY PLACEHOLDER CONVERSIONS ══════════════════════════════════════
+  // Workday needs tenant + datacenter + site, and the site name is almost
+  // always bespoke ("Blackstone_Campus_Careers", "vanguard_external"), so
+  // guessing it is hopeless. Every config below was READ OFF the employer's
+  // own careers page — the myworkdayjobs.com URL they link to carries all
+  // three values — and then probed against the live feed, because a scraped
+  // URL can still be a bad parse (Green Dot yielded the locale "en-us" rather
+  // than a site name, and was dropped).
+  { company: "LendingClub", short: "LC", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "workday", tenant: "lendingclub", dc: "wd1", site: "External" },
+  { company: "Broadridge Financial", short: "BR", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "workday", tenant: "broadridge", dc: "wd5", site: "Careers" },
+  { company: "Temenos", short: "TEMN", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "workday", tenant: "temenos", dc: "wd103", site: "Temenoscareers" },
+  { company: "Antares Capital", short: "ANT", logoClass: "fin", field: "Finance", subField: "Private Credit", ats: "workday", tenant: "antares", dc: "wd5", site: "antares" },
+  { company: "Workday", short: "WDAY", logoClass: "tech", field: "Technology", ats: "workday", tenant: "workday", dc: "wd5", site: "Workday" },
+  { company: "CrowdStrike", short: "CRWD", logoClass: "tech", field: "Technology", ats: "workday", tenant: "crowdstrike", dc: "wd5", site: "crowdstrikecareers" },
+  { company: "Booz Allen Hamilton", short: "BAH", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "workday", tenant: "bah", dc: "wd1", site: "BAH_Jobs" },
+  { company: "Huron", short: "HRN", logoClass: "consult", field: "Consulting", ats: "workday", tenant: "huron", dc: "wd1", site: "huroncareers" },
+  { company: "Intel", short: "INTC", logoClass: "tech", field: "Technology", ats: "workday", tenant: "intel", dc: "wd1", site: "External" },
+  { company: "Guidehouse", short: "GH", logoClass: "consult", field: "Consulting", ats: "workday", tenant: "guidehouse", dc: "wd1", site: "External" },
+  { company: "Moderna", short: "MRNA", logoClass: "health", field: "Healthcare", ats: "workday", tenant: "modernatx", dc: "wd1", site: "M_tx" },
+  { company: "Vertex Pharmaceuticals", short: "VRTX", logoClass: "health", field: "Healthcare", ats: "workday", tenant: "vrtx", dc: "wd501", site: "vertex_careers" },
+  { company: "Cigna", short: "CI", logoClass: "health", field: "Healthcare", ats: "workday", tenant: "cigna", dc: "wd5", site: "cignacareers" },
+  { company: "RAND Corporation", short: "RAND", logoClass: "gov", field: "Government", ats: "workday", tenant: "rand", dc: "wd5", site: "External_Career_Site" },
+  { company: "Live Nation", short: "LYV", logoClass: "media", field: "Media", ats: "workday", tenant: "livenation", dc: "wd503", site: "LNExternalSite" },
+  { company: "Dentsu", short: "DNTS", logoClass: "mkt", field: "Marketing", ats: "workday", tenant: "dentsuaegis", dc: "wd3", site: "DAN_GLOBAL" },
+  { company: "Caterpillar", short: "CAT", logoClass: "eng", field: "Engineering", ats: "workday", tenant: "cat", dc: "wd5", site: "CaterpillarCareers" },
+  { company: "Howard Hughes (HHMI)", short: "HHMI", logoClass: "sci", field: "Science", ats: "workday", tenant: "hhmi", dc: "wd1", site: "External" },
+  { company: "Teach For America", short: "TFA", logoClass: "npo", field: "Nonprofit", ats: "workday", tenant: "teachforamerica", dc: "wd1", site: "TFA_Careers" },
+  { company: "American Red Cross", short: "ARC", logoClass: "npo", field: "Nonprofit", ats: "workday", tenant: "americanredcross", dc: "wd1", site: "American_Red_Cross_Careers" },
+  { company: "Gates Foundation", short: "GATES", logoClass: "npo", field: "Nonprofit", ats: "workday", tenant: "gatesfoundation", dc: "wd1", site: "Gates" },
+  { company: "Habitat for Humanity", short: "HFH", logoClass: "npo", field: "Nonprofit", ats: "workday", tenant: "habitat", dc: "wd12", site: "External" },
+  { company: "Wasserman", short: "WASS", logoClass: "mkt", field: "Sports", subField: "Sports Marketing", ats: "workday", tenant: "teamwass", dc: "wd5", site: "wassermancareers" },
+  { company: "Zillow", short: "ZG", logoClass: "tech", field: "Real Estate", subField: "Property Technology", ats: "workday", tenant: "zillow", dc: "wd5", site: "Zillow_Group_External" },
+
   // ═══ COVERAGE EXPANSION ═══════════════════════════════════════════════════
   // Probed live before shipping. (A source returning 0 matches today is fine —
   // it activates the moment that employer posts a student role.)

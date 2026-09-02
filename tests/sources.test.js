@@ -57,7 +57,15 @@ for (const src of SOURCES) {
   }
 
   // No duplicate boards within the same ATS (two entries pulling the same feed).
-  const boardKey = `${src.ats}:${(src.board || src.tenant || src.hiringPath || src.handler || "").toLowerCase()}`;
+  // A Workday tenant can host several genuinely different career sites — a
+  // parent and its subsidiary often share one (Caterpillar's CaterpillarCareers
+  // and Solar Turbines' SolarTurbines both sit under tenant "cat"). Keying on
+  // tenant alone flagged those as duplicates, so the site is part of the
+  // identity. Same-tenant AND same-site is still a real duplicate.
+  const boardSlug = src.ats === "workday"
+    ? `${src.tenant || ""}/${src.site || ""}`
+    : (src.board || src.tenant || src.hiringPath || src.handler || "");
+  const boardKey = `${src.ats}:${boardSlug.toLowerCase()}`;
   if (boardSeen.has(boardKey)) {
     // USAJOBS intentionally has multiple query rows under one company.
     if (src.ats !== "usajobs") {
