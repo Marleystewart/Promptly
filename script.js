@@ -638,12 +638,34 @@ const browseCareers = {
 // registry name was treated as unmonitored and shown as "we can't read their
 // feed" even though we scrape it. Defined here (before the browse loop that
 // uses it) so it is initialized in time.
+// Same employer, two names that no amount of suffix-stripping will reconcile:
+// an acronym students actually search for, a former name kept for recognition,
+// a formal legal title the feed reports. Without these the watch-list card sits
+// on "Awaiting 2027 posting" while the employer's real listings are already in
+// the feed under the other spelling.
+//
+// Keys and values are POST-normalization. Add an entry only after confirming
+// both names are the same employer — a wrong alias makes Promptly promise
+// alerts from a company the student never asked about. "CIA" and "Intel" are
+// the cautionary case: fuzzy matching pairs them, because "intel" is inside
+// "intelligence". They are not remotely the same employer.
+const COMPANY_ALIASES = {
+  blocksquare: "block",                  // Block, formerly Square
+  synchronyfinancial: "synchrony",       // feed reports the short name
+  sec: "securitiesexchangecommission",   // USAJOBS reports the full legal name
+  blueowlcapital: "blueowl",             // registry carries the short name
+  federalreserve: "federalreserveboard", // registry names the Board specifically
+  nbcuniversal: "comcastnbcuniversal",   // NBCU hires through Comcast's board
+  waltdisney: "disney",                  // "The Walt Disney Company" on the card
+};
+
 function normalizeCompanyName(name) {
-  return String(name || "")
+  const key = String(name || "")
     .toLowerCase()
     .replace(/&/g, " ")
     .replace(/\b(incorporated|inc|llc|ltd|lp|llp|plc|corp|corporation|co|company|group|holdings|partners|management|and|the)\b/g, " ")
     .replace(/[^a-z0-9]+/g, "");
+  return COMPANY_ALIASES[key] || key;
 }
 const monitoredCompanies = new Set(
   (typeof window !== "undefined" && Array.isArray(window.MONITORED_COMPANIES) ? window.MONITORED_COMPANIES : [])
@@ -776,10 +798,17 @@ function rebuildPlaceholders() {
   for (let i = openings.length - 1; i >= 0; i--) {
     if (openings[i].awaiting && !openings[i].curatedAwaiting) openings.splice(i, 1);
   }
-  // add a placeholder for any watched company that has no real opening
-  const have = new Set(openings.map((o) => o.company.toLowerCase()));
+  // Add a placeholder for any watched company that has no real opening.
+  //
+  // Matched on the normalized name, not the raw string. A raw comparison meant
+  // the SEC card sat on "Awaiting posting" while four live SEC Scholars
+  // listings were already in the feed under "Securities and Exchange
+  // Commission" — the student saw the placeholder and the real listings at the
+  // same time, contradicting each other. Same for Block/Block (Square),
+  // Synchrony, and Disney.
+  const have = new Set(openings.map((o) => normalizeCompanyName(o.company)));
   for (const c of watchlist) {
-    if (have.has(c.company.toLowerCase())) continue;
+    if (have.has(normalizeCompanyName(c.company))) continue;
     openings.push({
       company: c.company,
       short: c.short,
