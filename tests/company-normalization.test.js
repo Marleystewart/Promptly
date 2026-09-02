@@ -162,13 +162,12 @@ console.log(`Company normalization tests passed. ${names.size} names, ${collisio
 
   // Each entry here has been checked and is a DIFFERENT employer, or a parent
   // company whose feed does not represent the division on the card.
-  //   Reviewed 2 Sep 2026: "Blackstone Real Estate" resolves to Blackstone's
-  //   parent feed, which is mostly software, audit and data roles tagged
-  //   Finance. Flipping that card would promise real-estate alerts it cannot
-  //   deliver, so it stays a placeholder.
-  const REVIEWED_NOT_THE_SAME = [
-    "Blackstone Real Estate ~ Blackstone",
-  ].sort();
+  //   Reviewed 2 Sep 2026: the one entry this started with, "Blackstone Real
+  //   Estate", was resolved by renaming the card rather than aliasing it. The
+  //   parent feed is mostly software, audit and data roles tagged Finance, so
+  //   promising real-estate alerts from it would have been wrong; the card is
+  //   now plain "Blackstone" under Finance, which the feed does support.
+  const REVIEWED_NOT_THE_SAME = [];
 
   assert.deepEqual(
     nearMisses,
