@@ -2764,7 +2764,58 @@ function updateAccountUI(message = "") {
   const status = document.querySelector("[data-account-status]");
   const signOut = document.querySelector("[data-sign-out]");
   if (status) status.textContent = authUser ? (message || authUser.email || "Connected") : "Local profile";
-  if (signOut) signOut.hidden = !authUser;
+  // Always offered. It used to appear only with an account, which left anyone
+  // on a device-only profile — the state every new signup starts in — with no
+  // way back to the sign-in screen at all.
+  if (signOut) signOut.textContent = authUser ? "Sign out" : "Start over";
+}
+
+// Sign out, and return the device to the sign-in screen.
+//
+// This also covers the device-only profile, which has no Supabase session to
+// end. That case matters more than it sounds: every student starts there, and
+// without this there was no route back to sign-in short of clearing site data
+// by hand.
+async function signOutAndReset() {
+  const button = document.querySelector("[data-sign-out]");
+  const label = button ? button.textContent : "Sign out";
+
+  // An account keeps its profile and saved alerts server-side and can simply
+  // sign back in. A device-only profile has no such copy, so this discards it —
+  // say so rather than letting someone lose a résumé they cannot get back.
+  if (!authUser) {
+    const confirmed = window.confirm(
+      "This profile is stored on this device only, so starting over clears it — including your résumé, photo and saved alerts. Continue?"
+    );
+    if (!confirmed) return;
+  }
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Signing out…";
+  }
+
+  if (authClient && authUser) {
+    const { error } = await authClient.auth.signOut();
+    if (error) {
+      if (button) {
+        button.disabled = false;
+        button.textContent = label;
+      }
+      updateAccountUI("Could not sign out. Please try again.");
+      return;
+    }
+  }
+
+  authUser = null;
+  // A shared computer must not reveal the previous account's résumé, photo,
+  // profile, saved jobs, or Supabase session to the next person. Stop anything
+  // that could write state back after the wipe.
+  resettingClientState = true;
+  window.clearTimeout(inferenceTimer);
+  window.clearTimeout(accountSyncTimer);
+  window.PromptlyAuthRouting.clearPromptlyClientState(localStorage, sessionStorage);
+  window.location.replace(`${window.location.origin}/`);
 }
 
 function setAuthMode(mode) {
@@ -2850,8 +2901,12 @@ function applyAccountUser(user) {
 
 // After a failed or empty OAuth exchange, land the user on the sign-up step
 // (only if they're still stuck on the onboarding launch screen).
-function showAuthEntryFallback() {
+function showAuthEntryFallback(mode) {
   if (authUser || !document.body.classList.contains("onboarding-active")) return;
+  // Landing on "Create Account" after confirming an email reads as though the
+  // confirmation failed, and asks the student to do the one thing they have
+  // already done. Callers that know better can pick the tab.
+  if (mode) setAuthMode(mode);
   setOnboardingStep(1);
 }
 
@@ -2923,11 +2978,23 @@ async function initializeAuth() {
     if (session?.user && oauthCallback?.recovery) await completePasswordReset();
     routeAuthenticatedUser(session?.user);
     pendingOAuthCallback = false;
-    // OAuth round-trip produced no session (revoked/expired code) — show the
-    // sign-up step instead of leaving the user stranded on the launch screen.
+    // The callback produced no session (expired code, or — much more common —
+    // the confirmation email was opened on a different device or browser than
+    // the one that signed up, so the PKCE verifier isn't in this browser's
+    // storage). Do not strand the student, and do not call an email
+    // confirmation a failed Google sign-in.
     if (!session?.user && oauthCallback) {
-      setSignupError("Google sign-in did not complete. Please try again.");
-      showAuthEntryFallback();
+      if (oauthCallback.linkType === "signup") {
+        // Their address IS confirmed at this point — Supabase verified it
+        // before redirecting here. All that is missing is a session on this
+        // device, so send them to sign in rather than sign up again.
+        showAuthEntryFallback("signin");
+        setSignupError();
+        authStatus.textContent = "Email confirmed. Sign in to finish setting up your alerts.";
+      } else {
+        setSignupError("Google sign-in did not complete. Please try again.");
+        showAuthEntryFallback();
+      }
     }
   } catch {
     pendingOAuthCallback = false;
@@ -3928,17 +3995,9 @@ document.addEventListener("click", async (event) => {
   if (authSubmitButton) handleAuthSubmit();
   if (googleAuthButton) signInWithGoogle();
   if (forgotPasswordButton) sendPasswordReset();
-  if (signOutButton && authClient) {
-    authClient.auth.signOut().then(() => {
-      authUser = null;
-      // A shared computer must not reveal the previous account's résumé,
-      // photo, profile, saved jobs, or Supabase session to the next person.
-      resettingClientState = true;
-      window.clearTimeout(inferenceTimer);
-      window.clearTimeout(accountSyncTimer);
-      window.PromptlyAuthRouting.clearPromptlyClientState(localStorage, sessionStorage);
-      window.location.replace(`${window.location.origin}/`);
-    });
+  if (signOutButton) {
+    await signOutAndReset();
+    return;
   }
   if (deleteAccountButton) {
     await deleteAccount();

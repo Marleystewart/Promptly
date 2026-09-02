@@ -14,13 +14,18 @@
     const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
     // Password-recovery links carry type=recovery (hash for implicit flow,
     // query for PKCE) — the app must prompt for a new password after sign-in.
-    const recovery = hash.get("type") === "recovery" || url.searchParams.get("type") === "recovery";
+    // What kind of link this is, as Supabase labels it: "signup" for an email
+    // confirmation, "recovery" for a password reset, absent for OAuth. Needed
+    // because a confirmation that fails to produce a session must not be
+    // reported to the student as a failed Google sign-in.
+    const linkType = hash.get("type") || url.searchParams.get("type") || "";
+    const recovery = linkType === "recovery";
     const accessToken = hash.get("access_token");
     const refreshToken = hash.get("refresh_token");
-    if (accessToken && refreshToken) return { type: "tokens", accessToken, refreshToken, recovery };
+    if (accessToken && refreshToken) return { type: "tokens", accessToken, refreshToken, recovery, linkType };
 
     const code = url.searchParams.get("code");
-    if (code) return { type: "code", code, recovery };
+    if (code) return { type: "code", code, recovery, linkType };
     return null;
   }
 
