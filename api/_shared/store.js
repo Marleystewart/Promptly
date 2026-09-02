@@ -114,6 +114,28 @@ async function saveSubscriber(profile, subscription) {
   return { saved: true, subscriber: merged };
 }
 
+// Stamp the first time this account actually received an alert.
+//
+// Written once and never overwritten: the question it answers is "has Promptly
+// ever delivered anything to this person?", and a most-recent timestamp cannot
+// answer that. Best-effort — bookkeeping must never break a send that already
+// succeeded. Lives on the subscriber record, so account deletion removes it
+// with everything else.
+async function markFirstAlert(email, at = new Date().toISOString()) {
+  try {
+    const redis = await getRedis();
+    const normalized = String(email || "").trim().toLowerCase();
+    if (!redis || !normalized) return { stamped: false };
+    const key = "promptly:subscriber:" + normalized;
+    const record = await redis.get(key);
+    if (!record || record.firstAlertAt) return { stamped: false };
+    await redis.set(key, { ...record, firstAlertAt: at });
+    return { stamped: true };
+  } catch {
+    return { stamped: false };
+  }
+}
+
 // Read one subscriber record (used to check verification before sending).
 async function getSubscriber(email) {
   const redis = await getRedis();
@@ -325,6 +347,7 @@ module.exports = {
   listSubscribers,
   forEachSubscriberBatch,
   getSubscriber,
+  markFirstAlert,
   deleteSubscriber,
   addSubscriberWatch,
   removeSubscriberWatch,

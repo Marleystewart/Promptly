@@ -6,6 +6,7 @@ const { purgeLegacyOutcomeData } = require("./_shared/analytics");
 const { getLiveOpenings, takeDigestItems, queueDigestItems } = require("./_shared/openings-store");
 const { sendDailyDigest, sendWeeklyRecap, sendDeadlineReminder, sendDeadlinePush, matchesOpening } = require("./_shared/alerts");
 const { getOrCreateUnsubToken, createVerifyToken, purgeUnverified } = require("./_shared/tokens");
+const { markFirstAlert } = require("./_shared/store");
 const { sendVerificationReminder } = require("./_shared/alerts");
 const { recordRun } = require("./_shared/run-health");
 const { sendHeartbeat } = require("./_shared/heartbeat");
@@ -144,7 +145,14 @@ module.exports = async function handler(req, res) {
             let delivered = false;
             try {
               delivered = Boolean((await sendDailyDigest(queued, subscriber, unsubToken)).sent);
-              if (delivered) stats.digestsSent += 1;
+              if (delivered) {
+                stats.digestsSent += 1;
+                // Stamp the first alert this account has ever actually
+                // received. "Confirmed" and "has been sent something" are
+                // different states, and the gap between them is the one number
+                // that says whether Promptly is doing its job for a person.
+                await markFirstAlert(subscriber.email);
+              }
             } catch {}
             if (!delivered) {
               await releaseClaim(deliveryKey);
