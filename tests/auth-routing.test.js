@@ -45,7 +45,7 @@ function scenario(complete) {
 
 {
   const callback = parseOAuthCallback("https://promptly.example/#access_token=secret-access&refresh_token=secret-refresh&expires_in=3600");
-  assert.deepEqual(callback, { type: "tokens", accessToken: "secret-access", refreshToken: "secret-refresh", recovery: false });
+  assert.deepEqual(callback, { type: "tokens", accessToken: "secret-access", refreshToken: "secret-refresh", recovery: false, linkType: "" });
   const clean = cleanOAuthCallbackUrl("https://promptly.example/?campaign=summer#access_token=secret-access&refresh_token=secret-refresh&keep=yes");
   assert.equal(clean, "/?campaign=summer#keep=yes");
   assert.doesNotMatch(clean, /secret|access_token|refresh_token/);
@@ -53,7 +53,7 @@ function scenario(complete) {
 
 {
   const callback = parseOAuthCallback("https://promptly.example/callback?code=pkce-code&campaign=summer#details");
-  assert.deepEqual(callback, { type: "code", code: "pkce-code", recovery: false });
+  assert.deepEqual(callback, { type: "code", code: "pkce-code", recovery: false, linkType: "" });
   assert.equal(
     cleanOAuthCallbackUrl("https://promptly.example/callback?code=pkce-code&campaign=summer#details"),
     "/callback?campaign=summer#details"
@@ -65,7 +65,15 @@ function scenario(complete) {
   const hashRecovery = parseOAuthCallback("https://promptly.example/#access_token=a&refresh_token=r&type=recovery");
   assert.equal(hashRecovery.recovery, true, "hash recovery link should flag recovery");
   const pkceRecovery = parseOAuthCallback("https://promptly.example/?code=pkce-code&type=recovery");
-  assert.deepEqual(pkceRecovery, { type: "code", code: "pkce-code", recovery: true });
+  assert.deepEqual(pkceRecovery, { type: "code", code: "pkce-code", recovery: true, linkType: "recovery" });
+
+  // A signup confirmation must be distinguishable from OAuth, so a confirmation
+  // that lands without a session is not reported as a failed Google sign-in.
+  const signupHash = parseOAuthCallback("https://promptly.example/#access_token=a&refresh_token=r&type=signup");
+  assert.equal(signupHash.linkType, "signup", "hash confirmation link should report its type");
+  assert.equal(signupHash.recovery, false, "a signup confirmation is not a recovery link");
+  const signupPkce = parseOAuthCallback("https://promptly.example/?code=pkce-code&type=signup");
+  assert.equal(signupPkce.linkType, "signup", "PKCE confirmation link should report its type");
   const cleaned = cleanOAuthCallbackUrl("https://promptly.example/?code=pkce-code&type=recovery#type=recovery&access_token=a");
   assert.doesNotMatch(cleaned, /type=recovery|access_token/);
 }
@@ -132,3 +140,19 @@ sessionScenarios().then(() => {
   console.error(error);
   process.exitCode = 1;
 });
+
+// A confirmed email that produces no session on this device (the link was
+// opened in a different browser, so the PKCE verifier is missing) must land the
+// student on Sign in — not on Create Account, and never with a Google error.
+{
+  const script = require("fs").readFileSync(require("path").join(__dirname, "..", "script.js"), "utf8");
+  const branch = script.match(/if \(!session\?\.user && oauthCallback\)[\s\S]*?\n    \}\n/)[0];
+  assert.match(branch, /oauthCallback\.linkType === "signup"/, "confirmation links need their own branch");
+  assert.match(branch, /showAuthEntryFallback\("signin"\)/, "a confirmed address must land on Sign in");
+  assert.match(branch, /Email confirmed\./, "the student must be told the confirmation worked");
+  const googleIndex = branch.indexOf("Google sign-in did not complete");
+  const elseIndex = branch.indexOf("} else {");
+  assert.ok(elseIndex >= 0 && googleIndex > elseIndex, "the Google error must not fire for an email confirmation");
+}
+
+console.log("Auth callback landing tests passed.");

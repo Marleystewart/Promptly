@@ -29,8 +29,16 @@ assert.doesNotMatch(allowlist, /resumeText|photoDataUrl|resumeName/, "device-onl
 assert.match(script, /profile:\s*serverAlertProfile\(\)/, "test-email requests must use the allowlist");
 
 // Sign-out must remove local data before another person uses the same browser.
-const signOutBlock = script.slice(script.indexOf("if (signOutButton && authClient)"), script.indexOf("if (deleteAccountButton)"));
+// This now also covers the device-only profile, which has no Supabase session
+// to end but holds the résumé, photo and saved alerts locally.
+const signOutBlock = script.match(/async function signOutAndReset\(\)[\s\S]*?\n}\n/)[0];
 assert.match(signOutBlock, /clearPromptlyClientState\(localStorage, sessionStorage\)/);
+assert.match(signOutBlock, /resettingClientState = true/,
+  "sign-out must stop pending writes before wiping, or state is written back after the clear");
+assert.match(signOutBlock, /if \(!authUser\)[\s\S]*window\.confirm/,
+  "clearing a device-only profile is unrecoverable and must be confirmed first");
+assert.match(script, /if \(signOutButton\) \{\s*await signOutAndReset\(\);/,
+  "the sign-out button must route through the reset path");
 
 // Account ownership comes from the verified session, never a JSON email.
 assert.equal(emailBelongsToUser("student@example.edu", "STUDENT@example.edu"), true);
