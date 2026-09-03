@@ -80,7 +80,10 @@ assert.deepEqual(readJson("not json"), {}, "corrupt stats must not take the dash
 // The unit checks above still pass if readRun stops using readFlag, so drive
 // the actual write-then-read path against a client that deserializes.
 (async () => {
-  const now = Date.parse("2026-09-02T15:00:00.000Z");
+  // recordRun stamps the real clock, so every read time below must be measured
+  // from the real clock too. Anchoring to a fixed date made the staleness check
+  // pass or fail depending on the wall time the suite happened to run at.
+  const now = Date.now();
 
   await recordRun("refresh-openings", {
     ok: true,

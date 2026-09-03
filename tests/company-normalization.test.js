@@ -94,9 +94,16 @@ const collisions = [...byKey.entries()]
 //                         returning no listings yet, so the card now reads
 //                         "Awaiting 2027 posting" rather than claiming we
 //                         cannot read the feed.
+//                         Later the same day, once the detector learned to
+//                         match whole-word prefixes: fis ("FIS Global" on the
+//                         card / "FIS" in the registry). FIS is Fidelity
+//                         National Information Services, whose own scraper file
+//                         is named fisglobal.js — the same firm, and it had a
+//                         working custom source the whole time.
 const KNOWN_SAFE = [
   "aqrcapital", "block", "blueowl", "carlyle", "comcastnbcuniversal", "deshaw",
-  "federalreserveboard", "jpmorgan", "moelis", "nvidia", "sixthstreet", "synchrony",
+  "federalreserveboard", "fis", "jpmorgan", "moelis", "nvidia", "sixthstreet",
+  "synchrony",
 ].sort();
 
 assert.deepEqual(
@@ -155,7 +162,18 @@ console.log(`Company normalization tests passed. ${names.size} names, ${collisio
       const acronym = /^[A-Z.&\s]{2,6}$/.test(card.company)
         && initials(card.company) === initials(monitoredName)
         && significant(card.company).length !== significant(monitoredName).length;
-      if (containment || acronym) nearMisses.push(`${card.company} ~ ${monitoredName}`);
+      // 3. The card name STARTS WITH the monitored name, as whole words:
+      //    "FIS Global" against a registry entry of "FIS". Rule 1 could never
+      //    catch that pair because it needs five characters on BOTH sides, and
+      //    the registry name is three. Whole-word matching is what keeps this
+      //    safe — a bare substring rule would pair "Related Companies" with
+      //    anything containing "rel".
+      const cardWords = significant(card.company).map((w) => w.toLowerCase());
+      const monWords = significant(monitoredName).map((w) => w.toLowerCase());
+      const wordPrefix = monWords.length > 0
+        && monWords.length < cardWords.length
+        && monWords.every((w, i) => cardWords[i] === w);
+      if (containment || acronym || wordPrefix) nearMisses.push(`${card.company} ~ ${monitoredName}`);
     }
   }
   nearMisses.sort();

@@ -136,6 +136,7 @@ const SOURCES = [
   { company: "Mastercard", short: "MA", logoClass: "fin", field: "Finance", subField: "Payments", ats: "custom", handler: "mastercard" },
   { company: "Fiserv", short: "FI", logoClass: "fin", field: "Finance", subField: "Payments", ats: "custom", handler: "fiserv" },
   { company: "FIS", short: "FIS", logoClass: "fin", field: "Finance", subField: "Payments", ats: "custom", handler: "fisglobal" },
+  { company: "Bread Financial", short: "BFH", logoClass: "fin", field: "Finance", subField: "Payments", ats: "custom", handler: "breadfinancial" },
   { company: "MassMutual", short: "MM", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "massmutual" },
   // Private equity / credit
   // Moved off Greenhouse — boards-api returned 404 for sixthstreet and every
@@ -249,6 +250,12 @@ const SOURCES = [
   // - United States" via /v1/boards/msfcareers, not assumed from the token.
   { company: "Doctors Without Borders", short: "MSF", logoClass: "npo", field: "Nonprofit", subField: "Humanitarian", ats: "greenhouse", board: "msfcareers" },
   { company: "Oscar Health", short: "OSCR", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "oscar" },
+  { company: "GSK", short: "GSK", logoClass: "health", field: "Healthcare", subField: "Pharmaceuticals", ats: "custom", handler: "gsk" },
+  { company: "Genentech", short: "GENE", logoClass: "health", field: "Healthcare", subField: "Biotechnology", ats: "custom", handler: "genentech" },
+  { company: "Humana", short: "HUM", logoClass: "health", field: "Healthcare", subField: "Health Insurance", ats: "custom", handler: "humana" },
+  { company: "NBA", short: "NBA", logoClass: "media", field: "Sports", subField: "Teams & Leagues", ats: "custom", handler: "nba" },
+  { company: "Qualcomm", short: "QCOM", logoClass: "tech", field: "Technology", subField: "Semiconductors", ats: "custom", handler: "qualcomm" },
+  { company: "Ford", short: "F", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "custom", handler: "ford" },
   { company: "Glossier", short: "GLOS", logoClass: "consumer", field: "Consumer", subField: "Beauty", ats: "greenhouse", board: "glossier" },
   { company: "Coursera", short: "COUR", logoClass: "edu", field: "Education", subField: "Education Technology", ats: "greenhouse", board: "coursera" },
   { company: "The Athletic", short: "ATH", logoClass: "media", field: "Sports", subField: "Sports Media", ats: "lever", board: "theathletic" },
