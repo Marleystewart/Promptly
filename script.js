@@ -2742,6 +2742,29 @@ function accountProfile() {
 // no dashboard counts them, so they were stored on the alert record and read by
 // nothing at all. School and graduation year ARE read, but only by the founder
 // dashboard's demographic tiles — see the note in api/admin-stats.js.
+// Graduation year, coarsened for the alert store.
+//
+// The exact year is genuinely useful ON THIS DEVICE — it drives cycle matching
+// and copy like "Class of 2028" — but the server never uses it for anything
+// except a demographic tile on the founder dashboard. Exact school plus exact
+// graduation year is close to identifying in a small cohort, and the cohort is
+// currently four people.
+//
+// A band keeps the signal that matters for school pilot conversations (roughly
+// who is about to graduate) while removing most of the re-identification power.
+// Computed at send time, so it stays true as years pass.
+function gradYearBand(gradYear, now = new Date()) {
+  const year = parseInt(String(gradYear || "").trim(), 10);
+  if (!Number.isFinite(year)) return "";
+  // Academic years roll in the autumn, so treat Aug onward as the next one.
+  const academicYear = now.getFullYear() + (now.getMonth() >= 7 ? 1 : 0);
+  const out = year - academicYear;
+  if (out <= 0) return "graduated or graduating";
+  if (out === 1) return "1 year out";
+  if (out === 2) return "2 years out";
+  return "3+ years out";
+}
+
 function serverAlertProfile() {
   const student = studentStatusFor(profile.email);
   return {
@@ -2750,7 +2773,8 @@ function serverAlertProfile() {
     studentVerified: student.verified,
     studentDomain: student.domain,
     school: profile.school,
-    gradYear: profile.gradYear,
+    // A band, never the exact year — see gradYearBand().
+    gradYearBand: gradYearBand(profile.gradYear),
     // Matching inputs.
     preferredLocation: profile.preferredLocation,
     remoteOkay: profile.remoteOkay,

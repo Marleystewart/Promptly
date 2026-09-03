@@ -133,7 +133,9 @@ async function eraseSubscriber(email) {
 //
 // Deliberately in-place rather than deleting rows: these are live subscribers,
 // and the rest of the record is doing real work.
-const MINIMIZE_FIELDS = ["major", "interests"];
+// gradYear is here because the exact year is now replaced by gradYearBand:
+// stored copies still hold the precise year until this scrubs them.
+const MINIMIZE_FIELDS = ["major", "interests", "gradYear"];
 
 async function minimizeSubscriberProfiles(redis, emails) {
   if (!redis || !Array.isArray(emails)) return { scrubbed: 0 };

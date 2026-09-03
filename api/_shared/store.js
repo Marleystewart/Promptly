@@ -71,7 +71,10 @@ function normalizeSubscriber(profile = {}, subscription = null) {
     studentDomain: student.domain,
     name: String(profile.name || "").trim() || "there",
     school: String(profile.school || "").trim(),
-    gradYear: String(profile.gradYear || "").trim(),
+    // A band, never the exact year. The alert pipeline never used gradYear —
+    // only the founder dashboard did — and exact school plus exact year is
+    // close to identifying in a small cohort. See gradYearBand() in script.js.
+    gradYearBand: String(profile.gradYearBand || "").trim(),
     major: String(profile.major || "").trim(),
     preferredLocation: String(profile.preferredLocation || "").trim(),
     remoteOkay: profile.remoteOkay !== false,
