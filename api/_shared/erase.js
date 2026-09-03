@@ -123,4 +123,35 @@ async function eraseSubscriber(email) {
   return { erased: true, removed };
 }
 
-module.exports = { eraseSubscriber, scrubHash };
+// Remove fields the alert store keeps but nothing reads.
+//
+// The client stopped sending `major` and `interests` to Upstash, but stopping
+// new writes does not clear what is already there — an account only loses them
+// on its next save, and a dormant account never saves again. matchesOpening()
+// never read either field and no dashboard counts them, so every stored copy is
+// retention with no purpose. Runs from the daily retention job.
+//
+// Deliberately in-place rather than deleting rows: these are live subscribers,
+// and the rest of the record is doing real work.
+const MINIMIZE_FIELDS = ["major", "interests"];
+
+async function minimizeSubscriberProfiles(redis, emails) {
+  if (!redis || !Array.isArray(emails)) return { scrubbed: 0 };
+  let scrubbed = 0;
+  for (const email of emails) {
+    const key = `promptly:subscriber:${normalizeEmail(email)}`;
+    try {
+      const record = await redis.get(key);
+      if (!record) continue;
+      const present = MINIMIZE_FIELDS.filter((f) => Object.prototype.hasOwnProperty.call(record, f));
+      if (!present.length) continue;
+      const next = { ...record };
+      for (const field of present) delete next[field];
+      await redis.set(key, next);
+      scrubbed += 1;
+    } catch {}
+  }
+  return { scrubbed };
+}
+
+module.exports = { eraseSubscriber, scrubHash, minimizeSubscriberProfiles, MINIMIZE_FIELDS };

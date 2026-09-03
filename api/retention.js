@@ -8,7 +8,8 @@ const { sendDailyDigest, sendWeeklyRecap, sendDeadlineReminder, sendDeadlinePush
 const { getOrCreateUnsubToken, createVerifyToken, purgeUnverified } = require("./_shared/tokens");
 const { markFirstAlert } = require("./_shared/store");
 const { sendVerificationReminder } = require("./_shared/alerts");
-const { recordRun } = require("./_shared/run-health");
+const { recordRun, recordPrivacyCleanup } = require("./_shared/run-health");
+const { minimizeSubscriberProfiles } = require("./_shared/erase");
 const { sendHeartbeat } = require("./_shared/heartbeat");
 
 // An unconfirmed profile is data we were never given permission to keep.
@@ -78,6 +79,17 @@ module.exports = async function handler(req, res) {
     try { privacyCleanup.reports = await pruneReports(now); } catch {}
     try { privacyCleanup.coverage = await minimizeCoverageContacts(); } catch {}
     try { privacyCleanup.legacyOutcomes = await purgeLegacyOutcomeData(); } catch {}
+    // Fields the alert store keeps but nothing reads. Stopping new writes does
+    // not clear existing records, and a dormant account never saves again.
+    try {
+      const redis = await getRedis();
+      const emails = redis ? await redis.smembers("promptly:subscribers") : [];
+      privacyCleanup.minimizedProfiles = await minimizeSubscriberProfiles(redis, emails);
+    } catch {}
+    // Persisted, not just returned: the audit's remaining action on the legacy
+    // school keys is literally "confirm cleanup metrics", and a number that
+    // only exists in a cron's HTTP response cannot be confirmed by anyone.
+    try { await recordPrivacyCleanup(privacyCleanup); } catch {}
 
     // Content-check a slice of live sourceUrls. Independent of the subscriber
     // loop below (listings, not people) and never lets a verification failure

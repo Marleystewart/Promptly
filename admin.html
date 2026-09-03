@@ -118,6 +118,29 @@ async function load() {
           </div>
         </div>`;
     })();
+    // Privacy housekeeping. These should be zero; a non-zero count means
+    // something is still writing data we decided not to keep.
+    const pc = d.privacyCleanup;
+    const cleanupPanel = !pc ? "" : (() => {
+      const det = pc.detail || {};
+      const n = (v) => (v && typeof v === "object" ? (v.removed ?? v.scrubbed ?? 0) : (v || 0));
+      const rows = [
+        ["Legacy school keys removed", n(det.legacyOutcomes)],
+        ["Profiles minimized", n(det.minimizedProfiles)],
+        ["Coverage contacts scrubbed", n(det.coverage)],
+        ["Expired reports pruned", n(det.reports)],
+      ];
+      const dirty = rows.some(([, v]) => v > 0);
+      return `
+        <div style="border:1px solid ${dirty ? "#7a5c1c" : "#2a2f4a"};background:${dirty ? "#241d0d" : "#12142a"};border-radius:10px;padding:14px 16px;margin:0 0 18px">
+          <strong style="display:block;margin-bottom:8px">Privacy housekeeping</strong>
+          ${rows.map(([label, v]) => `<div class="muted" style="margin-bottom:3px">${escapeHtml(label)}: <b style="color:${v > 0 ? "#e6a94f" : "#6fd3a3"}">${v}</b></div>`).join("")}
+          <div class="muted" style="font-size:12px;margin-top:8px">
+            Last run ${escapeHtml(pc.at || "—")}. Zero is the healthy state &mdash;
+            a non-zero count means something is still writing data we have decided not to keep.
+          </div>
+        </div>`;
+    })();
     // Did the scheduled jobs actually run? A cron failing nightly is
     // indistinguishable from a quiet week without this.
     const rh = d.runHealth;
@@ -162,6 +185,7 @@ async function load() {
       </div>`;
     $("out").innerHTML = `
       ${funnelPanel}
+      ${cleanupPanel}
       ${runBanner}
       ${emailBanner}
       ${integrationBanner}

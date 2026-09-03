@@ -2727,9 +2727,40 @@ function accountProfile() {
 
 // Exact allowlist for Promptly's alert API. Do not serialize the whole profile:
 // it also contains a photo data URL and device-only UI state.
+//
+// This is deliberately NARROWER than accountProfile(). The two go to different
+// places for different reasons, and conflating them sent the alert store fields
+// it has no use for:
+//
+//   accountProfile()     -> Supabase user_metadata. Exists so a profile follows
+//                           you to a new device, so it legitimately carries
+//                           everything you filled in.
+//   serverAlertProfile() -> Upstash. Only needs what decides whether a listing
+//                           matches you and how to reach you.
+//
+// major and interests are the clear case: matchesOpening() never reads them and
+// no dashboard counts them, so they were stored on the alert record and read by
+// nothing at all. School and graduation year ARE read, but only by the founder
+// dashboard's demographic tiles — see the note in api/admin-stats.js.
 function serverAlertProfile() {
+  const student = studentStatusFor(profile.email);
   return {
-    ...accountProfile(),
+    name: profile.name,
+    email: profile.email,
+    studentVerified: student.verified,
+    studentDomain: student.domain,
+    school: profile.school,
+    gradYear: profile.gradYear,
+    // Matching inputs.
+    preferredLocation: profile.preferredLocation,
+    remoteOkay: profile.remoteOkay,
+    willingToRelocate: profile.willingToRelocate,
+    fields: Array.isArray(profile.fields) ? profile.fields : [],
+    // Delivery preferences.
+    emailNotifications: profile.emailNotifications !== false,
+    pushNotifications: profile.pushNotifications !== false,
+    weeklyRecap: profile.weeklyRecap !== false,
+    deadlineReminders: profile.deadlineReminders !== false,
     savedAlerts: Array.isArray(profile.savedAlerts) ? profile.savedAlerts : [],
     watches: Array.isArray(profile.watches) ? profile.watches : [],
   };
