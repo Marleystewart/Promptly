@@ -17,6 +17,7 @@ markup, which is the method that works — guessing board tokens does not, and
 | Bread Financial, GSK, Genentech, Humana, NBA | Phenom | Each on the employer's own domain, CNAMEd to their own `phenompeople` tenant. |
 | Qualcomm, Ford, Mayo Clinic | Eightfold | Same — own domain, own `eightfold.ai` tenant. |
 | EY, ExxonMobil | SAP SuccessFactors (`jobs2web`) | Server-rendered and readable from plain Node — no browser needed. |
+| Coca-Cola, Cleveland Clinic | Findly | JSON API on m-cloud.io, found by watching the rendered page's own requests. |
 
 ### Two platform gotchas worth knowing
 
@@ -42,11 +43,28 @@ Arkansas, `DE` is Germany and Delaware.
 Use `usJobs2WebOnly()` from `jobs2web.js` for these sources, never `usOnly()`.
 The country is the last segment once a trailing postcode is dropped.
 
-**Findly is unresolved.** Coca-Cola (`coca-cola.cdn.findly.com`) and Cleveland
-Clinic (`clevelandcliniccareers.cdn.findly.com`) return 404 on every obvious
-search path while serving a ~1.4MB single-page app from `/`. Nobody has yet
-watched the rendered page to find the real endpoint — that is the next step
-there, and it is the technique that cracked Sixth Street and Mayo Clinic.
+### Findly runs two different backends
+
+Findly sites 404 on every obvious search path while serving a ~1.4MB SPA, which
+reads as unreachable. They are not — the page calls a JSON API on `m-cloud.io`
+that answers a plain Node fetch. Watching the rendered page's own requests is
+what found it, the same technique that cracked Sixth Street and Mayo Clinic.
+
+A tenant uses **one backend or the other**, so check which before writing a
+scraper:
+
+| Backend | Endpoint | Keyed by | Example |
+|---|---|---|---|
+| internal | `jobsapi-internal.m-cloud.io/api/job` | numeric `Organization` | Coca-Cola, `2110` |
+| google | `jobsapi-google.m-cloud.io/api/job/search` | `companyName=companies/<uuid>` | Cleveland Clinic |
+
+**The internal backend only honours `SearchText`.** `Keyword`, `Keywords`, `q`,
+`Search` and `Query` are all accepted and silently ignored — they return the
+full unfiltered list, which looks exactly like a search that matched
+everything. Coca-Cola went from 209 results to 9 once the right one was used.
+
+Both expose `primary_country`, so US filtering is exact here — none of the
+IN/Indiana ambiguity that jobs2web forced.
 
 ## Avature: not reachable from a server, at all
 
