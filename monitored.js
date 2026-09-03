@@ -108,6 +108,7 @@ window.MONITORED_COMPANIES = [
   "Five Rings",
   "Flatiron Health",
   "Flow Traders",
+  "Ford",
   "Fox",
   "Franklin Templeton",
   "FS Investments",
@@ -231,6 +232,7 @@ window.MONITORED_COMPANIES = [
   "Procter & Gamble",
   "Prologis",
   "Prosper Marketplace",
+  "Qualcomm",
   "Ramp",
   "RAND Corporation",
   "Raymond James",
@@ -330,11 +332,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 321,
-  "companies": 321,
+  "sources": 323,
+  "companies": 323,
   "byPlatform": {
     "greenhouse": 133,
-    "custom": 43,
+    "custom": 45,
     "workday": 91,
     "lever": 7,
     "ashby": 25,
@@ -345,11 +347,11 @@ window.PROMPTLY_COVERAGE = {
   },
   "byField": {
     "Finance": 130,
-    "Technology": 65,
+    "Technology": 66,
     "Consulting": 7,
     "Healthcare": 29,
     "Education": 4,
-    "Engineering": 19,
+    "Engineering": 20,
     "Media": 15,
     "Consumer": 15,
     "Nonprofit": 7,

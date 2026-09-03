@@ -254,6 +254,8 @@ const SOURCES = [
   { company: "Genentech", short: "GENE", logoClass: "health", field: "Healthcare", subField: "Biotechnology", ats: "custom", handler: "genentech" },
   { company: "Humana", short: "HUM", logoClass: "health", field: "Healthcare", subField: "Health Insurance", ats: "custom", handler: "humana" },
   { company: "NBA", short: "NBA", logoClass: "media", field: "Sports", subField: "Teams & Leagues", ats: "custom", handler: "nba" },
+  { company: "Qualcomm", short: "QCOM", logoClass: "tech", field: "Technology", subField: "Semiconductors", ats: "custom", handler: "qualcomm" },
+  { company: "Ford", short: "F", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "custom", handler: "ford" },
   { company: "Glossier", short: "GLOS", logoClass: "consumer", field: "Consumer", subField: "Beauty", ats: "greenhouse", board: "glossier" },
   { company: "Coursera", short: "COUR", logoClass: "edu", field: "Education", subField: "Education Technology", ats: "greenhouse", board: "coursera" },
   { company: "The Athletic", short: "ATH", logoClass: "media", field: "Sports", subField: "Sports Media", ats: "lever", board: "theathletic" },
