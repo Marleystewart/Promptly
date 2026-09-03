@@ -206,7 +206,7 @@ async function load() {
         <div class="card"><div class="n">${d.reportCount || 0}</div><div class="l">Student reports</div></div>
       </div>
       ${table("Accounts by school", d.bySchool, ["School", "#"])}
-      ${table("By graduation year", d.byGradYear, ["Grad year", "#"])}
+      ${table("By graduation year", d.byGradYear, ["Years to graduation", "#"])}
       ${table("By field interest", d.byField, ["Field", "#"])}
       ${table("Watched companies (live in pipeline)", (d.watched||[]).map(x => [x.company, x.ats, x.watchers]), ["Company", "Platform", "Watchers"])}
       ${table("Coverage requests (unsupported pages — demand signal)", (d.coverage||[]).map(x => [x.company || "—", x.url, x.requests]), ["Company", "URL", "Requests"])}

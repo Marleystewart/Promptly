@@ -64,29 +64,26 @@ Those issues are fixed and regression-tested on the audit branch. The branch als
 
 | ID | Finding | Recommendation |
 |---|---|---|
-| P-09 | Exact school, graduation year, major, and interests are duplicated in Supabase account metadata and the Upstash alert copy | **Partly closed 3 Sep 2026.** `serverAlertProfile()` was a wholesale spread of `accountProfile()`, so the alert store received all four. `major` and `interests` are read by nothing server-side — not `matchesOpening()`, not any dashboard — so they are no longer sent, and the daily job scrubs existing records. Both remain in Supabase metadata, which is what makes a profile follow you to a new device. **Still open:** school and graduation year are still duplicated into Upstash, read only by the founder dashboard's demographic tiles. Exact school + graduation year is identifying in a small cohort, and this is a founder decision — see below. |
+| P-09 | Exact school, graduation year, major, and interests are duplicated in Supabase account metadata and the Upstash alert copy | **Partly closed 3 Sep 2026.** `serverAlertProfile()` was a wholesale spread of `accountProfile()`, so the alert store received all four. `major` and `interests` are read by nothing server-side — not `matchesOpening()`, not any dashboard — so they are no longer sent, and the daily job scrubs existing records. Both remain in Supabase metadata, which is what makes a profile follow you to a new device. Graduation year is now sent as a coarse band rather than the exact year (option 2, chosen 3 Sep) — see below. School is still duplicated, which is the deliberate remaining trade: it is the field the school pilot conversations actually need. |
 
-### P-09 remainder: school and graduation year in the alert store
+### P-09 remainder: resolved 3 Sep 2026 — option 2, coarsened
 
-The alert pipeline does not use either field. They are duplicated into Upstash
-solely so `/admin.html` can show "students by school" and "students by
-graduation year". Exact school plus graduation year plus major is close to
-identifying in a small cohort, and today's cohort is four people.
+The alert pipeline never used graduation year; only the founder dashboard's
+demographic tile did. Exact school plus exact graduation year is close to
+identifying in a small cohort, and the cohort is currently four people.
 
-Against that, "how many students at Trinity" is a real input to school pilot
-conversations, which is the current growth strategy.
+The alert store now receives a BAND rather than the year: "graduated or
+graduating", "1 year out", "2 years out", "3+ years out". The exact year stays
+on the device, where it does real work (cycle matching, "Class of 2028" copy),
+and in Supabase metadata so it follows you to a new device.
 
-Three options, in order of how much they cost:
+The pilot signal survives — "how many Trinity students, roughly how far from
+graduating" still answers the school conversation — while the precision that
+made it identifying does not. The band is computed at send time against the
+academic year, which rolls in August, so it stays true as years pass.
 
-1. **Keep as is**, and document the operational need in the privacy page rather
-   than leaving it implicit. Cheapest, least private.
-2. **Coarsen graduation year** into a bucket (2027 / 2028 / later). Keeps the
-   pilot signal, removes most of the re-identification power.
-3. **Drop both from Upstash** and take demographics from Supabase metadata only
-   when needed. Most private; the founder dashboard loses two tiles.
-
-Not decided unilaterally — it trades a real business need against a real
-privacy exposure, and that is Marley's call.
+`gradYear` was added to MINIMIZE_FIELDS so exact years already stored are
+scrubbed by the daily job, not just absent from future writes.
 | P-10 | Provider log, backup, regional-transfer, and deletion details are not established in repository evidence | Inventory the active Vercel plan/settings and execute DPAs with Supabase, Upstash, Resend, and any other processor before broad UK/EU launch. Record subprocessors and transfer mechanism. |
 | P-11 | No self-service account export | Establish a verified manual export procedure before launch; automate a machine-readable download later. |
 | P-12 | Email alerts, weekly recap, and reminders default on | Core job alerts may be the requested service; weekly recap classification is less clear. Founder and counsel should classify each category and, if any is marketing, change it to an unbundled, unselected opt-in with consent records. |

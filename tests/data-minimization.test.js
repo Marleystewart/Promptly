@@ -27,14 +27,18 @@ assert.doesNotMatch(alertPayload, /\.\.\.accountProfile\(\)/,
   "the alert payload must be its own allowlist, not a copy of the account one");
 
 // Fields nothing server-side reads must not be sent to the alert store.
-for (const field of ["major", "interests", "photoDataUrl", "resumeText", "resumeName"]) {
+// gradYear is included: the server only ever used it for a demographic tile,
+// and it now receives a band instead — exact school plus exact graduation year
+// is close to identifying in a cohort this small.
+for (const field of ["major", "interests", "gradYear", "photoDataUrl", "resumeText", "resumeName"]) {
   assert.doesNotMatch(alertPayload, new RegExp(`\\b${field}\\s*:`),
     `${field} is read by nothing server-side and must not reach the alert store`);
 }
 
 // Portability is a separate concern: the account copy legitimately keeps them,
-// otherwise signing in on a new device loses your major and interests.
-for (const field of ["major", "interests"]) {
+// otherwise signing in on a new device loses your major, interests and the
+// exact year that drives cycle matching in the app itself.
+for (const field of ["major", "interests", "gradYear"]) {
   assert.match(accountPayload, new RegExp(`\\b${field}\\s*:`),
     `${field} must stay in the account profile so it follows you across devices`);
 }
@@ -52,13 +56,57 @@ for (const consumed of ["subscriber.fields", "subscriber.preferredLocation", "su
 // account never saves again.
 {
   const erase = fs.readFileSync(path.join(ROOT, "api/_shared/erase.js"), "utf8");
-  assert.match(erase, /const MINIMIZE_FIELDS = \["major", "interests"\]/);
+  assert.match(erase, /const MINIMIZE_FIELDS = \["major", "interests", "gradYear"\]/,
+    "stored exact graduation years must be scrubbed too, not only new writes");
   assert.match(erase, /async function minimizeSubscriberProfiles/);
   const retention = fs.readFileSync(path.join(ROOT, "api/retention.js"), "utf8");
   assert.match(retention, /minimizeSubscriberProfiles\(redis, emails\)/,
     "the daily job must scrub existing records, not only future writes");
   assert.match(retention, /recordPrivacyCleanup\(privacyCleanup\)/,
     "cleanup counts must be persisted so they can actually be confirmed");
+}
+
+// ── The band itself ─────────────────────────────────────────────────────────
+{
+  const vm = require("node:vm");
+  const sandbox = {};
+  vm.createContext(sandbox);
+  vm.runInContext(
+    script.match(/function gradYearBand[\s\S]*?\n}/)[0] + "; this.band = gradYearBand;",
+    sandbox
+  );
+  const band = sandbox.band;
+  const NOW = new Date("2026-09-03T00:00:00Z"); // academic year 2027
+
+  assert.equal(band("2028", NOW), "1 year out");
+  assert.equal(band("2029", NOW), "2 years out");
+  assert.equal(band("2031", NOW), "3+ years out");
+  assert.equal(band("2027", NOW), "graduated or graduating");
+  assert.equal(band("2020", NOW), "graduated or graduating");
+
+  // Never leak the exact year through the band.
+  for (const year of ["2027", "2028", "2029", "2031"]) {
+    assert.doesNotMatch(band(year, NOW), new RegExp(year),
+      `the band must not contain the exact year (${year})`);
+  }
+
+  // Missing or junk input must not become a bogus band.
+  for (const value of ["", null, undefined, "abc", "  "]) {
+    assert.equal(band(value, NOW), "", `${JSON.stringify(value)} has no band`);
+  }
+
+  // The band tracks the academic year, which rolls in the autumn — so the same
+  // student reads differently in July and September, correctly.
+  assert.equal(band("2027", new Date("2026-07-01T00:00:00Z")), "1 year out");
+  assert.equal(band("2027", new Date("2026-09-01T00:00:00Z")), "graduated or graduating");
+}
+
+// The dashboard must group and display the band, never the raw year.
+{
+  const admin = fs.readFileSync(path.join(ROOT, "api/admin-stats.js"), "utf8");
+  assert.match(admin, /s\.gradYearBand \|\| ""/, "grouping must use the band");
+  assert.doesNotMatch(admin, /\(s\.gradYear \|\| ""\)\.trim\(\)/, "not the exact year");
+  assert.match(admin, /gradYear: s\.gradYearBand/, "the per-account row must show the band too");
 }
 
 console.log("Data-minimization tests passed. The alert store gets only what it reads.");

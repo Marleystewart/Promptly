@@ -65,7 +65,8 @@ module.exports = async function handler(req, res) {
     for (const s of subscribers) {
       const school = (s.school || "").trim() || "Unknown";
       bySchool[school] = (bySchool[school] || 0) + 1;
-      const gy = (s.gradYear || "").trim() || "Unknown";
+      // A band, not the exact year — see gradYearBand() in script.js.
+      const gy = (s.gradYearBand || "").trim() || "Unknown";
       byGradYear[gy] = (byGradYear[gy] || 0) + 1;
       (Array.isArray(s.fields) ? s.fields : []).forEach((f) => { byField[f] = (byField[f] || 0) + 1; });
       if (s.email) withEmail += 1;
@@ -79,7 +80,9 @@ module.exports = async function handler(req, res) {
     const recent = [...subscribers]
       .sort((a, b) => Date.parse(b.updatedAt || b.createdAt || 0) - Date.parse(a.updatedAt || a.createdAt || 0))
       .slice(0, 20)
-      .map((s) => ({ email: mask(s.email), school: s.school || "—", gradYear: s.gradYear || "—", when: s.updatedAt || s.createdAt || null }));
+      // Per-account row: the most identifying view on the page, so it shows the
+      // band rather than the exact year.
+      .map((s) => ({ email: mask(s.email), school: s.school || "—", gradYear: s.gradYearBand || "—", when: s.updatedAt || s.createdAt || null }));
 
     const live = await getStats();
 

@@ -74,4 +74,12 @@ for (const disclosure of ["Supabase", "jsDelivr", "Upstash", "Resend", "Vercel",
 assert.match(index, /signup-privacy-note[\s\S]*href="\/privacy"[\s\S]*href="\/terms"/,
   "account collection must include a just-in-time privacy and terms notice");
 
+// The policy must describe the two stores as they actually differ, not as one
+// undifferentiated blob — it is the difference students are being asked to
+// trust, and it now exists in the code.
+assert.match(policy, /These two copies are not the same/,
+  "the policy must say the alert copy is narrower than the account copy");
+assert.match(policy, /graduation year only as a range/,
+  "the policy must disclose that the alert copy holds a band, not the exact year");
+
 console.log("Privacy data-flow regression tests passed.");
