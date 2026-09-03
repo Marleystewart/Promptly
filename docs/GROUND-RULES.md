@@ -32,11 +32,24 @@ the bump rewrites the same six files every time and any two branches that both
 bump conflict by construction — on a version number, not on real work. The
 script now refuses to run off `main` and tells you this.
 
+**The bump itself also has to go through a PR.** A repository ruleset now
+blocks every direct push to `main` — "Changes must be made through a pull
+request" — and that applies to Marley too, so there is no version of this where
+you push the bump straight to `main`. It still has to be RUN on `main`, because
+that is the only place with every merged change in it; it just cannot be pushed
+from there.
+
 The order that works:
 
 1. Do the work on your branch. **Leave the version alone.**
 2. Open the PR, get it merged.
-3. On `main`: `git pull && npm run bump && npm test && git push`
+3. On `main`: `git pull && npm run bump && npm test`
+4. Commit that bump onto its own branch (`chore/bump-<version>`), open a PR,
+   merge it. That second merge is what actually reaches students.
+
+Step 3 without step 4 is the easy mistake: the bump exists only on your machine,
+`main` still carries the old `?v=`, and the fix you already merged never reaches
+anyone with the app open.
 
 `npm test` fails on a version mismatch, so it cannot be forgotten. If you hit
 the conflict anyway, don't hand-pick a version out of the diff — keep either

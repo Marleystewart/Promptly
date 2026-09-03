@@ -3772,8 +3772,53 @@ async function getVapidPublicKey() {
   }
 }
 
+// Signing in IS the confirmation.
+//
+// authenticateUser() requires Supabase's confirmed-email timestamp, so a
+// signed-in student has already proved this address — to Google, or by
+// clicking Supabase's own confirmation link. Asking them to confirm it again
+// is asking twice, and the banner's "deleted after 14 days" line threatens an
+// account that is in perfect shape. It was the first thing a new Google
+// signup saw.
+//
+// The server already agreed with this: the resend-verification action sends no
+// mail at all, it just marks the record verified. So the button labelled
+// "Resend link" never resent anything — it silently confirmed you. Do that
+// bookkeeping automatically instead of showing a bar whose only action is a
+// promise we cannot keep.
+//
+// Hiding the banner alone would not be enough: it is what prompted the save
+// that sets `verified` server-side, and an unverified record is never queued a
+// digest. So the sync has to replace it, not just remove it.
+let serverVerificationSyncing = false;
+async function ensureServerVerification() {
+  if (serverVerificationSyncing || emailVerified || !authUser || !profile.email) return;
+  serverVerificationSyncing = true;
+  try {
+    const response = await fetch(`${API_BASE}/api/subscribe`, {
+      method: "POST",
+      headers: await authenticatedJsonHeaders(),
+      body: JSON.stringify({ action: "resend-verification", profile: { email: profile.email } }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (data.alreadyVerified) {
+      emailVerified = true;
+      renderVerificationNotice();
+    }
+  } catch {
+    // Bookkeeping the student never asked for: a failure here must not surface
+    // as an error they cannot act on. The next render tries again.
+  } finally {
+    serverVerificationSyncing = false;
+  }
+}
+
 function renderVerificationNotice() {
-  const hide = !profile.email || emailVerified || document.body.classList.contains("onboarding-active");
+  // A signed-in session is proof of a confirmed address, so it hides the notice
+  // outright rather than waiting for the server round trip below to land.
+  const signedIn = Boolean(authUser);
+  if (signedIn && profile.email && !emailVerified) ensureServerVerification();
+  const hide = !profile.email || emailVerified || signedIn || document.body.classList.contains("onboarding-active");
 
   const el = document.querySelector("[data-verify-notice]");
   if (el) {
