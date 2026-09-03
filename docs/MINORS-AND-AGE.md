@@ -18,9 +18,9 @@ at signup. Every consumer service states one, and its absence is the first thing
 a school's counsel, an App Store reviewer, or a regulator will notice — before
 any of the harder questions below.
 
-This is also the cheapest thing on the page to fix. Draft wording is at the
-bottom. It is **not** applied: adding compliance language to user-facing copy
-without Marley's sign-off is against the ground rules, and correctly so.
+**Resolved 3 September 2026.** Terms now carry a "Who can use Promptly" section
+and the privacy page a "Children" section; the text that shipped is at the
+bottom. The remaining work here is legal review, not code.
 
 ## COPPA — low risk, not zero
 
@@ -105,7 +105,10 @@ Not a legal regime, but it gates the same question:
    student. The consumer position is defensible; the school-vendor position is
    a contract you should not draft yourself.
 
-## Draft wording — not applied, needs sign-off
+## Wording — APPLIED 3 September 2026
+
+Marley signed off; both sections are live and pinned by tests so a later copy
+edit cannot quietly drop them. Recorded here as the text that shipped.
 
 For Terms:
 

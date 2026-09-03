@@ -82,4 +82,17 @@ assert.match(policy, /These two copies are not the same/,
 assert.match(policy, /graduation year only as a range/,
   "the policy must disclose that the alert copy holds a band, not the exact year");
 
+// A stated minimum age is the first thing a school's counsel or an App Store
+// reviewer looks for, and Promptly had none. It must not quietly disappear in a
+// later copy edit.
+const terms = fs.readFileSync(path.join(root, "terms.html"), "utf8");
+assert.match(terms, /aged 16 and over/, "the Terms must state a minimum age");
+assert.match(terms, /under 13/, "the Terms must carry the under-13 undertaking");
+assert.match(policy, /<h2>Children<\/h2>/, "the privacy page needs a Children section");
+assert.match(policy, /not directed to children under 13/,
+  "the privacy page must state the under-13 position");
+// The undertaking is only honest because deletion actually works, which the
+// erasure tests cover — this asserts we keep pointing people at it.
+assert.match(policy, /Delete My Data/, "the Children section must name the route to deletion");
+
 console.log("Privacy data-flow regression tests passed.");
