@@ -257,6 +257,8 @@ const SOURCES = [
   { company: "Qualcomm", short: "QCOM", logoClass: "tech", field: "Technology", subField: "Semiconductors", ats: "custom", handler: "qualcomm" },
   { company: "Ford", short: "F", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "custom", handler: "ford" },
   { company: "Mayo Clinic", short: "MAYO", logoClass: "health", field: "Healthcare", subField: "Hospital Systems", ats: "custom", handler: "mayoclinic" },
+  { company: "EY", short: "EY", logoClass: "consult", field: "Consulting", subField: "Big 4", ats: "custom", handler: "ey" },
+  { company: "ExxonMobil", short: "XOM", logoClass: "eng", field: "Engineering", subField: "Energy", ats: "custom", handler: "exxonmobil" },
   { company: "Glossier", short: "GLOS", logoClass: "consumer", field: "Consumer", subField: "Beauty", ats: "greenhouse", board: "glossier" },
   { company: "Coursera", short: "COUR", logoClass: "edu", field: "Education", subField: "Education Technology", ats: "greenhouse", board: "coursera" },
   { company: "The Athletic", short: "ATH", logoClass: "media", field: "Sports", subField: "Sports Media", ats: "lever", board: "theathletic" },
