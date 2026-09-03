@@ -3133,6 +3133,33 @@ async function handleAuthSubmit() {
     return;
   }
 
+  // Supabase returns a FAKE SUCCESS when you sign up with an address that
+  // already has an account — no error, no session — so that an attacker cannot
+  // discover which emails are registered. That protection is correct and stays
+  // on; what was missing is our ability to recognise it.
+  //
+  // Without this check the fake success is indistinguishable from a real
+  // signup, so the branch below promised "check your email to confirm" for a
+  // confirmation Supabase deliberately never sends. The student waits forever
+  // for a message that does not exist, presses Create Account again, and gets
+  // the same promise — the loop Marley hit on his phone after confirming the
+  // account on his laptop.
+  //
+  // The tell is documented: an existing user comes back with an empty
+  // `identities` array, where a genuine new signup has one entry.
+  const alreadyRegistered = authMode === "signup"
+    && result.data?.user
+    && Array.isArray(result.data.user.identities)
+    && result.data.user.identities.length === 0;
+  if (alreadyRegistered) {
+    sessionStorage.removeItem("promptlyMigrateLocal");
+    localStorage.removeItem("promptlyPendingMigrationEmail");
+    setAuthMode("signin");
+    setSignupError("You already have an account with this email — signing in instead.");
+    status.textContent = "Enter your password to sign in.";
+    return;
+  }
+
   profile.name = name || result.data.user?.user_metadata?.name || profile.name;
   profile.email = result.data.user?.email || email;
   if (result.data.session?.user) {
