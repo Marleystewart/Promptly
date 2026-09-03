@@ -16,14 +16,21 @@ assert.strictEqual(stateFor(healthy), "ok");
 assert.strictEqual(healthy.bestCount, 12);
 assert.strictEqual(healthy.brokeAt, null);
 
-// ── The case this whole feature exists for ────────────────────────────────
-// A scraper that ran clean but silently stopped returning anything. No error
-// is thrown — the employer just changed their page — so "ok: true" alone must
-// never be enough to call it stable.
+// ── A source that ran clean but stopped returning anything ────────────────
+// This is DORMANT, not broken. It is usually an employer's posting being
+// filled, not a scraper failing — on 3 Sep all 14 sources the dashboard called
+// "needs attention" fetched perfectly when probed, and nine had gone from a
+// single role to zero. It still must not read as "stable", because a genuine
+// silent break looks identical from here; it just must not raise an alarm.
 const wentSilent = mergeEntry(healthy, { company: "Citi", ats: "custom", ok: true, count: 0 }, T2);
-assert.strictEqual(stateFor(wentSilent), "broken",
-  "a source that used to produce and now produces nothing is broken, not quiet");
-assert.strictEqual(wentSilent.brokeAt, T2, "brokeAt is stamped when it goes bad");
+assert.strictEqual(stateFor(wentSilent), "dormant",
+  "produced before, zero now, fetched fine = dormant (churn), not broken");
+assert.notStrictEqual(stateFor(wentSilent), "ok", "but it is still not stable");
+
+// Only an actual fetch failure is broken — the one state worth an alert.
+const fetchFailed = mergeEntry(healthy, { company: "Citi", ats: "custom", ok: false, error: "404" }, T2);
+assert.strictEqual(stateFor(fetchFailed), "broken", "an errored fetch is the real fault");
+assert.strictEqual(wentSilent.brokeAt, T2, "brokeAt is stamped when it stops contributing");
 assert.strictEqual(wentSilent.bestCount, 12, "the baseline must survive so the drop stays visible");
 
 // brokeAt must not creep forward on every later check, or the dashboard would

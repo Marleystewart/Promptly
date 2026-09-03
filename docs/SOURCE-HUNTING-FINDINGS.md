@@ -1,5 +1,10 @@
 # Source hunting: what has already been tried
 
+> **Before you start:** read the ground rules in
+> [`docs/GROUND-RULES.md`](GROUND-RULES.md). The cache-bust rule in particular
+> changed on 3 Sep — bump on `main` after merging, never on your branch.
+
+
 Checked 2 September 2026. Recorded so nobody spends an afternoon rediscovering
 the same dead ends.
 

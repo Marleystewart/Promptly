@@ -14,9 +14,20 @@
 //
 // Health states:
 //   ok      — ran fine and returned roles
-//   broken  — errored, OR has produced roles before and now returns none
-//   quiet   — ran fine, returned none, and never has. Not a fault: most
+//   broken  — the fetch ERRORED. This is the only state that means something
+//             is actually wrong with us.
+//   dormant — fetched fine, returned none, but has produced before. Usually
+//             just churn: the employer's postings closed. Worth watching when
+//             the previous count was large, meaningless when it was 1.
+//   quiet   — fetched fine, returned none, and never has. Not a fault: most
 //             campus boards are genuinely empty outside Sept–Nov.
+//
+// "dormant" used to be lumped in with "broken", and that was wrong in the
+// direction that destroys a monitor's credibility. On 3 Sep the dashboard
+// showed 14 sources needing attention; every single one of them fetched
+// cleanly when probed. Nine had gone from ONE role to zero — a job being
+// filled, not a scraper breaking. A daily alert that fires on normal churn is
+// one nobody reads by the end of the week.
 // ─────────────────────────────────────────────────────────────────────────
 
 const { getRedis } = require("./store");
@@ -27,8 +38,9 @@ function stateFor(entry) {
   if (!entry) return "quiet";
   if (!entry.ok) return "broken";
   if ((entry.count || 0) > 0) return "ok";
-  // Ran clean but produced nothing. Only a fault if it used to produce.
-  return (entry.bestCount || 0) > 0 ? "broken" : "quiet";
+  // Fetched clean but produced nothing. It has produced before, so this is
+  // churn rather than breakage — a separate state, not an alarm.
+  return (entry.bestCount || 0) > 0 ? "dormant" : "quiet";
 }
 
 // Merge this run's result into the stored baseline. bestCount only ever grows,
@@ -56,7 +68,10 @@ function mergeEntry(previous, status, now) {
   };
 
   const wasHealthy = stateFor(prev) === "ok";
-  const isBroken = stateFor(entry) === "broken";
+  // brokeAt tracks both failure states so the dashboard can still say how long
+  // a source has been contributing nothing, whichever reason applies.
+  const state = stateFor(entry);
+  const isBroken = state === "broken" || state === "dormant";
   // brokeAt is the moment it went bad and stays put until it recovers, so the
   // dashboard can say "broken for 3 days" rather than "broken since the last
   // time we checked", which would always read as just now.
