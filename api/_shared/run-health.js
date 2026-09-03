@@ -107,4 +107,38 @@ async function readRunHealth(now = Date.now()) {
   return { runs, problems, healthy: problems.length === 0 };
 }
 
-module.exports = { recordRun, readRun, readRunHealth, readFlag, readJson, STALE_AFTER_MS };
+// The daily privacy housekeeping numbers. Stored so they can be CONFIRMED —
+// the August audit's remaining action on the legacy school keys is "confirm
+// cleanup metrics", and a count that only appears in a cron's HTTP response is
+// not confirmable by anyone. What matters is that these reach zero and stay
+// there: a purge still removing rows every night means something is still
+// writing them.
+const CLEANUP_KEY = "promptly:privacy:cleanup";
+
+async function recordPrivacyCleanup(cleanup) {
+  try {
+    const redis = await getRedis();
+    if (!redis) return;
+    await redis.hset(CLEANUP_KEY, {
+      at: new Date().toISOString(),
+      detail: JSON.stringify(cleanup || {}).slice(0, 2000),
+    });
+  } catch {}
+}
+
+async function readPrivacyCleanup() {
+  try {
+    const redis = await getRedis();
+    if (!redis) return null;
+    const raw = await redis.hgetall(CLEANUP_KEY);
+    if (!raw || !raw.at) return null;
+    return { at: raw.at, detail: readJson(raw.detail) };
+  } catch {
+    return null;
+  }
+}
+
+module.exports = {
+  recordRun, readRun, readRunHealth, readFlag, readJson, STALE_AFTER_MS,
+  recordPrivacyCleanup, readPrivacyCleanup,
+};

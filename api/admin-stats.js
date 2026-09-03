@@ -10,7 +10,7 @@ const { listSourceHealth } = require("./_shared/source-health");
 const { listReports } = require("./_shared/reports");
 const { readEmailHealth } = require("./_shared/email-health");
 const { readIntegrationHealth, probeUsaJobs } = require("./_shared/integration-health");
-const { readRunHealth } = require("./_shared/run-health");
+const { readRunHealth, readPrivacyCleanup } = require("./_shared/run-health");
 const { buildFunnel } = require("./_shared/funnel");
 const crypto = require("crypto");
 
@@ -155,8 +155,15 @@ module.exports = async function handler(req, res) {
     let runHealth = null;
     try { runHealth = await readRunHealth(); } catch {}
 
+    // Privacy housekeeping, so "confirm cleanup metrics" is something a person
+    // can actually do. These should read zero; a non-zero count means something
+    // is still writing data we have decided not to keep.
+    let privacyCleanup = null;
+    try { privacyCleanup = await readPrivacyCleanup(); } catch {}
+
     return res.status(200).json({
       funnel,
+      privacyCleanup,
       runHealth,
       emailHealth,
       integrationHealth,

@@ -54,7 +54,7 @@ Those issues are fixed and regression-tested on the audit branch. The branch als
 | ID | Finding | Status / required action |
 |---|---|---|
 | P-03 | Full profile was sent by test email/recap flows, including résumé and photo | **Fixed and deployed** with an explicit server payload allowlist. Verify a real signed-in network payload manually. |
-| P-04 | Progress uploaded exact school + company + application stage | **Fixed and deployed.** New writes are refused, progress is device-only, and the daily retention job deletes legacy school outcome keys. Confirm cleanup metrics. |
+| P-04 | Progress uploaded exact school + company + application stage | **Closed 3 Sep 2026.** Verified by reading the code: nothing writes `promptly:school:*` or `promptly:schoolfeed:*` any more, and `purgeLegacyOutcomeData()` deletes leftovers on every daily run. The outstanding action was "confirm cleanup metrics", which was impossible because the count only appeared in the cron's HTTP response — it is now persisted and shown on /admin.html. **Zero is the healthy state**; a non-zero count means something started writing them again. |
 | P-05 | Signing out left résumé, photo, profile, saved jobs, and progress in the browser | **Fixed and deployed:** sign-out clears all origin local/session storage. Test on a shared-device scenario. |
 | P-06 | Listing reports silently reused the signed-in account email | **Fixed and deployed:** report payload and stored record contain no reporter email; legacy emails are scrubbed. |
 | P-07 | Active account and verified alert data have no inactivity limit | **Open founder/legal decision.** Adopt a period (proposed starting point: 24 months after last meaningful account use, with warning and extension) or document why account-lifetime retention is necessary. |
@@ -64,7 +64,29 @@ Those issues are fixed and regression-tested on the audit branch. The branch als
 
 | ID | Finding | Recommendation |
 |---|---|---|
-| P-09 | Exact school, graduation year, major, and interests are duplicated in Supabase account metadata and the Upstash alert copy | Decide whether demographic admin metrics justify the duplicate. Prefer keeping only fields needed for server alert matching in Upstash, or document the operational need. |
+| P-09 | Exact school, graduation year, major, and interests are duplicated in Supabase account metadata and the Upstash alert copy | **Partly closed 3 Sep 2026.** `serverAlertProfile()` was a wholesale spread of `accountProfile()`, so the alert store received all four. `major` and `interests` are read by nothing server-side — not `matchesOpening()`, not any dashboard — so they are no longer sent, and the daily job scrubs existing records. Both remain in Supabase metadata, which is what makes a profile follow you to a new device. **Still open:** school and graduation year are still duplicated into Upstash, read only by the founder dashboard's demographic tiles. Exact school + graduation year is identifying in a small cohort, and this is a founder decision — see below. |
+
+### P-09 remainder: school and graduation year in the alert store
+
+The alert pipeline does not use either field. They are duplicated into Upstash
+solely so `/admin.html` can show "students by school" and "students by
+graduation year". Exact school plus graduation year plus major is close to
+identifying in a small cohort, and today's cohort is four people.
+
+Against that, "how many students at Trinity" is a real input to school pilot
+conversations, which is the current growth strategy.
+
+Three options, in order of how much they cost:
+
+1. **Keep as is**, and document the operational need in the privacy page rather
+   than leaving it implicit. Cheapest, least private.
+2. **Coarsen graduation year** into a bucket (2027 / 2028 / later). Keeps the
+   pilot signal, removes most of the re-identification power.
+3. **Drop both from Upstash** and take demographics from Supabase metadata only
+   when needed. Most private; the founder dashboard loses two tiles.
+
+Not decided unilaterally — it trades a real business need against a real
+privacy exposure, and that is Marley's call.
 | P-10 | Provider log, backup, regional-transfer, and deletion details are not established in repository evidence | Inventory the active Vercel plan/settings and execute DPAs with Supabase, Upstash, Resend, and any other processor before broad UK/EU launch. Record subprocessors and transfer mechanism. |
 | P-11 | No self-service account export | Establish a verified manual export procedure before launch; automate a machine-readable download later. |
 | P-12 | Email alerts, weekly recap, and reminders default on | Core job alerts may be the requested service; weekly recap classification is less clear. Founder and counsel should classify each category and, if any is marketing, change it to an unbundled, unselected opt-in with consent records. |
