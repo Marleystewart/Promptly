@@ -64,7 +64,9 @@ window.MONITORED_COMPANIES = [
   "Citadel",
   "Citi",
   "Citizens",
+  "Cleveland Clinic",
   "Cloudflare",
+  "Coca-Cola",
   "CockroachDB",
   "Code for America",
   "Cohere",
@@ -335,11 +337,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 326,
-  "companies": 326,
+  "sources": 328,
+  "companies": 328,
   "byPlatform": {
     "greenhouse": 133,
-    "custom": 48,
+    "custom": 50,
     "workday": 91,
     "lever": 7,
     "ashby": 25,
@@ -352,11 +354,11 @@ window.PROMPTLY_COVERAGE = {
     "Finance": 130,
     "Technology": 66,
     "Consulting": 8,
-    "Healthcare": 30,
+    "Healthcare": 31,
     "Education": 4,
     "Engineering": 21,
     "Media": 15,
-    "Consumer": 15,
+    "Consumer": 16,
     "Nonprofit": 7,
     "Sports": 3,
     "Real Estate": 6,
