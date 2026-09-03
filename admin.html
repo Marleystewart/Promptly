@@ -102,7 +102,7 @@ async function load() {
       const todo = [
         s2.unconfirmed ? `${s2.unconfirmed} never confirmed their email${s2.unconfirmedExpiringSoon ? ` (${s2.unconfirmedExpiringSoon} deleted within 3 days)` : ""}` : "",
         s2.confirmedNeverAlerted ? `${s2.confirmedNeverAlerted} confirmed but have never been sent an alert` : "",
-        s2.noFields ? `${s2.noFields} have no fields set, so nothing can match them` : "",
+        s2.noFields ? `${s2.noFields} have no fields set, so they match EVERY listing, not none` : "",
         s2.alertsOff ? `${s2.alertsOff} have switched all alerts off` : "",
       ].filter(Boolean);
       return `
