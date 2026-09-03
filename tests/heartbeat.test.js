@@ -113,27 +113,34 @@ async function run() {
     });
     const report = await collectHeartbeat({});
     assert.equal(report.healthy, false, "broken sources are not healthy");
-    assert.match(report.problems.join(" "), /2 sources stopped producing/);
+    assert.match(report.problems.join(" "), /2 sources failed to fetch/);
     // Longest-broken first: that is the one that has been wrong the longest.
     assert.match(report.problems.join(" "), /Citadel, Millennium/);
-    assert.match(buildHeartbeatEmail(report).html, /2\/4 healthy/);
+    assert.match(buildHeartbeatEmail(report).html, /2\/4 fetching/);
   }
 
-  // 7. "Quiet" must NOT count as broken. Most campus boards are genuinely empty
-  //    outside Sept–Nov, and crying wolf every summer trains people to ignore
-  //    the email entirely.
+  // 7. Neither "quiet" nor "dormant" may raise an alarm.
+  //
+  //    quiet   = never produced; seasonal.
+  //    dormant = produced before, zero now; almost always a filled posting.
+  //
+  //    On 3 Sep the dashboard flagged 14 sources as needing attention and every
+  //    one fetched cleanly when probed — nine had gone from ONE role to zero.
+  //    Alarming on that sends "NEEDS ATTENTION" daily for normal churn, which
+  //    is how a daily email stops being read at all.
   {
     const { collectHeartbeat } = withState({
       email: HEALTHY_EMAIL,
       sources: [
         { company: "Fidelity", state: "quiet" },
-        { company: "Evercore", state: "quiet" },
+        { company: "Disney", state: "dormant", brokeAt: "2026-09-02T00:00:00.000Z" },
+        { company: "William Blair", state: "dormant" },
         { company: "Jane Street", state: "ok" },
       ],
     });
     const report = await collectHeartbeat({});
-    assert.equal(report.healthy, true, "quiet sources are seasonal, not a fault");
-    assert.doesNotMatch(report.problems.join(" "), /stopped producing/);
+    assert.equal(report.healthy, true, "quiet and dormant are not faults");
+    assert.doesNotMatch(report.problems.join(" "), /failed to fetch/);
   }
 
   // 8. Several problems at once are all reported, not just the first.

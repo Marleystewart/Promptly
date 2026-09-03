@@ -9,7 +9,7 @@
   :root {
     --bg: #0b1020; --panel: #141b31; --line: #232c47;
     --text: #e8ecf7; --muted: #94a0bd;
-    --ok: #2fbf71; --broken: #ef4d5a; --quiet: #6b7793;
+    --ok: #2fbf71; --broken: #ef4d5a; --dormant: #e6a94f; --quiet: #6b7793;
   }
   * { box-sizing: border-box; }
   /* The [hidden] attribute must always win — several elements below set
@@ -38,8 +38,10 @@
   .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 9px; vertical-align: middle; }
   .dot.ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(47,191,113,.16); }
   .dot.broken { background: var(--broken); box-shadow: 0 0 0 3px rgba(239,77,90,.18); }
+  .dot.dormant { background: var(--dormant); box-shadow: 0 0 0 3px rgba(230,169,79,.18); }
   .dot.quiet { background: var(--quiet); box-shadow: 0 0 0 3px rgba(107,119,147,.15); }
   .err { color: var(--broken); font-size: 12.5px; }
+  .dormant-note { color: var(--dormant); font-size: 12.5px; }
   .muted { color: var(--muted); }
   .legend { margin: 22px 0 0; color: var(--muted); font-size: 13px; line-height: 1.8; }
   .scroll { overflow-x: auto; }
@@ -95,7 +97,8 @@
 
   <div class="tiles" id="tiles" hidden>
     <div class="tile"><b id="c-ok">0</b><span>Stable</span></div>
-    <div class="tile"><b id="c-broken">0</b><span>Needs attention</span></div>
+    <div class="tile"><b id="c-broken">0</b><span>Failing to fetch</span></div>
+    <div class="tile"><b id="c-dormant">0</b><span>Dormant (roles closed)</span></div>
     <div class="tile"><b id="c-quiet">0</b><span>Quiet (no roles yet)</span></div>
     <div class="tile"><b id="c-total">0</b><span>Sources tracked</span></div>
   </div>
@@ -111,8 +114,9 @@
 
   <p class="legend">
     <span class="dot ok"></span><b>Stable</b> — ran clean and returned roles.<br />
-    <span class="dot broken"></span><b>Needs attention</b> — errored, or it has produced roles before and now returns none. That is the honest signal a scraper broke: we cannot see an employer edit their page, only that a source stopped producing what it used to.<br />
-    <span class="dot quiet"></span><b>Quiet</b> — ran clean, returned nothing, and never has. Not a fault: most campus boards are genuinely empty outside September–November.
+    <span class="dot broken"></span><b>Failing to fetch</b> — the request errored. This is the only state that means something is wrong on our side, and the only one the daily email alerts on.<br />
+    <span class="dot dormant"></span><b>Dormant</b> — fetched fine, returned nothing, but has produced before. Almost always an employer's posting being filled rather than a broken scraper. Worth a look when the previous count was large; meaningless when it was 1.<br />
+    <span class="dot quiet"></span><b>Quiet</b> — fetched fine, returned nothing, and never has. Not a fault: most campus boards are genuinely empty outside September–November.
   </p>
 </div>
 
@@ -161,12 +165,12 @@
     $("table").hidden = rows.length === 0;
 
     $("rows").innerHTML = rows.map((r) => {
+      const since = r.brokeAt ? ' <span class="muted">· since ' + ago(r.brokeAt) + "</span>" : "";
       const detail = r.state === "broken"
-        ? (r.error
-            ? '<span class="err">' + esc(r.error) + "</span>"
-            : '<span class="err">stopped producing (was ' + (r.bestCount || 0) + ")</span>")
-          + (r.brokeAt ? ' <span class="muted">· since ' + ago(r.brokeAt) + "</span>" : "")
-        : '<span class="muted">—</span>';
+        ? '<span class="err">' + esc(r.error || "fetch failed") + "</span>" + since
+        : r.state === "dormant"
+          ? '<span class="dormant-note">no roles right now (peak was ' + (r.bestCount || 0) + ")</span>" + since
+          : '<span class="muted">—</span>';
       // A custom scraper is the fragile kind — worth calling out on sight.
       const tag = r.ats === "custom" ? '<span class="custom">custom scraper</span>' : "";
       return "<tr>"
@@ -194,6 +198,7 @@
     const counts = data.sourceHealthCounts || {};
     $("c-ok").textContent = counts.ok || 0;
     $("c-broken").textContent = counts.broken || 0;
+    $("c-dormant").textContent = counts.dormant || 0;
     $("c-quiet").textContent = counts.quiet || 0;
     $("c-total").textContent = allRows.length;
     $("tiles").hidden = false;
