@@ -39,7 +39,24 @@ async function createVerifyToken(email, { force = false } = {}) {
   }
 
   const token = newToken();
+  const key = `promptly:subscriber:${normalized}`;
+  const record = await redis.get(key);
+
+  // Retire any link already outstanding for this address. Two reasons:
+  //
+  // 1. Deletion. promptly:verify:<token> maps token -> EMAIL ADDRESS, and it is
+  //    only reachable from the token side. Without the token recorded on the
+  //    subscriber, neither eraseSubscriber nor purgeUnverified can find it, so
+  //    a deleted student's address survived in Redis for up to VERIFY_TTL — a
+  //    week — while the privacy page promises no shadow copy. This is the same
+  //    gap that was already fixed for the unsubscribe token.
+  // 2. Only the newest confirmation link should work.
+  if (record && record.verifyToken && record.verifyToken !== token) {
+    await redis.del(`${VERIFY_PREFIX}${record.verifyToken}`).catch(() => {});
+  }
+
   await redis.set(`${VERIFY_PREFIX}${token}`, normalized, { ex: VERIFY_TTL });
+  if (record) await redis.set(key, { ...record, verifyToken: token });
   return token;
 }
 
@@ -52,6 +69,15 @@ async function consumeVerifyToken(token) {
   const email = await redis.get(key);
   if (!email) return null;
   await redis.del(key); // single use
+  // Clear the pointer too, so a redeemed token is not left recorded on the
+  // profile as if a confirmation were still outstanding.
+  try {
+    const recordKey = `promptly:subscriber:${normalizeEmail(email)}`;
+    const record = await redis.get(recordKey);
+    if (record && record.verifyToken === clean) {
+      await redis.set(recordKey, { ...record, verifyToken: null });
+    }
+  } catch {}
   return String(email);
 }
 
@@ -134,6 +160,8 @@ async function purgeUnverified(email) {
     redis.del(`promptly:verify-sent:${normalized}`),
   ];
   if (record.unsubToken) jobs.push(redis.del(`${UNSUB_PREFIX}${record.unsubToken}`));
+  // token -> email, otherwise unreachable once the record is gone.
+  if (record.verifyToken) jobs.push(redis.del(`${VERIFY_PREFIX}${record.verifyToken}`));
   await Promise.all(jobs);
   return { purged: true };
 }
