@@ -95,6 +95,29 @@ function normalizeSubscriber(profile = {}, subscription = null) {
   };
 }
 
+// What happens to the stored push endpoint on a save.
+//
+// Two things were wrong here, and they pulled in opposite directions.
+//
+// FUNCTIONAL: an ordinary settings save calls saveSubscriber() with no
+// subscription, and serverAlertProfile() has never carried pushSubscription. So
+// the computed value was null, and the spread overwrote a perfectly good stored
+// endpoint with it. Enabling push worked; changing any other setting afterwards
+// silently switched it back off, and nothing anywhere said so.
+//
+// PRIVACY: a push endpoint identifies one specific browser install and is the
+// address we can reach it at. Keeping it after someone turns push OFF is
+// retention past the purpose it was collected for — the August audit asked for
+// "retain saved endpoint only while enabled/account active".
+//
+// So: an explicit new subscription wins; switching push off clears it
+// deliberately; otherwise the existing one is left alone.
+function resolvePushSubscription(existing, subscriber, subscription) {
+  if (subscriber.pushNotifications === false) return null;
+  if (subscription) return subscriber.pushSubscription;
+  return subscriber.pushSubscription || existing.pushSubscription || null;
+}
+
 async function saveSubscriber(profile, subscription) {
   const redis = await getRedis();
   const subscriber = normalizeSubscriber(profile, subscription);
@@ -109,6 +132,7 @@ async function saveSubscriber(profile, subscription) {
     ...existing,
     ...subscriber,
     createdAt: existing.createdAt || new Date().toISOString(),
+    pushSubscription: resolvePushSubscription(existing, subscriber, subscription),
   };
 
   await redis.set(key, merged);
@@ -355,6 +379,7 @@ module.exports = {
   addSubscriberWatch,
   removeSubscriberWatch,
   clearPushSubscription,
+  resolvePushSubscription,
   normalizeSubscriber,
   hasRedisEnv,
   takeTestAlertSlot,
