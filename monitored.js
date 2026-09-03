@@ -183,6 +183,7 @@ window.MONITORED_COMPANIES = [
   "Marshall Wace",
   "MassMutual",
   "Mastercard",
+  "Mayo Clinic",
   "Merck",
   "Millennium",
   "Mixpanel",
@@ -332,11 +333,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 323,
-  "companies": 323,
+  "sources": 324,
+  "companies": 324,
   "byPlatform": {
     "greenhouse": 133,
-    "custom": 45,
+    "custom": 46,
     "workday": 91,
     "lever": 7,
     "ashby": 25,
@@ -349,7 +350,7 @@ window.PROMPTLY_COVERAGE = {
     "Finance": 130,
     "Technology": 66,
     "Consulting": 7,
-    "Healthcare": 29,
+    "Healthcare": 30,
     "Education": 4,
     "Engineering": 20,
     "Media": 15,
