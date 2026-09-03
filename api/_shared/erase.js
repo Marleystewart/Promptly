@@ -25,9 +25,9 @@ function normalizeEmail(email) {
 
 const DELETE_HASH_FIELD = Symbol("delete-hash-field");
 
-// Walk a hash of JSON records and rewrite only the entries that mention this
-// address. Rewrites in place rather than deleting the row, because these rows
-// are shared across users — a watched company may have other watchers.
+// Walk a hash of JSON records and change only the entries that mention this
+// address. Shared rows are rewritten; a caller can return DELETE_HASH_FIELD
+// when the whole row belongs only to the departing user.
 async function scrubHash(redis, key, scrubber) {
   const raw = (await redis.hgetall(key)) || {};
   const updates = {};
