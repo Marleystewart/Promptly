@@ -100,6 +100,8 @@ window.MONITORED_COMPANIES = [
   "Estée Lauder",
   "ExodusPoint",
   "Experian",
+  "ExxonMobil",
+  "EY",
   "Federal Reserve Board",
   "Fifth Third Bank",
   "Figma",
@@ -333,11 +335,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 324,
-  "companies": 324,
+  "sources": 326,
+  "companies": 326,
   "byPlatform": {
     "greenhouse": 133,
-    "custom": 46,
+    "custom": 48,
     "workday": 91,
     "lever": 7,
     "ashby": 25,
@@ -349,10 +351,10 @@ window.PROMPTLY_COVERAGE = {
   "byField": {
     "Finance": 130,
     "Technology": 66,
-    "Consulting": 7,
+    "Consulting": 8,
     "Healthcare": 30,
     "Education": 4,
-    "Engineering": 20,
+    "Engineering": 21,
     "Media": 15,
     "Consumer": 15,
     "Nonprofit": 7,

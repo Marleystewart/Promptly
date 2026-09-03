@@ -16,6 +16,7 @@ markup, which is the method that works — guessing board tokens does not, and
 | Sixth Street | `workday sixthstreet/sixthstreetcareers` | Left Greenhouse; board is a Workday iframe on `/current-opportunities/`. |
 | Bread Financial, GSK, Genentech, Humana, NBA | Phenom | Each on the employer's own domain, CNAMEd to their own `phenompeople` tenant. |
 | Qualcomm, Ford, Mayo Clinic | Eightfold | Same — own domain, own `eightfold.ai` tenant. |
+| EY, ExxonMobil | SAP SuccessFactors (`jobs2web`) | Server-rendered and readable from plain Node — no browser needed. |
 
 ### Two platform gotchas worth knowing
 
@@ -28,6 +29,24 @@ hostname.** Mayo Clinic is `mc.org`, not `mayoclinic.org`, matching its
 `mc.eightfold.ai` tenant. Guessing the obvious one returns a flat 404 that looks
 exactly like a board that does not exist. Read the right value off the careers
 page's own network call.
+
+### jobs2web locations need their own US test
+
+SuccessFactors writes locations as `City, Region, CC, postcode` with an **ISO
+country code**, and that shape defeats the generic `isUsLocation()` helper. EY's
+board is largely Indian, and `"Noida, UP, IN, 201301"` contains `, IN,` — which
+is **Indiana**. Unfiltered, EY reported **286 "US" roles**; with the
+position-aware test it is 11. `ID` is Indonesia and Idaho, `AR` is Argentina and
+Arkansas, `DE` is Germany and Delaware.
+
+Use `usJobs2WebOnly()` from `jobs2web.js` for these sources, never `usOnly()`.
+The country is the last segment once a trailing postcode is dropped.
+
+**Findly is unresolved.** Coca-Cola (`coca-cola.cdn.findly.com`) and Cleveland
+Clinic (`clevelandcliniccareers.cdn.findly.com`) return 404 on every obvious
+search path while serving a ~1.4MB single-page app from `/`. Nobody has yet
+watched the rendered page to find the real endpoint — that is the next step
+there, and it is the technique that cracked Sixth Street and Mayo Clinic.
 
 ## Avature: not reachable from a server, at all
 
