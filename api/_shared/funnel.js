@@ -26,14 +26,18 @@ function ageInDays(iso, now) {
   return Number.isFinite(t) ? (now - t) / 86400000 : null;
 }
 
-// Can this account actually be sent a matching alert today? Confirmed alone is
-// not enough: with no fields nothing matches, and with email alerts switched
-// off the digest never sends. Both are silent, and both look like "we have
-// their address" from every other number on the dashboard.
+// Can this account actually be sent a matching alert today?
+//
+// Confirmed is not enough on its own — with every notification switched off the
+// digest never sends. But an empty field list does NOT block anything: see
+// matchesOpening(), where `fields.length === 0` returns true for every opening.
+// No fields means "match everything", not "match nothing".
+//
+// This function originally required at least one field and was wrong in the
+// most misleading direction possible: the dashboard reported "0 can be alerted"
+// on the same night the refresh cron queued 25 real digest items.
 function isAlertReady(sub) {
   if (sub.verified !== true) return false;
-  const fields = Array.isArray(sub.fields) ? sub.fields.filter(Boolean) : [];
-  if (!fields.length) return false;
   const emailOn = sub.emailNotifications !== false;
   const pushOn = sub.pushNotifications !== false && Boolean(sub.pushSubscription);
   return emailOn || pushOn;
@@ -61,13 +65,14 @@ function buildFunnel(subscribers = [], now = Date.now()) {
       continue;
     }
 
-    const ready = isAlertReady(sub);
-    if (ready) alertReady += 1;
-    else {
-      const fields = Array.isArray(sub.fields) ? sub.fields.filter(Boolean) : [];
-      if (!fields.length) noFields += 1;
-      else alertsOff += 1;
-    }
+    if (isAlertReady(sub)) alertReady += 1;
+    else alertsOff += 1;
+
+    // Tracked separately from the funnel, because it is not a blocked account —
+    // it is an UNFILTERED one. With no fields every listing matches, so this
+    // student gets the whole feed rather than their corner of it.
+    const fields = Array.isArray(sub.fields) ? sub.fields.filter(Boolean) : [];
+    if (!fields.length) noFields += 1;
 
     if (sub.firstAlertAt) everAlerted += 1;
     else confirmedNeverAlerted += 1;
