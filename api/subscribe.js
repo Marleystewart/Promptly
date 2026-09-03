@@ -79,11 +79,14 @@ async function deleteAccount(req, res) {
   // Erase Promptly's alert-side records first. If Supabase deletion fails the
   // user can still retry while authenticated; deleting auth first could strand
   // an undeletable Redis profile with no account left to prove ownership.
-  let subscriberRemoved = false;
+  let erasure = null;
   try {
-    subscriberRemoved = Boolean((await eraseSubscriber(auth.email)).erased);
+    erasure = await eraseSubscriber(auth.email);
   } catch {
-    return res.status(502).json({ error: "Promptly could not finish deleting your alert data. Nothing else was deleted; please try again." });
+    return res.status(502).json({ error: "Promptly could not finish deleting your alert data. Your sign-in was not deleted; please try again." });
+  }
+  if (!erasure || erasure.erased !== true) {
+    return res.status(502).json({ error: "Promptly could not reach the alert-data store. Your sign-in was not deleted; please try again." });
   }
 
   const deleteResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(auth.user.id)}`, {
@@ -95,7 +98,7 @@ async function deleteAccount(req, res) {
     return res.status(502).json({ error: details.message || "Supabase could not delete this account." });
   }
 
-  return res.status(200).json({ ok: true, subscriberRemoved });
+  return res.status(200).json({ ok: true, subscriberRemoved: true });
 }
 
 async function handler(req, res) {

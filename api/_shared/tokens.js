@@ -8,8 +8,12 @@
 
 const crypto = require("crypto");
 const { getRedis } = require("./store");
+const {
+  saveVerificationToken,
+  consumeVerificationToken,
+  deleteVerificationTokensForEmail,
+} = require("./verification-store");
 
-const VERIFY_PREFIX = "promptly:verify:";
 const UNSUB_PREFIX = "promptly:unsub:";
 const VERIFY_TTL = 60 * 60 * 24 * 7;   // a confirmation link is good for a week
 const VERIFY_COOLDOWN = 60 * 15;       // at most one confirmation email per 15 min
@@ -39,20 +43,14 @@ async function createVerifyToken(email, { force = false } = {}) {
   }
 
   const token = newToken();
-  await redis.set(`${VERIFY_PREFIX}${token}`, normalized, { ex: VERIFY_TTL });
+  await saveVerificationToken(redis, normalized, token, VERIFY_TTL);
   return token;
 }
 
 // Redeem a confirmation token exactly once. Returns the email, or null.
 async function consumeVerifyToken(token) {
   const redis = await getRedis();
-  const clean = String(token || "").trim();
-  if (!redis || !clean) return null;
-  const key = `${VERIFY_PREFIX}${clean}`;
-  const email = await redis.get(key);
-  if (!email) return null;
-  await redis.del(key); // single use
-  return String(email);
+  return consumeVerificationToken(redis, token);
 }
 
 // A stable per-subscriber unsubscribe token, minted once and reused so that
@@ -127,14 +125,16 @@ async function purgeUnverified(email) {
   if (!record) return { purged: false, missing: true };
   if (record.verified === true) return { purged: false, refused: "confirmed account" };
 
-  const jobs = [
+  // Token mappings go first while the profile still makes them discoverable.
+  // A later failure leaves this profile available for the next retention run.
+  await deleteVerificationTokensForEmail(redis, normalized);
+  if (record.unsubToken) await redis.del(`${UNSUB_PREFIX}${record.unsubToken}`);
+  await Promise.all([
     redis.del(key),
     redis.srem("promptly:subscribers", normalized),
     redis.del(`promptly:digest:${normalized}`),
     redis.del(`promptly:verify-sent:${normalized}`),
-  ];
-  if (record.unsubToken) jobs.push(redis.del(`${UNSUB_PREFIX}${record.unsubToken}`));
-  await Promise.all(jobs);
+  ]);
   return { purged: true };
 }
 

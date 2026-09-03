@@ -17,17 +17,21 @@
 const { getRedis } = require("./store");
 const { WATCHED_KEY, COVERAGE_KEY } = require("./watched-store");
 const { REPORTS_KEY } = require("./reports");
+const { deleteVerificationTokensForEmail } = require("./verification-store");
 
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
 
-// Walk a hash of JSON records and rewrite only the entries that mention this
-// address. Rewrites in place rather than deleting the row, because these rows
-// are shared across users — a watched company may have other watchers.
+const DELETE_HASH_FIELD = Symbol("delete-hash-field");
+
+// Walk a hash of JSON records and change only the entries that mention this
+// address. Shared rows are rewritten; a caller can return DELETE_HASH_FIELD
+// when the whole row belongs only to the departing user.
 async function scrubHash(redis, key, scrubber) {
   const raw = (await redis.hgetall(key)) || {};
   const updates = {};
+  const deletions = [];
   let removed = 0;
 
   for (const [field, value] of Object.entries(raw)) {
@@ -39,11 +43,13 @@ async function scrubHash(redis, key, scrubber) {
 
     const next = scrubber(record);
     if (next === null) continue;
-    updates[field] = JSON.stringify(next);
+    if (next === DELETE_HASH_FIELD) deletions.push(field);
+    else updates[field] = JSON.stringify(next);
     removed += 1;
   }
 
   if (Object.keys(updates).length) await redis.hset(key, updates);
+  if (deletions.length) await redis.hdel(key, ...deletions);
   return removed;
 }
 
@@ -55,60 +61,58 @@ async function eraseSubscriber(email) {
   // Read first: the unsubscribe token is only discoverable via the record, and
   // once the record is gone the token->email mapping is unreachable garbage
   // that still resolves to this person's address.
-  let record = null;
-  try { record = await redis.get(`promptly:subscriber:${normalized}`); } catch {}
+  const record = await redis.get(`promptly:subscriber:${normalized}`);
 
   const removed = [];
 
-  const jobs = [
-    redis.del(`promptly:subscriber:${normalized}`),
-    redis.srem("promptly:subscribers", normalized),
-    redis.del(`promptly:digest:${normalized}`),
-    redis.del(`promptly:verify-sent:${normalized}`),
-  ];
-  removed.push("profile", "subscriber-set", "queued-digest", "verify-cooldown");
-
+  // Remove token mappings while the profile still makes every token
+  // discoverable. If any later shared-store cleanup fails, the profile remains
+  // in place so the authenticated caller can retry instead of being stranded.
+  await deleteVerificationTokensForEmail(redis, normalized);
+  removed.push("verification-tokens");
   if (record && record.unsubToken) {
-    jobs.push(redis.del(`promptly:unsub:${record.unsubToken}`));
+    await redis.del(`promptly:unsub:${record.unsubToken}`);
     removed.push("unsubscribe-token");
   }
 
-  await Promise.all(jobs);
-
   // Watched companies: the policy explicitly promises these are removed.
-  let watchedScrubbed = 0;
-  try {
-    watchedScrubbed = await scrubHash(redis, WATCHED_KEY, (r) => {
-      const watchers = Array.isArray(r.watchers) ? r.watchers : [];
-      if (!watchers.includes(normalized)) return null;
-      return { ...r, watchers: watchers.filter((w) => w !== normalized) };
-    });
-  } catch {}
+  const watchedScrubbed = await scrubHash(redis, WATCHED_KEY, (r) => {
+    const watchers = Array.isArray(r.watchers) ? r.watchers : [];
+    if (!watchers.includes(normalized)) return null;
+    const remaining = watchers.filter((w) => w !== normalized);
+    // A source requested only by this departing user is personal preference
+    // data, not a global registry entry. Stop fetching it when nobody remains.
+    return remaining.length ? { ...r, watchers: remaining } : DELETE_HASH_FIELD;
+  });
   if (watchedScrubbed) removed.push(`watched-sources(${watchedScrubbed})`);
 
   // Coverage requests: demand signal we want to keep, but the requester's
   // address is not needed to keep the count.
-  let coverageScrubbed = 0;
-  try {
-    coverageScrubbed = await scrubHash(redis, COVERAGE_KEY, (r) => {
-      const by = Array.isArray(r.requestedBy) ? r.requestedBy : [];
-      if (!by.includes(normalized)) return null;
-      return { ...r, requestedBy: by.filter((e) => e !== normalized) };
-    });
-  } catch {}
+  const coverageScrubbed = await scrubHash(redis, COVERAGE_KEY, (r) => {
+    const by = Array.isArray(r.requestedBy) ? r.requestedBy : [];
+    if (!by.includes(normalized)) return null;
+    return { ...r, requestedBy: by.filter((e) => e !== normalized) };
+  });
   if (coverageScrubbed) removed.push(`coverage-requests(${coverageScrubbed})`);
 
   // Listing reports: the report itself is operational (a broken link is still
   // broken after the reporter leaves), so keep the report and drop only the
   // contact address, which exists solely for optional follow-up.
-  let reportsScrubbed = 0;
-  try {
-    reportsScrubbed = await scrubHash(redis, REPORTS_KEY, (r) => {
-      if (normalizeEmail(r.lastReporterEmail) !== normalized) return null;
-      return { ...r, lastReporterEmail: null };
-    });
-  } catch {}
+  const reportsScrubbed = await scrubHash(redis, REPORTS_KEY, (r) => {
+    if (normalizeEmail(r.lastReporterEmail) !== normalized) return null;
+    return { ...r, lastReporterEmail: null };
+  });
   if (reportsScrubbed) removed.push(`listing-reports(${reportsScrubbed})`);
+
+  // Destructive direct-key cleanup comes last. Once this succeeds no current
+  // personal-data edge remains, and it is safe for the route to delete auth.
+  await Promise.all([
+    redis.del(`promptly:subscriber:${normalized}`),
+    redis.srem("promptly:subscribers", normalized),
+    redis.del(`promptly:digest:${normalized}`),
+    redis.del(`promptly:verify-sent:${normalized}`),
+  ]);
+  removed.push("profile", "subscriber-set", "queued-digest", "verify-cooldown");
 
   return { erased: true, removed };
 }
