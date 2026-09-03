@@ -831,6 +831,7 @@ body.launch-active .onboarding-brand {
   text-underline-offset: 3px;
 }
 
+.alert-intelligence h2,
 .alert-intelligence h3 {
   margin-top: 12px;
   font-size: 18px;
@@ -3969,3 +3970,27 @@ body.onboarding-active .ap-panel { display: none; }
   gap: 2px 8px;
 }
 .verify-banner [data-verify-banner-text] small { font-weight: 500; opacity: 0.82; }
+
+
+/* Bypass Blocks (WCAG 2.4.1, Level A). The header and its four action buttons
+   repeat on every view, so without this a keyboard user tabs through them
+   before reaching content on every single navigation. Hidden until focused. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 12px 18px;
+  border-radius: 0 0 12px 0;
+  /* --purple-2, not --purple: white on #8057ff is 4.44:1, just under the 4.5
+     that WCAG 1.4.3 asks for. #5d38f2 gives 6.34:1 and reads identically. */
+  background: var(--purple-2);
+  color: #fff;
+  font-weight: 700;
+}
+.skip-link:focus {
+  left: 0;
+}
+/* The target takes focus programmatically, so it must not draw a ring of its
+   own — the point is to move the caret, not to highlight the whole page. */
+#main-content:focus { outline: none; }

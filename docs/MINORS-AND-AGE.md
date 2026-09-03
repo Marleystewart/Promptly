@@ -13,14 +13,21 @@ What follows is the shape of the problem and the parts you can act on today.
 
 ## The finding you can act on
 
-**Promptly states no minimum age anywhere.** Not in Terms, not in Privacy, not
-at signup. Every consumer service states one, and its absence is the first thing
+**Promptly stated no minimum age.** The privacy page already had a "Students
+under 18" section covering the under-13 position — an earlier draft of this
+document said there was no age language at all, which was wrong; the check that
+produced it was truncated and I missed the section. What was genuinely missing
+was a **minimum age**, and anything at all in the **Terms**.
+
+Every consumer service states a minimum age, and its absence is the first thing
 a school's counsel, an App Store reviewer, or a regulator will notice — before
 any of the harder questions below.
 
-**Resolved 3 September 2026.** Terms now carry a "Who can use Promptly" section
-and the privacy page a "Children" section; the text that shipped is at the
-bottom. The remaining work here is legal review, not code.
+**Resolved 3 September 2026.** Terms now carry a "Who can use Promptly" section,
+and the minimum age plus the deletion route were folded into the privacy page's
+existing "Students under 18" section rather than added alongside it — two
+near-identical sections saying slightly different things is how a policy starts
+contradicting itself. The remaining work here is legal review, not code.
 
 ## COPPA — low risk, not zero
 
@@ -118,12 +125,14 @@ For Terms:
 > under 13 has given us information, email help.promptly@gmail.com and we will
 > delete it.
 
-For Privacy, alongside the existing retention list:
+For Privacy — folded into the existing "Students under 18" section:
 
-> **Children.** Promptly is not directed to children under 13 and we do not
-> knowingly collect their information. If we learn that we have, we delete it.
-> You can delete your own account and data at any time from
-> Profile → Settings → Delete My Data.
+> Promptly is built for college students and is intended for students aged 16
+> and over. It is not directed at children under 13, and we do not knowingly
+> collect their information. If you believe a child under 13 has given us
+> information, email help.promptly@gmail.com and we will delete it. You can
+> delete your own account and data at any time from Profile → Settings →
+> Delete My Data.
 
 Sixteen is a judgement call, not a legal requirement — it is a common floor and
 sits comfortably above the COPPA line while not excluding the high school

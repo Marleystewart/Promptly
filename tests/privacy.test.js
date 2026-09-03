@@ -88,9 +88,16 @@ assert.match(policy, /graduation year only as a range/,
 const terms = fs.readFileSync(path.join(root, "terms.html"), "utf8");
 assert.match(terms, /aged 16 and over/, "the Terms must state a minimum age");
 assert.match(terms, /under 13/, "the Terms must carry the under-13 undertaking");
-assert.match(policy, /<h2>Children<\/h2>/, "the privacy page needs a Children section");
-assert.match(policy, /not directed to children under 13/,
-  "the privacy page must state the under-13 position");
+// The privacy page already had a "Students under 18" section; the minimum age
+// and the deletion route were folded into it rather than added as a second,
+// near-identical section.
+assert.match(policy, /Students under 18/, "the privacy page needs its under-18 section");
+assert.match(policy, /intended for students aged 16 and over/,
+  "the privacy page must state the minimum age too, not only the under-13 position");
+assert.match(policy, /not directed at children under 13/,
+  "the privacy page must keep the under-13 position");
+assert.equal((policy.match(/aged 16 and over/g) || []).length, 1,
+  "one statement of the minimum age, not two competing ones");
 // The undertaking is only honest because deletion actually works, which the
 // erasure tests cover — this asserts we keep pointing people at it.
 assert.match(policy, /Delete My Data/, "the Children section must name the route to deletion");
