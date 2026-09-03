@@ -23,13 +23,28 @@ function fakeRedis() {
     kv, sets, hashes,
     async get(k) { return kv.has(k) ? kv.get(k) : null; },
     async set(k, v) { kv.set(k, v); },
-    async del(k) { kv.delete(k); },
+    async del(...keys) {
+      for (const k of keys.flat()) {
+        kv.delete(k);
+        sets.delete(k);
+        hashes.delete(k);
+      }
+    },
     async srem(k, m) { (sets.get(k) || new Set()).delete(m); },
     async sadd(k, m) { if (!sets.has(k)) sets.set(k, new Set()); sets.get(k).add(m); },
+    async smembers(k) { return Array.from(sets.get(k) || []); },
+    async expire() { return 1; },
+    async scan(cursor, { match } = {}) {
+      const prefix = String(match || "").replace(/\*$/, "");
+      return ["0", Array.from(kv.keys()).filter((k) => k.startsWith(prefix))];
+    },
     async hgetall(k) { return hashes.has(k) ? Object.fromEntries(hashes.get(k)) : {}; },
     async hset(k, obj) {
       if (!hashes.has(k)) hashes.set(k, new Map());
       for (const [f, v] of Object.entries(obj)) hashes.get(k).set(f, v);
+    },
+    async hdel(k, ...fields) {
+      for (const field of fields) (hashes.get(k) || new Map()).delete(field);
     },
   };
 }
@@ -45,22 +60,27 @@ Module._load = function patched(request, parent, isMain) {
   return realLoad(request, parent, isMain);
 };
 const { eraseSubscriber } = require("../api/_shared/erase");
+const { createVerifyToken, consumeVerifyToken } = require("../api/_shared/tokens");
 Module._load = realLoad;
 
 const EMAIL = "student@example.edu";
 const OTHER = "someone.else@example.edu";
 const TOKEN = "unsub-token-abc";
+const LEGACY_VERIFY_TOKEN = "verify-token-before-index";
 
 // --- Seed every store that holds this address ------------------------------
 redis.kv.set(`promptly:subscriber:${EMAIL}`, { email: EMAIL, unsubToken: TOKEN, school: "Trinity" });
 redis.kv.set(`promptly:unsub:${TOKEN}`, EMAIL);
 redis.kv.set(`promptly:digest:${EMAIL}`, [{ company: "Goldman Sachs" }]);
 redis.kv.set(`promptly:verify-sent:${EMAIL}`, "1");
+redis.kv.set(`promptly:verify:${LEGACY_VERIFY_TOKEN}`, EMAIL);
+redis.kv.set("promptly:verify:other-users-token", OTHER);
 redis.sets.set("promptly:subscribers", new Set([EMAIL, OTHER]));
 
 redis.hashes.set("promptly:watched-sources", new Map([
   ["s1", JSON.stringify({ company: "Jane Street", watchers: [EMAIL, OTHER] })],
   ["s2", JSON.stringify({ company: "Citadel", watchers: [OTHER] })],
+  ["s3", JSON.stringify({ company: "Solo Watch", watchers: [EMAIL] })],
 ]));
 redis.hashes.set("promptly:coverage-requests", new Map([
   ["u1", JSON.stringify({ url: "https://x.com", requestedBy: [EMAIL, OTHER], count: 2 })],
@@ -71,6 +91,18 @@ redis.hashes.set("promptly:listing-reports", new Map([
 ]));
 
 (async () => {
+  const VERIFY_TOKEN = await createVerifyToken(EMAIL, { force: true });
+  assert.equal(await redis.get(`promptly:verify:${VERIFY_TOKEN}`), EMAIL,
+    "new verification mappings must resolve to the intended address");
+  assert.deepEqual(await redis.smembers(`promptly:verify-index:${EMAIL}`), [VERIFY_TOKEN],
+    "new verification mappings must be indexed for account erasure");
+
+  const consumed = await createVerifyToken(OTHER, { force: true });
+  assert.equal(await consumeVerifyToken(consumed), OTHER, "a verification token must still redeem once");
+  assert.equal(await redis.get(`promptly:verify:${consumed}`), null, "redeeming must delete the token mapping");
+  assert.ok(!(await redis.smembers(`promptly:verify-index:${OTHER}`)).includes(consumed),
+    "redeeming must also remove the token from the reverse index");
+
   const result = await eraseSubscriber(EMAIL);
   assert.equal(result.erased, true);
 
@@ -78,6 +110,14 @@ redis.hashes.set("promptly:listing-reports", new Map([
   assert.equal(await redis.get(`promptly:subscriber:${EMAIL}`), null, "profile must be deleted");
   assert.equal(await redis.get(`promptly:digest:${EMAIL}`), null, "queued digest matches must be deleted");
   assert.equal(await redis.get(`promptly:verify-sent:${EMAIL}`), null, "verify cooldown must be deleted");
+  assert.equal(await redis.get(`promptly:verify:${VERIFY_TOKEN}`), null,
+    "indexed verification token->email mappings must be deleted");
+  assert.equal(await redis.get(`promptly:verify:${LEGACY_VERIFY_TOKEN}`), null,
+    "verification mappings issued before the index existed must be deleted");
+  assert.equal(await redis.get("promptly:verify:other-users-token"), OTHER,
+    "another user's verification token must be untouched");
+  assert.deepEqual(await redis.smembers(`promptly:verify-index:${EMAIL}`), [],
+    "the per-address verification-token index must be deleted");
   assert.ok(!redis.sets.get("promptly:subscribers").has(EMAIL), "must leave the subscriber set");
 
   // The regression that mattered most: a permanent token that still resolved
@@ -91,6 +131,7 @@ redis.hashes.set("promptly:listing-reports", new Map([
   assert.deepEqual(s1.watchers, [OTHER], "only this user leaves the watchers list");
   assert.equal(s1.company, "Jane Street", "the watched company itself must survive for other watchers");
   assert.deepEqual(JSON.parse(watched.s2).watchers, [OTHER], "untouched rows must be left alone");
+  assert.equal(watched.s3, undefined, "a watched source with no remaining users must be deleted");
 
   const coverage = await redis.hgetall("promptly:coverage-requests");
   const u1 = JSON.parse(coverage.u1);
@@ -102,6 +143,31 @@ redis.hashes.set("promptly:listing-reports", new Map([
   assert.equal(r1.lastReporterEmail, null, "reporter contact address must be dropped");
   assert.equal(r1.count, 3, "a broken link is still broken — the report must survive");
   assert.equal(JSON.parse(reports.r2).lastReporterEmail, OTHER, "other reporters must be untouched");
+
+  // A partial Redis outage must keep the profile available for a retry. If the
+  // profile were deleted first, its unsubscribe token would become
+  // undiscoverable and the API could then delete the login around leftover data.
+  const retryEmail = "retry@example.edu";
+  const retryToken = "retry-unsub-token";
+  redis.kv.set(`promptly:subscriber:${retryEmail}`, { email: retryEmail, unsubToken: retryToken });
+  redis.kv.set(`promptly:unsub:${retryToken}`, retryEmail);
+  redis.sets.set("promptly:subscribers", new Set([...redis.sets.get("promptly:subscribers"), retryEmail]));
+  redis.hashes.set("promptly:watched-sources", new Map([
+    ...redis.hashes.get("promptly:watched-sources"),
+    ["retry", JSON.stringify({ company: "Retry Co", watchers: [retryEmail] })],
+  ]));
+  const workingHgetall = redis.hgetall;
+  redis.hgetall = async (key) => {
+    if (key === "promptly:watched-sources") throw new Error("synthetic Redis outage");
+    return workingHgetall(key);
+  };
+  await assert.rejects(() => eraseSubscriber(retryEmail), /synthetic Redis outage/);
+  assert.ok(await redis.get(`promptly:subscriber:${retryEmail}`),
+    "the profile must survive an incomplete cleanup so account deletion can be retried");
+  redis.hgetall = workingHgetall;
+  assert.equal((await eraseSubscriber(retryEmail)).erased, true, "a retry must finish the cleanup");
+  assert.equal((await redis.hgetall("promptly:watched-sources")).retry, undefined,
+    "a retry must remove a sole-user watched source after the outage clears");
 
   // --- Erasing a stranger must not corrupt anything ------------------------
   const before = JSON.stringify(await redis.hgetall("promptly:watched-sources"));

@@ -1,5 +1,16 @@
 const assert = require("node:assert/strict");
+const Module = require("node:module");
+
+let erasureResult = { erased: false };
+const realLoad = Module._load;
+Module._load = function patched(request, parent, isMain) {
+  if (request === "./_shared/erase" && parent?.filename?.endsWith("api/subscribe.js")) {
+    return { eraseSubscriber: async () => erasureResult };
+  }
+  return realLoad(request, parent, isMain);
+};
 const subscribeHandler = require("../api/subscribe");
+Module._load = realLoad;
 
 function response() {
   return {
@@ -60,11 +71,19 @@ function response() {
       return { ok: true, async json() { return {}; } };
     };
 
+    const cleanupUnavailable = response();
+    await subscribeHandler({ method: "DELETE", headers: { authorization: "Bearer caller-jwt" } }, cleanupUnavailable);
+    assert.equal(cleanupUnavailable.statusCode, 502,
+      "the auth account must survive when alert-data erasure could not run");
+    assert.equal(requests.length, 1,
+      "Supabase admin deletion must not run after an incomplete alert-data cleanup");
+
+    erasureResult = { erased: true };
     const deleted = response();
     await subscribeHandler({ method: "DELETE", headers: { authorization: "Bearer caller-jwt" } }, deleted);
     assert.equal(deleted.statusCode, 200);
     assert.equal(deleted.body.ok, true);
-    assert.equal(requests.length, 2, "deletion must not be blocked by the confirmation-policy check");
+    assert.equal(requests.length, 3, "successful deletion authenticates once, then deletes the exact session user");
   } finally {
     global.fetch = originalFetch;
     for (const [key, value] of Object.entries(originalEnv)) {
