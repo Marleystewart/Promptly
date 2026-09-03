@@ -129,6 +129,7 @@ async function load() {
         ["Profiles minimized", n(det.minimizedProfiles)],
         ["Coverage contacts scrubbed", n(det.coverage)],
         ["Expired reports pruned", n(det.reports)],
+        ["Abandoned signups deleted", (det.abandonedSignups && det.abandonedSignups.deleted) || 0],
       ];
       const dirty = rows.some(([, v]) => v > 0);
       return `
