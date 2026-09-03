@@ -3718,6 +3718,12 @@ function pushCopy() {
         : "Notifications are blocked for this site. Click the lock icon in your address bar → Notifications → Allow, then try again.",
     allow: mobile ? "Tap Allow when your phone asks, to turn on alerts." : "Click Allow when your browser asks, to turn on notifications.",
     testSent: mobile ? "Test sent. Check your lock screen or notification center." : "Test sent. Check your desktop notifications.",
+    // The success line was the one string in this panel that never asked what
+    // device it was on: a laptop was told "Phone alerts enabled", directly
+    // under a pill reading DESKTOP ALERTS. Same tap/click split as `prompt`.
+    enabled: mobile
+      ? "✅ Phone alerts enabled. Tap Send Test Notification."
+      : "✅ Desktop notifications enabled. Click Send Test Notification.",
   };
 }
 
@@ -3973,7 +3979,7 @@ async function enablePushAlerts() {
       applicationServerKey: serverKey,
     });
     localStorage.setItem("openingPushSubscription", JSON.stringify(subscription));
-    setPushStatus("✅ Phone alerts enabled. Tap Send Test Notification.");
+    setPushStatus(pushCopy().enabled);
     await saveSubscriber(subscription);
     return subscription;
   } catch (e) {
