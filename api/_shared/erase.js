@@ -73,6 +73,16 @@ async function eraseSubscriber(email) {
     removed.push("unsubscribe-token");
   }
 
+  // The confirmation token maps token -> EMAIL ADDRESS and is only reachable
+  // from the token side, so once the profile is deleted it becomes unreachable
+  // garbage that still resolves to this person. It carries a one-week TTL, so
+  // the address outlived an explicit deletion request by up to seven days.
+  // Exactly the gap this file was written to close for the unsubscribe token.
+  if (record && record.verifyToken) {
+    jobs.push(redis.del(`promptly:verify:${record.verifyToken}`));
+    removed.push("verify-token");
+  }
+
   await Promise.all(jobs);
 
   // Watched companies: the policy explicitly promises these are removed.
