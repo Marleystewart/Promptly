@@ -25,9 +25,11 @@ const account = (over = {}) => ({
 // sense — this was the state 100% of accounts were stuck in while SMTP was down.
 assert.equal(isAlertReady(account({ verified: false })), false, "unconfirmed is never alert-ready");
 
-// Confirmed but no fields: nothing can match, so no alert can ever be sent.
-// From every other number on the dashboard this looks like a healthy account.
-assert.equal(isAlertReady(account({ fields: [] })), false, "no fields means nothing can match");
+// Confirmed but no fields is NOT blocked. matchesOpening() returns true for
+// every opening when fields is empty, so this account matches EVERYTHING.
+// Getting this backwards is what made the dashboard report "0 can be alerted"
+// on the same night the refresh cron queued 25 real digest items.
+assert.equal(isAlertReady(account({ fields: [] })), true, "no fields matches everything, so the account is reachable");
 
 // Confirmed, has fields, but switched everything off. Their choice — but they
 // must not be counted as someone Promptly can reach.
@@ -65,7 +67,7 @@ assert.equal(
 
   assert.equal(by.signedUp, 6);
   assert.equal(by.confirmed, 4, "two never confirmed");
-  assert.equal(by.alertReady, 2, "no-fields and opted-out are confirmed but unreachable");
+  assert.equal(by.alertReady, 3, "only the opted-out account is unreachable; no-fields matches everything");
   assert.equal(by.everAlerted, 1, "only one has ever actually been sent something");
 
   // Every stage must be a subset of the one above it, or the drop between two
@@ -77,9 +79,13 @@ assert.equal(
 
   assert.equal(f.stuck.unconfirmed, 2);
   assert.equal(f.stuck.unconfirmedExpiringSoon, 1, "day 12 of 14 is expiring soon; day 1 is not");
-  assert.equal(f.stuck.noFields, 1);
+  assert.equal(f.stuck.noFields, 1, "counted as unfiltered, not as blocked");
   assert.equal(f.stuck.alertsOff, 1);
   assert.equal(f.stuck.confirmedNeverAlerted, 3, "confirmed minus the one that got an alert");
+
+  // noFields is reported alongside the funnel, not subtracted from it — the
+  // account is reachable, just unfiltered.
+  assert.ok(f.stuck.noFields <= by.alertReady, "a no-fields account is still alert-ready");
 }
 
 // Percentages are of the TOP of the funnel, not of the previous stage — mixing
@@ -115,6 +121,10 @@ assert.equal(
   const admin = fs.readFileSync(path.join(ROOT, "admin.html"), "utf8");
   assert.match(admin, /not part of this funnel/,
     "the dashboard must say that activity counters are separate");
+  assert.match(admin, /match EVERY listing, not none/,
+    "the no-fields line must not claim the opposite of what matchesOpening does");
+  assert.doesNotMatch(admin, /so nothing can match them/,
+    "that wording was exactly backwards");
 }
 
 // firstAlertAt answers "has Promptly ever delivered anything to this person?",
@@ -130,3 +140,37 @@ assert.equal(
 }
 
 console.log("Funnel tests passed. Stages narrow, percentages are of signups, activity stays separate.");
+
+// ── The funnel must agree with the matcher ───────────────────────────────────
+// These two live in different files and drifted apart on day one: funnel.js
+// assumed an empty field list blocked all matching, while matchesOpening()
+// treats it as "match everything". The dashboard therefore reported "0 can be
+// alerted" on the same night the refresh cron queued 25 real digest items.
+{
+  const { matchesOpening } = require("../api/_shared/alerts.js");
+  const opening = {
+    company: "Genentech",
+    field: "Healthcare",
+    location: "South San Francisco, California, United States",
+  };
+  const base = { email: "a@x.edu", verified: true, remoteOkay: true, preferredLocation: "" };
+
+  assert.equal(
+    matchesOpening(opening, { ...base, fields: [] }), true,
+    "sanity: an empty field list matches every opening"
+  );
+  assert.equal(
+    isAlertReady({ ...base, fields: [], emailNotifications: true }), true,
+    "so the funnel must call that account reachable, not blocked"
+  );
+
+  // And where the matcher genuinely excludes, both agree it is a real filter.
+  assert.equal(
+    matchesOpening(opening, { ...base, fields: ["Technology"] }), false,
+    "sanity: a chosen field does filter"
+  );
+  assert.equal(
+    isAlertReady({ ...base, fields: ["Technology"], emailNotifications: true }), true,
+    "being filtered is not the same as being unreachable"
+  );
+}
