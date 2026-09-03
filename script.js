@@ -4566,10 +4566,29 @@ document.querySelector("[data-school-input]")?.addEventListener("input", () => s
 document.querySelector("[data-grad-year-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-major-input]")?.addEventListener("input", () => setAcademicError());
 
+// Releasing the browser's own push subscription when push is switched off.
+//
+// Clearing the endpoint we store stops Promptly sending, but the subscription
+// still exists in the browser and at the vendor's push service until it is
+// unsubscribed. "Off" should mean off everywhere, not just on our side.
+async function releasePushSubscription() {
+  try {
+    localStorage.removeItem("openingPushSubscription");
+    if (!("serviceWorker" in navigator)) return;
+    const registration = await navigator.serviceWorker.getRegistration();
+    const existing = registration && await registration.pushManager.getSubscription();
+    if (existing) await existing.unsubscribe();
+  } catch {}
+}
+
 document.querySelectorAll("[data-notification-pref]").forEach((input) => {
-  input.addEventListener("change", () => {
-    profile[input.dataset.notificationPref] = input.checked;
+  input.addEventListener("change", async () => {
+    const pref = input.dataset.notificationPref;
+    profile[pref] = input.checked;
     saveProfile();
+    // Release the browser subscription BEFORE telling the server, so a failure
+    // here cannot leave us still holding an endpoint we have promised to drop.
+    if (pref === "pushNotifications" && !input.checked) await releasePushSubscription();
     saveSubscriber();
   });
 });
