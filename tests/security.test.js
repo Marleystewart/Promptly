@@ -156,3 +156,21 @@ console.log("Unverified-lifecycle tests passed.");
 }
 
 console.log("Injection-sink tests passed.");
+
+// Every endpoint that SENDS something must be throttled.
+//
+// send-test was the odd one out: it pushes to a real device, and unlike its two
+// siblings it had no limit at all, so a signed-in account could hammer its own
+// lock screen and burn the push quota.
+{
+  const path = require("path");
+  const read = (f) => require("fs").readFileSync(path.join(__dirname, "..", "api", f), "utf8");
+  for (const endpoint of ["send-alert.js", "send-recap.js", "send-test.js"]) {
+    assert.match(read(endpoint), /takeTestAlertSlot\(/,
+      `${endpoint} sends to a person and must be rate limited`);
+  }
+  // The anonymous analytics beacon caps per requester: nothing there is
+  // personal, but one script could otherwise rewrite the only numbers we have.
+  assert.match(read("stats.js"), /takeAnalyticsSlot\(/,
+    "the unauthenticated analytics POST must be capped");
+}

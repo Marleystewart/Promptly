@@ -307,6 +307,32 @@ async function takeTestAlertSlot(email, requester = "") {
   return { allowed: Boolean(emailSlot && requesterSlot), stored: true };
 }
 
+// Throttle for the unauthenticated analytics endpoint.
+//
+// /api/stats accepts an anonymous POST and increments a counter. Nothing there
+// is personal and nothing costs money, so this is not an abuse-cost control —
+// it protects the only numbers Marley has. Uninstrumented, one script could
+// make "app opens" say anything, and a decision would get made on it.
+//
+// Deliberately generous: real use fires several allowlisted events per session
+// (app open, view change, opening view), so the cap has to sit well above
+// normal behaviour or it silently loses real signal. The requester key is
+// hashed, like every other rate-limit key here, so throttling does not create
+// the per-visitor identifier the analytics design exists to avoid.
+async function takeAnalyticsSlot(requester = "") {
+  const redis = await getRedis();
+  if (!redis) return { allowed: true, stored: false };
+  const key = `promptly:analytics-rate:${opaqueKeyPart(String(requester || "unknown").slice(0, 80))}`;
+  try {
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, 60);
+    return { allowed: count <= 120, stored: true };
+  } catch {
+    // Never let a limiter failure lose real analytics.
+    return { allowed: true, stored: false };
+  }
+}
+
 // Throttle for the account-owned subscribe endpoint.
 //
 // /api/subscribe took unlimited unauthenticated writes, and every unseen email
@@ -383,6 +409,7 @@ module.exports = {
   normalizeSubscriber,
   hasRedisEnv,
   takeTestAlertSlot,
+  takeAnalyticsSlot,
   takeSubscribeSlot,
   takeAdminAttempt,
   claimOnce,
