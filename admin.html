@@ -65,15 +65,26 @@ async function load() {
     if (!r.ok) { $("err").textContent = d.error || "Failed."; $("out").innerHTML = ""; return; }
     const live = d.live || {};
     const eh = d.emailHealth;
-    // Email either reaches real students or it does not. The sandbox sender
-    // looks healthy from the inside — say so plainly instead.
-    const emailBanner = !eh ? "" : `
-      <div style="border:1px solid ${eh.canReachRealUsers ? "#1c7a52" : "#a3341f"};background:${eh.canReachRealUsers ? "#0f2a1f" : "#2c1512"};border-radius:10px;padding:14px 16px;margin:0 0 18px">
-        <strong style="color:${eh.canReachRealUsers ? "#6fd3a3" : "#f0897c"}">
-          ${eh.canReachRealUsers ? "Email can reach students" : "Email CANNOT reach students"}
-        </strong>
+    // Three states, not two. "Configured" is not "delivered": the sandbox
+    // outage proved a green light drawn from settings alone is worthless, and
+    // so does a working API key that has never actually sent anything. Green
+    // now requires a RECORDED successful send; configured-but-unproven is amber
+    // and says so, so nobody reads setup as evidence.
+    const emailState = !eh ? null
+      : !eh.canReachRealUsers ? "blocked"
+      : eh.lastSuccessAt ? "proven"
+      : "unproven";
+    const emailSkin = {
+      proven:   { border: "#1c7a52", bg: "#0f2a1f", text: "#6fd3a3", title: "Email can reach students" },
+      unproven: { border: "#8a6d1f", bg: "#2a230f", text: "#e3c05c", title: "Email is configured, but has never delivered" },
+      blocked:  { border: "#a3341f", bg: "#2c1512", text: "#f0897c", title: "Email CANNOT reach students" },
+    }[emailState] || null;
+    const emailBanner = !emailSkin ? "" : `
+      <div style="border:1px solid ${emailSkin.border};background:${emailSkin.bg};border-radius:10px;padding:14px 16px;margin:0 0 18px">
+        <strong style="color:${emailSkin.text}">${emailSkin.title}</strong>
         <div class="muted" style="margin-top:6px">Sending as ${escapeHtml(eh.from || "—")}</div>
         ${eh.blockedReason ? `<div style="margin-top:6px;color:#f0897c">${escapeHtml(eh.blockedReason)}</div>` : ""}
+        ${emailState === "unproven" ? `<div style="margin-top:6px;color:${emailSkin.text}">The sender is set up correctly, but no send has ever succeeded. Configuration is not evidence of delivery — this turns green on the first recorded success.</div>` : ""}
         ${eh.lastFailureAt ? `<div class="muted" style="margin-top:6px">Last failure (${escapeHtml(eh.lastFailureKind || "—")}) ${escapeHtml(eh.lastFailureAt)}: ${escapeHtml(eh.lastFailureReason || "—")}</div>` : ""}
         ${eh.lastSuccessAt ? `<div class="muted" style="margin-top:6px">Last successful send (${escapeHtml(eh.lastSuccessKind || "—")}) ${escapeHtml(eh.lastSuccessAt)}</div>` : `<div class="muted" style="margin-top:6px">No successful send recorded yet.</div>`}
       </div>`;

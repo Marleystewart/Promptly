@@ -130,9 +130,16 @@ function buildHeartbeatEmail({ healthy, problems, facts }, now = Date.now()) {
     return row(r.name, detail ? `${when} — ${detail}` : when);
   }).join("");
 
-  const emailLine = facts.email
-    ? (facts.email.canReachRealUsers ? `sending as ${facts.email.from}` : "BLOCKED")
-    : "unknown";
+  // Same three states as the dashboard. A configured sender that has never
+  // delivered is not "working" — saying so in one word is the whole point of
+  // this email being readable from a notification.
+  const emailLine = !facts.email
+    ? "unknown"
+    : !facts.email.canReachRealUsers
+      ? "BLOCKED"
+      : facts.email.lastSuccessAt
+        ? `sending as ${facts.email.from}`
+        : `configured as ${facts.email.from}, but NEVER DELIVERED`;
 
   return {
     to: process.env.ADMIN_ALERT_EMAIL || DEFAULT_REPORT_TO_EMAIL,
