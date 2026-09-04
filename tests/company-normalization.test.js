@@ -94,9 +94,13 @@ const collisions = [...byKey.entries()]
 //                         returning no listings yet, so the card now reads
 //                         "Awaiting 2027 posting" rather than claiming we
 //                         cannot read the feed.
+//   Reviewed  3 Sep 2026: fis ("FIS Global" watch-list card / "FIS" — same
+//                         employer, Fidelity National Information Services; the
+//                         feed reports the short "FIS", so the "FIS Global" card
+//                         sat on "Awaiting 2027 posting". Alias in COMPANY_ALIASES.)
 const KNOWN_SAFE = [
   "aqrcapital", "block", "blueowl", "carlyle", "comcastnbcuniversal", "deshaw",
-  "federalreserveboard", "jpmorgan", "moelis", "nvidia", "sixthstreet", "synchrony",
+  "federalreserveboard", "fis", "jpmorgan", "moelis", "nvidia", "sixthstreet", "synchrony",
 ].sort();
 
 assert.deepEqual(

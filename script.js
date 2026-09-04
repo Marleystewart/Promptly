@@ -654,6 +654,7 @@ const COMPANY_ALIASES = {
   synchronyfinancial: "synchrony",       // feed reports the short name
   sec: "securitiesexchangecommission",   // USAJOBS reports the full legal name
   blueowlcapital: "blueowl",             // registry carries the short name
+  fisglobal: "fis",                      // "FIS Global" card, feed reports "FIS"
   federalreserve: "federalreserveboard", // registry names the Board specifically
   nbcuniversal: "comcastnbcuniversal",   // NBCU hires through Comcast's board
   waltdisney: "disney",                  // "The Walt Disney Company" on the card
