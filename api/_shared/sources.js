@@ -269,6 +269,13 @@ const SOURCES = [
   { company: "The Athletic", short: "ATH", logoClass: "media", field: "Sports", subField: "Sports Media", ats: "lever", board: "theathletic" },
   { company: "VTS", short: "VTS", logoClass: "consumer", field: "Real Estate", subField: "Property Technology", ats: "greenhouse", board: "vts" },
 
+  // ═══ ADDED Sep 2026 (trey/eng-sports-jackhenry): watchlist → real ATS ═════
+  // ATS read off the live careers page and probed; ownership confirmed via
+  // Greenhouse board name / Phenom host on the employer's own domain.
+  { company: "RTX (Raytheon)", short: "RTX", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "custom", handler: "rtx" },
+  { company: "NFL", short: "NFL", logoClass: "media", field: "Sports", subField: "Teams & Leagues", ats: "greenhouse", board: "nflcareers" },
+  { company: "Fanatics", short: "FAN", logoClass: "consumer", field: "Sports", subField: "Sports Technology", ats: "greenhouse", board: "fanaticsinc" },
+
   // ═══ ADDED Jul 2026: probed + identity-verified boards ═══════════════════
   { company: "SpaceX", short: "SPX", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "greenhouse", board: "spacex" },
   { company: "Relativity Space", short: "RLTY", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "greenhouse", board: "relativity" },
