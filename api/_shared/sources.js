@@ -146,6 +146,27 @@ const SOURCES = [
   { company: "GTCR", short: "GTCR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "gtcr" },
   // Asset management
   { company: "Artisan Partners", short: "APAM", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "greenhouse", board: "artisanpartners" },
+
+  // ═══ ADDED Sep 2026 (trey/finance-ats-feeds): watchlist → real ATS ════════
+  // Each discovered by reading the ATS off the live careers page (not guessed)
+  // and probed before adding. Ownership confirmed: Greenhouse board name,
+  // Ashby/Lever page <title>, or Workday tenant on the employer's own domain.
+  // Names match watchlist.js exactly so the placeholder card flips on flip.
+  // Payments
+  { company: "PayPal", short: "PYPL", logoClass: "fin", field: "Finance", subField: "Payments", ats: "workday", tenant: "paypal", dc: "wd1", site: "jobs" },
+  { company: "Green Dot", short: "GDOT", logoClass: "fin", field: "Finance", subField: "Payments", ats: "workday", tenant: "greendotcorp", dc: "wd1", site: "gdc" },
+  { company: "Marqeta", short: "MQ", logoClass: "fin", field: "Finance", subField: "Payments", ats: "ashby", board: "marqeta-inc" },
+  // Fintech / financial software
+  { company: "Bread Financial", short: "BFH", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "custom", handler: "breadfinancial" },
+  { company: "nCino", short: "NCNO", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "ncinoinc" },
+  { company: "OppFi", short: "OPFI", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "opploans" },
+  { company: "Morningstar", short: "MORN", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "workday", tenant: "morningstar", dc: "wd5", site: "morningstar" },
+  { company: "FactSet", short: "FDS", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "workday", tenant: "factset", dc: "wd108", site: "FactSetCareers" },
+  { company: "SS&C Technologies", short: "SSNC", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "workday", tenant: "ssctech", dc: "wd1", site: "SSCTechnologies" },
+  { company: "Kyriba", short: "KYRB", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "workday", tenant: "kyriba", dc: "wd5", site: "Kyriba-Careers" },
+  // Private equity
+  { company: "Thoma Bravo", short: "TB", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "lever", board: "thomabravo" },
+
   // Advisory / boutique investment banks
   { company: "Lincoln International", short: "LINC", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "greenhouse", board: "lincolninternational" },
   { company: "LionTree", short: "LT", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "greenhouse", board: "liontree" },
