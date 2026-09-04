@@ -18,6 +18,10 @@ const appShell = [
   "/assets/icon-192.png",
   "/assets/favicon-32.png",
   "/assets/wordmark.png",
+  // Precached deliberately, unlike pdf.js below: without it a cold start with
+  // no network cannot load the auth SDK, and the app reports a signed-in user
+  // as signed out.
+  "/assets/vendor/supabase.min.js",
 ];
 
 self.addEventListener("install", (event) => {

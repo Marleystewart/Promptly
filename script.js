@@ -3034,18 +3034,72 @@ function showAuthEntryFallback(mode) {
 // critical path means a parked-auth build makes no third-party requests at all,
 // which is what our privacy page promises.
 let supabaseSdkPromise = null;
-function loadSupabaseSdk() {
-  if (window.supabase?.createClient) return Promise.resolve(true);
-  if (supabaseSdkPromise) return supabaseSdkPromise;
-  supabaseSdkPromise = new Promise((resolve) => {
+// Where the SDK comes from matters more than it looks.
+//
+// It used to be fetched from cdn.jsdelivr.net on every cold start, and failing
+// to fetch it took the "accounts are not connected" branch below — which on
+// screen is indistinguishable from being signed out. On iOS, swiping a PWA away
+// kills the process, so reopening is a cold boot, and the OS routinely resumes
+// before the network does. Cam was signed out every time he closed the app. His
+// session was in localStorage the whole time; the app just could not load the
+// code to read it.
+//
+// The vendored copy is same-origin and precached in the service worker's app
+// shell, so it is there on a cold start with no network at all. The CDN stays
+// only as a fallback for a stale cache missing the file — never the primary.
+const SUPABASE_SDK_LOCAL = "/assets/vendor/supabase.min.js";
+const SUPABASE_SDK_CDN = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";
+
+function loadScriptOnce(src) {
+  return new Promise((resolve) => {
     const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";
-    script.crossOrigin = "anonymous";
-    script.onload = () => resolve(true);
+    script.src = src;
+    if (/^https?:/i.test(src)) script.crossOrigin = "anonymous";
+    // Resolve on what actually matters — the global being usable — rather than
+    // on onload, which fires for a file that parsed but defined nothing.
+    script.onload = () => resolve(Boolean(window.supabase?.createClient));
     script.onerror = () => resolve(false);
     document.head.appendChild(script);
   });
+}
+
+function loadSupabaseSdk() {
+  if (window.supabase?.createClient) return Promise.resolve(true);
+  if (supabaseSdkPromise) return supabaseSdkPromise;
+  supabaseSdkPromise = (async () => {
+    if (await loadScriptOnce(SUPABASE_SDK_LOCAL)) return true;
+    return loadScriptOnce(SUPABASE_SDK_CDN);
+  })();
   return supabaseSdkPromise;
+}
+
+// Is there a session Supabase has already persisted? Answerable without the
+// SDK, which is the whole point: it separates "signed out" from "could not load
+// auth". Those looked identical on screen, and only one of them should ever
+// show a sign-in form.
+function hasStoredAuthSession() {
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && /^sb-.+-auth-token$/.test(key) && localStorage.getItem(key)) return true;
+    }
+  } catch {}
+  return false;
+}
+
+// Backs off rather than hammering a network that is plainly not ready yet, and
+// gives up after five tries so a genuinely broken deployment does not retry for
+// ever behind a "reconnecting" message.
+let authRetryAttempt = 0;
+function scheduleAuthRetry() {
+  if (authRetryAttempt >= 5) return false;
+  const delay = Math.min(1000 * 2 ** authRetryAttempt, 15000);
+  authRetryAttempt += 1;
+  window.setTimeout(() => {
+    supabaseSdkPromise = null;
+    initializeAuth();
+  }, delay);
+  return true;
 }
 
 async function initializeAuth() {
@@ -3063,6 +3117,17 @@ async function initializeAuth() {
     // Only reach out to the Supabase CDN when accounts are actually switched on.
     // While auth is parked, Promptly loads zero third-party scripts.
     if (config.enabled) await loadSupabaseSdk();
+    // Accounts ARE switched on and this browser holds a session, but the SDK
+    // did not load. That is a network problem, not a signed-out user — showing
+    // the sign-in screen here is what made Cam log in again every time he
+    // reopened the app. Say what is actually happening and keep trying.
+    if (config.enabled && !window.supabase?.createClient && hasStoredAuthSession()) {
+      pendingOAuthCallback = false;
+      authStatus.textContent = scheduleAuthRetry()
+        ? "Reconnecting to your account…"
+        : "Couldn't reach your account. Check your connection and reopen Promptly.";
+      return;
+    }
     if (!config.enabled || !window.supabase?.createClient) {
       pendingOAuthCallback = false;
       document.querySelector("[data-auth-password-group]").hidden = true;
@@ -3082,6 +3147,7 @@ async function initializeAuth() {
     authClient = window.supabase.createClient(config.url, config.publishableKey, {
       auth: { detectSessionInUrl: false, flowType: "pkce" },
     });
+    authRetryAttempt = 0;
     authStatus.textContent = "Your account securely keeps your profile and saved alerts in sync.";
     authClient.auth.onAuthStateChange((event, session) => {
       window.setTimeout(() => {
@@ -3125,6 +3191,12 @@ async function initializeAuth() {
     }
   } catch {
     pendingOAuthCallback = false;
+    // Same distinction as above: /api/auth-config failing while a session is
+    // stored means the network is down, not that anyone signed out.
+    if (hasStoredAuthSession() && scheduleAuthRetry()) {
+      authStatus.textContent = "Reconnecting to your account…";
+      return;
+    }
     authStatus.textContent = "Account setup could not load. You can continue on this device and try again later.";
     showAuthEntryFallback();
     flushDeferredProfilePaint();
