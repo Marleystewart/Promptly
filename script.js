@@ -895,6 +895,9 @@ let authMode = "signup";
 // while this is in flight — that caused a post-Google-login glitch where the
 // user was bounced from the school/grade form back to the sign-in page.
 let pendingOAuthCallback = false;
+// Set when a profile was loaded but deliberately not painted, because an auth
+// callback was still deciding whose profile this browser is showing.
+let deferredProfilePaint = false;
 // Real timestamp of the last pipeline refresh, shown next to the tracked count.
 let liveFeedUpdatedAt = null;
 
@@ -2924,6 +2927,16 @@ const routeAuthenticatedUser = window.PromptlyAuthRouting.createAuthenticatedUse
   },
 });
 
+// Render a profile whose paint was held back while an auth callback resolved.
+// Called on EVERY exit from that resolution — session, no session, or thrown —
+// so a deferred paint can never be silently dropped and leave a blank view.
+function flushDeferredProfilePaint() {
+  if (!deferredProfilePaint) return;
+  deferredProfilePaint = false;
+  applyProfileToUI();
+  setView("home");
+}
+
 function applyAccountUser(user) {
   authUser = user;
   const remoteProfile = user?.user_metadata?.promptly_profile;
@@ -2969,11 +2982,29 @@ function applyAccountUser(user) {
     localStorage.setItem(savedStorageKey, "[]");
     refreshSavedList();
   }
+  // The unseen-alerts baseline is per person, not per browser. Left alone, a
+  // device that previously held a different account starts the new one at
+  // "99+": every posting the old account never reviewed counts as unseen, and
+  // a brand-new student's first impression is a bell full of alerts they were
+  // never sent. Dropping the key lets updateAlertPulse seed a fresh baseline
+  // from what matches right now, so the badge starts at 0 and only grows with
+  // postings that genuinely arrive afterwards.
+  //
+  // Not seeded here on purpose: the live feed may still be loading, and a
+  // baseline built from the curated list alone would count every live posting
+  // as new the moment it lands.
+  if (!shouldMigrateLocal) {
+    localStorage.removeItem(seenAlertsStorageKey);
+    updateAlertBadge();
+  }
   accountSyncPaused = false;
   sessionStorage.removeItem("promptlyMigrateLocal");
   localStorage.removeItem("promptlyPendingMigrationEmail");
   if (shouldMigrateLocal && !remoteProfile) scheduleAccountSync();
   updateAccountUI();
+  // Auth has decided. Whatever was held back can now be drawn, and it is drawn
+  // from the profile this account actually carries.
+  flushDeferredProfilePaint();
 }
 
 // After a failed or empty OAuth exchange, land the user on the sign-up step
@@ -3090,11 +3121,13 @@ async function initializeAuth() {
         setSignupError("Google sign-in did not complete. Please try again.");
         showAuthEntryFallback();
       }
+      flushDeferredProfilePaint();
     }
   } catch {
     pendingOAuthCallback = false;
     authStatus.textContent = "Account setup could not load. You can continue on this device and try again later.";
     showAuthEntryFallback();
+    flushDeferredProfilePaint();
   }
 }
 
@@ -3605,7 +3638,7 @@ function saveProfileEdits() {
   profileModal.close();
 }
 
-function restoreProfile() {
+function restoreProfile({ paint = true } = {}) {
   try {
     const savedProfile = JSON.parse(localStorage.getItem(profileStorageKey) || "null");
     if (!savedProfile) return false;
@@ -3632,8 +3665,14 @@ function restoreProfile() {
     fillProfileInputs();
     // Résumé matching is live now — reflect the saved file instead of the old
     // "coming soon" placeholder this used to show.
-    applyProfileToUI();
-    setView("home");
+    //
+    // The data always loads; only the PAINT is optional. An auth callback that
+    // is still resolving has not yet decided whose profile this is, and the
+    // cached one belongs to whoever used this browser last.
+    if (paint) {
+      applyProfileToUI();
+      setView("home");
+    }
     return true;
   } catch (error) {
     // Surface it: swallowing this silently once hid a real startup bug that
@@ -4145,7 +4184,20 @@ refreshSavedList();
 
 renderVerificationNotice();
 
-if (!restoreProfile()) {
+// A confirmation or OAuth link in the URL is about to decide whose profile
+// this is. The cached profile belongs to whoever used this browser last —
+// after deleting an account and signing up again, that is an account which no
+// longer exists, and it was appearing on screen for a moment before auth
+// replaced it.
+//
+// The data still loads: local→account migration reads `profile`, and a
+// confirmation link is a fresh page load, so localStorage is the only copy of
+// it. Only the paint waits, and it is flushed on every exit from the auth
+// resolution below.
+const resolvingAuthCallback = Boolean(window.PromptlyAuthRouting.parseOAuthCallback(window.location.href));
+const restoredProfile = restoreProfile({ paint: !resolvingAuthCallback });
+deferredProfilePaint = restoredProfile && resolvingAuthCallback;
+if (!restoredProfile && !resolvingAuthCallback) {
   window.setTimeout(() => {
     // A signed-in user has already been routed (or is mid-OAuth exchange) —
     // never drag them back to the sign-up screen.
