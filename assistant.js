@@ -255,11 +255,14 @@
   }
 
   // Starter chips shown when the panel opens.
+  // Starter chips: the highest-value FAQs, each mapped to a real answer in the
+  // intent engine above (how-it-works, cost, privacy, and the setup flow) so a
+  // tapped chip never falls through to the off-script fallback.
   const SUGGESTIONS = [
-    "How do I use Promptly?",
-    "When does Goldman Sachs open?",
-    "Interview tips for investment banking",
-    "What internships are open?",
+    "How does Promptly work?",
+    "Is Promptly free?",
+    "Is my data safe?",
+    "How do I set up alerts?",
   ];
 
   // --- UI --------------------------------------------------------------------
