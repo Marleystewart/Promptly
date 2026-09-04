@@ -59,18 +59,22 @@ async function collectHeartbeat({ now = Date.now(), retentionStats = null } = {}
     problems.push(`No email has sent successfully in ${Math.round(successAge)} hours.`);
   }
 
-  // Broken sources are the failure that degrades Promptly gradually rather than
-  // all at once: a custom scraper stops reading one employer after a redesign,
-  // that company quietly vanishes from the feed, and every other number still
-  // looks fine. "Quiet" is deliberately NOT counted — most campus boards are
-  // genuinely empty outside Sept–Nov, and treating that as breakage would make
-  // the heartbeat cry wolf every summer until nobody reads it.
+  // Only a source that ERRORED counts as a problem here.
+  //
+  // "quiet" (never produced) is seasonal, and "dormant" (produced before, zero
+  // now) is almost always an employer's posting being filled. On 3 Sep the
+  // dashboard flagged 14 sources as needing attention and every one of them
+  // fetched cleanly when probed — nine had gone from a single role to zero.
+  // Alarming on that would have sent "NEEDS ATTENTION" every day for normal
+  // churn, which is how a daily email stops being read.
   try {
     const sources = await listSourceHealth();
     const broken = sources.filter((s) => stateFor(s) === "broken");
+    const dormant = sources.filter((s) => stateFor(s) === "dormant");
     facts.sources = {
       total: sources.length,
       broken: broken.length,
+      dormant: dormant.length,
       quiet: sources.filter((s) => stateFor(s) === "quiet").length,
     };
     if (broken.length) {
@@ -80,7 +84,7 @@ async function collectHeartbeat({ now = Date.now(), retentionStats = null } = {}
         .map((s) => s.company)
         .join(", ");
       problems.push(
-        `${broken.length} source${broken.length === 1 ? "" : "s"} stopped producing listings` +
+        `${broken.length} source${broken.length === 1 ? "" : "s"} failed to fetch` +
         `${worst ? ` (${worst}${broken.length > 5 ? ", …" : ""})` : ""}.`
       );
     }
@@ -126,9 +130,16 @@ function buildHeartbeatEmail({ healthy, problems, facts }, now = Date.now()) {
     return row(r.name, detail ? `${when} — ${detail}` : when);
   }).join("");
 
-  const emailLine = facts.email
-    ? (facts.email.canReachRealUsers ? `sending as ${facts.email.from}` : "BLOCKED")
-    : "unknown";
+  // Same three states as the dashboard. A configured sender that has never
+  // delivered is not "working" — saying so in one word is the whole point of
+  // this email being readable from a notification.
+  const emailLine = !facts.email
+    ? "unknown"
+    : !facts.email.canReachRealUsers
+      ? "BLOCKED"
+      : facts.email.lastSuccessAt
+        ? `sending as ${facts.email.from}`
+        : `configured as ${facts.email.from}, but NEVER DELIVERED`;
 
   return {
     to: process.env.ADMIN_ALERT_EMAIL || DEFAULT_REPORT_TO_EMAIL,
@@ -139,7 +150,7 @@ function buildHeartbeatEmail({ healthy, problems, facts }, now = Date.now()) {
       ${problemList}
       <table style="border-collapse:collapse;font-size:14px;width:100%">
         ${row("Listings live", String(facts.listings))}
-        ${facts.sources ? row("Sources", `${facts.sources.total - facts.sources.broken}/${facts.sources.total} healthy${facts.sources.quiet ? ` · ${facts.sources.quiet} quiet` : ""}`) : ""}
+        ${facts.sources ? row("Sources", `${facts.sources.total - facts.sources.broken}/${facts.sources.total} fetching${facts.sources.dormant ? ` · ${facts.sources.dormant} dormant` : ""}${facts.sources.quiet ? ` · ${facts.sources.quiet} quiet` : ""}`) : ""}
         ${row("Email", emailLine)}
         ${runRows}
       </table>

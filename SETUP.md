@@ -37,10 +37,32 @@ npm run bump
 
 That rewrites every `?v=` across all pages and sets the service-worker cache
 name to match, so the two can never drift apart. Pass an explicit version if you
-need one (`node scripts/bump-version.js 20260902k`).
+need one (`node scripts/bump-version.js 20260903h`).
 
 `npm test` fails if the versions disagree, so a forgotten bump is caught before
 it ships rather than by a returning user.
+
+### Bump on `main`, not on your branch
+
+**Do not run `npm run bump` in a feature branch.** One shared version means the
+bump rewrites the same six files every time — `index.html`, `privacy.html`,
+`terms.html`, `how-it-works.html`, `service-worker.js` and the generated
+`monitored.js` meta. Two branches that both bump therefore conflict by
+construction, on a version number rather than on any real disagreement. That
+happened immediately once two PRs were open at once.
+
+The order that avoids it:
+
+1. Do the work on your branch. **Leave the version alone.**
+2. Open the PR and get it merged.
+3. On `main`: `git pull && npm run bump && npm test && git push`
+
+`npm test` still fails on a mismatch, so the bump cannot be forgotten — it just
+happens once, in one place, instead of racing between branches.
+
+If you hit the conflict anyway, do not hand-pick a version out of the diff.
+Resolve by keeping either side's content and re-running `npm run bump`, so the
+result is newer than both rather than whichever number won a textual merge.
 
 ## Daily health email
 

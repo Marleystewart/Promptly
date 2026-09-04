@@ -17,18 +17,28 @@ const STATE_CODE = /,\s*(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA
 const COUNTRY = /\b(?:united states(?: of america)?|u\.?s\.?a\.?|\busa\b)\b/i;
 const STATE_NAME = /\b(?:alabama|alaska|arizona|arkansas|california|colorado|connecticut|delaware|florida|georgia|hawaii|idaho|illinois|indiana|iowa|kansas|kentucky|louisiana|maine|maryland|massachusetts|michigan|minnesota|mississippi|missouri|montana|nebraska|nevada|new hampshire|new jersey|new mexico|new york|north carolina|north dakota|ohio|oklahoma|oregon|pennsylvania|rhode island|south carolina|south dakota|tennessee|texas|utah|vermont|virginia|washington|west virginia|wisconsin|wyoming|district of columbia)\b/i;
 
-// Foreign places whose names embed a US state name and so falsely match
-// STATE_NAME. "Baja California, Mexico" is the case that leaked (RTX). These
-// override the positive test. Written to NOT catch the real US state
-// "New Mexico" or the US town "Mexico, Missouri" (country-Mexico only appears
-// as the trailing component, or as "Mexico City").
-const FOREIGN_OVERRIDE = /\bbaja california\b|,\s*mexico\s*$|\bmexico city\b/i;
+// A state NAME can appear inside a foreign place name: "Tijuana, Baja
+// California, Mexico" matched /california/ and was admitted as a US role. So a
+// foreign country in the COUNTRY POSITION — the last comma-separated segment —
+// overrides everything else.
+//
+// Anchoring on the last segment rather than searching the whole string is what
+// keeps this safe in both directions. "Mexico, Missouri" (a real US town) still
+// passes, because its last segment is Missouri, not Mexico. And Taleo-style
+// "United States-California-San Diego", which has no commas at all, is left
+// entirely to the positive tests below.
+const FOREIGN_LAST = /(?:^|,)\s*(?:mexico|canada|brazil|colombia|argentina|chile|peru|india|china|japan|korea|singapore|malaysia|indonesia|philippines|vietnam|thailand|taiwan|australia|new zealand|ireland|united kingdom|england|scotland|wales|germany|france|spain|italy|portugal|netherlands|belgium|switzerland|austria|sweden|norway|denmark|finland|poland|czech(?:ia| republic)?|hungary|romania|greece|turkey|israel|egypt|nigeria|kenya|south africa|morocco|uae|united arab emirates|saudi arabia|qatar|russia|ukraine)\s*$/i;
 
 function isUsLocation(location) {
   const value = String(location || "");
   if (!value) return false;
-  if (FOREIGN_OVERRIDE.test(value)) return false;
-  return COUNTRY.test(value) || STATE_CODE.test(value) || STATE_NAME.test(value);
+  // Any office being US is enough, so test each "; "-joined location on its own
+  // — otherwise one foreign entry would veto a genuinely US-and-abroad posting.
+  const offices = value.split(";").map((part) => part.trim()).filter(Boolean);
+  return offices.some((office) => {
+    if (FOREIGN_LAST.test(office)) return false;
+    return COUNTRY.test(office) || STATE_CODE.test(office) || STATE_NAME.test(office);
+  });
 }
 
 // Keep only records whose location is positively US.

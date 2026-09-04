@@ -65,15 +65,26 @@ async function load() {
     if (!r.ok) { $("err").textContent = d.error || "Failed."; $("out").innerHTML = ""; return; }
     const live = d.live || {};
     const eh = d.emailHealth;
-    // Email either reaches real students or it does not. The sandbox sender
-    // looks healthy from the inside — say so plainly instead.
-    const emailBanner = !eh ? "" : `
-      <div style="border:1px solid ${eh.canReachRealUsers ? "#1c7a52" : "#a3341f"};background:${eh.canReachRealUsers ? "#0f2a1f" : "#2c1512"};border-radius:10px;padding:14px 16px;margin:0 0 18px">
-        <strong style="color:${eh.canReachRealUsers ? "#6fd3a3" : "#f0897c"}">
-          ${eh.canReachRealUsers ? "Email can reach students" : "Email CANNOT reach students"}
-        </strong>
+    // Three states, not two. "Configured" is not "delivered": the sandbox
+    // outage proved a green light drawn from settings alone is worthless, and
+    // so does a working API key that has never actually sent anything. Green
+    // now requires a RECORDED successful send; configured-but-unproven is amber
+    // and says so, so nobody reads setup as evidence.
+    const emailState = !eh ? null
+      : !eh.canReachRealUsers ? "blocked"
+      : eh.lastSuccessAt ? "proven"
+      : "unproven";
+    const emailSkin = {
+      proven:   { border: "#1c7a52", bg: "#0f2a1f", text: "#6fd3a3", title: "Email can reach students" },
+      unproven: { border: "#8a6d1f", bg: "#2a230f", text: "#e3c05c", title: "Email is configured, but has never delivered" },
+      blocked:  { border: "#a3341f", bg: "#2c1512", text: "#f0897c", title: "Email CANNOT reach students" },
+    }[emailState] || null;
+    const emailBanner = !emailSkin ? "" : `
+      <div style="border:1px solid ${emailSkin.border};background:${emailSkin.bg};border-radius:10px;padding:14px 16px;margin:0 0 18px">
+        <strong style="color:${emailSkin.text}">${emailSkin.title}</strong>
         <div class="muted" style="margin-top:6px">Sending as ${escapeHtml(eh.from || "—")}</div>
         ${eh.blockedReason ? `<div style="margin-top:6px;color:#f0897c">${escapeHtml(eh.blockedReason)}</div>` : ""}
+        ${emailState === "unproven" ? `<div style="margin-top:6px;color:${emailSkin.text}">The sender is set up correctly, but no send has ever succeeded. Configuration is not evidence of delivery — this turns green on the first recorded success.</div>` : ""}
         ${eh.lastFailureAt ? `<div class="muted" style="margin-top:6px">Last failure (${escapeHtml(eh.lastFailureKind || "—")}) ${escapeHtml(eh.lastFailureAt)}: ${escapeHtml(eh.lastFailureReason || "—")}</div>` : ""}
         ${eh.lastSuccessAt ? `<div class="muted" style="margin-top:6px">Last successful send (${escapeHtml(eh.lastSuccessKind || "—")}) ${escapeHtml(eh.lastSuccessAt)}</div>` : `<div class="muted" style="margin-top:6px">No successful send recorded yet.</div>`}
       </div>`;
@@ -102,7 +113,7 @@ async function load() {
       const todo = [
         s2.unconfirmed ? `${s2.unconfirmed} never confirmed their email${s2.unconfirmedExpiringSoon ? ` (${s2.unconfirmedExpiringSoon} deleted within 3 days)` : ""}` : "",
         s2.confirmedNeverAlerted ? `${s2.confirmedNeverAlerted} confirmed but have never been sent an alert` : "",
-        s2.noFields ? `${s2.noFields} have no fields set, so nothing can match them` : "",
+        s2.noFields ? `${s2.noFields} have no fields set, so they match EVERY listing, not none` : "",
         s2.alertsOff ? `${s2.alertsOff} have switched all alerts off` : "",
       ].filter(Boolean);
       return `
@@ -115,6 +126,30 @@ async function load() {
           <div class="muted" style="font-size:12px;margin-top:12px">
             Exact account counts. App opens and posting clicks are anonymous daily
             counters and are reported separately &mdash; they are not part of this funnel.
+          </div>
+        </div>`;
+    })();
+    // Privacy housekeeping. These should be zero; a non-zero count means
+    // something is still writing data we decided not to keep.
+    const pc = d.privacyCleanup;
+    const cleanupPanel = !pc ? "" : (() => {
+      const det = pc.detail || {};
+      const n = (v) => (v && typeof v === "object" ? (v.removed ?? v.scrubbed ?? 0) : (v || 0));
+      const rows = [
+        ["Legacy school keys removed", n(det.legacyOutcomes)],
+        ["Profiles minimized", n(det.minimizedProfiles)],
+        ["Coverage contacts scrubbed", n(det.coverage)],
+        ["Expired reports pruned", n(det.reports)],
+        ["Abandoned signups deleted", (det.abandonedSignups && det.abandonedSignups.deleted) || 0],
+      ];
+      const dirty = rows.some(([, v]) => v > 0);
+      return `
+        <div style="border:1px solid ${dirty ? "#7a5c1c" : "#2a2f4a"};background:${dirty ? "#241d0d" : "#12142a"};border-radius:10px;padding:14px 16px;margin:0 0 18px">
+          <strong style="display:block;margin-bottom:8px">Privacy housekeeping</strong>
+          ${rows.map(([label, v]) => `<div class="muted" style="margin-bottom:3px">${escapeHtml(label)}: <b style="color:${v > 0 ? "#e6a94f" : "#6fd3a3"}">${v}</b></div>`).join("")}
+          <div class="muted" style="font-size:12px;margin-top:8px">
+            Last run ${escapeHtml(pc.at || "—")}. Zero is the healthy state &mdash;
+            a non-zero count means something is still writing data we have decided not to keep.
           </div>
         </div>`;
     })();
@@ -162,6 +197,7 @@ async function load() {
       </div>`;
     $("out").innerHTML = `
       ${funnelPanel}
+      ${cleanupPanel}
       ${runBanner}
       ${emailBanner}
       ${integrationBanner}
@@ -182,7 +218,7 @@ async function load() {
         <div class="card"><div class="n">${d.reportCount || 0}</div><div class="l">Student reports</div></div>
       </div>
       ${table("Accounts by school", d.bySchool, ["School", "#"])}
-      ${table("By graduation year", d.byGradYear, ["Grad year", "#"])}
+      ${table("By graduation year", d.byGradYear, ["Years to graduation", "#"])}
       ${table("By field interest", d.byField, ["Field", "#"])}
       ${table("Watched companies (live in pipeline)", (d.watched||[]).map(x => [x.company, x.ats, x.watchers]), ["Company", "Platform", "Watchers"])}
       ${table("Coverage requests (unsupported pages — demand signal)", (d.coverage||[]).map(x => [x.company || "—", x.url, x.requests]), ["Company", "URL", "Requests"])}

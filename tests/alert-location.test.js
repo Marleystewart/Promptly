@@ -55,3 +55,42 @@ assert.strictEqual(
 assert.strictEqual(matchesOpening({ ...tech("Hartford, CT"), field: "Finance" }, hartford), false, "field filter still applies");
 
 console.log("Alert location tests passed.");
+
+// ── usOnly: a state NAME can hide inside a foreign place ─────────────────────
+// "Tijuana, Baja California, Mexico" matched /california/ and was admitted as a
+// US role, which would have put Mexican internships in front of US students.
+// Seventeen scrapers pipe global boards through usOnly, so this one predicate
+// decides whether any of them leak.
+{
+  const { isUsLocation } = require("../api/_shared/us-location");
+
+  const NOT_US = [
+    ["Tijuana, Baja California, Mexico", "a US state name inside a foreign region"],
+    ["München,DE-BY,Germany", "ISO subdivision that looks like Delaware"],
+    ["Cork, Ireland", "plainly foreign"],
+    ["Sao Paulo, São Paulo, Brazil", "plainly foreign"],
+    ["Colombia - Remote, Colombia", "foreign remote"],
+    ["Remote", "unqualified remote proves nothing"],
+    ["", "empty"],
+  ];
+  for (const [location, why] of NOT_US) {
+    assert.equal(isUsLocation(location), false, `must NOT be treated as US (${why}): ${location}`);
+  }
+
+  // The guard must not become so strict it drops real US roles.
+  const IS_US = [
+    ["San Diego, California, United States", "country named"],
+    ["Dearborn, MI, United States", "state code"],
+    ["Louisville, Kentucky, United States of America", "long country form"],
+    ["Remote, Texas, United States of America", "US remote"],
+    ["New York, New York", "state name with no country"],
+    ["Mexico, Missouri", "a real US town called Mexico — the country guard reads the LAST segment"],
+    ["United States-California-San Diego", "Taleo style, no commas at all"],
+    ["Colombia - Remote, Colombia; San Diego, California, United States", "multi-office: one US office is enough"],
+  ];
+  for (const [location, why] of IS_US) {
+    assert.equal(isUsLocation(location), true, `must be treated as US (${why}): ${location}`);
+  }
+}
+
+console.log("US-location guard tests passed. A foreign country beats a state-shaped word.");

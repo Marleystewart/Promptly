@@ -42,6 +42,24 @@ async function recordRun(name, { ok, stats = {}, error = null } = {}) {
   } catch {}
 }
 
+// Upstash's REST client JSON-parses every value it reads back, so what hset
+// wrote is not always the type that comes out: the string "1" returns as the
+// NUMBER 1, and a JSON string returns as an already-parsed OBJECT.
+//
+// This is not theoretical. Comparing lastOk with === "1" reported every
+// SUCCESSFUL run as a failure, so /admin.html showed both crons red while the
+// feed was demonstrably updating on schedule. A monitor that cries wolf is
+// worse than no monitor: it trains you to ignore the one real alert.
+function readFlag(value) {
+  return value === 1 || value === "1" || value === true || value === "true";
+}
+
+function readJson(value) {
+  if (!value) return {};
+  if (typeof value === "object") return value; // already deserialized for us
+  try { return JSON.parse(value); } catch { return {}; }
+}
+
 function ageMs(iso, now) {
   const t = Date.parse(iso || "");
   return Number.isFinite(t) ? now - t : null;
@@ -58,10 +76,8 @@ async function readRun(name, now = Date.now()) {
     return { name, everRan: false, ok: false, stale: true, problem: `${name} has no recorded run.` };
   }
 
-  let stats = {};
-  try { stats = JSON.parse(raw.lastStats || "{}"); } catch {}
-
-  const ok = raw.lastOk === "1";
+  const stats = readJson(raw.lastStats);
+  const ok = readFlag(raw.lastOk);
   const age = ageMs(raw.lastRunAt, now);
   const stale = age === null || age > (STALE_AFTER_MS[name] || 30 * 60 * 60 * 1000);
 
@@ -91,4 +107,38 @@ async function readRunHealth(now = Date.now()) {
   return { runs, problems, healthy: problems.length === 0 };
 }
 
-module.exports = { recordRun, readRun, readRunHealth, STALE_AFTER_MS };
+// The daily privacy housekeeping numbers. Stored so they can be CONFIRMED —
+// the August audit's remaining action on the legacy school keys is "confirm
+// cleanup metrics", and a count that only appears in a cron's HTTP response is
+// not confirmable by anyone. What matters is that these reach zero and stay
+// there: a purge still removing rows every night means something is still
+// writing them.
+const CLEANUP_KEY = "promptly:privacy:cleanup";
+
+async function recordPrivacyCleanup(cleanup) {
+  try {
+    const redis = await getRedis();
+    if (!redis) return;
+    await redis.hset(CLEANUP_KEY, {
+      at: new Date().toISOString(),
+      detail: JSON.stringify(cleanup || {}).slice(0, 2000),
+    });
+  } catch {}
+}
+
+async function readPrivacyCleanup() {
+  try {
+    const redis = await getRedis();
+    if (!redis) return null;
+    const raw = await redis.hgetall(CLEANUP_KEY);
+    if (!raw || !raw.at) return null;
+    return { at: raw.at, detail: readJson(raw.detail) };
+  } catch {
+    return null;
+  }
+}
+
+module.exports = {
+  recordRun, readRun, readRunHealth, readFlag, readJson, STALE_AFTER_MS,
+  recordPrivacyCleanup, readPrivacyCleanup,
+};

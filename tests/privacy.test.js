@@ -74,4 +74,32 @@ for (const disclosure of ["Supabase", "jsDelivr", "Upstash", "Resend", "Vercel",
 assert.match(index, /signup-privacy-note[\s\S]*href="\/privacy"[\s\S]*href="\/terms"/,
   "account collection must include a just-in-time privacy and terms notice");
 
+// The policy must describe the two stores as they actually differ, not as one
+// undifferentiated blob — it is the difference students are being asked to
+// trust, and it now exists in the code.
+assert.match(policy, /These two copies are not the same/,
+  "the policy must say the alert copy is narrower than the account copy");
+assert.match(policy, /graduation year only as a range/,
+  "the policy must disclose that the alert copy holds a band, not the exact year");
+
+// A stated minimum age is the first thing a school's counsel or an App Store
+// reviewer looks for, and Promptly had none. It must not quietly disappear in a
+// later copy edit.
+const terms = fs.readFileSync(path.join(root, "terms.html"), "utf8");
+assert.match(terms, /aged 16 and over/, "the Terms must state a minimum age");
+assert.match(terms, /under 13/, "the Terms must carry the under-13 undertaking");
+// The privacy page already had a "Students under 18" section; the minimum age
+// and the deletion route were folded into it rather than added as a second,
+// near-identical section.
+assert.match(policy, /Students under 18/, "the privacy page needs its under-18 section");
+assert.match(policy, /intended for students aged 16 and over/,
+  "the privacy page must state the minimum age too, not only the under-13 position");
+assert.match(policy, /not directed at children under 13/,
+  "the privacy page must keep the under-13 position");
+assert.equal((policy.match(/aged 16 and over/g) || []).length, 1,
+  "one statement of the minimum age, not two competing ones");
+// The undertaking is only honest because deletion actually works, which the
+// erasure tests cover — this asserts we keep pointing people at it.
+assert.match(policy, /Delete My Data/, "the Children section must name the route to deletion");
+
 console.log("Privacy data-flow regression tests passed.");

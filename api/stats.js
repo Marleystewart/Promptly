@@ -3,6 +3,7 @@
 const { withCors } = require("./_shared/cors");
 
 const { getStats, track } = require("./_shared/analytics");
+const { takeAnalyticsSlot } = require("./_shared/store");
 
 async function handler(req, res) {
   if (!["GET", "POST"].includes(req.method)) return res.status(405).json({ error: "Method not allowed" });
@@ -11,7 +12,14 @@ async function handler(req, res) {
       const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
 
       if (body.event) {
-        const result = await track(body.event);
+        // Anonymous endpoint: cap it so one script cannot rewrite the only
+      // numbers we have. Returns ok rather than 429 — a throttled beacon is
+      // not a client error worth surfacing in the app.
+      const requester = req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || "unknown";
+      const slot = await takeAnalyticsSlot(requester);
+      if (!slot.allowed) return res.status(200).json({ ok: true, stored: false, throttled: true });
+
+      const result = await track(body.event);
         return res.status(200).json(result);
       }
       // Older cached clients may still attempt school/company progress uploads.

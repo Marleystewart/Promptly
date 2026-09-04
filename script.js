@@ -654,10 +654,10 @@ const COMPANY_ALIASES = {
   synchronyfinancial: "synchrony",       // feed reports the short name
   sec: "securitiesexchangecommission",   // USAJOBS reports the full legal name
   blueowlcapital: "blueowl",             // registry carries the short name
-  fisglobal: "fis",                      // "FIS Global" card, feed reports "FIS"
   federalreserve: "federalreserveboard", // registry names the Board specifically
   nbcuniversal: "comcastnbcuniversal",   // NBCU hires through Comcast's board
   waltdisney: "disney",                  // "The Walt Disney Company" on the card
+  fisglobal: "fis",                      // registry uses the legal short name
 };
 
 function normalizeCompanyName(name) {
@@ -2727,9 +2727,64 @@ function accountProfile() {
 
 // Exact allowlist for Promptly's alert API. Do not serialize the whole profile:
 // it also contains a photo data URL and device-only UI state.
+//
+// This is deliberately NARROWER than accountProfile(). The two go to different
+// places for different reasons, and conflating them sent the alert store fields
+// it has no use for:
+//
+//   accountProfile()     -> Supabase user_metadata. Exists so a profile follows
+//                           you to a new device, so it legitimately carries
+//                           everything you filled in.
+//   serverAlertProfile() -> Upstash. Only needs what decides whether a listing
+//                           matches you and how to reach you.
+//
+// major and interests are the clear case: matchesOpening() never reads them and
+// no dashboard counts them, so they were stored on the alert record and read by
+// nothing at all. School and graduation year ARE read, but only by the founder
+// dashboard's demographic tiles — see the note in api/admin-stats.js.
+// Graduation year, coarsened for the alert store.
+//
+// The exact year is genuinely useful ON THIS DEVICE — it drives cycle matching
+// and copy like "Class of 2028" — but the server never uses it for anything
+// except a demographic tile on the founder dashboard. Exact school plus exact
+// graduation year is close to identifying in a small cohort, and the cohort is
+// currently four people.
+//
+// A band keeps the signal that matters for school pilot conversations (roughly
+// who is about to graduate) while removing most of the re-identification power.
+// Computed at send time, so it stays true as years pass.
+function gradYearBand(gradYear, now = new Date()) {
+  const year = parseInt(String(gradYear || "").trim(), 10);
+  if (!Number.isFinite(year)) return "";
+  // Academic years roll in the autumn, so treat Aug onward as the next one.
+  const academicYear = now.getFullYear() + (now.getMonth() >= 7 ? 1 : 0);
+  const out = year - academicYear;
+  if (out <= 0) return "graduated or graduating";
+  if (out === 1) return "1 year out";
+  if (out === 2) return "2 years out";
+  return "3+ years out";
+}
+
 function serverAlertProfile() {
+  const student = studentStatusFor(profile.email);
   return {
-    ...accountProfile(),
+    name: profile.name,
+    email: profile.email,
+    studentVerified: student.verified,
+    studentDomain: student.domain,
+    school: profile.school,
+    // A band, never the exact year — see gradYearBand().
+    gradYearBand: gradYearBand(profile.gradYear),
+    // Matching inputs.
+    preferredLocation: profile.preferredLocation,
+    remoteOkay: profile.remoteOkay,
+    willingToRelocate: profile.willingToRelocate,
+    fields: Array.isArray(profile.fields) ? profile.fields : [],
+    // Delivery preferences.
+    emailNotifications: profile.emailNotifications !== false,
+    pushNotifications: profile.pushNotifications !== false,
+    weeklyRecap: profile.weeklyRecap !== false,
+    deadlineReminders: profile.deadlineReminders !== false,
     savedAlerts: Array.isArray(profile.savedAlerts) ? profile.savedAlerts : [],
     watches: Array.isArray(profile.watches) ? profile.watches : [],
   };
@@ -2841,6 +2896,14 @@ function setAuthMode(mode) {
   document.querySelector("[data-auth-submit]").textContent = authMode === "signin" ? "Sign In" : "Create Account";
   document.querySelector("[data-forgot-password]").hidden = authMode !== "signin" || !authClient;
   document.querySelector("[data-password-input]").autocomplete = authMode === "signin" ? "current-password" : "new-password";
+  // The divider sits under the Google button and above the email form, so it
+  // has to follow the tab or it reads as the wrong offer on the Sign in tab.
+  const divider = document.querySelector("[data-auth-divider-label]");
+  if (divider) divider.textContent = authMode === "signin" ? "or sign in with email" : "or sign up with email";
+  // Google is the same one tap in both modes — there is no separate account to
+  // create — but "nothing to confirm" is only a selling point when signing up.
+  const fastNote = document.querySelector("[data-auth-fast-note]");
+  if (fastNote) fastNote.hidden = authMode === "signin";
   setSignupError();
 }
 
@@ -2973,6 +3036,11 @@ async function initializeAuth() {
       pendingOAuthCallback = false;
       document.querySelector("[data-auth-password-group]").hidden = true;
       document.querySelector("[data-google-auth]").hidden = true;
+      // The note and divider only make sense underneath a Google button. With
+      // accounts parked they were left dangling above the email fields, so the
+      // card promised a fast path that was not on screen.
+      document.querySelector("[data-auth-fast-note]").hidden = true;
+      document.querySelector(".auth-divider").hidden = true;
       document.querySelector(".auth-tabs").hidden = true;
       authStatus.textContent = "Secure accounts are not connected yet. You can continue with a profile on this device.";
       document.querySelector("[data-auth-submit]").textContent = "Continue";
@@ -3062,6 +3130,33 @@ async function handleAuthSubmit() {
     localStorage.removeItem("promptlyPendingMigrationEmail");
     setSignupError(result.error.message || "Account setup failed.");
     status.textContent = "Check your details and try again.";
+    return;
+  }
+
+  // Supabase returns a FAKE SUCCESS when you sign up with an address that
+  // already has an account — no error, no session — so that an attacker cannot
+  // discover which emails are registered. That protection is correct and stays
+  // on; what was missing is our ability to recognise it.
+  //
+  // Without this check the fake success is indistinguishable from a real
+  // signup, so the branch below promised "check your email to confirm" for a
+  // confirmation Supabase deliberately never sends. The student waits forever
+  // for a message that does not exist, presses Create Account again, and gets
+  // the same promise — the loop Marley hit on his phone after confirming the
+  // account on his laptop.
+  //
+  // The tell is documented: an existing user comes back with an empty
+  // `identities` array, where a genuine new signup has one entry.
+  const alreadyRegistered = authMode === "signup"
+    && result.data?.user
+    && Array.isArray(result.data.user.identities)
+    && result.data.user.identities.length === 0;
+  if (alreadyRegistered) {
+    sessionStorage.removeItem("promptlyMigrateLocal");
+    localStorage.removeItem("promptlyPendingMigrationEmail");
+    setAuthMode("signin");
+    setSignupError("You already have an account with this email — signing in instead.");
+    status.textContent = "Enter your password to sign in.";
     return;
   }
 
@@ -3218,6 +3313,29 @@ function setSignupError(message = "") {
 
 function setAcademicError(message = "") {
   setFormError("[data-academic-error]", message);
+}
+
+function setInterestsError(message = "") {
+  setFormError("[data-interests-error]", message);
+}
+
+// Alerts are matched on fields. An account with none matches nothing, so it can
+// never receive a single alert — and nothing anywhere says so.
+//
+// Fields are normally inferred from the major and interests, which works for
+// "Computer Science" or "Political Science" but produces NOTHING for
+// "Undeclared", "General Studies" or "Liberal Arts" — precisely the
+// underclassmen Promptly is for. Those students were completing onboarding,
+// confirming their email, and then waiting forever. The signup funnel is what
+// surfaced it: one confirmed account, zero able to be alerted.
+function validateInterests() {
+  const chosen = Array.isArray(profile.fields) ? profile.fields.filter(Boolean) : [];
+  if (chosen.length) {
+    setInterestsError();
+    return true;
+  }
+  setInterestsError("Pick at least one field below, or describe what you want above — Promptly matches alerts to these.");
+  return false;
 }
 
 function validateSignup() {
@@ -3533,7 +3651,10 @@ function enterApp() {
   if (typedName) profile.name = typedName;
   if (typedEmail) profile.email = typedEmail;
   profile.interests = typedInterests;
+  // Infer BEFORE validating: what they just typed may well supply the fields,
+  // so we only ask when inference genuinely came back empty.
   syncInferredFields();
+  if (!validateInterests()) return;
   saveProfile();
   saveSubscriber();
   track("signup");
@@ -3624,6 +3745,12 @@ function pushCopy() {
         : "Notifications are blocked for this site. Click the lock icon in your address bar → Notifications → Allow, then try again.",
     allow: mobile ? "Tap Allow when your phone asks, to turn on alerts." : "Click Allow when your browser asks, to turn on notifications.",
     testSent: mobile ? "Test sent. Check your lock screen or notification center." : "Test sent. Check your desktop notifications.",
+    // The success line was the one string in this panel that never asked what
+    // device it was on: a laptop was told "Phone alerts enabled", directly
+    // under a pill reading DESKTOP ALERTS. Same tap/click split as `prompt`.
+    enabled: mobile
+      ? "✅ Phone alerts enabled. Tap Send Test Notification."
+      : "✅ Desktop notifications enabled. Click Send Test Notification.",
   };
 }
 
@@ -3678,8 +3805,53 @@ async function getVapidPublicKey() {
   }
 }
 
+// Signing in IS the confirmation.
+//
+// authenticateUser() requires Supabase's confirmed-email timestamp, so a
+// signed-in student has already proved this address — to Google, or by
+// clicking Supabase's own confirmation link. Asking them to confirm it again
+// is asking twice, and the banner's "deleted after 14 days" line threatens an
+// account that is in perfect shape. It was the first thing a new Google
+// signup saw.
+//
+// The server already agreed with this: the resend-verification action sends no
+// mail at all, it just marks the record verified. So the button labelled
+// "Resend link" never resent anything — it silently confirmed you. Do that
+// bookkeeping automatically instead of showing a bar whose only action is a
+// promise we cannot keep.
+//
+// Hiding the banner alone would not be enough: it is what prompted the save
+// that sets `verified` server-side, and an unverified record is never queued a
+// digest. So the sync has to replace it, not just remove it.
+let serverVerificationSyncing = false;
+async function ensureServerVerification() {
+  if (serverVerificationSyncing || emailVerified || !authUser || !profile.email) return;
+  serverVerificationSyncing = true;
+  try {
+    const response = await fetch(`${API_BASE}/api/subscribe`, {
+      method: "POST",
+      headers: await authenticatedJsonHeaders(),
+      body: JSON.stringify({ action: "resend-verification", profile: { email: profile.email } }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (data.alreadyVerified) {
+      emailVerified = true;
+      renderVerificationNotice();
+    }
+  } catch {
+    // Bookkeeping the student never asked for: a failure here must not surface
+    // as an error they cannot act on. The next render tries again.
+  } finally {
+    serverVerificationSyncing = false;
+  }
+}
+
 function renderVerificationNotice() {
-  const hide = !profile.email || emailVerified || document.body.classList.contains("onboarding-active");
+  // A signed-in session is proof of a confirmed address, so it hides the notice
+  // outright rather than waiting for the server round trip below to land.
+  const signedIn = Boolean(authUser);
+  if (signedIn && profile.email && !emailVerified) ensureServerVerification();
+  const hide = !profile.email || emailVerified || signedIn || document.body.classList.contains("onboarding-active");
 
   const el = document.querySelector("[data-verify-notice]");
   if (el) {
@@ -3834,7 +4006,7 @@ async function enablePushAlerts() {
       applicationServerKey: serverKey,
     });
     localStorage.setItem("openingPushSubscription", JSON.stringify(subscription));
-    setPushStatus("✅ Phone alerts enabled. Tap Send Test Notification.");
+    setPushStatus(pushCopy().enabled);
     await saveSubscriber(subscription);
     return subscription;
   } catch (e) {
@@ -4472,10 +4644,29 @@ document.querySelector("[data-school-input]")?.addEventListener("input", () => s
 document.querySelector("[data-grad-year-input]")?.addEventListener("input", () => setAcademicError());
 document.querySelector("[data-major-input]")?.addEventListener("input", () => setAcademicError());
 
+// Releasing the browser's own push subscription when push is switched off.
+//
+// Clearing the endpoint we store stops Promptly sending, but the subscription
+// still exists in the browser and at the vendor's push service until it is
+// unsubscribed. "Off" should mean off everywhere, not just on our side.
+async function releasePushSubscription() {
+  try {
+    localStorage.removeItem("openingPushSubscription");
+    if (!("serviceWorker" in navigator)) return;
+    const registration = await navigator.serviceWorker.getRegistration();
+    const existing = registration && await registration.pushManager.getSubscription();
+    if (existing) await existing.unsubscribe();
+  } catch {}
+}
+
 document.querySelectorAll("[data-notification-pref]").forEach((input) => {
-  input.addEventListener("change", () => {
-    profile[input.dataset.notificationPref] = input.checked;
+  input.addEventListener("change", async () => {
+    const pref = input.dataset.notificationPref;
+    profile[pref] = input.checked;
     saveProfile();
+    // Release the browser subscription BEFORE telling the server, so a failure
+    // here cannot leave us still holding an endpoint we have promised to drop.
+    if (pref === "pushNotifications" && !input.checked) await releasePushSubscription();
     saveSubscriber();
   });
 });

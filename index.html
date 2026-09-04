@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Promptly | Never miss an internship opening</title>
-    <meta name="description" content="Promptly alerts students the moment an internship opens, read straight from employers' own hiring systems. 329 employers monitored, refreshed hourly. Free for students." />
+    <meta name="description" content="Promptly alerts students the moment an internship opens, read straight from employers' own hiring systems. 341 employers monitored, refreshed hourly. Free for students." />
     <link rel="canonical" href="https://app.joinpromptly.co/" />
     <meta name="theme-color" content="#0b1020" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -19,7 +19,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Promptly" />
     <meta property="og:title" content="Promptly | Never miss an internship opening" />
-    <meta property="og:description" content="Alerts students the moment an internship opens, read straight from employers' own hiring systems. 329 employers monitored, refreshed hourly." />
+    <meta property="og:description" content="Alerts students the moment an internship opens, read straight from employers' own hiring systems. 341 employers monitored, refreshed hourly." />
     <meta property="og:url" content="https://app.joinpromptly.co/" />
     <meta property="og:image" content="https://app.joinpromptly.co/assets/og-card.png" />
     <meta property="og:image:width" content="1200" />
@@ -27,9 +27,9 @@
     <meta property="og:image:alt" content="Promptly — never miss the window." />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Promptly | Never miss an internship opening" />
-    <meta name="twitter:description" content="Alerts students the moment an internship opens. 329 employers monitored, refreshed hourly." />
+    <meta name="twitter:description" content="Alerts students the moment an internship opens. 341 employers monitored, refreshed hourly." />
     <meta name="twitter:image" content="https://app.joinpromptly.co/assets/og-card.png" />
-    <link rel="stylesheet" href="styles.css?v=20260904b" />
+    <link rel="stylesheet" href="styles.css?v=20260903k" />
   </head>
   <body class="onboarding-active launch-active">
     <section class="onboarding-shell" aria-label="Promptly sign up">
@@ -50,13 +50,15 @@
           <button class="active" type="button" data-auth-mode="signup">Sign up</button>
           <button type="button" data-auth-mode="signin">Sign in</button>
         </div>
+        <button class="primary-action wide auth-google" type="button" data-google-auth>Continue with Google</button>
+        <p class="auth-fast-note" data-auth-fast-note>Fastest way in — nothing to confirm, no email to wait for.</p>
+        <div class="auth-divider"><span data-auth-divider-label>or sign up with email</span></div>
         <label class="field-label" data-auth-name-group>Name<input data-name-input type="text" placeholder="Your name" autocomplete="name" /></label>
         <label class="field-label">Email<input data-email-input type="email" placeholder="you@example.com" autocomplete="email" /></label>
         <p class="student-hint" data-student-hint hidden></p>
         <label class="field-label" data-auth-password-group>Password<input data-password-input type="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" /></label>
         <p class="form-error" data-signup-error hidden></p>
-        <button class="primary-action wide" type="button" data-auth-submit>Create Account</button>
-        <button class="soft-action wide auth-google" type="button" data-google-auth>Continue with Google</button>
+        <button class="soft-action wide" type="button" data-auth-submit>Create Account</button>
         <button class="text-action" type="button" data-forgot-password hidden>Forgot password?</button>
         <p class="auth-status" data-auth-status>Checking secure account setup...</p>
         <p class="signup-privacy-note">
@@ -100,12 +102,15 @@
         <label class="field-label">Interests<textarea data-interests-input placeholder="Example: product design, sports marketing, climate internships, hospital research, Google APM"></textarea></label>
         <div class="field-grid" data-field-grid></div>
         <button class="soft-action wide more-fields" type="button" data-more-fields hidden></button>
+        <p class="form-error" data-interests-error hidden></p>
         <div class="step-actions">
           <button class="soft-action" data-next-step="2">Back</button>
           <button class="primary-action" data-finish-onboarding>Enter Promptly</button>
         </div>
       </div>
     </section>
+
+    <a class="skip-link" href="#main-content">Skip to main content</a>
 
     <div class="verify-banner" data-verify-banner hidden role="status">
       <span data-verify-banner-text>Confirm your email to switch on alerts.</span>
@@ -154,7 +159,7 @@
         </div>
       </aside>
 
-      <section class="workspace">
+      <section class="workspace" id="main-content" tabindex="-1">
         <header class="topbar">
           <div>
             <p class="eyebrow">Student alert dashboard</p>
@@ -181,7 +186,7 @@
           <section class="alert-intelligence" aria-label="Alert intelligence">
             <article>
               <span class="status-pill">ALERT PROFILE</span>
-              <h3 data-alert-profile>Tracking internships for your major.</h3>
+              <h2 data-alert-profile>Tracking internships for your major.</h2>
               <ul class="profile-facts">
                 <li><span>School</span><strong data-home-school>Your school</strong></li>
                 <li><span>Class year</span><strong data-home-year>Graduation year</strong></li>
@@ -190,7 +195,7 @@
             </article>
             <article>
               <span class="status-pill">ALERT PULSE</span>
-              <h3 class="pulse-alert-title" data-return-pulse>You're all caught up!</h3>
+              <h2 class="pulse-alert-title" data-return-pulse>You're all caught up!</h2>
               <p data-return-pulse-copy>Promptly is monitoring your verified matches.</p>
               <ul class="pulse-recent" data-pulse-recent hidden></ul>
             </article>
@@ -543,15 +548,15 @@
 
     <!-- Supabase is loaded on demand (see loadSupabaseSdk in script.js) only when
          auth is switched on, so a parked-auth build makes no third-party requests. -->
-    <script src="watchlist.js?v=20260904b"></script>
-    <script src="monitored.js?v=20260904b"></script>
-    <script src="auth-routing.js?v=20260904b"></script>
+    <script src="watchlist.js?v=20260903k"></script>
+    <script src="monitored.js?v=20260903k"></script>
+    <script src="auth-routing.js?v=20260903k"></script>
     <!-- Location resolution + great-circle distance, shared with the alert
          pipeline. Must load before script.js, which uses it on first render. -->
-    <script src="geo.js?v=20260904b"></script>
-    <script src="student-email.js?v=20260904b"></script>
-    <script src="listing-state.js?v=20260904b"></script>
-    <script src="script.js?v=20260904b"></script>
-    <script src="assistant.js?v=20260904b"></script>
+    <script src="geo.js?v=20260903k"></script>
+    <script src="student-email.js?v=20260903k"></script>
+    <script src="listing-state.js?v=20260903k"></script>
+    <script src="script.js?v=20260903k"></script>
+    <script src="assistant.js?v=20260903k"></script>
   </body>
 </html>

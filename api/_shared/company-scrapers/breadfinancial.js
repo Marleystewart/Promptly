@@ -1,8 +1,6 @@
-const { fetchPhenomListings } = require("../phenom");
-
-// Bread Financial's careers site (careers.breadfinancial.com) is a Phenom
-// People board that server-renders its live result data, including the real
-// apply URLs. Same pattern as Regions/Truist.
-module.exports = function fetchListings() {
-  return fetchPhenomListings("https://careers.breadfinancial.com", ["intern", "2027"]);
+const { fetchPhenomWidgets } = require("../phenom");
+const { usOnly } = require("../us-location");
+// Bread Financial — Phenom (careers.breadfinancial.com, CNAME breadfinancial.phenompeople.net).
+module.exports = async function fetchListings() {
+  return usOnly(await fetchPhenomWidgets("https://careers.breadfinancial.com", ["intern", "internship", "university", "graduate"]));
 };

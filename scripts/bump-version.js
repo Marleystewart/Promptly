@@ -15,10 +15,18 @@
 // One version for everything. Bumping invalidates assets that did not change,
 // which costs a few KB on the next load and removes a whole class of bug.
 //
+// Bump on `main`, AFTER merging — not on a feature branch.
+//
+// One shared version means every bump rewrites the same six files, so two
+// branches that both bump conflict by construction, on a version number rather
+// than on any real disagreement. This warns when it can tell you are not on
+// main; --force skips the warning for the rare case you mean it.
+//
 // Usage:
-//   node scripts/bump-version.js            # today's date, next free letter
-//   node scripts/bump-version.js 20260902k  # an explicit version
+//   node scripts/bump-version.js            # today's date, next letter
+//   node scripts/bump-version.js 20260903h  # an explicit version
 //   node scripts/bump-version.js --check    # exit 1 if versions disagree
+//   node scripts/bump-version.js --force    # bump anyway, off main
 
 const fs = require("fs");
 const path = require("path");
@@ -74,7 +82,21 @@ function write(version) {
   return assets;
 }
 
-const arg = process.argv[2];
+// Best-effort: no git, a detached HEAD, or a non-repo checkout all just skip
+// the warning rather than blocking a legitimate bump.
+function currentBranch() {
+  try {
+    return require("child_process")
+      .execSync("git rev-parse --abbrev-ref HEAD", { cwd: ROOT, stdio: ["ignore", "pipe", "ignore"] })
+      .toString().trim();
+  } catch {
+    return null;
+  }
+}
+
+const args = process.argv.slice(2);
+const force = args.includes("--force");
+const arg = args.find((a) => a !== "--force");
 
 if (arg === "--check") {
   const versions = currentVersions();
@@ -95,6 +117,20 @@ if (arg === "--check") {
   }
   console.log(`Asset version in sync: ${only} (service worker opening-${only}).`);
   process.exit(0);
+}
+
+const branch = currentBranch();
+if (!force && branch && branch !== "main" && branch !== "HEAD") {
+  console.error(
+    `You are on "${branch}", not main.\n\n` +
+    `Bumping here rewrites six files that every other branch also rewrites, so\n` +
+    `this will conflict with any other open PR on a version number rather than\n` +
+    `on real work. Merge first, then bump on main:\n\n` +
+    `  git checkout main && git pull && npm run bump && npm test && git push\n\n` +
+    `If you really mean to bump here (resolving an existing conflict, say):\n` +
+    `  node scripts/bump-version.js --force\n`
+  );
+  process.exit(1);
 }
 
 const version = arg || nextVersion(currentVersions().keys());

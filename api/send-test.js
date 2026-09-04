@@ -2,7 +2,7 @@ const { withCors } = require("./_shared/cors");
 
 const webpush = require("web-push");
 const { isSafePushSubscription } = require("./_shared/push-target");
-const { getSubscriber } = require("./_shared/store");
+const { getSubscriber, takeTestAlertSlot } = require("./_shared/store");
 const { authenticateUser } = require("./_shared/auth-user");
 
 function readBody(req) {
@@ -44,6 +44,16 @@ async function handler(req, res) {
     if (!isSafePushSubscription(body.subscription)) {
       return res.status(400).json({ error: "That push subscription is not from a recognized browser push service." });
     }
+    // Same throttle as send-alert and send-recap. This endpoint sends a real
+    // push to a real device; without a limit a signed-in account could hammer
+    // its own lock screen and burn the push quota. It was the only one of the
+    // three send endpoints without one.
+    const requester = req.headers["x-forwarded-for"] || req.headers["x-real-ip"] || "unknown";
+    const rateLimit = await takeTestAlertSlot(auth.email, requester);
+    if (!rateLimit.allowed) {
+      return res.status(429).json({ error: "Please wait a moment before sending another test." });
+    }
+
     const subscriber = await getSubscriber(auth.email);
     const storedEndpoint = String(subscriber?.pushSubscription?.endpoint || "");
     const requestedEndpoint = String(body.subscription?.endpoint || "");

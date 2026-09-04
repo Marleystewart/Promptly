@@ -136,9 +136,13 @@ const SOURCES = [
   { company: "Mastercard", short: "MA", logoClass: "fin", field: "Finance", subField: "Payments", ats: "custom", handler: "mastercard" },
   { company: "Fiserv", short: "FI", logoClass: "fin", field: "Finance", subField: "Payments", ats: "custom", handler: "fiserv" },
   { company: "FIS", short: "FIS", logoClass: "fin", field: "Finance", subField: "Payments", ats: "custom", handler: "fisglobal" },
+  { company: "Bread Financial", short: "BFH", logoClass: "fin", field: "Finance", subField: "Payments", ats: "custom", handler: "breadfinancial" },
   { company: "MassMutual", short: "MM", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "massmutual" },
   // Private equity / credit
-  { company: "Sixth Street", short: "6ST", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "sixthstreet" },
+  // Moved off Greenhouse — boards-api returned 404 for sixthstreet and every
+  // variant. The live board is a Workday iframe on /current-opportunities/,
+  // which is only visible once that page's JavaScript runs.
+  { company: "Sixth Street", short: "6ST", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "sixthstreet", dc: "wd1", site: "sixthstreetcareers" },
   { company: "KKR", short: "KKR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "stage" },
   { company: "Carlyle", short: "CG", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "carlyle", dc: "wd1", site: "Carlyle" },
   { company: "Blue Owl", short: "OWL", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "workday", tenant: "blueowl", dc: "wd1", site: "blueowl" },
@@ -156,8 +160,7 @@ const SOURCES = [
   { company: "PayPal", short: "PYPL", logoClass: "fin", field: "Finance", subField: "Payments", ats: "workday", tenant: "paypal", dc: "wd1", site: "jobs" },
   { company: "Green Dot", short: "GDOT", logoClass: "fin", field: "Finance", subField: "Payments", ats: "workday", tenant: "greendotcorp", dc: "wd1", site: "gdc" },
   { company: "Marqeta", short: "MQ", logoClass: "fin", field: "Finance", subField: "Payments", ats: "ashby", board: "marqeta-inc" },
-  // Fintech / financial software
-  { company: "Bread Financial", short: "BFH", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "custom", handler: "breadfinancial" },
+  // Fintech / financial software (Bread Financial already added on main)
   { company: "nCino", short: "NCNO", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "ncinoinc" },
   { company: "OppFi", short: "OPFI", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "opploans" },
   { company: "Morningstar", short: "MORN", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "workday", tenant: "morningstar", dc: "wd5", site: "morningstar" },
@@ -263,7 +266,21 @@ const SOURCES = [
   { company: "Shield AI", short: "SHLD", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "ashby", board: "shield-ai" },
   { company: "Gopuff", short: "GPUF", logoClass: "consumer", field: "Consumer", subField: "Retail", ats: "lever", board: "gopuff" },
   { company: "Wikimedia Foundation", short: "WIKI", logoClass: "npo", field: "Nonprofit", subField: "Technology & Knowledge", ats: "greenhouse", board: "wikimedia" },
+  // Board name verified as "Medecins Sans Frontieres (Doctors Without Borders)
+  // - United States" via /v1/boards/msfcareers, not assumed from the token.
+  { company: "Doctors Without Borders", short: "MSF", logoClass: "npo", field: "Nonprofit", subField: "Humanitarian", ats: "greenhouse", board: "msfcareers" },
   { company: "Oscar Health", short: "OSCR", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "oscar" },
+  { company: "GSK", short: "GSK", logoClass: "health", field: "Healthcare", subField: "Pharmaceuticals", ats: "custom", handler: "gsk" },
+  { company: "Genentech", short: "GENE", logoClass: "health", field: "Healthcare", subField: "Biotechnology", ats: "custom", handler: "genentech" },
+  { company: "Humana", short: "HUM", logoClass: "health", field: "Healthcare", subField: "Health Insurance", ats: "custom", handler: "humana" },
+  { company: "NBA", short: "NBA", logoClass: "media", field: "Sports", subField: "Teams & Leagues", ats: "custom", handler: "nba" },
+  { company: "Qualcomm", short: "QCOM", logoClass: "tech", field: "Technology", subField: "Semiconductors", ats: "custom", handler: "qualcomm" },
+  { company: "Ford", short: "F", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "custom", handler: "ford" },
+  { company: "Mayo Clinic", short: "MAYO", logoClass: "health", field: "Healthcare", subField: "Hospital Systems", ats: "custom", handler: "mayoclinic" },
+  { company: "EY", short: "EY", logoClass: "consult", field: "Consulting", subField: "Big 4", ats: "custom", handler: "ey" },
+  { company: "ExxonMobil", short: "XOM", logoClass: "eng", field: "Engineering", subField: "Energy", ats: "custom", handler: "exxonmobil" },
+  { company: "Coca-Cola", short: "KO", logoClass: "consumer", field: "Consumer", subField: "Beverages", ats: "custom", handler: "cocacola" },
+  { company: "Cleveland Clinic", short: "CC", logoClass: "health", field: "Healthcare", subField: "Hospital Systems", ats: "custom", handler: "clevelandclinic" },
   { company: "Glossier", short: "GLOS", logoClass: "consumer", field: "Consumer", subField: "Beauty", ats: "greenhouse", board: "glossier" },
   { company: "Coursera", short: "COUR", logoClass: "edu", field: "Education", subField: "Education Technology", ats: "greenhouse", board: "coursera" },
   { company: "The Athletic", short: "ATH", logoClass: "media", field: "Sports", subField: "Sports Media", ats: "lever", board: "theathletic" },

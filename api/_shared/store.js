@@ -71,7 +71,10 @@ function normalizeSubscriber(profile = {}, subscription = null) {
     studentDomain: student.domain,
     name: String(profile.name || "").trim() || "there",
     school: String(profile.school || "").trim(),
-    gradYear: String(profile.gradYear || "").trim(),
+    // A band, never the exact year. The alert pipeline never used gradYear —
+    // only the founder dashboard did — and exact school plus exact year is
+    // close to identifying in a small cohort. See gradYearBand() in script.js.
+    gradYearBand: String(profile.gradYearBand || "").trim(),
     major: String(profile.major || "").trim(),
     preferredLocation: String(profile.preferredLocation || "").trim(),
     remoteOkay: profile.remoteOkay !== false,
@@ -92,6 +95,29 @@ function normalizeSubscriber(profile = {}, subscription = null) {
   };
 }
 
+// What happens to the stored push endpoint on a save.
+//
+// Two things were wrong here, and they pulled in opposite directions.
+//
+// FUNCTIONAL: an ordinary settings save calls saveSubscriber() with no
+// subscription, and serverAlertProfile() has never carried pushSubscription. So
+// the computed value was null, and the spread overwrote a perfectly good stored
+// endpoint with it. Enabling push worked; changing any other setting afterwards
+// silently switched it back off, and nothing anywhere said so.
+//
+// PRIVACY: a push endpoint identifies one specific browser install and is the
+// address we can reach it at. Keeping it after someone turns push OFF is
+// retention past the purpose it was collected for — the August audit asked for
+// "retain saved endpoint only while enabled/account active".
+//
+// So: an explicit new subscription wins; switching push off clears it
+// deliberately; otherwise the existing one is left alone.
+function resolvePushSubscription(existing, subscriber, subscription) {
+  if (subscriber.pushNotifications === false) return null;
+  if (subscription) return subscriber.pushSubscription;
+  return subscriber.pushSubscription || existing.pushSubscription || null;
+}
+
 async function saveSubscriber(profile, subscription) {
   const redis = await getRedis();
   const subscriber = normalizeSubscriber(profile, subscription);
@@ -106,6 +132,7 @@ async function saveSubscriber(profile, subscription) {
     ...existing,
     ...subscriber,
     createdAt: existing.createdAt || new Date().toISOString(),
+    pushSubscription: resolvePushSubscription(existing, subscriber, subscription),
   };
 
   await redis.set(key, merged);
@@ -280,6 +307,32 @@ async function takeTestAlertSlot(email, requester = "") {
   return { allowed: Boolean(emailSlot && requesterSlot), stored: true };
 }
 
+// Throttle for the unauthenticated analytics endpoint.
+//
+// /api/stats accepts an anonymous POST and increments a counter. Nothing there
+// is personal and nothing costs money, so this is not an abuse-cost control —
+// it protects the only numbers Marley has. Uninstrumented, one script could
+// make "app opens" say anything, and a decision would get made on it.
+//
+// Deliberately generous: real use fires several allowlisted events per session
+// (app open, view change, opening view), so the cap has to sit well above
+// normal behaviour or it silently loses real signal. The requester key is
+// hashed, like every other rate-limit key here, so throttling does not create
+// the per-visitor identifier the analytics design exists to avoid.
+async function takeAnalyticsSlot(requester = "") {
+  const redis = await getRedis();
+  if (!redis) return { allowed: true, stored: false };
+  const key = `promptly:analytics-rate:${opaqueKeyPart(String(requester || "unknown").slice(0, 80))}`;
+  try {
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, 60);
+    return { allowed: count <= 120, stored: true };
+  } catch {
+    // Never let a limiter failure lose real analytics.
+    return { allowed: true, stored: false };
+  }
+}
+
 // Throttle for the account-owned subscribe endpoint.
 //
 // /api/subscribe took unlimited unauthenticated writes, and every unseen email
@@ -352,9 +405,11 @@ module.exports = {
   addSubscriberWatch,
   removeSubscriberWatch,
   clearPushSubscription,
+  resolvePushSubscription,
   normalizeSubscriber,
   hasRedisEnv,
   takeTestAlertSlot,
+  takeAnalyticsSlot,
   takeSubscribeSlot,
   takeAdminAttempt,
   claimOnce,

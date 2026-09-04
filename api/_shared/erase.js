@@ -73,6 +73,16 @@ async function eraseSubscriber(email) {
     removed.push("unsubscribe-token");
   }
 
+  // The confirmation token maps token -> EMAIL ADDRESS and is only reachable
+  // from the token side, so once the profile is deleted it becomes unreachable
+  // garbage that still resolves to this person. It carries a one-week TTL, so
+  // the address outlived an explicit deletion request by up to seven days.
+  // Exactly the gap this file was written to close for the unsubscribe token.
+  if (record && record.verifyToken) {
+    jobs.push(redis.del(`promptly:verify:${record.verifyToken}`));
+    removed.push("verify-token");
+  }
+
   await Promise.all(jobs);
 
   // Watched companies: the policy explicitly promises these are removed.
@@ -113,4 +123,37 @@ async function eraseSubscriber(email) {
   return { erased: true, removed };
 }
 
-module.exports = { eraseSubscriber, scrubHash };
+// Remove fields the alert store keeps but nothing reads.
+//
+// The client stopped sending `major` and `interests` to Upstash, but stopping
+// new writes does not clear what is already there — an account only loses them
+// on its next save, and a dormant account never saves again. matchesOpening()
+// never read either field and no dashboard counts them, so every stored copy is
+// retention with no purpose. Runs from the daily retention job.
+//
+// Deliberately in-place rather than deleting rows: these are live subscribers,
+// and the rest of the record is doing real work.
+// gradYear is here because the exact year is now replaced by gradYearBand:
+// stored copies still hold the precise year until this scrubs them.
+const MINIMIZE_FIELDS = ["major", "interests", "gradYear"];
+
+async function minimizeSubscriberProfiles(redis, emails) {
+  if (!redis || !Array.isArray(emails)) return { scrubbed: 0 };
+  let scrubbed = 0;
+  for (const email of emails) {
+    const key = `promptly:subscriber:${normalizeEmail(email)}`;
+    try {
+      const record = await redis.get(key);
+      if (!record) continue;
+      const present = MINIMIZE_FIELDS.filter((f) => Object.prototype.hasOwnProperty.call(record, f));
+      if (!present.length) continue;
+      const next = { ...record };
+      for (const field of present) delete next[field];
+      await redis.set(key, next);
+      scrubbed += 1;
+    } catch {}
+  }
+  return { scrubbed };
+}
+
+module.exports = { eraseSubscriber, scrubHash, minimizeSubscriberProfiles, MINIMIZE_FIELDS };
