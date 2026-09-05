@@ -237,6 +237,37 @@ async function forEachSubscriberBatch(handler, { batchSize = 200 } = {}) {
 // Attach a watched company to a subscriber's record so the alert pipeline
 // (matchesOpening) sends them that company's postings. Creates a lightweight
 // subscriber if one doesn't exist yet, so a watch never silently fails to
+// Record that an account was active today.
+//
+// Retention cannot be measured from the anonymous daily counters: they have no
+// identity by design, so they can say 11 app opens and never whether that was
+// eleven people once or one person eleven times. Answering "did the people who
+// signed up last week come back this week" requires knowing that a returning
+// person is the same person.
+//
+// Kept as small as that question allows:
+//   - a DATE, not a timestamp — the cohort maths works in days, and an exact
+//     time of day would describe someone's routine for no analytical gain
+//   - one field on the subscriber record, which account deletion already
+//     erases wholesale, so it needs no separate erasure path
+//   - overwritten, never appended — there is no history here, no session log,
+//     and no way to reconstruct what anyone did or when they did it
+//
+// What this is deliberately NOT: a per-person activity feed. The dashboard
+// reads these dates only in aggregate.
+async function recordActivity(email) {
+  const redis = await getRedis();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!redis || !normalizedEmail) return { recorded: false };
+  const key = "promptly:subscriber:" + normalizedEmail;
+  const existing = await redis.get(key);
+  if (!existing) return { recorded: false };
+  const day = new Date().toISOString().slice(0, 10);
+  if (existing.lastActiveOn === day) return { recorded: true, unchanged: true };
+  await redis.set(key, { ...existing, lastActiveOn: day });
+  return { recorded: true, unchanged: false };
+}
+
 // alert. Returns the subscriber's full watch list.
 async function addSubscriberWatch(email, watch) {
   const redis = await getRedis();
@@ -394,6 +425,7 @@ async function releaseClaim(key) {
 }
 
 module.exports = {
+  recordActivity,
   readBody,
   getRedis,
   saveSubscriber,

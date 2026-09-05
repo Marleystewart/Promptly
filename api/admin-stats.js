@@ -4,14 +4,14 @@
 // /admin.html and paste the secret.
 
 const { listSubscribers, takeAdminAttempt, getRedis } = require("./_shared/store");
-const { getStats } = require("./_shared/analytics");
+const { getStats, getViewBreakdown } = require("./_shared/analytics");
 const { listWatchedSources, listCoverageRequests } = require("./_shared/watched-store");
 const { listSourceHealth } = require("./_shared/source-health");
 const { listReports } = require("./_shared/reports");
 const { readEmailHealth } = require("./_shared/email-health");
 const { readIntegrationHealth, probeUsaJobs } = require("./_shared/integration-health");
 const { readRunHealth, readPrivacyCleanup } = require("./_shared/run-health");
-const { buildFunnel } = require("./_shared/funnel");
+const { buildFunnel, buildRetention } = require("./_shared/funnel");
 const crypto = require("crypto");
 
 function mask(email) {
@@ -89,6 +89,11 @@ module.exports = async function handler(req, res) {
     // Where people drop. Exact record counts, never blended with the anonymous
     // daily activity counters below — see funnel.js for why that matters.
     const funnel = buildFunnel(subscribers, Date.now());
+    // Retention reads only createdAt and lastActiveOn, both already on the
+    // subscriber record and both erased with the account. Aggregate rows only.
+    const retention = buildRetention(subscribers, new Date());
+    let viewUsage = [];
+    try { viewUsage = await getViewBreakdown(7); } catch {}
 
     // "Watch any company" intent data — what users asked Promptly to track.
     // Watched = a real ATS board now in the pipeline; coverage = a page we
@@ -166,6 +171,8 @@ module.exports = async function handler(req, res) {
 
     return res.status(200).json({
       funnel,
+      retention,
+      viewUsage,
       privacyCleanup,
       runHealth,
       emailHealth,

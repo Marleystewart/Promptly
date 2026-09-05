@@ -1706,6 +1706,9 @@ function setView(name) {
   if (!view) return;
 
   views.forEach((item) => item.classList.toggle("active", item === view));
+  // Which sections get used, as an anonymous daily counter. The server keeps a
+  // fixed allowlist of view names, so this cannot write arbitrary keys.
+  track(`view:${name}`);
   // (heading chosen below — see viewHeading)
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
   title.textContent = name === "home" ? greetingText() : viewHeading(view);
@@ -3005,6 +3008,26 @@ function applyAccountUser(user) {
   // Auth has decided. Whatever was held back can now be drawn, and it is drawn
   // from the profile this account actually carries.
   flushDeferredProfilePaint();
+  // Mark the account active today, so retention is answerable. Fire and forget:
+  // it is bookkeeping the student did not ask for and must never surface as an
+  // error or delay anything on screen.
+  recordActivityPing();
+}
+
+// One authenticated call per app open, deduplicated server-side to one write
+// per day. Not sent when signed out: an anonymous ping would need its own
+// identifier, which is the thing the analytics module deliberately refuses to
+// create.
+async function recordActivityPing() {
+  if (!authUser) return;
+  try {
+    await fetch(`${API_BASE}/api/subscribe`, {
+      method: "POST",
+      headers: await authenticatedJsonHeaders(),
+      body: JSON.stringify({ action: "ping" }),
+      keepalive: true,
+    });
+  } catch {}
 }
 
 // After a failed or empty OAuth exchange, land the user on the sign-up step
