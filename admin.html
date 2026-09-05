@@ -90,6 +90,68 @@ async function load() {
       </div>`;
     // Where people drop. Each stage is a subset of the one above, so the gap
     // between two rows is a real number of people.
+    // Retention: the funnel measures getting in, this measures staying. Counts
+    // only — the panel says "4 of 9 came back", never which four.
+    const rt = d.retention;
+    const retentionPanel = !rt || !rt.cohorts.length ? "" : (() => {
+      const pct = (n, of) => (of ? Math.round((n / of) * 100) : 0);
+      const rows = rt.cohorts.map((c) => `
+        <tr>
+          <td>${escapeHtml(c.week)}</td>
+          <td style="text-align:right">${c.signups}</td>
+          <td style="text-align:right">${c.everReturned} <span class="muted">${pct(c.everReturned, c.signups)}%</span></td>
+          <td style="text-align:right">${c.week1} <span class="muted">${pct(c.week1, c.signups)}%</span></td>
+          <td style="text-align:right">${c.week4} <span class="muted">${pct(c.week4, c.signups)}%</span></td>
+          <td style="text-align:right">${c.activeLast7}</td>
+        </tr>`).join("");
+      return `
+        <div style="border:1px solid #2a2f4a;background:#12142a;border-radius:10px;padding:16px 18px;margin:0 0 18px">
+          <strong style="display:block;margin-bottom:6px">Retention by signup week</strong>
+          <div class="muted" style="font-size:12px;margin-bottom:12px">
+            Came back = opened Promptly at least a day after signing up. Someone who landed an
+            internship and stopped looking counts the same as someone who gave up &mdash; this
+            cannot yet tell those apart, so read a low number as a question, not a verdict.
+          </div>
+          <table>
+            <thead><tr>
+              <th>Week</th>
+              <th style="text-align:right">Signed up</th>
+              <th style="text-align:right">Came back</th>
+              <th style="text-align:right">Wk 1</th>
+              <th style="text-align:right">Wk 4</th>
+              <th style="text-align:right">Active 7d</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div class="muted" style="font-size:12px;margin-top:10px">
+            All time: ${rt.totals.everReturned} of ${rt.totals.signups} came back
+            (${pct(rt.totals.everReturned, rt.totals.signups)}%) &middot; ${rt.totals.activeLast7} active in the last 7 days.
+          </div>
+        </div>`;
+    })();
+
+    const vu = d.viewUsage;
+    const viewPanel = !vu || !vu.length || !vu.some((v) => v.opens) ? "" : `
+      <div style="border:1px solid #2a2f4a;background:#12142a;border-radius:10px;padding:16px 18px;margin:0 0 18px">
+        <strong style="display:block;margin-bottom:6px">Sections used (last 7 days)</strong>
+        <div class="muted" style="font-size:12px;margin-bottom:12px">
+          Anonymous daily counters. Says which tabs get opened, never by whom or in what order.
+        </div>
+        ${vu.map((v) => {
+          const top = vu[0].opens || 1;
+          const width = Math.max(2, Math.round((v.opens / top) * 100));
+          return `
+            <div style="margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;font-size:13px">
+                <span>${escapeHtml(v.view)}</span><strong>${v.opens}</strong>
+              </div>
+              <div style="height:6px;border-radius:3px;background:#1b1e33;margin-top:3px;overflow:hidden">
+                <div style="height:100%;width:${width}%;background:#7c5cff"></div>
+              </div>
+            </div>`;
+        }).join("")}
+      </div>`;
+
     const fn = d.funnel;
     const funnelPanel = !fn ? "" : (() => {
       const top = fn.stages[0].count || 0;
@@ -197,6 +259,8 @@ async function load() {
       </div>`;
     $("out").innerHTML = `
       ${funnelPanel}
+      ${retentionPanel}
+      ${viewPanel}
       ${cleanupPanel}
       ${runBanner}
       ${emailBanner}

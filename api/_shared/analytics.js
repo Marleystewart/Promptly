@@ -23,6 +23,19 @@ const ALLOWED = new Set([
   "listing_reported", "watch_prompt_from_search",
 ]);
 
+// Which sections people actually use, counted per view rather than as one
+// undifferentiated "view_change" total. Still a plain daily counter with no
+// identity attached: it can say the Openings tab was opened 40 times today and
+// can never say by whom, or in what order one person moved between tabs.
+//
+// A fixed allowlist, not a free-text view name, for the same reason ALLOWED
+// exists — an open counter key lets any caller write arbitrary keys into Redis.
+const ALLOWED_VIEWS = new Set(["home", "openings", "cycles", "saved", "alerts", "profile"]);
+
+function viewEvent(name) {
+  return ALLOWED_VIEWS.has(name) ? `view:${name}` : null;
+}
+
 function today() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -30,7 +43,8 @@ function today() {
 const WEEK_TTL = 60 * 60 * 24 * 9; // keep daily keys ~9 days
 
 async function track(event) {
-  if (!ALLOWED.has(event)) return { ok: false, error: "unknown event" };
+  const view = typeof event === "string" && event.startsWith("view:") ? viewEvent(event.slice(5)) : null;
+  if (!ALLOWED.has(event) && !view) return { ok: false, error: "unknown event" };
   const redis = await getRedis();
   if (!redis) return { ok: true, stored: false };
 
@@ -62,6 +76,23 @@ async function getStats() {
   }
 
   return { appOpensToday, applicationsToday, signupsToday, newListingsThisWeek };
+}
+
+// Which sections got used over the last week, in aggregate. Returned sorted so
+// the dashboard shows the most-used tab first without doing its own maths.
+async function getViewBreakdown(days = 7) {
+  const redis = await getRedis();
+  if (!redis) return [];
+  const rows = [];
+  for (const name of ALLOWED_VIEWS) {
+    let total = 0;
+    for (let i = 0; i < days; i += 1) {
+      const day = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+      total += Number(await redis.get(`promptly:a:view:${name}:${day}`)) || 0;
+    }
+    rows.push({ view: name, opens: total });
+  }
+  return rows.sort((a, b) => b.opens - a.opens);
 }
 
 // Used by the refresh job to record how many brand-new listings appeared.
@@ -97,4 +128,4 @@ async function purgeLegacyOutcomeData() {
   return { removed, stored: true };
 }
 
-module.exports = { track, getStats, recordNewListings, purgeLegacyOutcomeData, ALLOWED, WEEK_TTL };
+module.exports = { track, getStats, getViewBreakdown, ALLOWED_VIEWS, recordNewListings, purgeLegacyOutcomeData, ALLOWED, WEEK_TTL };

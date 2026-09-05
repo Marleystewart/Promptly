@@ -102,4 +102,72 @@ function buildFunnel(subscribers = [], now = Date.now()) {
   };
 }
 
-module.exports = { buildFunnel, isAlertReady, UNVERIFIED_PURGE_DAYS };
+// Retention: do the people who signed up come back?
+//
+// The funnel above measures getting in. This measures staying, which is the
+// only number that separates a product students use from one they tried. It is
+// also the number a beta cohort exists to produce — sixty people who install
+// and vanish teach nothing unless the vanishing is measured.
+//
+// Computed entirely from two fields already on the subscriber record:
+// createdAt (when the account was made) and lastActiveOn (a date, overwritten
+// daily). No event history is read or kept.
+//
+// Deliberately reported as counts, never as a list. The dashboard says "4 of 9
+// from that week came back", never which four.
+// Null rather than a throw on junk: a single unparseable createdAt on one
+// record must not take down the whole dashboard, and a record we cannot place
+// in time simply has no cohort.
+function weekStart(date) {
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return null;
+  const day = (d.getUTCDay() + 6) % 7; // Monday = 0
+  d.setUTCDate(d.getUTCDate() - day);
+  return d.toISOString().slice(0, 10);
+}
+
+function daysBetween(fromIso, toIso) {
+  const a = Date.parse(fromIso);
+  const b = Date.parse(toIso);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  return Math.floor((b - a) / 86400000);
+}
+
+// A student who lands an internship and stops opening Promptly is a SUCCESS,
+// not churn. Nothing here can tell those apart yet, so the label says
+// "returned", not "retained" — the honest claim is that they came back, and
+// nothing is inferred about why anyone did not.
+function buildRetention(subscribers, now = new Date()) {
+  const today = now.toISOString().slice(0, 10);
+  const cohorts = new Map();
+
+  for (const sub of subscribers || []) {
+    if (!sub || !sub.createdAt) continue;
+    const week = weekStart(sub.createdAt);
+    if (!week) continue;
+    if (!cohorts.has(week)) cohorts.set(week, { week, signups: 0, everReturned: 0, activeLast7: 0, week1: 0, week4: 0 });
+    const row = cohorts.get(week);
+    row.signups += 1;
+
+    const active = sub.lastActiveOn;
+    if (!active) continue;
+    const sinceSignup = daysBetween(sub.createdAt, active);
+    // Same-day activity is the signup session itself, not a return visit.
+    if (sinceSignup !== null && sinceSignup >= 1) row.everReturned += 1;
+    if (sinceSignup !== null && sinceSignup >= 1 && sinceSignup <= 7) row.week1 += 1;
+    if (sinceSignup !== null && sinceSignup >= 21) row.week4 += 1;
+    const staleness = daysBetween(active, today);
+    if (staleness !== null && staleness <= 7) row.activeLast7 += 1;
+  }
+
+  const rows = [...cohorts.values()].sort((a, b) => (a.week < b.week ? 1 : -1)).slice(0, 12);
+  const totals = rows.reduce((acc, r) => ({
+    signups: acc.signups + r.signups,
+    everReturned: acc.everReturned + r.everReturned,
+    activeLast7: acc.activeLast7 + r.activeLast7,
+  }), { signups: 0, everReturned: 0, activeLast7: 0 });
+
+  return { cohorts: rows, totals };
+}
+
+module.exports = { buildFunnel, isAlertReady, UNVERIFIED_PURGE_DAYS, buildRetention };
