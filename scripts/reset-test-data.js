@@ -56,9 +56,15 @@ const GROUPS = {
     note: "Includes the 'testing 123456' rows from August.",
   },
   queues: {
-    label: "Pending digest queues and already-alerted markers",
-    patterns: ["promptly:digest:*", "promptly:openings:alerted"],
-    note: "Anything queued for a digest is dropped. Clearing 'alerted' means the next refresh may re-alert current listings as if new.",
+    label: "Pending digest queues",
+    patterns: ["promptly:digest:*"],
+    note: "Anything waiting to be sent as a digest is dropped. Nothing else is affected.",
+  },
+  alerted: {
+    label: "The record of which listings have ALREADY been alerted",
+    patterns: ["promptly:openings:alerted"],
+    note: "DANGEROUS NEAR LAUNCH. notifySubscribers only queues listings it considers new. Clearing this makes every listing currently live — around a thousand — count as new on the next hourly refresh, and every one of them is queued to every subscriber. One student's first digest would be the entire feed. Only clear this if there are no subscribers left to alert.",
+    optIn: true,
   },
   accounts: {
     label: "SUBSCRIBER ACCOUNTS, saved alerts, verify and unsubscribe tokens",
@@ -89,8 +95,9 @@ async function main() {
 
   let grandTotal = 0;
   for (const [name, group] of Object.entries(GROUPS)) {
-    if (group.optIn && !withAccounts) {
-      console.log(`\n  ${name}  SKIPPED — pass --accounts to include it`);
+    const optInFlag = name === "accounts" ? "--accounts" : `--${name}`;
+    if (group.optIn && !args.includes(optInFlag)) {
+      console.log(`\n  ${name}  SKIPPED — pass ${optInFlag} to include it`);
       console.log(`      ${group.label}`);
       continue;
     }
