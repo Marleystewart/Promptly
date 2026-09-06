@@ -24,6 +24,49 @@
   th { color: #9a97b5; font-weight: 600; }
   .err { color: #ff8080; font-size: 14px; margin: 8px 0; }
   .muted { color: #9a97b5; }
+
+  /* Sections. The dashboard grew one panel at a time and ended up as a single
+     unbroken column where a red email banner sat below three demographic
+     tables. Grouping puts the things you check first at the top and lets the
+     rest be scanned rather than read. */
+  .section { margin: 0 0 30px; }
+  .section > .head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid #23233a; }
+  .section > .head h2 { margin: 0; font-size: 12px; text-transform: uppercase;
+    letter-spacing: .09em; color: #8f8bb0; }
+  .section > .head .note { color: #6f6c8c; font-size: 12px; }
+  .section h2 { margin-top: 0; }
+
+  /* One-line status, readable without scrolling or interpreting a number. */
+  .strip { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px;
+    border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid; }
+  .chip .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .chip.ok { color: #6fd3a3; border-color: #1c7a52; background: #0f2a1f; }
+  .chip.ok .dot { background: #6fd3a3; }
+  .chip.warn { color: #e3c05c; border-color: #8a6d1f; background: #2a230f; }
+  .chip.warn .dot { background: #e3c05c; }
+  .chip.bad { color: #f0897c; border-color: #a3341f; background: #2c1512; }
+  .chip.bad .dot { background: #f0897c; }
+
+  /* Long tables collapse. Twelve rows of one employer's flagged listings used
+     to push the signup funnel off the screen. */
+  details.fold { background: #16162a; border: 1px solid #25253c; border-radius: 12px;
+    margin: 0 0 12px; overflow: hidden; }
+  details.fold > summary { cursor: pointer; padding: 12px 14px; font-size: 14px;
+    font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+  details.fold > summary::-webkit-details-marker { display: none; }
+  details.fold > summary:hover { background: #1b1b31; }
+  details.fold > summary .count { color: #9a97b5; font-weight: 500; }
+  details.fold[open] > summary { border-bottom: 1px solid #23233a; }
+  details.fold table { border-radius: 0; }
+  .more { color: #6f6c8c; font-size: 12px; padding: 9px 14px; }
+  /* Six-column tables cannot fit a phone. Scroll the table, never the page:
+     a body that scrolls sideways makes every section feel broken. */
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .scroll table { min-width: max-content; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+  .stamp { color: #6f6c8c; font-size: 12px; margin: -8px 0 20px; }
 </style>
 </head>
 <body>
@@ -51,7 +94,37 @@ function table(title, rows, cols) {
   if (!rows || !rows.length) return `<h2>${escapeHtml(title)}</h2><p class="muted">No data yet.</p>`;
   const head = cols.map(c => `<th>${escapeHtml(c)}</th>`).join("");
   const body = rows.map(r => `<tr>${r.map(c => `<td>${escapeHtml(c == null ? "-" : c)}</td>`).join("")}</tr>`).join("");
-  return `<h2>${escapeHtml(title)}</h2><table><tr>${head}</tr>${body}</table>`;
+  return `<h2>${escapeHtml(title)}</h2><div class="scroll"><table><tr>${head}</tr>${body}</table></div>`;
+}
+
+// A titled group. Renders nothing when it has no content, so an empty section
+// never leaves a heading hanging over blank space.
+function section(title, note, body) {
+  if (!body || !String(body).trim()) return "";
+  return `<div class="section">
+    <div class="head"><h2>${escapeHtml(title)}</h2>${note ? `<span class="note">${escapeHtml(note)}</span>` : ""}</div>
+    ${body}
+  </div>`;
+}
+
+function chip(label, state) {
+  return `<span class="chip ${state}"><span class="dot"></span>${escapeHtml(label)}</span>`;
+}
+
+// Collapsed table with the row count on the summary line, so the count is
+// readable without expanding and a long list cannot bury what is under it.
+// Capped as well as collapsed: at a few hundred signups the recent list would
+// otherwise render every row into the DOM on every load.
+function fold(title, rows, cols, { open = false, cap = 25 } = {}) {
+  const list = (rows || []).filter(Boolean);
+  if (!list.length) return "";
+  const head = cols.map((c) => `<th>${escapeHtml(c)}</th>`).join("");
+  const body = list.slice(0, cap).map((r) => `<tr>${r.map((c) => `<td>${escapeHtml(c)}</td>`).join("")}</tr>`).join("");
+  return `<details class="fold"${open ? " open" : ""}>
+    <summary><span>${escapeHtml(title)}</span><span class="count">${list.length}</span></summary>
+    <div class="scroll"><table><tr>${head}</tr>${body}</table></div>
+    ${list.length > cap ? `<div class="more">Showing ${cap} of ${list.length}.</div>` : ""}
+  </details>`;
 }
 
 async function load() {
@@ -112,7 +185,7 @@ async function load() {
             internship and stopped looking counts the same as someone who gave up &mdash; this
             cannot yet tell those apart, so read a low number as a question, not a verdict.
           </div>
-          <table>
+          <div class="scroll"><table>
             <thead><tr>
               <th>Week</th>
               <th style="text-align:right">Signed up</th>
@@ -122,7 +195,7 @@ async function load() {
               <th style="text-align:right">Active 7d</th>
             </tr></thead>
             <tbody>${rows}</tbody>
-          </table>
+          </table></div>
           <div class="muted" style="font-size:12px;margin-top:10px">
             All time: ${rt.totals.everReturned} of ${rt.totals.signups} came back
             (${pct(rt.totals.everReturned, rt.totals.signups)}%) &middot; ${rt.totals.activeLast7} active in the last 7 days.
@@ -245,10 +318,6 @@ async function load() {
         <div class="muted" style="margin-top:6px">${escapeHtml(probe.reason || "")}${probe.status ? ` (HTTP ${probe.status})` : ""}</div>
         ${probe.shape ? `<div class="muted" style="margin-top:6px">key length ${probe.shape.keyLength}${probe.shape.keyLength !== 44 ? " — expected 44" : ""}${probe.shape.keyLooksLikeWholeLine ? " · value still contains \"USAJOBS_API_KEY=\" (paste grabbed the whole line)" : ""}${probe.shape.keyHasWhitespace ? " · has leading/trailing whitespace" : ""}${probe.shape.emailHasAt ? "" : " · email has no @"}</div>` : ""}
       </div>`;
-    const okProbeBanner = probe && probe.ok ? `
-      <div style="border:1px solid #1c7a52;background:#0f2a1f;border-radius:10px;padding:12px 16px;margin:0 0 18px">
-        <strong style="color:#6fd3a3">USAJOBS credentials verified working</strong>
-      </div>` : "";
     const integrationBanner = !ih || !(ih.unconfigured || []).length ? "" : `
       <div style="border:1px solid #a3341f;background:#2c1512;border-radius:10px;padding:14px 16px;margin:0 0 18px">
         <strong style="color:#f0897c">Data integration not configured: ${escapeHtml((ih.unconfigured || []).join(", "))}</strong>
@@ -257,56 +326,78 @@ async function load() {
           <div style="margin-top:4px;color:#f0897c">${escapeHtml(i.blockedReason || "")}</div>
         `).join("")}
       </div>`;
+    // Status at a glance, before any table. The green USAJOBS banner is
+    // deliberately not repeated below — the chip already carries it, and a
+    // dashboard that shouts about things being fine is one nobody reads.
+    const chips = [
+      rh ? chip(rh.healthy ? "Jobs running" : "Jobs need attention", rh.healthy ? "ok" : "bad") : "",
+      emailState ? chip(
+        emailState === "proven" ? "Email delivering" : emailState === "unproven" ? "Email never delivered" : "Email blocked",
+        emailState === "proven" ? "ok" : emailState === "unproven" ? "warn" : "bad",
+      ) : "",
+      probe ? chip(probe.ok ? "USAJOBS working" : "USAJOBS failing", probe.ok ? "ok" : "bad") : "",
+      ih && (ih.unconfigured || []).length
+        ? chip(`${ih.unconfigured.length} integration${ih.unconfigured.length > 1 ? "s" : ""} unconfigured`, "warn") : "",
+    ].filter(Boolean).join("");
+
+    const flaggedRows = ((d.verify && d.verify.flagged) || [])
+      .slice()
+      .sort((a, b) => (a.confidence === "red" ? 0 : 1) - (b.confidence === "red" ? 0 : 1))
+      .map((x) => [
+        x.confidence === "red" ? "🔴 Likely dead" : x.confidence === "amber" ? "🟠 Needs a look" : "⚪ Unknown",
+        x.company, x.role, x.reportCount || 0, x.confidenceReason || "—", x.sourceUrl,
+      ]);
+
     $("out").innerHTML = `
-      ${funnelPanel}
-      ${retentionPanel}
-      ${viewPanel}
-      ${cleanupPanel}
-      ${runBanner}
-      ${emailBanner}
-      ${integrationBanner}
-      ${probeBanner}
-      ${okProbeBanner}
-      <div class="cards">
-        <div class="card"><div class="n">${d.totalAccounts}</div><div class="l">Accounts</div></div>
-        <div class="card"><div class="n">${d.withEmail}</div><div class="l">With email</div></div>
-        <div class="card"><div class="n">${d.withEduEmail || 0}</div><div class="l">.edu verified</div></div>
-        <div class="card"><div class="n">${d.withPush}</div><div class="l">Push enabled</div></div>
-        <div class="card"><div class="n">${live.appOpensToday || 0}</div><div class="l">App opens today</div></div>
-        <div class="card"><div class="n">${live.signupsToday || 0}</div><div class="l">Signups today</div></div>
-        <div class="card"><div class="n">${live.applicationsToday || 0}</div><div class="l">Apps started today</div></div>
-        <div class="card"><div class="n">${live.newListingsThisWeek || 0}</div><div class="l">New listings / wk</div></div>
-        <div class="card"><div class="n">${d.watchedCount || 0}</div><div class="l">Companies watched</div></div>
-        <div class="card"><div class="n">${d.coverageCount || 0}</div><div class="l">Coverage requests</div></div>
-        <div class="card"><div class="n">${(d.verify && d.verify.flagged || []).length}</div><div class="l">Links flagged for review</div></div>
-        <div class="card"><div class="n">${d.reportCount || 0}</div><div class="l">Student reports</div></div>
-      </div>
-      ${table("Accounts by school", d.bySchool, ["School", "#"])}
-      ${table("By graduation year", d.byGradYear, ["Years to graduation", "#"])}
-      ${table("By field interest", d.byField, ["Field", "#"])}
-      ${table("Watched companies (live in pipeline)", (d.watched||[]).map(x => [x.company, x.ats, x.watchers]), ["Company", "Platform", "Watchers"])}
-      ${table("Coverage requests (unsupported pages — demand signal)", (d.coverage||[]).map(x => [x.company || "—", x.url, x.requests]), ["Company", "URL", "Requests"])}
-      ${d.verify ? `<p class="muted">Content check last ran ${escapeHtml(d.verify.checkedAt || "—")} · checked ${d.verify.checked || 0} of ${d.verify.totalLive || 0} live listings that run${(d.verify.summary && d.verify.summary.prioritisedByReports) ? ` · ${d.verify.summary.prioritisedByReports} pulled forward by student reports` : ""} · corroborating signal only, nothing here was auto-removed.</p>` : ""}
-      ${table("⚠ Flagged for manual review (NOT removed — verify before acting)", (d.verify && d.verify.flagged || [])
-        .slice()
-        .sort((a, b) => (a.confidence === "red" ? 0 : 1) - (b.confidence === "red" ? 0 : 1))
-        .map(x => [
-          x.confidence === "red" ? "🔴 Likely dead" : x.confidence === "amber" ? "🟠 Needs a look" : "⚪ Unknown",
-          x.company,
-          x.role,
-          x.reportCount || 0,
-          x.confidenceReason || "—",
-          x.sourceUrl,
-        ]), ["State", "Company", "Role", "Reports", "Why", "Link"])}
-      ${table("🚩 Reported by students (NOT removed — verify before acting)", (d.reports||[]).map(x => [
-        x.company,
-        x.role || "—",
-        (x.reasons||[]).join(", "),
-        (x.notes||[]).map(n => n.note).join(" · ") || "—",
-        x.count,
-        x.lastReportedAt ? new Date(x.lastReportedAt).toLocaleString() : "—",
-      ]), ["Company", "Role", "Reason", "Notes", "Reports", "Last"])}
-      ${table("Recent signups", (d.recent||[]).map(x => [x.email, x.school, x.gradYear, x.when ? new Date(x.when).toLocaleString() : "—"]), ["Email", "School", "Grad", "When"])}
+      <div class="stamp">Loaded ${escapeHtml(new Date().toLocaleString())}</div>
+
+      ${section("System health", "Check this first", `
+        <div class="strip">${chips}</div>
+        ${runBanner}
+        ${emailBanner}
+        ${integrationBanner}
+        ${probeBanner}
+        ${cleanupPanel}
+      `)}
+
+      ${section("Today", "Anonymous daily counters, 9-day expiry", `
+        <div class="cards">
+          <div class="card"><div class="n">${d.totalAccounts}</div><div class="l">Accounts</div></div>
+          <div class="card"><div class="n">${d.withEmail}</div><div class="l">With email</div></div>
+          <div class="card"><div class="n">${d.withEduEmail || 0}</div><div class="l">.edu verified</div></div>
+          <div class="card"><div class="n">${d.withPush}</div><div class="l">Push enabled</div></div>
+          <div class="card"><div class="n">${live.appOpensToday || 0}</div><div class="l">App opens today</div></div>
+          <div class="card"><div class="n">${live.signupsToday || 0}</div><div class="l">Signups today</div></div>
+          <div class="card"><div class="n">${live.applicationsToday || 0}</div><div class="l">Apps started today</div></div>
+          <div class="card"><div class="n">${live.newListingsThisWeek || 0}</div><div class="l">New listings / wk</div></div>
+        </div>
+      `)}
+
+      ${section("Growth", "Getting in, and coming back", `${funnelPanel}${retentionPanel}`)}
+
+      ${section("Usage", "", viewPanel)}
+
+      ${section("Students", `${d.totalAccounts} account${d.totalAccounts === 1 ? "" : "s"}`, `
+        <div class="cols">
+          ${table("By school", d.bySchool, ["School", "#"])}
+          ${table("By graduation year", d.byGradYear, ["Years to graduation", "#"])}
+          ${table("By field interest", d.byField, ["Field", "#"])}
+        </div>
+        ${fold("Recent signups", (d.recent || []).map((x) => [x.email, x.school, x.gradYear, x.when ? new Date(x.when).toLocaleString() : "—"]), ["Email", "School", "Grad", "When"], { cap: 50 })}
+      `)}
+
+      ${section("Pipeline", `${d.watchedCount || 0} watched · ${d.coverageCount || 0} coverage requests · ${flaggedRows.length} flagged · ${d.reportCount || 0} reports`, `
+        ${d.verify ? `<p class="muted" style="margin-top:0">Content check last ran ${escapeHtml(d.verify.checkedAt || "—")} · checked ${d.verify.checked || 0} of ${d.verify.totalLive || 0} live listings that run${(d.verify.summary && d.verify.summary.prioritisedByReports) ? ` · ${d.verify.summary.prioritisedByReports} pulled forward by student reports` : ""} · corroborating signal only, nothing here was auto-removed.</p>` : ""}
+        ${fold("🚩 Reported by students — verify before acting", (d.reports || []).map((x) => [
+          x.company, x.role || "—", (x.reasons || []).join(", "),
+          (x.notes || []).map((n) => n.note).join(" · ") || "—",
+          x.count, x.lastReportedAt ? new Date(x.lastReportedAt).toLocaleString() : "—",
+        ]), ["Company", "Role", "Reason", "Notes", "Reports", "Last"], { open: true })}
+        ${fold("⚠ Flagged for manual review — verify before acting", flaggedRows, ["State", "Company", "Role", "Reports", "Why", "Link"])}
+        ${fold("Watched companies (live in pipeline)", (d.watched || []).map((x) => [x.company, x.ats, x.watchers]), ["Company", "Platform", "Watchers"])}
+        ${fold("Coverage requests (unsupported pages — demand signal)", (d.coverage || []).map((x) => [x.company || "—", x.url, x.requests]), ["Company", "URL", "Requests"])}
+      `)}
+
       ${d.setupRequired ? `<p class="muted">${escapeHtml(d.setupRequired)}</p>` : ""}
     `;
   } catch (e) {
