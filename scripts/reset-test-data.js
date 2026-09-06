@@ -22,6 +22,23 @@
 //                            and says nothing about who used the app
 //   promptly:slides:decks    marketing tooling, unrelated
 
+// Read .env.local if it is there, so the credentials never have to be typed on
+// a command line. Anything already in the environment wins, and the file is
+// gitignored — pasting a production token into a shell puts it in your history,
+// which is a worse place for it than a file you already keep secrets in.
+function loadEnvLocal() {
+  const fs = require("fs");
+  const path = require("path");
+  const file = path.join(__dirname, "..", ".env.local");
+  if (!fs.existsSync(file)) return;
+  for (const line of fs.readFileSync(file, "utf8").split("\n")) {
+    const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/);
+    if (!match) continue;
+    const value = match[2].trim().replace(/^["']|["']$/g, "");
+    if (value && !process.env[match[1]]) process.env[match[1]] = value;
+  }
+}
+
 const GROUPS = {
   analytics: {
     label: "Anonymous daily counters (app opens, signups, views)",
@@ -56,11 +73,14 @@ async function main() {
   const apply = args.includes("--apply");
   const withAccounts = args.includes("--accounts");
 
+  loadEnvLocal();
   const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
   if (!url || !token) {
     console.error("Missing UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN in the environment.");
-    console.error("Copy them from Vercel → Settings → Environment Variables, or the Upstash console.");
+    console.error("Add them to .env.local in the repo root (it is gitignored), or pass them inline:");
+    console.error("  UPSTASH_REDIS_REST_URL=... UPSTASH_REDIS_REST_TOKEN=... npm run reset:test-data");
+    console.error("Copy the values from Vercel → Settings → Environment Variables, or the Upstash console.");
     process.exit(1);
   }
 
