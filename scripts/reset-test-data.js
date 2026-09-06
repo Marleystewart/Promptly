@@ -1,0 +1,117 @@
+#!/usr/bin/env node
+// Clear the data left over from testing, before real students arrive.
+//
+// Everything built before launch was exercised by three people, and those
+// numbers will sit in the dashboard forever otherwise — a funnel whose first
+// cohort is the founders is a funnel that lies about the product.
+//
+// DRY RUN BY DEFAULT. Nothing is deleted without --apply, because this talks
+// to production Redis and several of these groups are not recoverable.
+//
+//   node scripts/reset-test-data.js                      # show what would go
+//   node scripts/reset-test-data.js --apply              # safe groups only
+//   node scripts/reset-test-data.js --accounts --apply   # also delete accounts
+//
+// Needs the Upstash credentials in the environment:
+//   UPSTASH_REDIS_REST_URL=... UPSTASH_REDIS_REST_TOKEN=... node scripts/...
+//
+// NOT touched, deliberately:
+//   promptly:openings:live   the feed itself — clearing it empties the app
+//                            until the next hourly refresh
+//   promptly:source*         source health history, which took weeks to build
+//                            and says nothing about who used the app
+//   promptly:slides:decks    marketing tooling, unrelated
+
+const GROUPS = {
+  analytics: {
+    label: "Anonymous daily counters (app opens, signups, views)",
+    patterns: ["promptly:a:*"],
+    note: "These carry a 9-day TTL and clear themselves — included only to make the reset immediate.",
+  },
+  health: {
+    label: "Health records (email, cron runs, privacy cleanup)",
+    patterns: ["promptly:email:health", "promptly:run:*", "promptly:privacy:cleanup"],
+    note: "Clearing email health returns the admin banner to amber until the next real send succeeds.",
+  },
+  reports: {
+    label: "Student listing reports",
+    patterns: ["promptly:report*"],
+    note: "Includes the 'testing 123456' rows from August.",
+  },
+  queues: {
+    label: "Pending digest queues and already-alerted markers",
+    patterns: ["promptly:digest:*", "promptly:openings:alerted"],
+    note: "Anything queued for a digest is dropped. Clearing 'alerted' means the next refresh may re-alert current listings as if new.",
+  },
+  accounts: {
+    label: "SUBSCRIBER ACCOUNTS, saved alerts, verify and unsubscribe tokens",
+    patterns: ["promptly:subscriber:*", "promptly:subscribers", "promptly:verify*", "promptly:unsub:*"],
+    note: "DESTRUCTIVE. Everyone signs up again. Supabase auth users are NOT touched — sign in and the record rebuilds itself.",
+    optIn: true,
+  },
+};
+
+async function main() {
+  const args = process.argv.slice(2);
+  const apply = args.includes("--apply");
+  const withAccounts = args.includes("--accounts");
+
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  if (!url || !token) {
+    console.error("Missing UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN in the environment.");
+    console.error("Copy them from Vercel → Settings → Environment Variables, or the Upstash console.");
+    process.exit(1);
+  }
+
+  const { Redis } = await import("@upstash/redis");
+  const redis = new Redis({ url, token });
+
+  let grandTotal = 0;
+  for (const [name, group] of Object.entries(GROUPS)) {
+    if (group.optIn && !withAccounts) {
+      console.log(`\n  ${name}  SKIPPED — pass --accounts to include it`);
+      console.log(`      ${group.label}`);
+      continue;
+    }
+
+    const keys = [];
+    for (const pattern of group.patterns) {
+      if (!pattern.includes("*")) {
+        if (await redis.exists(pattern)) keys.push(pattern);
+        continue;
+      }
+      let cursor = 0;
+      do {
+        const result = await redis.scan(cursor, { match: pattern, count: 300 });
+        cursor = Number(Array.isArray(result) ? result[0] : result?.cursor) || 0;
+        keys.push(...((Array.isArray(result) ? result[1] : result?.keys) || []));
+      } while (cursor !== 0);
+    }
+
+    const unique = [...new Set(keys)];
+    grandTotal += unique.length;
+    console.log(`\n  ${name}  ${unique.length} key${unique.length === 1 ? "" : "s"}`);
+    console.log(`      ${group.label}`);
+    if (group.note) console.log(`      ${group.note}`);
+    if (unique.length) console.log(`      e.g. ${unique.slice(0, 3).join(", ")}${unique.length > 3 ? " …" : ""}`);
+
+    if (apply && unique.length) {
+      // Batched: DEL with several thousand arguments fails on the REST API.
+      for (let i = 0; i < unique.length; i += 200) await redis.del(...unique.slice(i, i + 200));
+      console.log(`      DELETED`);
+    }
+  }
+
+  console.log(`\n${apply ? "Deleted" : "Would delete"} ${grandTotal} key(s) in total.`);
+  if (!apply) console.log("Dry run — nothing was changed. Re-run with --apply to do it.");
+  if (apply && withAccounts) {
+    console.log("\nAccounts are gone from Redis. Supabase auth users still exist:");
+    console.log("everyone signs in again and their subscriber record rebuilds on first save.");
+  }
+}
+
+main().catch((error) => {
+  console.error("Reset failed:", error.message);
+  process.exit(1);
+});
