@@ -8,6 +8,7 @@
 
 const { SOURCES } = require("./sources");
 const { isUsLocation: isPositiveUsLocation } = require("./us-location");
+const { classifyRoleField } = require("./role-field");
 
 // Non-US locations. Extended after an audit found roles in Bristol, Tel Aviv,
 // Taipei and others slipping through into a US-only product. Country names are
@@ -525,13 +526,20 @@ function normalize(src, title, url, location, cycle = "Summer 2027", workplaceTy
   const slug = src.board || src.tenant;
   const displayLocation = preferUsLocations(location);
   const remote = workplaceType ? workplaceType === "Remote" : /remote/i.test(String(location || ""));
+  // Categorize by what the ROLE is, not just the employer's industry: a
+  // software-engineering role at a bank belongs under Technology, a mechanical
+  // one at an automaker under Engineering. Only a strong title signal overrides
+  // the employer's curated field (classifyRoleField returns null otherwise).
+  const byRole = classifyRoleField(title);
+  const field = byRole ? byRole.field : src.field;
+  const subField = byRole ? byRole.subField : src.subField;
   return {
     company: src.company,
     short: src.short,
     logoClass: src.logoClass,
     logo: `assets/logos/${slug}.png`, // shows if the file exists, else tile fallback
-    field: src.field,
-    subField: src.subField,
+    field,
+    subField,
     role: cleanRole(title),
     program: cycle,
     cycle,

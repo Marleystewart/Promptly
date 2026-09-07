@@ -44,6 +44,7 @@ window.MONITORED_COMPANIES = [
   "Block",
   "Blue Origin",
   "Blue Owl",
+  "BNY Mellon",
   "Boeing",
   "Booz Allen Hamilton",
   "Bottomline Technologies",
@@ -350,11 +351,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 341,
-  "companies": 341,
+  "sources": 342,
+  "companies": 342,
   "byPlatform": {
     "greenhouse": 137,
-    "custom": 51,
+    "custom": 52,
     "workday": 97,
     "ashby": 26,
     "lever": 8,
@@ -364,7 +365,7 @@ window.PROMPTLY_COVERAGE = {
     "taleo": 1
   },
   "byField": {
-    "Finance": 140,
+    "Finance": 141,
     "Technology": 66,
     "Consulting": 8,
     "Healthcare": 31,
