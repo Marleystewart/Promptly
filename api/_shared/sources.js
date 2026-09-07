@@ -68,6 +68,7 @@ const SOURCES = [
   // Citi runs its own careers site (no supported ATS) — see company-scrapers/citi.js
   { company: "Citi", short: "C", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "citi" },
   { company: "JPMorgan", short: "JPM", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "jpmorgan" },
+  { company: "BNY Mellon", short: "BK", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "custom", handler: "bny" },
   // Goldman runs its own Next.js careers site (higher.gs.com), backed by a
   // public GraphQL feed — see company-scrapers/goldmansachs.js.
   { company: "Goldman Sachs", short: "GS", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "goldmansachs" },
