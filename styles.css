@@ -5,9 +5,23 @@
   --panel-strong: rgba(255, 255, 255, 0.13);
   --ink: #fafaff;
   --muted: rgba(250, 250, 255, 0.68);
-  --faint: rgba(250, 250, 255, 0.42);
+  /* 0.42 measured 3.93:1 against the panel backgrounds it actually sits on,
+     which fails WCAG AA for normal text (4.5:1). 0.55 measures 5.36:1 — over
+     the line with enough headroom that a slightly different panel opacity
+     cannot quietly push it back under. */
+  --faint: rgba(250, 250, 255, 0.55);
   --line: rgba(255, 255, 255, 0.13);
   --purple: #8057ff;
+  /* The brand purple is a fraction too light to carry either job on its own.
+     As TEXT on the dark background it measures 4.49:1, and as a BUTTON FILL
+     under white text it measures 4.44:1 — both just under AA, and they pull in
+     opposite directions: text wants lighter, fills want darker. So the brand
+     colour keeps its place in borders, glows and gradients, and these two carry
+     the cases where contrast is actually judged.
+       --purple-ink  #9a7bff  as text on --bg          6.31:1
+       --purple-cta  #7150e8  under white button text  5.23:1  */
+  --purple-ink: #9a7bff;
+  --purple-cta: #7150e8;
   --purple-2: #5d38f2;
   --blue: #52a9ff;
   --green: #61e8aa;
@@ -436,7 +450,7 @@ body.launch-active .onboarding-brand {
   place-items: center;
   border-radius: 13px;
   color: #fff;
-  background: linear-gradient(135deg, var(--purple), var(--purple-2));
+  background: linear-gradient(135deg, var(--purple-cta), var(--purple-2));
   box-shadow: var(--glow);
 }
 
@@ -520,7 +534,7 @@ body.launch-active .onboarding-brand {
 }
 
 .eyebrow {
-  color: var(--purple);
+  color: var(--purple-ink);
   font-size: 13px;
   font-weight: 900;
   text-transform: uppercase;
@@ -950,7 +964,7 @@ body.launch-active .onboarding-brand {
 }
 
 .primary-action {
-  background: linear-gradient(135deg, var(--purple), var(--purple-2));
+  background: linear-gradient(135deg, var(--purple-cta), var(--purple-2));
   box-shadow: var(--glow);
 }
 
@@ -1774,7 +1788,7 @@ body.launch-active .onboarding-brand {
 }
 
 .round-btn.primary {
-  background: linear-gradient(135deg, var(--purple), var(--purple-2));
+  background: linear-gradient(135deg, var(--purple-cta), var(--purple-2));
 }
 
 .soon-grid,
@@ -2750,7 +2764,7 @@ input[type="checkbox"] {
 
 .college-dropdown mark {
   background: transparent;
-  color: var(--purple);
+  color: var(--purple-ink);
   font-weight: 850;
 }
 
@@ -2850,7 +2864,7 @@ input[type="checkbox"] {
   color: #fff;
   font: 600 14px/1 var(--font);
   cursor: pointer;
-  background: linear-gradient(135deg, var(--purple), var(--purple-2));
+  background: linear-gradient(135deg, var(--purple-cta), var(--purple-2));
   box-shadow: var(--shadow), var(--glow);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -2914,7 +2928,7 @@ input[type="checkbox"] {
 .ap-msg a:hover { text-decoration: underline; }
 .ap-msg .ap-hint { display: block; margin-top: 5px; color: var(--faint); font-size: 12px; }
 .ap-bot { align-self: flex-start; background: var(--panel); color: var(--muted); border-bottom-left-radius: 5px; }
-.ap-user { align-self: flex-end; background: linear-gradient(135deg, var(--purple), var(--purple-2)); color: #fff; border-bottom-right-radius: 5px; }
+.ap-user { align-self: flex-end; background: linear-gradient(135deg, var(--purple-cta), var(--purple-2)); color: #fff; border-bottom-right-radius: 5px; }
 .ap-action {
   display: inline-block;
   margin-top: 9px;
@@ -3005,7 +3019,7 @@ body.onboarding-active .ap-panel { display: none; }
   border-radius: 10px;
   display: grid; place-items: center;
   font-weight: 800; font-size: 14px;
-  background: linear-gradient(135deg, var(--purple), var(--purple-2));
+  background: linear-gradient(135deg, var(--purple-cta), var(--purple-2));
   color: #fff;
 }
 .watch-item .watch-meta { flex: 1 1 auto; min-width: 0; }
