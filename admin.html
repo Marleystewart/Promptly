@@ -79,6 +79,14 @@
   .hero .l { color: #a8a4c8; font-size: 11.5px; text-transform: uppercase;
     letter-spacing: .07em; margin-top: 7px; }
   .hero .s { color: #6f6c8c; font-size: 11.5px; margin-top: 5px; line-height: 1.4; }
+  .hero .h.live { border-color: #1c7a52; background: linear-gradient(160deg, #10301f, #0f2118); }
+  .hero .h.live .n { color: #6fd3a3; }
+  .pulse { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    background: #6fd3a3; vertical-align: middle; margin-left: 6px;
+    animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .35; transform: scale(.82); } }
+  @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
 </style>
 </head>
 <body>
@@ -384,6 +392,11 @@ async function load() {
           <div class="n">${hd.signups != null ? hd.signups : "&mdash;"}</div>
           <div class="l">Signed up</div>
           <div class="s">${hd.confirmed != null ? hd.confirmed + " can be alerted" : ""}</div>
+        </div>
+        <div class="h${hd.liveNow ? " live" : ""}">
+          <div class="n">${hd.liveNow != null ? hd.liveNow : "&mdash;"}${hd.liveNow ? ' <span class="pulse"></span>' : ""}</div>
+          <div class="l">On the app now</div>
+          <div class="s">Signed in and looking at it in the last 2 minutes</div>
         </div>
         <div class="h">
           <div class="n">${hd.activeToday != null ? hd.activeToday : "&mdash;"}</div>

@@ -3,7 +3,7 @@
 // user info). Set ADMIN_SECRET (or reuse CRON_SECRET) in Vercel, then open
 // /admin.html and paste the secret.
 
-const { listSubscribers, takeAdminAttempt, getRedis } = require("./_shared/store");
+const { listSubscribers, takeAdminAttempt, getRedis, countPresent } = require("./_shared/store");
 const { getStats, getViewBreakdown } = require("./_shared/analytics");
 const { listWatchedSources, listCoverageRequests } = require("./_shared/watched-store");
 const { listSourceHealth } = require("./_shared/source-health");
@@ -108,7 +108,13 @@ module.exports = async function handler(req, res) {
     const gradRanked = sortDesc(byGradYear).filter(([k]) => k !== "Unknown");
     const topGradYear = gradRanked.length ? { band: gradRanked[0][0], count: gradRanked[0][1] } : null;
 
+    // Live right now. Counted from keys that expire in two minutes, so this is
+    // genuinely "in the last couple of minutes" rather than a guess.
+    let liveNow = 0;
+    try { liveNow = await countPresent(); } catch {}
+
     const headline = {
+      liveNow: liveNow,
       signups: subscribers.length,
       activeToday: activeToday,
       activeLast7: activeLast7,
