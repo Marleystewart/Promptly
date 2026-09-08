@@ -4181,34 +4181,24 @@ async function ensureServerVerification() {
 }
 
 function renderVerificationNotice() {
-  // A signed-in session is proof of a confirmed address, so it hides the notice
-  // outright rather than waiting for the server round trip below to land.
-  const signedIn = Boolean(authUser);
-  if (signedIn && profile.email && !emailVerified) ensureServerVerification();
-  const hide = !profile.email || emailVerified || signedIn || document.body.classList.contains("onboarding-active");
+  // There is no unconfirmed-email state left to warn about.
+  //
+  // Supabase requires a confirmed address before an account exists at all, so
+  // anyone using Promptly has already confirmed. The bar and the inline notice
+  // were written for the on-device profile flow that predates accounts, and by
+  // the end they only ever appeared in states production cannot reach —
+  // showing a student a deletion warning about an account in perfect health.
+  //
+  // What the bar was doing that still matters is the bookkeeping underneath it:
+  // `verified` on the subscriber record gates whether a digest is even QUEUED,
+  // and pressing "Resend link" was what quietly set it. That now happens on its
+  // own, so removing the bar cannot leave anyone silently un-alerted.
+  if (authUser && profile.email && !emailVerified) ensureServerVerification();
 
   const el = document.querySelector("[data-verify-notice]");
-  if (el) {
-    el.hidden = hide;
-    if (!hide) el.textContent = `Email alerts are paused until you confirm ${profile.email}. Check your inbox for the confirmation link.`;
-  }
-
-  // Persistent bar across every view — easy to miss a notice buried in Settings.
+  if (el) el.hidden = true;
   const banner = document.querySelector("[data-verify-banner]");
-  const text = document.querySelector("[data-verify-banner-text]");
-  if (!banner) return;
-  banner.hidden = hide;
-  if (!hide && text) {
-    // Two lines rather than one long sentence: the action reads first, the
-    // consequence second and quieter. On a phone the single sentence wrapped
-    // into a four-line block of uniformly bold amber text.
-    text.textContent = "";
-    const lead = document.createElement("b");
-    lead.textContent = `Confirm ${profile.email} to switch on email alerts.`;
-    const note = document.createElement("small");
-    note.textContent = "Unconfirmed profiles are deleted after 14 days.";
-    text.append(lead, note);
-  }
+  if (banner) banner.hidden = true;
 }
 
 // Tuck the confirmation bar out of the way while reading down the page, and

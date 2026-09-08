@@ -112,10 +112,10 @@
 
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
-    <div class="verify-banner" data-verify-banner hidden role="status">
-      <span data-verify-banner-text>Confirm your email to switch on alerts.</span>
-      <button class="verify-resend" type="button" data-verify-resend>Resend link</button>
-    </div>
+    <!-- The verification bar lived here. Removed: Supabase confirms an address
+         before an account exists, so there is no unconfirmed state to warn
+         about, and the bar only ever fired in states production cannot reach.
+         See renderVerificationNotice() for the bookkeeping it used to carry. -->
 
     <main class="app-shell">
       <aside class="rail" aria-label="Promptly navigation">
