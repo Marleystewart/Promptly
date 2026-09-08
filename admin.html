@@ -67,6 +67,18 @@
   .scroll table { min-width: max-content; }
   .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
   .stamp { color: #6f6c8c; font-size: 12px; margin: -8px 0 20px; }
+
+  /* The headline. Everything else on this page answers a question you had to
+     already be asking; these are the numbers you want before you ask one. */
+  .hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px; margin: 0 0 26px; }
+  .hero .h { background: linear-gradient(160deg, #1a1733, #14142a); border: 1px solid #2e2a4d;
+    border-radius: 16px; padding: 18px 18px 16px; }
+  .hero .h.lead { border-color: #4a3aa0; background: linear-gradient(160deg, #241f52, #171634); }
+  .hero .n { font-size: 40px; font-weight: 800; line-height: 1.05; letter-spacing: -0.02em; }
+  .hero .l { color: #a8a4c8; font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: .07em; margin-top: 7px; }
+  .hero .s { color: #6f6c8c; font-size: 11.5px; margin-top: 5px; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -105,6 +117,23 @@ function section(title, note, body) {
     <div class="head"><h2>${escapeHtml(title)}</h2>${note ? `<span class="note">${escapeHtml(note)}</span>` : ""}</div>
     ${body}
   </div>`;
+}
+
+// Class year, not distance from graduation.
+//
+// The stored value is a BAND on purpose — the exact year was dropped during the
+// privacy work — so this is presentation only and changes nothing about what is
+// kept. "3+ years out" genuinely covers first-years and anyone further out, so
+// it says so rather than pretending to a precision the data does not have.
+var CLASS_YEARS = {
+  "graduated or graduating": "Seniors & grads",
+  "1 year out": "Juniors",
+  "2 years out": "Sophomores",
+  "3+ years out": "First-years",
+};
+
+function classYear(band) {
+  return CLASS_YEARS[String(band || "").trim()] || band || "Unknown";
 }
 
 function chip(label, state) {
@@ -348,8 +377,39 @@ async function load() {
         x.company, x.role, x.reportCount || 0, x.confidenceReason || "—", x.sourceUrl,
       ]);
 
+    const hd = d.headline || {};
+    const heroPanel = `
+      <div class="hero">
+        <div class="h lead">
+          <div class="n">${hd.signups != null ? hd.signups : "&mdash;"}</div>
+          <div class="l">Signed up</div>
+          <div class="s">${hd.confirmed != null ? hd.confirmed + " can be alerted" : ""}</div>
+        </div>
+        <div class="h">
+          <div class="n">${hd.activeToday != null ? hd.activeToday : "&mdash;"}</div>
+          <div class="l">Active today</div>
+          <div class="s">Opened the app since midnight UTC</div>
+        </div>
+        <div class="h">
+          <div class="n">${hd.activeLast7 != null ? hd.activeLast7 : "&mdash;"}</div>
+          <div class="l">Active this week</div>
+          <div class="s">${hd.everReturnedPct != null ? hd.everReturnedPct + "% have ever come back" : ""}</div>
+        </div>
+        <div class="h">
+          <div class="n">${hd.schools != null ? hd.schools : "&mdash;"}</div>
+          <div class="l">Schools</div>
+          <div class="s">Distinct campuses reached</div>
+        </div>
+        <div class="h">
+          <div class="n">${hd.topGradYear ? hd.topGradYear.count : "&mdash;"}</div>
+          <div class="l">${hd.topGradYear ? escapeHtml(classYear(hd.topGradYear.band)) : "Top year group"}</div>
+          <div class="s">${hd.topGradYear ? "Most common cohort" : "No year data yet"}</div>
+        </div>
+      </div>`;
+
     $("out").innerHTML = `
       <div class="stamp">Loaded ${escapeHtml(new Date().toLocaleString())}</div>
+      ${heroPanel}
 
       ${section("System health", "Check this first", `
         <div class="strip">${chips}</div>
@@ -380,10 +440,10 @@ async function load() {
       ${section("Students", `${d.totalAccounts} account${d.totalAccounts === 1 ? "" : "s"}`, `
         <div class="cols">
           ${table("By school", d.bySchool, ["School", "#"])}
-          ${table("By graduation year", d.byGradYear, ["Years to graduation", "#"])}
+          ${table("By class year", (d.byGradYear || []).map((r) => [classYear(r[0]), r[1]]), ["Class year", "#"])}
           ${table("By field interest", d.byField, ["Field", "#"])}
         </div>
-        ${fold("Recent signups", (d.recent || []).map((x) => [x.email, x.school, x.gradYear, x.when ? new Date(x.when).toLocaleString() : "—"]), ["Email", "School", "Grad", "When"], { cap: 50 })}
+        ${fold("Recent signups", (d.recent || []).map((x) => [x.email, x.school, classYear(x.gradYear), x.when ? new Date(x.when).toLocaleString() : "—", x.lastActiveOn || "never"]), ["Email", "School", "Class year", "Joined", "Last active"], { cap: 50 })}
       `)}
 
       ${section("Pipeline", `${d.watchedCount || 0} watched · ${d.coverageCount || 0} coverage requests · ${flaggedRows.length} flagged · ${d.reportCount || 0} reports`, `
