@@ -55,6 +55,7 @@ window.MONITORED_COMPANIES = [
   "Bristol Myers Squibb",
   "Broadridge Financial",
   "Brookings Institution",
+  "Capital Group",
   "Capital One",
   "Carlyle",
   "Carta",
@@ -204,6 +205,7 @@ window.MONITORED_COMPANIES = [
   "Moelis",
   "Mondelez",
   "MongoDB",
+  "Morgan Stanley",
   "Natera",
   "NBA",
   "Netflix",
@@ -213,6 +215,7 @@ window.MONITORED_COMPANIES = [
   "Nike",
   "Northern Trust",
   "Northrop Grumman",
+  "Northwestern Mutual",
   "Notion",
   "Novartis",
   "Nubank",
@@ -245,6 +248,7 @@ window.MONITORED_COMPANIES = [
   "Procter & Gamble",
   "Prologis",
   "Prosper Marketplace",
+  "Prudential Financial",
   "Qualcomm",
   "Ramp",
   "RAND Corporation",
@@ -347,12 +351,12 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 338,
-  "companies": 338,
+  "sources": 342,
+  "companies": 342,
   "byPlatform": {
     "greenhouse": 135,
     "custom": 53,
-    "workday": 94,
+    "workday": 98,
     "lever": 8,
     "ashby": 26,
     "smartrecruiters": 9,
@@ -361,7 +365,7 @@ window.PROMPTLY_COVERAGE = {
     "taleo": 1
   },
   "byField": {
-    "Finance": 140,
+    "Finance": 144,
     "Technology": 66,
     "Consulting": 8,
     "Healthcare": 31,
