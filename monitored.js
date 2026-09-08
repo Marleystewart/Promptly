@@ -35,6 +35,7 @@ window.MONITORED_COMPANIES = [
   "Bain Capital",
   "Baird",
   "Balyasny",
+  "Bank of America",
   "Benchling",
   "Betterment",
   "Bill.com",
@@ -108,6 +109,7 @@ window.MONITORED_COMPANIES = [
   "ExxonMobil",
   "EY",
   "Federal Reserve Board",
+  "Fidelity",
   "Fifth Third Bank",
   "Figma",
   "FIS",
@@ -159,6 +161,7 @@ window.MONITORED_COMPANIES = [
   "Interactive Brokers",
   "Invesco",
   "Jane Street",
+  "Jefferies",
   "JLL",
   "Johnson & Johnson",
   "Jones Day",
@@ -328,6 +331,7 @@ window.MONITORED_COMPANIES = [
   "Wealthfront",
   "Webflow",
   "Wellington Management",
+  "Wells Fargo",
   "Western Digital",
   "White & Case",
   "Wikimedia Foundation",
@@ -343,12 +347,12 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 334,
-  "companies": 334,
+  "sources": 338,
+  "companies": 338,
   "byPlatform": {
     "greenhouse": 135,
-    "custom": 52,
-    "workday": 91,
+    "custom": 53,
+    "workday": 94,
     "lever": 8,
     "ashby": 26,
     "smartrecruiters": 9,
@@ -357,7 +361,7 @@ window.PROMPTLY_COVERAGE = {
     "taleo": 1
   },
   "byField": {
-    "Finance": 136,
+    "Finance": 140,
     "Technology": 66,
     "Consulting": 8,
     "Healthcare": 31,

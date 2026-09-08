@@ -70,6 +70,11 @@ const SOURCES = [
   { company: "JPMorgan", short: "JPM", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "jpmorgan" },
   { company: "BNY Mellon", short: "BK", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "custom", handler: "bny" },
   { company: "Lazard", short: "LAZ", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "lazard", studentBoard: true },
+  // Bulge-bracket / large banks — real ATS URLs found by search, then probed.
+  { company: "Wells Fargo", short: "WFC", logoClass: "fin", field: "Finance", subField: "Corporate & Commercial Banking", ats: "workday", tenant: "wf", dc: "wd1", site: "WellsFargoJobs" },
+  { company: "Fidelity", short: "FID", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "fmr", dc: "wd1", site: "FidelityCareers" },
+  { company: "Bank of America", short: "BAC", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "ghr", dc: "wd1", site: "lateral-us" },
+  { company: "Jefferies", short: "JEF", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "jefferies" },
   { company: "Wealthfront", short: "WF", logoClass: "fin", field: "Finance", subField: "Wealth Management", ats: "lever", board: "wealthfront" },
   { company: "Bill.com", short: "BILL", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "billcom" },
   { company: "Carta", short: "CRTA", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "carta" },
