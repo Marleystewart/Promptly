@@ -311,6 +311,27 @@
             </div>
             <div class="cycle-chips" data-cycle-chips hidden></div>
 
+            <!-- Desktop calendar. Renders the same filtered pool as the matrix
+                 below it; CSS shows one or the other, never both. Mobile keeps
+                 the existing layout untouched. -->
+            <div class="cyc-cal" data-cycle-calendar hidden>
+              <div class="cyc-cal-main">
+                <div class="cyc-cal-head">
+                  <div class="cyc-cal-nav">
+                    <button type="button" class="cyc-mbtn" data-cal-nav="-1" aria-label="Previous month">&lsaquo;</button>
+                    <button type="button" class="cyc-mbtn" data-cal-nav="1" aria-label="Next month">&rsaquo;</button>
+                    <h3 class="cyc-cal-title" data-cal-title aria-live="polite"></h3>
+                  </div>
+                  <button type="button" class="cyc-today" data-cal-today>Today</button>
+                </div>
+                <div class="cyc-dows" aria-hidden="true">
+                  <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                </div>
+                <div class="cyc-grid" data-cal-grid role="grid" aria-label="Recruiting activity by date"></div>
+              </div>
+              <aside class="cyc-side" data-cal-side aria-live="polite"></aside>
+            </div>
+
             <div class="cycle-window-nav" role="group" aria-label="Move the timeline window">
               <button type="button" class="cyc-nav" data-cycle-nav="-12" aria-label="Back one year" title="Back one year">«</button>
               <button type="button" class="cyc-nav" data-cycle-nav="-6" aria-label="Back six months" title="Back six months">‹</button>
