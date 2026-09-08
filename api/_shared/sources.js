@@ -69,6 +69,11 @@ const SOURCES = [
   { company: "Citi", short: "C", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "citi" },
   { company: "JPMorgan", short: "JPM", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "jpmorgan" },
   { company: "BNY Mellon", short: "BK", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "custom", handler: "bny" },
+  { company: "Lazard", short: "LAZ", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "lazard", studentBoard: true },
+  { company: "Wealthfront", short: "WF", logoClass: "fin", field: "Finance", subField: "Wealth Management", ats: "lever", board: "wealthfront" },
+  { company: "Bill.com", short: "BILL", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "billcom" },
+  { company: "Carta", short: "CRTA", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "carta" },
+  { company: "Insight Partners", short: "IP", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "ashby", board: "insightpartners" },
   // Goldman runs its own Next.js careers site (higher.gs.com), backed by a
   // public GraphQL feed — see company-scrapers/goldmansachs.js.
   { company: "Goldman Sachs", short: "GS", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "goldmansachs" },
