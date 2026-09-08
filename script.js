@@ -985,8 +985,9 @@ function logoFallback(img) {
     return;
   }
 
-  const el = img.closest(".logo, .modal-logo, .mega-logo");
+  const el = img.closest(".logo, .modal-logo, .mega-logo, .cyc-logo");
   if (!el) return;
+  if (el.classList.contains("cyc-logo")) el.classList.add("cyc-logo-text");
   el.classList.remove("logo-tile");
   if (img.dataset.lc) el.classList.add(img.dataset.lc);
   el.textContent = img.dataset.short || "";
@@ -1936,10 +1937,16 @@ function calendarByDay(filtered) {
 
 function calLogoHtml(item) {
   const initials = escapeHtml(item.short || String(item.company || "?").slice(0, 3).toUpperCase());
-  if (item.logo) {
-    return `<span class="cyc-logo"><img src="${escapeHtml(item.logo)}" alt="" loading="lazy"></span>`;
-  }
-  return `<span class="cyc-logo cyc-logo-text ${escapeHtml(item.logoClass || "")}">${initials}</span>`;
+  const url = companyLogoUrl(item);
+  if (!url) return `<span class="cyc-logo cyc-logo-text ${escapeHtml(item.logoClass || "")}">${initials}</span>`;
+  // data-logo-img wires this into the delegated error listener, which swaps a
+  // missing file for the initials tile. Most of the bundled logo paths in the
+  // feed point at files that are not in assets/logos, so without this a
+  // majority of employers render as a broken image rather than a tile.
+  return `<span class="cyc-logo">
+    <img data-logo-img src="${escapeHtml(url)}" alt=""
+         data-short="${initials}" data-lc="${escapeHtml(item.logoClass || "")}" loading="lazy">
+  </span>`;
 }
 
 function renderCycleCalendar(filtered) {

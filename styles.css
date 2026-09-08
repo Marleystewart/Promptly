@@ -4155,11 +4155,17 @@ body.onboarding-active .ap-panel { display: none; }
      between cells make it read as a pile of cards. */
   .cyc-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    /* minmax(0, 1fr), not 1fr: the default minimum is auto, which lets content
+       push a track wider than the container. */
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 
   .cyc-day {
     position: relative;
+    /* Grid children default to min-width:auto, so a long employer name forces
+       the whole 7-column track wider than its container. Everything in here
+       must be allowed to shrink and ellipsis instead. */
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -4220,6 +4226,7 @@ body.onboarding-active .ap-panel { display: none; }
     align-items: center;
     gap: 6px;
     min-width: 0;
+    max-width: 100%;
   }
 
   .cyc-logo {
@@ -4245,7 +4252,7 @@ body.onboarding-active .ap-panel { display: none; }
     letter-spacing: -0.02em;
   }
 
-  .cyc-emp-text { min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+  .cyc-emp-text { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; line-height: 1.2; }
 
   .cyc-emp-text b {
     font-size: 11.5px;
@@ -4323,3 +4330,7 @@ body.onboarding-active .ap-panel { display: none; }
   .cyc-cal { grid-template-columns: minmax(0, 1fr) 344px; }
   .cyc-day { min-height: 124px; }
 }
+
+
+/* #c3b1ff measured 1.9:1 on a white page. */
+.cycle-info { color: var(--purple-ink); }
