@@ -86,12 +86,18 @@ for (const page of STATIC_PAGES) {
   // once the app is running, so document order alone is the wrong test — that
   // is what the previous version of this assertion got wrong when the
   // verification banner it named was removed.
+  // Measure from the END of the skip link's own anchor. Slicing from
+  // 'class="skip-link"' starts INSIDE the tag, so the anchor never appeared in
+  // the range — and dropping a "first match" to account for it silently
+  // discarded the one thing the assertion existed to catch. Written that way
+  // first, it passed with a stray button sitting right there.
   const skipAt = index.indexOf('class="skip-link"');
   const shellAt = index.indexOf('class="app-shell"');
   assert.ok(skipAt > -1 && shellAt > skipAt, "the skip link must come before the app shell");
-  const between = index.slice(skipAt, shellAt).match(/<(a|button|input|select|textarea)\b|tabindex="0"/gi) || [];
-  assert.deepEqual(between.slice(1), [],
-    `focusable elements sit between the skip link and the app shell, so it is not first: ${between.slice(1).join(", ")}`);
+  const afterSkipAnchor = index.indexOf("</a>", skipAt) + 4;
+  const between = index.slice(afterSkipAnchor, shellAt).match(/<(a|button|input|select|textarea)\b|tabindex="0"/gi) || [];
+  assert.deepEqual(between, [],
+    `focusable elements sit between the skip link and the app shell, so it is not first: ${between.join(", ")}`);
 
   const css = fs.readFileSync(path.join(ROOT, "styles.css"), "utf8");
   assert.match(css, /\.skip-link\s*\{[\s\S]*left:\s*-9999px/, "the skip link must be off-screen until focused");
