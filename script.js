@@ -3012,7 +3012,32 @@ function applyAccountUser(user) {
   // it is bookkeeping the student did not ask for and must never surface as an
   // error or delay anything on screen.
   recordActivityPing();
+  startPresenceHeartbeat();
 }
+
+// Keep the presence key alive while the tab is actually being looked at.
+//
+// Only while VISIBLE. A background tab left open for three days would otherwise
+// report someone as present for three days, which makes the live number a
+// measure of forgotten tabs rather than of people. Pausing when hidden also
+// means a phone in a pocket stops pinging.
+//
+// Slightly under the server's two-minute expiry, so an ordinary session never
+// flickers out between beats.
+var presenceTimer = null;
+
+function startPresenceHeartbeat() {
+  if (presenceTimer) window.clearInterval(presenceTimer);
+  presenceTimer = window.setInterval(function () {
+    if (document.visibilityState === "visible") recordActivityPing();
+  }, 90000);
+}
+
+document.addEventListener("visibilitychange", function () {
+  // Coming back to the tab should register immediately rather than waiting out
+  // the rest of an interval that ticked away while hidden.
+  if (document.visibilityState === "visible") recordActivityPing();
+});
 
 // One authenticated call per app open, deduplicated server-side to one write
 // per day. Not sent when signed out: an anonymous ping would need its own

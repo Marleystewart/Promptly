@@ -1,7 +1,7 @@
 const { withCors } = require("./_shared/cors");
 
 const { isValidEmail } = require("./_shared/email-validator");
-const { readBody, saveSubscriber, addSubscriberWatch, removeSubscriberWatch, getSubscriber, takeSubscribeSlot, recordActivity } = require("./_shared/store");
+const { readBody, saveSubscriber, addSubscriberWatch, removeSubscriberWatch, getSubscriber, takeSubscribeSlot, recordActivity, recordPresence } = require("./_shared/store");
 const { eraseSubscriber } = require("./_shared/erase");
 const { watchCompany, unwatchCompany } = require("./_shared/watch");
 const {
@@ -161,7 +161,12 @@ async function handler(req, res) {
     // module refuses to create; using the session means the only record is a
     // date on an account that already exists and is already erased on deletion.
     if (body.action === "ping") {
+      // Two different questions from one call. recordActivity writes a date and
+      // answers "did they come back this week"; recordPresence writes a
+      // two-minute key and answers "is anyone here now". The second expires on
+      // its own, so it never becomes a history of when someone was online.
       const result = await recordActivity(auth.email);
+      try { await recordPresence(auth.email); } catch {}
       return res.status(200).json({ ok: true, ...result });
     }
 

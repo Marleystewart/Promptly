@@ -237,6 +237,43 @@ async function forEachSubscriberBatch(handler, { batchSize = 200 } = {}) {
 // Attach a watched company to a subscriber's record so the alert pipeline
 // (matchesOpening) sends them that company's postings. Creates a lightweight
 // subscriber if one doesn't exist yet, so a watch never silently fails to
+// Who is on the app right now.
+//
+// lastActiveOn answers "did they come back this week" and deliberately stops
+// there: it is a date, overwritten, with no history. It cannot answer "is
+// anyone using this right now", which is a different question and needs a
+// different mechanism.
+//
+// This is that mechanism, and it is built to forget. A key per signed-in
+// account with a two-minute expiry, refreshed while the tab is open. Nothing
+// accumulates, nothing is appended, and two minutes after someone closes the
+// tab there is no record they were ever here. Counting the keys gives a live
+// number; there is nothing else to read from it.
+const PRESENCE_TTL_SECONDS = 120;
+
+async function recordPresence(email) {
+  const redis = await getRedis();
+  const normalized = String(email || "").trim().toLowerCase();
+  if (!redis || !normalized) return { recorded: false };
+  await redis.set("promptly:presence:" + normalized, "1", { ex: PRESENCE_TTL_SECONDS });
+  return { recorded: true };
+}
+
+// How many accounts are present. SCAN rather than a stored counter, because a
+// counter would have to be decremented on a disconnect that never reports
+// itself — an expiring key cannot drift out of sync with reality.
+async function countPresent() {
+  const redis = await getRedis();
+  if (!redis) return 0;
+  let cursor = 0, total = 0;
+  do {
+    const result = await redis.scan(cursor, { match: "promptly:presence:*", count: 200 });
+    cursor = Number(Array.isArray(result) ? result[0] : result?.cursor) || 0;
+    total += ((Array.isArray(result) ? result[1] : result?.keys) || []).length;
+  } while (cursor !== 0);
+  return total;
+}
+
 // Record that an account was active today.
 //
 // Retention cannot be measured from the anonymous daily counters: they have no
@@ -426,6 +463,9 @@ async function releaseClaim(key) {
 
 module.exports = {
   recordActivity,
+  recordPresence,
+  countPresent,
+  PRESENCE_TTL_SECONDS,
   readBody,
   getRedis,
   saveSubscriber,
