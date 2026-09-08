@@ -9,6 +9,7 @@
 const { SOURCES } = require("./sources");
 const { isUsLocation: isPositiveUsLocation } = require("./us-location");
 const { classifyRoleField } = require("./role-field");
+const { logoPathFor } = require("./logo-manifest");
 
 // Non-US locations. Extended after an audit found roles in Bristol, Tel Aviv,
 // Taipei and others slipping through into a US-only product. Country names are
@@ -537,7 +538,12 @@ function normalize(src, title, url, location, cycle = "Summer 2027", workplaceTy
     company: src.company,
     short: src.short,
     logoClass: src.logoClass,
-    logo: `assets/logos/${slug}.png`, // shows if the file exists, else tile fallback
+    // Only claim a logo we actually have. This used to emit a path for every
+    // listing and let the browser find out — 73 of 121 paths in the live feed
+    // pointed at files that are not in the repo, and one slug was undefined.
+    // An empty string means the client draws the initials tile directly,
+    // deliberately, without a failed request first.
+    logo: logoPathFor(slug),
     field,
     subField,
     role: cleanRole(title),
