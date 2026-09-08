@@ -543,7 +543,7 @@ function normalize(src, title, url, location, cycle = "Summer 2027", workplaceTy
     // pointed at files that are not in the repo, and one slug was undefined.
     // An empty string means the client draws the initials tile directly,
     // deliberately, without a failed request first.
-    logo: logoPathFor(slug),
+    logo: logoPathFor(slug, src.company),
     field,
     subField,
     role: cleanRole(title),
