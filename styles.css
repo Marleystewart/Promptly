@@ -1,33 +1,42 @@
 :root {
-  color-scheme: dark;
-  --bg: #060815;
-  --panel: rgba(255, 255, 255, 0.08);
-  --panel-strong: rgba(255, 255, 255, 0.13);
-  --ink: #fafaff;
-  --muted: rgba(250, 250, 255, 0.68);
-  /* 0.42 measured 3.93:1 against the panel backgrounds it actually sits on,
-     which fails WCAG AA for normal text (4.5:1). 0.55 measures 5.36:1 — over
-     the line with enough headroom that a slightly different panel opacity
-     cannot quietly push it back under. */
-  --faint: rgba(250, 250, 255, 0.55);
-  --line: rgba(255, 255, 255, 0.13);
-  --purple: #8057ff;
-  /* The brand purple is a fraction too light to carry either job on its own.
-     As TEXT on the dark background it measures 4.49:1, and as a BUTTON FILL
-     under white text it measures 4.44:1 — both just under AA, and they pull in
-     opposite directions: text wants lighter, fills want darker. So the brand
-     colour keeps its place in borders, glows and gradients, and these two carry
-     the cases where contrast is actually judged.
-       --purple-ink  #9a7bff  as text on --bg          6.31:1
-       --purple-cta  #7150e8  under white button text  5.23:1  */
-  --purple-ink: #9a7bff;
-  --purple-cta: #7150e8;
-  --purple-2: #5d38f2;
-  --blue: #52a9ff;
-  --green: #61e8aa;
-  --danger: #ff4f6b;
-  --shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
-  --glow: 0 0 44px rgba(128, 87, 255, 0.42);
+  color-scheme: light;
+
+  /* Light theme.
+     Every value here was measured rather than picked by eye — the ratios in
+     the comments are against the LIGHTEST surface each token can legally sit
+     on, which is the case that fails first. tests/contrast.test.js asserts
+     them, so a future "just a bit lighter" cannot quietly break AA. */
+
+  --bg: #fafafc;              /* page */
+  --panel: #ffffff;           /* cards */
+  --panel-strong: #f7f7fa;    /* secondary surfaces, hover fills */
+  --line: #e5e7eb;            /* borders — carry structure instead of shadows */
+
+  --ink: #111827;             /* 16.59:1 on the lightest surface */
+  --muted: #5b6478;           /* secondary text, 5.6:1 */
+  --faint: #667085;           /* metadata, 4.65:1 — the floor, not a target */
+
+  /* Purple earns its place on selected states, CTAs and links, not on whole
+     surfaces. #8057ff is only 4.44:1 on white, so text and fills both use the
+     deeper #5d38f2, which measures 6.34:1 either way. */
+  --purple: #6d5efc;          /* borders, icons, decorative accents */
+  --purple-ink: #5d38f2;      /* purple as TEXT, 6.34:1 on white */
+  --purple-cta: #5d38f2;      /* white text on it, 6.34:1 */
+  --purple-2: #4c1fd0;        /* deeper end of the rare gradient */
+  --purple-soft: #f1eeff;     /* the only large purple area allowed: selected rows */
+  --purple-edge: #ddd5ff;     /* border for a selected surface */
+
+  /* Status colours, darkened for a light background. The dark-theme mint and
+     coral measured 1.5:1 and 3.2:1 on white — invisible and near-invisible. */
+  --blue: #1668c4;            /* 5.51:1 */
+  --green: #0a7346;           /* 5.53:1 */
+  --danger: #c8102e;          /* 5.88:1 */
+
+  /* Borders do the work. Shadows are a whisper, used to lift a menu off the
+     page rather than to decorate a card. */
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px rgba(16, 24, 40, 0.06);
+  --glow: none;
+
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
@@ -46,10 +55,10 @@ body {
   margin: 0;
   min-height: 100vh;
   overflow-x: hidden;
-  background:
-    radial-gradient(circle at 84% 16%, rgba(128, 87, 255, 0.42), transparent 28%),
-    radial-gradient(circle at 10% 72%, rgba(82, 169, 255, 0.18), transparent 26%),
-    linear-gradient(135deg, #050713 0%, #0b1020 52%, #050713 100%);
+  /* A flat, quiet page. The two purple glows and the dark gradient were the
+     whole reason every surface above them had to be translucent; on a light
+     ground they would only muddy it. */
+  background: var(--bg);
   color: var(--ink);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
@@ -147,14 +156,18 @@ body:not(.onboarding-active) .onboarding-shell {
   width: clamp(116px, 22vw, 178px);
   height: clamp(116px, 22vw, 178px);
   border-radius: 34px;
-  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.42), 0 0 52px rgba(128, 87, 255, 0.5);
+  box-shadow: 0 32px 90px rgba(16, 24, 40, 0.06), 0 0 52px rgba(128, 87, 255, 0.5);
 }
 
 .launch-wordmark {
   width: clamp(150px, 32vw, 230px);
   height: auto;
   border-radius: 16px;
-  filter: drop-shadow(0 0 24px rgba(128, 87, 255, 0.25));
+  /* wordmark.png is white artwork drawn for a dark page, and on white it
+     disappears entirely. Until there is a dark asset, render it as a mono mark
+     in the brand purple: legible, deliberate, and still ours. Swap this for a
+     real light-theme wordmark when one exists. */
+  filter: brightness(0) saturate(100%) invert(29%) sepia(88%) saturate(3927%) hue-rotate(251deg) brightness(94%) contrast(101%);
   animation: launch-wordmark 900ms ease 140ms both;
 }
 
@@ -191,8 +204,8 @@ body.launch-active .onboarding-brand {
   border-radius: 34px;
   padding: clamp(24px, 5vw, 44px);
   background:
-    radial-gradient(circle at 86% 14%, rgba(128,87,255,0.44), transparent 34%),
-    linear-gradient(145deg, rgba(255,255,255,0.19), rgba(255,255,255,0.085));
+    transparent 34%),
+    var(--panel);
   box-shadow: var(--shadow);
   backdrop-filter: blur(24px);
 }
@@ -205,7 +218,7 @@ body.launch-active .onboarding-brand {
 .signup-card h1 {
   max-width: 620px;
   margin-top: 10px;
-  color: #fff;
+  color: var(--ink);
   font-size: clamp(38px, 8vw, 70px);
   line-height: 0.98;
   font-weight: 950;
@@ -215,7 +228,7 @@ body.launch-active .onboarding-brand {
 .signup-card > p:not(.eyebrow) {
   max-width: 560px;
   margin-top: 18px;
-  color: rgba(255,255,255,0.78);
+  color: var(--ink);
   font-size: 18px;
   line-height: 1.45;
 }
@@ -228,7 +241,7 @@ body.launch-active .onboarding-brand {
   padding: 5px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: rgba(0,0,0,0.2);
+  background: rgba(16, 24, 40, 0.06);
 }
 
 .auth-tabs button {
@@ -239,7 +252,7 @@ body.launch-active .onboarding-brand {
 }
 
 .auth-tabs button.active {
-  color: #fff;
+  color: var(--ink);
   background: rgba(128,87,255,0.45);
 }
 
@@ -279,7 +292,7 @@ body.launch-active .onboarding-brand {
 .text-action {
   display: block;
   margin: 14px auto 0;
-  color: #b9a9ff;
+  color: var(--purple-ink);
   font-weight: 800;
 }
 
@@ -305,8 +318,8 @@ body.launch-active .onboarding-brand {
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 14px;
-  color: rgba(255,255,255,0.84);
-  background: rgba(0,0,0,0.2);
+  color: var(--ink);
+  background: rgba(16, 24, 40, 0.06);
   font-size: 13px;
   font-weight: 800;
 }
@@ -321,7 +334,7 @@ body.launch-active .onboarding-brand {
   display: grid;
   gap: 9px;
   margin-top: 22px;
-  color: rgba(255,255,255,0.8);
+  color: var(--ink);
   font-size: 13px;
   font-weight: 850;
 }
@@ -334,9 +347,9 @@ body.launch-active .onboarding-brand {
   border-radius: 18px;
   padding: 0 16px;
   outline: 0;
-  color: #fff;
-  background: rgba(0,0,0,0.32);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+  color: var(--ink);
+  background: rgba(16, 24, 40, 0.06);
+  box-shadow: inset 0 1px 0 rgba(16, 24, 40, 0.04);
 }
 
 .field-label textarea {
@@ -348,7 +361,7 @@ body.launch-active .onboarding-brand {
 
 .field-label input::placeholder,
 .field-label textarea::placeholder {
-  color: rgba(255,255,255,0.46);
+  color: var(--faint);
 }
 
 .field-label input:focus,
@@ -369,7 +382,7 @@ body.launch-active .onboarding-brand {
 
 .form-error {
   margin: 12px 0 0;
-  color: #ffb4c2;
+  color: var(--muted);
   font-size: 13px;
   font-weight: 800;
   line-height: 1.35;
@@ -392,8 +405,8 @@ body.launch-active .onboarding-brand {
   min-height: 58px;
   border-radius: 18px;
   padding: 0 14px;
-  color: #fff;
-  background: rgba(255,255,255,0.09);
+  color: var(--ink);
+  background: var(--panel-strong);
   border: 1px solid var(--line);
   font-weight: 850;
 }
@@ -416,7 +429,7 @@ body.launch-active .onboarding-brand {
 .workspace,
 .details-modal {
   border: 1px solid var(--line);
-  background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.055));
+  background: var(--panel);
   box-shadow: var(--shadow);
   backdrop-filter: blur(24px);
 }
@@ -450,7 +463,7 @@ body.launch-active .onboarding-brand {
   place-items: center;
   border-radius: 13px;
   color: #fff;
-  background: linear-gradient(135deg, var(--purple-cta), var(--purple-2));
+  background: var(--purple-cta);
   box-shadow: var(--glow);
 }
 
@@ -488,8 +501,8 @@ body.launch-active .onboarding-brand {
 
 .nav-item:hover,
 .nav-item.active {
-  color: #fff;
-  background: linear-gradient(135deg, rgba(128, 87, 255, 0.26), rgba(82, 169, 255, 0.12));
+  color: var(--ink);
+  background: var(--purple-soft);
 }
 
 .nav-item.active {
@@ -502,7 +515,7 @@ body.launch-active .onboarding-brand {
   border-radius: 22px;
   background:
     radial-gradient(circle at 78% 20%, rgba(97,232,170,0.24), transparent 36%),
-    rgba(255,255,255,0.08);
+    var(--panel-strong);
   border: 1px solid var(--line);
 }
 
@@ -561,8 +574,8 @@ body.launch-active .onboarding-brand {
   display: grid;
   place-items: center;
   border-radius: 16px;
-  color: #fff;
-  background: rgba(255,255,255,0.1);
+  color: var(--ink);
+  background: var(--panel-strong);
   border: 1px solid var(--line);
 }
 
@@ -587,7 +600,7 @@ body.launch-active .onboarding-brand {
 
 .profile-chip {
   font-weight: 900;
-  background: linear-gradient(135deg, var(--purple), var(--blue));
+  background: var(--purple-cta);
 }
 
 .profile-chip.has-photo,
@@ -663,21 +676,21 @@ body.launch-active .onboarding-brand {
   padding: 16px 18px;
   border: 1px solid rgba(117,150,255,0.36);
   border-radius: 22px;
-  color: #e8eeff;
+  color: var(--ink);
   background:
-    linear-gradient(135deg, rgba(74,144,255,0.18), rgba(128,87,255,0.16)),
-    rgba(255,255,255,0.06);
+    var(--panel-strong),
+    var(--panel-strong);
   box-shadow: 0 18px 48px rgba(42,88,220,0.16);
 }
 
 .purpose-bar p {
   margin: 0;
-  color: rgba(232,238,255,0.82);
+  color: var(--ink);
   line-height: 1.45;
 }
 
 .purpose-bar strong {
-  color: #fff;
+  color: var(--ink);
 }
 
 .purpose-dot {
@@ -701,7 +714,7 @@ body.launch-active .onboarding-brand {
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 18px;
-  background: rgba(255,255,255,0.07);
+  background: var(--panel-strong);
 }
 
 .student-signal-strip span,
@@ -720,7 +733,7 @@ body.launch-active .onboarding-brand {
   display: block;
   margin: 7px 0 3px;
   overflow: hidden;
-  color: #fff;
+  color: var(--ink);
   font-size: 18px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -745,12 +758,13 @@ body.launch-active .onboarding-brand {
   border-radius: 22px;
   background:
     radial-gradient(circle at 92% 12%, rgba(102,220,255,0.12), transparent 32%),
-    rgba(255,255,255,0.07);
+    var(--panel-strong);
 }
 
 /* Alert Pulse primary line — bold accent (co-founder: anything but red) */
 .pulse-alert-title {
-  color: #7ea2ff;
+  /* #7ea2ff measured 2.31:1 on white. */
+  color: var(--blue);
   font-weight: 900;
 }
 
@@ -884,8 +898,8 @@ body.launch-active .onboarding-brand {
 .soon-grid article,
 .notification-setup {
   border: 1px solid var(--line);
-  background: linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.065));
-  box-shadow: 0 18px 48px rgba(0,0,0,0.22);
+  background: var(--panel);
+  box-shadow: 0 18px 48px rgba(16, 24, 40, 0.06);
   backdrop-filter: blur(18px);
 }
 
@@ -907,7 +921,7 @@ body.launch-active .onboarding-brand {
   border-radius: inherit;
   overflow: hidden;
   background:
-    radial-gradient(circle at 82% 30%, rgba(128,87,255,0.16), transparent 45%);
+    transparent 45%);
   pointer-events: none;
 }
 
@@ -921,12 +935,19 @@ body.launch-active .onboarding-brand {
   display: inline-flex;
   min-height: 25px;
   align-items: center;
-  border-radius: 999px;
-  padding: 0 11px;
-  color: #b7a5ff;
-  background: rgba(128,87,255,0.18);
-  font-size: 12px;
-  font-weight: 900;
+  /* 6px rather than a full pill. Every label on the page being a lozenge is
+     what made the old dashboard read as a toy; a small rounded chip reads as a
+     label. */
+  border-radius: 6px;
+  padding: 0 9px;
+  /* Was #b7a5ff on the same pale purple wash — 1.87:1, effectively unreadable
+     on a light background. The deep purple on the pale wash measures 5.9:1. */
+  color: var(--purple-ink);
+  background: var(--purple-soft);
+  border: 1px solid var(--purple-edge);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .featured-card h2 {
@@ -959,18 +980,22 @@ body.launch-active .onboarding-brand {
   border-radius: 14px;
   min-height: 48px;
   padding: 0 20px;
-  color: #fff;
+  color: var(--ink);
   font-weight: 900;
 }
 
 .primary-action {
-  background: linear-gradient(135deg, var(--purple-cta), var(--purple-2));
-  box-shadow: var(--glow);
+  background: var(--purple-cta);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
 }
+
+.primary-action:hover { background: var(--purple-2); }
 
 .soft-action,
 .text-button {
-  background: rgba(255,255,255,0.1);
+  background: var(--panel-strong);
   border: 1px solid var(--line);
 }
 
@@ -982,7 +1007,7 @@ body.launch-active .onboarding-brand {
 .text-button {
   min-height: 38px;
   font-size: 14px;
-  color: #d8d0ff;
+  color: var(--purple-ink);
 }
 
 /* Tertiary action. This class was used in the profile card markup but never
@@ -1000,13 +1025,13 @@ body.launch-active .onboarding-brand {
   padding: 0 16px;
   border-radius: 13px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--panel-strong);
   color: var(--ink);
   font: 650 14px var(--font);
   cursor: pointer;
   transition: background 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
 }
-.tiny-action:hover { background: rgba(255, 255, 255, 0.11); }
+.tiny-action:hover { background: var(--panel-strong); }
 .tiny-action:active { transform: scale(0.97); }
 /* The two recovery actions read as tertiary, not equal to Edit profile. */
 .tiny-action[data-reset-demo],
@@ -1016,7 +1041,7 @@ body.launch-active .onboarding-brand {
   color: var(--muted);
 }
 .tiny-action[data-reset-demo]:hover,
-.tiny-action[data-sign-out]:hover { color: var(--ink); background: rgba(255, 255, 255, 0.06); }
+.tiny-action[data-sign-out]:hover { color: var(--ink); background: var(--panel-strong); }
 
 .mega-logo,
 .modal-logo {
@@ -1027,7 +1052,7 @@ body.launch-active .onboarding-brand {
   display: grid;
   place-items: center;
   border-radius: 30px;
-  color: #fff;
+  color: var(--ink);
   font-family: Georgia, serif;
   font-size: 36px;
   font-weight: 900;
@@ -1043,7 +1068,7 @@ body.launch-active .onboarding-brand {
 .logo-tile {
   overflow: hidden;
   padding: 10px;
-  background: rgba(255,255,255,0.96);
+  background: var(--panel);
 }
 
 .logo-tile img {
@@ -1182,15 +1207,15 @@ body.launch-active .onboarding-brand {
   border-radius: 999px;
   padding: 0 17px;
   color: var(--muted);
-  background: rgba(255,255,255,0.08);
+  background: var(--panel-strong);
   border: 1px solid var(--line);
   font-weight: 800;
 }
 
 .filter-chip.active,
 .filter-chip:hover {
-  color: #fff;
-  background: rgba(255,255,255,0.08);
+  color: var(--ink);
+  background: var(--panel-strong);
   border-color: rgba(82,169,255,0.9);
 }
 
@@ -1226,7 +1251,7 @@ body.launch-active .onboarding-brand {
 .opening-row:hover,
 .opening-row:focus-visible {
   border-color: rgba(183,165,255,0.36);
-  background: linear-gradient(145deg, rgba(255,255,255,0.17), rgba(255,255,255,0.08));
+  background: var(--panel);
   transform: translateY(-1px);
   outline: none;
 }
@@ -1237,7 +1262,7 @@ body.launch-active .onboarding-brand {
   display: grid;
   place-items: center;
   border-radius: 17px;
-  color: #fff;
+  color: var(--ink);
   font-size: 16px;
   font-weight: 900;
   text-align: center;
@@ -1273,12 +1298,12 @@ body.launch-active .onboarding-brand {
   margin: 0;
   font-size: 14px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--ink);
 }
 
 /* Application status tracker (in the details modal) */
 .status-tracker { margin: 14px 0 6px; }
-.status-tracker-label { display: block; font-size: 12px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+.status-tracker-label { display: block; font-size: 12px; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
 .status-options { display: flex; flex-wrap: wrap; gap: 8px; }
 .status-tracker > small { display: block; margin-top: 7px; color: var(--muted, #9a97b5); font-size: 11px; }
 .status-options button {
@@ -1286,13 +1311,13 @@ body.launch-active .onboarding-brand {
   border: 1px solid rgba(124,58,237,0.3); background: transparent;
   color: var(--text, #14141f); font-weight: 700; font-size: 13px; cursor: pointer;
 }
-.status-options button.active { background: #6d5efc; color: #fff; border-color: #6d5efc; }
-.status-options .status-clear { flex: 0 0 auto; min-width: 0; border-color: rgba(0,0,0,0.15); color: var(--muted, #6b6880); font-weight: 600; }
+.status-options button.active { background: #6d5efc; color: var(--ink); border-color: #6d5efc; }
+.status-options .status-clear { flex: 0 0 auto; min-width: 0; border-color: rgba(16, 24, 40, 0.06); color: var(--muted, #6b6880); font-weight: 600; }
 
 /* Status pill shown on listing rows */
 .row-status {
   display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px;
-  font-size: 11px; font-weight: 800; vertical-align: middle; color: #fff;
+  font-size: 11px; font-weight: 800; vertical-align: middle; color: var(--ink);
 }
 .row-status.status-applied { background: #6d5efc; }
 .row-status.status-oa { background: #0ea5e9; }
@@ -1304,11 +1329,11 @@ body.launch-active .onboarding-brand {
 
 /* Dynamic modal status pill */
 .status-pill.pill-closed { background: rgba(107,114,128,0.22); color: #9ca3af; }
-.status-pill.pill-awaiting { background: rgba(217,119,6,0.18); color: #f0c987; }
+.status-pill.pill-awaiting { background: rgba(217,119,6,0.18); color: var(--muted); }
 .status-pill.pill-upcoming { background: rgba(14,165,233,0.18); color: #38bdf8; }
 /* Not a verified live posting — an employer we can't read, linked to their
    careers search. Deliberately neutral so it never reads as "open". */
-.status-pill.pill-browse { background: rgba(148,163,184,0.20); color: #cbd5e1; }
+.status-pill.pill-browse { background: rgba(148,163,184,0.20); color: var(--muted); }
 
 .location-hint {
   margin: -6px 0 0;
@@ -1393,14 +1418,14 @@ body.launch-active .onboarding-brand {
   padding: 0 34px 0 13px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(255,255,255,0.05) url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238b93a7' d='M1 1.5 6 6.5l5-5'/%3E%3C/svg%3E") no-repeat right 13px center;
+  background: var(--panel-strong) url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238b93a7' d='M1 1.5 6 6.5l5-5'/%3E%3C/svg%3E") no-repeat right 13px center;
   color: var(--ink);
   font: 600 13px/1 var(--font);
   appearance: none;
   cursor: pointer;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
-.cycle-selects select:hover { border-color: rgba(255,255,255,0.22); }
+.cycle-selects select:hover { border-color: var(--panel-strong); }
 .cycle-selects select:focus-visible { outline: 2px solid var(--purple, #8057ff); outline-offset: 1px; }
 .cycle-clear {
   height: 38px;
@@ -1413,7 +1438,7 @@ body.launch-active .onboarding-brand {
   cursor: pointer;
   transition: color 0.15s ease, background 0.15s ease;
 }
-.cycle-clear:hover { color: var(--ink); background: rgba(255,255,255,0.06); }
+.cycle-clear:hover { color: var(--ink); background: var(--panel-strong); }
 .cycle-clear[hidden] { display: none; }
 
 .cycle-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
@@ -1442,7 +1467,7 @@ body.launch-active .onboarding-brand {
   align-items: stretch;
 }
 .cycle-row:not(.cycle-head):hover .cycle-row-label { color: var(--ink); }
-.cycle-row:not(.cycle-head):hover .cycle-cell { background: rgba(255,255,255,0.022); }
+.cycle-row:not(.cycle-head):hover .cycle-cell { background: var(--panel-strong); }
 
 .cycle-head .cycle-month {
   padding: 0 0 10px;
@@ -1490,12 +1515,12 @@ body.launch-active .onboarding-brand {
      height and the industry rows stay aligned. */
   min-height: 104px;
   padding: 10px 6px;
-  border-left: 1px solid rgba(255,255,255,0.055);
+  border-left: 1px solid var(--line);
   transition: background 0.15s ease;
 }
 .cycle-row:not(.cycle-head) + .cycle-row:not(.cycle-head) .cycle-cell,
 .cycle-row:not(.cycle-head) + .cycle-row:not(.cycle-head) .cycle-row-label {
-  border-top: 1px solid rgba(255,255,255,0.055);
+  border-top: 1px solid var(--line);
 }
 /* Current month: a restrained tint down the whole column. */
 .cycle-cell.is-now { background: rgba(128,87,255,0.055); }
@@ -1507,8 +1532,8 @@ body.launch-active .onboarding-brand {
   height: 40px;
   flex: 0 0 40px;
   border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
   color: var(--ink);
   display: grid;
   place-items: center;
@@ -1516,9 +1541,9 @@ body.launch-active .onboarding-brand {
   cursor: pointer;
   transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
 }
-.cycle-marker:hover { transform: translateY(-2px) scale(1.06); border-color: var(--purple, #8057ff); box-shadow: 0 6px 18px rgba(0,0,0,0.45); z-index: 5; }
+.cycle-marker:hover { transform: translateY(-2px) scale(1.06); border-color: var(--purple, #8057ff); box-shadow: 0 6px 18px rgba(16, 24, 40, 0.06); z-index: 5; }
 .cycle-marker:focus-visible { outline: 2px solid var(--purple, #8057ff); outline-offset: 2px; z-index: 5; }
-.cycle-marker.is-mine { border-color: rgba(97,232,170,0.7); box-shadow: 0 0 0 2px rgba(97,232,170,0.16); }
+.cycle-marker.is-mine { border-color: var(--muted); box-shadow: 0 0 0 2px rgba(97,232,170,0.16); }
 
 /* Initials sit beneath the logo, so a missing or 404'd image degrades to a
    monogram instead of a broken-image icon. */
@@ -1559,8 +1584,10 @@ body.launch-active .onboarding-brand {
   padding: 9px 11px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #12141f;
-  box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+  background: var(--panel);
+  /* A tooltip is the one thing that genuinely floats, so it gets the only
+     real shadow in the system. */
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
   text-align: left;
   opacity: 0;
   visibility: hidden;
@@ -1577,7 +1604,7 @@ body.launch-active .onboarding-brand {
   height: 40px;
   flex: 0 0 40px;
   border-radius: 50%;
-  border: 1px dashed rgba(255,255,255,0.22);
+  border: 1px dashed var(--line);
   background: none;
   color: var(--muted);
   font: 800 11px/1 var(--font);
@@ -1602,7 +1629,7 @@ body.launch-active .onboarding-brand {
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #12141f;
-  box-shadow: 0 14px 34px rgba(0,0,0,0.6);
+  box-shadow: 0 14px 34px rgba(16, 24, 40, 0.06);
 }
 .cycle-popover[hidden] { display: none; }
 
@@ -1640,7 +1667,7 @@ body.launch-active .onboarding-brand {
     background: rgba(17, 19, 32, 0.82);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    box-shadow: 6px 0 10px -8px rgba(0, 0, 0, 0.7);
+    box-shadow: 6px 0 10px -8px rgba(16, 24, 40, 0.06);
   }
   .cycle-head .cycle-row-label { background: none; backdrop-filter: none; box-shadow: none; }
   .cycle-row-label b { font-size: 12.5px; }
@@ -1698,7 +1725,7 @@ body.launch-active .onboarding-brand {
    rather than a highlighter smear. */
 .awaiting-line {
   display: block;
-  color: #f0c987;
+  color: var(--muted);
   background: rgba(217,119,6,0.12);
   border: 1px solid rgba(240,201,135,0.28);
   padding: 8px 11px;
@@ -1721,7 +1748,7 @@ body.launch-active .onboarding-brand {
 
 .opening-title-button:hover,
 .opening-title-button:focus-visible {
-  color: #d8d0ff;
+  color: var(--purple-ink);
   outline: none;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -1763,13 +1790,13 @@ body.launch-active .onboarding-brand {
   display: grid;
   place-items: center;
   border-radius: 14px;
-  color: #fff;
-  background: rgba(255,255,255,0.1);
+  color: var(--ink);
+  background: var(--panel-strong);
   border: 1px solid var(--line);
 }
 
 .round-btn:hover {
-  border-color: rgba(255,255,255,0.28);
+  border-color: var(--line);
 }
 
 .round-btn svg {
@@ -1778,7 +1805,7 @@ body.launch-active .onboarding-brand {
 }
 
 .save-btn.saved {
-  color: #fff;
+  color: var(--ink);
   background: rgba(128,87,255,0.32);
   border-color: rgba(183,165,255,0.58);
 }
@@ -1788,7 +1815,7 @@ body.launch-active .onboarding-brand {
 }
 
 .round-btn.primary {
-  background: linear-gradient(135deg, var(--purple-cta), var(--purple-2));
+  background: var(--purple-cta);
 }
 
 .soon-grid,
@@ -1828,7 +1855,7 @@ body.launch-active .onboarding-brand {
   padding: 22px;
   background:
     radial-gradient(circle at 92% 20%, rgba(97,232,170,0.2), transparent 30%),
-    linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.065));
+    var(--panel);
 }
 
 .notification-setup h2 {
@@ -1865,7 +1892,7 @@ body.launch-active .onboarding-brand {
   min-height: 54px;
   border-radius: 17px;
   padding: 0 16px;
-  background: rgba(0,0,0,0.22);
+  background: rgba(16, 24, 40, 0.06);
   border: 1px solid var(--line);
 }
 
@@ -1879,7 +1906,7 @@ body.launch-active .onboarding-brand {
   width: 100%;
   border: 0;
   outline: 0;
-  color: #fff;
+  color: var(--ink);
   background: transparent;
 }
 
@@ -1890,12 +1917,12 @@ body.launch-active .onboarding-brand {
 .match-line {
   display: block;
   margin-top: 6px;
-  color: rgba(134, 255, 207, 0.82);
+  color: var(--muted);
   font-weight: 850;
 }
 
 .source-line {
-  color: rgba(208,216,255,0.72);
+  color: var(--muted);
 }
 
 .timeline-card {
@@ -1910,7 +1937,7 @@ body.launch-active .onboarding-brand {
   margin-bottom: 18px;
   padding: 18px;
   border-radius: 20px;
-  background: rgba(0,0,0,0.18);
+  background: rgba(16, 24, 40, 0.06);
   border: 1px solid var(--line);
 }
 
@@ -1942,7 +1969,7 @@ body.launch-active .onboarding-brand {
   display: block;
   padding: 16px 18px 18px;
   border-radius: 20px;
-  background: rgba(0,0,0,0.18);
+  background: rgba(16, 24, 40, 0.06);
   border: 1px solid var(--line);
 }
 
@@ -1965,9 +1992,9 @@ body.launch-active .onboarding-brand {
   margin: 0 8px 8px 0;
   border-radius: 999px;
   padding: 0 13px;
-  color: #fff;
+  color: var(--ink);
   background: linear-gradient(135deg, rgba(128,87,255,0.95), rgba(82,169,255,0.72));
-  box-shadow: 0 12px 30px rgba(0,0,0,0.28);
+  box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
   font-size: 12px;
   font-weight: 900;
   cursor: pointer;
@@ -2018,7 +2045,7 @@ body.launch-active .onboarding-brand {
   min-height: 68px;
   padding: 14px;
   border-radius: 18px;
-  background: rgba(0,0,0,0.18);
+  background: rgba(16, 24, 40, 0.06);
   border: 1px solid var(--line);
 }
 
@@ -2040,7 +2067,7 @@ body.launch-active .onboarding-brand {
   padding: 12px 14px;
   border: 1px solid rgba(134,255,207,0.2);
   border-radius: 16px;
-  color: rgba(232,238,255,0.78);
+  color: var(--ink);
   background: rgba(97,232,170,0.08);
   font-size: 13px;
   line-height: 1.45;
@@ -2062,7 +2089,7 @@ body.launch-active .onboarding-brand {
   border: 1px solid rgba(255, 112, 112, 0.55);
   border-radius: 12px;
   padding: 11px 15px;
-  color: #ffb4b4;
+  color: var(--muted);
   background: transparent;
   font-weight: 800;
 }
@@ -2096,7 +2123,7 @@ input[type="checkbox"] {
   margin: 10px 0 12px;
   padding: 14px;
   border-radius: 20px;
-  background: rgba(0,0,0,0.18);
+  background: rgba(16, 24, 40, 0.06);
   border: 1px solid var(--line);
 }
 
@@ -2108,8 +2135,8 @@ input[type="checkbox"] {
   flex: 0 0 auto;
   border-radius: 22px;
   color: #fff;
-  background: linear-gradient(135deg, var(--purple), var(--blue));
-  border: 1px solid rgba(255,255,255,0.18);
+  background: var(--purple-cta);
+  border: 1px solid var(--line);
   font-size: 24px;
   font-weight: 950;
 }
@@ -2152,12 +2179,12 @@ input[type="checkbox"] {
   width: min(520px, calc(100vw - 28px));
   border-radius: 30px;
   padding: 28px;
-  color: #fff;
+  color: var(--ink);
 }
 
 .profile-modal::backdrop,
 .details-modal::backdrop {
-  background: rgba(0,0,0,0.6);
+  background: rgba(16, 24, 40, 0.06);
   backdrop-filter: blur(8px);
 }
 
@@ -2198,8 +2225,8 @@ input[type="checkbox"] {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  color: #fff;
-  background: rgba(255,255,255,0.12);
+  color: var(--ink);
+  background: var(--panel-strong);
   font-size: 26px;
 }
 
@@ -2229,7 +2256,7 @@ input[type="checkbox"] {
   padding: 12px 14px;
   border: 1px solid rgba(134,255,207,0.2);
   border-radius: 16px;
-  color: rgba(222,255,242,0.88);
+  color: var(--ink);
   background: rgba(97,232,170,0.08);
   line-height: 1.42;
 }
@@ -2245,32 +2272,32 @@ input[type="checkbox"] {
 .report-block {
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--line);
   text-align: center;
 }
 .report-toggle {
   background: none;
   border: 0;
-  color: rgba(250, 250, 255, 0.55);
+  color: var(--muted);
   font: inherit;
   font-size: 13px;
   text-decoration: underline;
   cursor: pointer;
   padding: 4px;
 }
-.report-toggle:hover { color: rgba(250, 250, 255, 0.9); }
+.report-toggle:hover { color: var(--panel); }
 .report-form { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; text-align: left; }
 .report-form[hidden] { display: none; }
-.report-label { font-size: 12px; color: rgba(250, 250, 255, 0.6); }
+.report-label { font-size: 12px; color: var(--panel); }
 .report-form select,
 .report-form input {
   font: inherit;
   font-size: 14px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.07);
-  color: #fafaff;
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+  color: var(--ink);
 }
 .report-submit {
   font: inherit;
@@ -2279,12 +2306,12 @@ input[type="checkbox"] {
   border-radius: 10px;
   border: 0;
   background: #6841ff;
-  color: #fff;
+  color: var(--ink);
   cursor: pointer;
 }
 .report-submit:disabled { opacity: .6; cursor: default; }
-.report-status { font-size: 13px; margin: 2px 0 0; color: rgba(250, 250, 255, 0.7); }
-.report-status.ok { color: #6ee7a8; }
+.report-status { font-size: 13px; margin: 2px 0 0; color: var(--panel); }
+.report-status.ok { color: var(--muted); }
 .report-status.err { color: #ff8f9c; }
 
 .modal-grid {
@@ -2300,12 +2327,12 @@ input[type="checkbox"] {
   padding: 16px;
   border-radius: 18px;
   color: var(--muted);
-  background: rgba(0,0,0,0.18);
+  background: rgba(16, 24, 40, 0.06);
   border: 1px solid var(--line);
 }
 
 .modal-grid strong {
-  color: #fff;
+  color: var(--ink);
 }
 
 .source-action {
@@ -2316,14 +2343,14 @@ input[type="checkbox"] {
   margin-bottom: 10px;
   border: 1px solid rgba(134,255,207,0.24);
   border-radius: 14px;
-  color: #eafff8;
+  color: var(--ink);
   background: rgba(97,232,170,0.1);
   font-weight: 900;
   text-decoration: none;
 }
 
 .source-action:hover {
-  border-color: rgba(134,255,207,0.5);
+  border-color: var(--muted);
   background: rgba(97,232,170,0.16);
 }
 
@@ -2438,8 +2465,8 @@ input[type="checkbox"] {
     padding: 8px;
     border-radius: 24px;
     background: rgba(14,17,32,0.72);
-    border: 1px solid rgba(255,255,255,0.22);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+    border: 1px solid var(--line);
+    box-shadow: 0 20px 60px rgba(16, 24, 40, 0.06);
     backdrop-filter: blur(20px) saturate(150%);
   }
 
@@ -2738,7 +2765,7 @@ input[type="checkbox"] {
   background: #10132a;
   border: 1px solid rgba(128, 87, 255, 0.45);
   border-radius: 18px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 24px 64px rgba(16, 24, 40, 0.06);
   max-height: 290px;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -2748,7 +2775,7 @@ input[type="checkbox"] {
 .college-dropdown li {
   padding: 11px 14px;
   border-radius: 12px;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--ink);
   font-size: 15px;
   cursor: pointer;
   outline: none;
@@ -2759,7 +2786,7 @@ input[type="checkbox"] {
 .college-dropdown li:hover,
 .college-dropdown li:focus {
   background: rgba(128, 87, 255, 0.24);
-  color: #fff;
+  color: var(--ink);
 }
 
 .college-dropdown mark {
@@ -2786,9 +2813,9 @@ input[type="checkbox"] {
   min-height: 32px;
   padding: 0 14px;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--line);
   color: var(--muted);
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--panel-strong);
   font-size: 13px;
   font-weight: 750;
   cursor: pointer;
@@ -2798,7 +2825,7 @@ input[type="checkbox"] {
 
 .sub-filter-chip.active,
 .sub-filter-chip:hover {
-  color: #fff;
+  color: var(--ink);
   background: rgba(128, 87, 255, 0.28);
   border-color: rgba(128, 87, 255, 0.6);
 }
@@ -2808,7 +2835,7 @@ input[type="checkbox"] {
 .logo.boa  { background: linear-gradient(135deg, #dc1e2e, #b5172a); }
 .logo.citi { background: linear-gradient(135deg, #003d8f, #0056cc); }
 .logo.bcs  { background: linear-gradient(135deg, #00aeef, #008bbf); }
-.logo.laz  { background: linear-gradient(135deg, #1a1a2e, #2e2e50); }
+.logo.laz  { background: linear-gradient(135deg, var(--panel-strong), var(--line)); }
 .logo.blk  { background: linear-gradient(135deg, #1a1a1a, #3a3a3a); }
 .logo.fid  { background: linear-gradient(135deg, #007832, #00a344); }
 .logo.vgd  { background: linear-gradient(135deg, #8b0000, #b50000); }
@@ -2837,7 +2864,7 @@ input[type="checkbox"] {
 .logo.jpm  { background: linear-gradient(135deg, #3d1f00, #5c2e00); }
 .logo.jef  { background: linear-gradient(135deg, #00263a, #003f5c); }
 .logo.rbc  { background: linear-gradient(135deg, #0051a5, #003c7a); }
-.logo.gug  { background: linear-gradient(135deg, #1a1a2e, #2e2e50); }
+.logo.gug  { background: linear-gradient(135deg, var(--panel-strong), var(--line)); }
 .logo.pjt  { background: linear-gradient(135deg, #0a2540, #123a5c); }
 .logo.wf   { background: linear-gradient(135deg, #c41230, #8a0c22); }
 .logo.moe  { background: linear-gradient(135deg, #1c1c1c, #383838); }
@@ -2846,7 +2873,7 @@ input[type="checkbox"] {
 .logo.aqr  { background: linear-gradient(135deg, #003b5c, #00567f); }
 .logo.mlp  { background: linear-gradient(135deg, #0b3d2e, #13624a); }
 .logo.bcap { background: linear-gradient(135deg, #b5172a, #8a0c22); }
-.logo.ga   { background: linear-gradient(135deg, #1a1a2e, #2e2e50); }
+.logo.ga   { background: linear-gradient(135deg, var(--panel-strong), var(--line)); }
 .logo.ares { background: linear-gradient(135deg, #1c1c1c, #383838); }
 
 /* ── Ask Promptly — scripted helper widget ─────────────────────────────── */
@@ -2864,7 +2891,7 @@ input[type="checkbox"] {
   color: #fff;
   font: 600 14px/1 var(--font);
   cursor: pointer;
-  background: linear-gradient(135deg, var(--purple-cta), var(--purple-2));
+  background: var(--purple-cta);
   box-shadow: var(--shadow), var(--glow);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
@@ -2928,7 +2955,7 @@ input[type="checkbox"] {
 .ap-msg a:hover { text-decoration: underline; }
 .ap-msg .ap-hint { display: block; margin-top: 5px; color: var(--faint); font-size: 12px; }
 .ap-bot { align-self: flex-start; background: var(--panel); color: var(--muted); border-bottom-left-radius: 5px; }
-.ap-user { align-self: flex-end; background: linear-gradient(135deg, var(--purple-cta), var(--purple-2)); color: #fff; border-bottom-right-radius: 5px; }
+.ap-user { align-self: flex-end; background: var(--purple-cta); color: #fff; border-bottom-right-radius: 5px; }
 .ap-action {
   display: inline-block;
   margin-top: 9px;
@@ -3019,7 +3046,7 @@ body.onboarding-active .ap-panel { display: none; }
   border-radius: 10px;
   display: grid; place-items: center;
   font-weight: 800; font-size: 14px;
-  background: linear-gradient(135deg, var(--purple-cta), var(--purple-2));
+  background: var(--purple-cta);
   color: #fff;
 }
 .watch-item .watch-meta { flex: 1 1 auto; min-width: 0; }
@@ -3134,7 +3161,7 @@ body.onboarding-active .ap-panel { display: none; }
 .verify-notice {
   border: 1px solid rgba(217, 119, 6, 0.4);
   background: rgba(217, 119, 6, 0.12);
-  color: #f0c987;
+  color: var(--muted);
 }
 
 /* Persistent unconfirmed-email banner. Sits above the app, never blocks it. */
@@ -3152,7 +3179,7 @@ body.onboarding-active .ap-panel { display: none; }
      Same "needs attention" read at a fraction of the shout — this sits on screen
      for days at a time, so it has to be liveable. */
   background: linear-gradient(180deg, rgba(122,66,12,0.97), rgba(104,55,8,0.97));
-  color: #ffe6c2;
+  color: var(--muted);
   border-bottom: 1px solid rgba(255,178,84,0.34);
   font-size: 13.5px;
   font-weight: 700;
@@ -3173,8 +3200,8 @@ body.onboarding-active .ap-panel { display: none; }
 }
 
 .verify-resend {
-  background: rgba(255, 214, 158, 0.16);
-  color: #ffe6c2;
+  background: #fff8ec;
+  color: #7a4a00;
   border: 1px solid rgba(255, 199, 122, 0.45);
   border-radius: 8px;
   padding: 6px 13px;
@@ -3201,14 +3228,14 @@ body.onboarding-active .ap-panel { display: none; }
   padding: 0 5px;
   border-radius: 8px;
   border: 1px solid var(--line);
-  background: rgba(255,255,255,0.06);
+  background: var(--panel-strong);
   color: var(--ink);
   font-weight: 800;
   font-size: 12px;
   cursor: pointer;
   transition: background 0.14s ease, border-color 0.14s ease, opacity 0.14s ease;
 }
-.cyc-nav:hover:not(:disabled) { background: rgba(255,255,255,0.12); border-color: rgba(82,169,255,0.8); }
+.cyc-nav:hover:not(:disabled) { background: var(--panel-strong); border-color: rgba(82,169,255,0.8); }
 .cyc-nav:disabled { opacity: 0.32; cursor: default; }
 .cyc-window-label {
   min-width: 52px;
@@ -3235,17 +3262,17 @@ body.onboarding-active .ap-panel { display: none; }
   font-size: 10px;
   font-style: normal;
   background: rgba(82,169,255,0.16);
-  color: #9ecbff;
+  color: var(--muted);
   vertical-align: middle;
 }
-.cycle-cell.is-future { background: repeating-linear-gradient(45deg, rgba(255,255,255,0.015) 0 8px, transparent 8px 16px); }
+.cycle-cell.is-future { background: repeating-linear-gradient(45deg, var(--panel-strong) 0 8px, transparent 8px 16px); }
 
 /* estimated company markers read as provisional (dashed ring) */
 .cycle-marker.is-estimate { border-style: dashed; border-color: rgba(82,169,255,0.7); opacity: 0.9; }
 
 /* month drill-down modal */
 .month-modal { max-width: 560px; }
-.month-modal .status-pill.is-estimate { background: rgba(82,169,255,0.18); color: #9ecbff; }
+.month-modal .status-pill.is-estimate { background: rgba(82,169,255,0.18); color: var(--muted); }
 .month-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; max-height: 60vh; overflow-y: auto; }
 .month-row {
   display: flex;
@@ -3256,12 +3283,12 @@ body.onboarding-active .ap-panel { display: none; }
   padding: 10px 12px;
   border-radius: 14px;
   border: 1px solid var(--line);
-  background: rgba(255,255,255,0.04);
+  background: var(--panel-strong);
   color: var(--ink);
   cursor: pointer;
   transition: background 0.14s ease, border-color 0.14s ease;
 }
-.month-row:hover { background: rgba(255,255,255,0.08); border-color: rgba(82,169,255,0.6); }
+.month-row:hover { background: var(--panel-strong); border-color: rgba(82,169,255,0.6); }
 .month-logo {
   width: 40px; height: 40px; flex: 0 0 40px;
   border-radius: 10px; display: grid; place-items: center;
@@ -3272,7 +3299,7 @@ body.onboarding-active .ap-panel { display: none; }
 .month-info b { font-size: 15px; }
 .month-info span { color: var(--ink); font-size: 13px; }
 .month-info small { color: var(--muted); font-size: 12px; }
-.month-info .month-dates { color: #9ecbff; }
+.month-info .month-dates { color: var(--muted); }
 
 /* month-modal shares the details-modal look but not its class (that class is a
    JS selector for the company details dialog). */
@@ -3280,9 +3307,9 @@ body.onboarding-active .ap-panel { display: none; }
   width: min(560px, calc(100vw - 28px));
   border-radius: 30px;
   padding: 28px;
-  color: #fff;
+  color: var(--ink);
   border: 1px solid var(--line);
-  background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.055));
+  background: var(--panel);
   box-shadow: var(--shadow);
   backdrop-filter: blur(24px);
 }
@@ -3363,7 +3390,7 @@ body.onboarding-active .ap-panel { display: none; }
   .timeline-card {
     padding: 12px;
     border-radius: 18px;
-    background: rgba(255,255,255,0.03);
+    background: var(--panel-strong);
   }
 
   /* Metrics: three compact tiles, no wrapping to a second row. */
@@ -3410,7 +3437,7 @@ body.onboarding-active .ap-panel { display: none; }
     min-height: 48px;
     border-radius: 15px;
     border: 1px solid var(--line);
-    background: rgba(255,255,255,0.06);
+    background: var(--panel-strong);
     color: var(--ink);
     font-size: 22px;
     line-height: 1;
@@ -3440,8 +3467,8 @@ body.onboarding-active .ap-panel { display: none; }
     padding: 3px 7px;
     border-radius: 999px;
   }
-  .cycm-now { background: rgba(94,234,171,0.16); color: #6fd3a3; }
-  .cycm-est { background: rgba(255,255,255,0.09); color: var(--muted); }
+  .cycm-now { background: rgba(94,234,171,0.16); color: var(--muted); }
+  .cycm-est { background: var(--panel-strong); color: var(--muted); }
 
   /* ── Industry sections ────────────────────────────────────────────────── */
   .cycm-group { padding: 14px 0; border-top: 1px solid var(--line); }
@@ -3466,7 +3493,7 @@ body.onboarding-active .ap-panel { display: none; }
     padding: 7px 10px;
     border-radius: 14px;
     border: 1px solid var(--line);
-    background: rgba(255,255,255,0.045);
+    background: var(--panel-strong);
     color: var(--ink);
     text-align: left;
     cursor: pointer;
@@ -3516,7 +3543,7 @@ body.onboarding-active .ap-panel { display: none; }
     min-height: 40px;
     width: 100%;
     border-radius: 12px;
-    border: 1px dashed var(--line-strong, rgba(255,255,255,0.24));
+    border: 1px dashed var(--line-strong, var(--line));
     background: none;
     color: var(--muted);
     font-size: 12.5px;
@@ -3576,7 +3603,7 @@ body.onboarding-active .ap-panel { display: none; }
   min-height: 36px;
   border-radius: 50%;
   border: 1px solid var(--line);
-  background: rgba(255,255,255,0.07);
+  background: var(--panel-strong);
   color: var(--ink);
   font-size: 19px;
   line-height: 1;
@@ -3602,7 +3629,7 @@ body.onboarding-active .ap-panel { display: none; }
   color: var(--muted);
 }
 .student-hint.is-student {
-  color: #6fd3a3;
+  color: var(--muted);
   font-weight: 650;
 }
 .student-hint.is-student::before {
@@ -3684,8 +3711,8 @@ body.onboarding-active .ap-panel { display: none; }
 
   /* Secondary text was dropping to ~0.42 alpha over glass and becoming hard to
      read. Metadata stays muted but legible; only tertiary detail goes faint. */
-  .opening-row small, .profile-row span { color: rgba(250, 250, 255, 0.72); }
-  input::placeholder { color: rgba(250, 250, 255, 0.55); }
+  .opening-row small, .profile-row span { color: var(--panel); }
+  input::placeholder { color: var(--panel); }
 
   /* ── Cards ─────────────────────────────────────────────────────────────── */
   /* .card-copy is deliberately excluded: it sits inside .featured-card, and
@@ -3919,7 +3946,7 @@ body.onboarding-active .ap-panel { display: none; }
    here, so nothing loses its base surface. */
 @media (hover: none) {
   .mobile-nav .nav-item:not(.active):hover { background: none; }
-  .tiny-action:not(:active):hover { background: rgba(255, 255, 255, 0.06); }
+  .tiny-action:not(:active):hover { background: var(--panel-strong); }
   .tiny-action[data-sign-out]:not(:active):hover { background: none; color: var(--muted); }
 }
 
@@ -3968,11 +3995,11 @@ body.onboarding-active .ap-panel { display: none; }
   margin-left: 6px;
   padding: 1px 7px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--panel-strong);
   font-size: 0.85em;
   font-weight: 800;
 }
-.alert-fields .filter-chip.active b { background: rgba(255, 255, 255, 0.26); }
+.alert-fields .filter-chip.active b { background: var(--panel-strong); }
 
 /* The banner text is two elements (action, then consequence). Without an
    explicit gap they butt together on one line: "…email alerts.Unconfirmed…". */
@@ -4008,3 +4035,26 @@ body.onboarding-active .ap-panel { display: none; }
 /* The target takes focus programmatically, so it must not draw a ring of its
    own — the point is to move the caret, not to highlight the whole page. */
 #main-content:focus { outline: none; }
+
+
+/* The account screen's submit is the primary action on that page. It was
+   inheriting the neutral secondary style, which on a light background reads as
+   a disabled control. */
+[data-auth-submit] {
+  background: var(--purple-cta);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 800;
+}
+
+[data-auth-submit]:hover { background: var(--purple-2); }
+
+
+/* wordmark.png is white artwork drawn for a dark page; on a light background it
+   is simply invisible. Until a light-theme asset exists, render it as a solid
+   mark in the brand purple — deliberate rather than washed out. Replace this
+   filter with a real asset when there is one. */
+.brand-logo,
+.launch-wordmark {
+  filter: brightness(0) saturate(100%) invert(23%) sepia(94%) saturate(4270%) hue-rotate(255deg) brightness(97%) contrast(101%);
+}
