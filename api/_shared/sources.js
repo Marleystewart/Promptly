@@ -75,6 +75,7 @@ const SOURCES = [
   { company: "Prudential Financial", short: "PRU", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "workday", tenant: "pru", dc: "wd5", site: "Careers" },
   { company: "Northwestern Mutual", short: "NM", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "workday", tenant: "northwesternmutual", dc: "wd5", site: "CORPORATE-CAREERS" },
   { company: "Capital Group", short: "CG", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "capgroup", dc: "wd1", site: "capitalgroupcareers" },
+  { company: "MetLife", short: "MET", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "metlife" },
   { company: "Wells Fargo", short: "WFC", logoClass: "fin", field: "Finance", subField: "Corporate & Commercial Banking", ats: "workday", tenant: "wf", dc: "wd1", site: "WellsFargoJobs" },
   { company: "Fidelity", short: "FID", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "fmr", dc: "wd1", site: "FidelityCareers" },
   { company: "Bank of America", short: "BAC", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "ghr", dc: "wd1", site: "lateral-us" },

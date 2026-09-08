@@ -198,6 +198,7 @@ window.MONITORED_COMPANIES = [
   "Mastercard",
   "Mayo Clinic",
   "Merck",
+  "MetLife",
   "Millennium",
   "Mixpanel",
   "Modal",
@@ -351,11 +352,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 342,
-  "companies": 342,
+  "sources": 343,
+  "companies": 343,
   "byPlatform": {
     "greenhouse": 135,
-    "custom": 53,
+    "custom": 54,
     "workday": 98,
     "lever": 8,
     "ashby": 26,
@@ -365,7 +366,7 @@ window.PROMPTLY_COVERAGE = {
     "taleo": 1
   },
   "byField": {
-    "Finance": 144,
+    "Finance": 145,
     "Technology": 66,
     "Consulting": 8,
     "Healthcare": 31,
