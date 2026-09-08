@@ -11,8 +11,13 @@ const { listReports } = require("./_shared/reports");
 const { readEmailHealth } = require("./_shared/email-health");
 const { readIntegrationHealth, probeUsaJobs } = require("./_shared/integration-health");
 const { readRunHealth, readPrivacyCleanup } = require("./_shared/run-health");
-const { buildFunnel, buildRetention } = require("./_shared/funnel");
+const { buildFunnel, buildRetention, isAlertReady } = require("./_shared/funnel");
 const crypto = require("crypto");
+
+// Accounts that can actually be sent an alert today, reused for the headline.
+function funnelReadyCount(subscribers) {
+  return (subscribers || []).filter((s) => isAlertReady(s)).length;
+}
 
 function mask(email) {
   if (!email) return "—";
@@ -77,12 +82,52 @@ module.exports = async function handler(req, res) {
     }
     const sortDesc = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]);
 
+    // The numbers worth seeing before anything else.
+    //
+    // "Active" comes from lastActiveOn, a date written once per day when a
+    // signed-in student opens the app. That is genuinely the finest resolution
+    // there is: nothing tracks presence by the minute, so this cannot say who
+    // is on the app RIGHT NOW and does not pretend to. Today and the last seven
+    // days are the honest questions it can answer.
+    var todayStr = new Date().toISOString().slice(0, 10);
+    var sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+    var activeToday = 0, activeLast7 = 0;
+    for (const s of subscribers) {
+      const on = s.lastActiveOn;
+      if (!on) continue;
+      if (on === todayStr) activeToday += 1;
+      if (on >= sevenDaysAgo) activeLast7 += 1;
+    }
+
+    // Schools, excluding the "Unknown" bucket — an account that never told us
+    // where it studies is not a school we have reached.
+    const schoolCount = Object.keys(bySchool).filter((k) => k !== "Unknown").length;
+
+    // Which cohort actually signs up. Bands, not exact years, and "Unknown" is
+    // never reported as the winner: it is an absence of data, not a year group.
+    const gradRanked = sortDesc(byGradYear).filter(([k]) => k !== "Unknown");
+    const topGradYear = gradRanked.length ? { band: gradRanked[0][0], count: gradRanked[0][1] } : null;
+
+    const headline = {
+      signups: subscribers.length,
+      activeToday: activeToday,
+      activeLast7: activeLast7,
+      confirmed: funnelReadyCount(subscribers),
+      schools: schoolCount,
+      topGradYear: topGradYear,
+      everReturnedPct: null, // filled in below, once retention is built
+    };
+
     const recent = [...subscribers]
       .sort((a, b) => Date.parse(b.updatedAt || b.createdAt || 0) - Date.parse(a.updatedAt || a.createdAt || 0))
       .slice(0, 20)
       // Per-account row: the most identifying view on the page, so it shows the
       // band rather than the exact year.
-      .map((s) => ({ email: mask(s.email), school: s.school || "—", gradYear: s.gradYearBand || "—", when: s.updatedAt || s.createdAt || null }));
+      // Full address, not masked. This page is behind ADMIN_SECRET and shows
+      // the founders their own users; a masked address cannot be used to answer
+      // "this student says alerts stopped, what does their record look like".
+      // A PIN holder never reaches this branch — see the viaPin guard below.
+      .map((s) => ({ email: s.email || "—", school: s.school || "—", gradYear: s.gradYearBand || "—", when: s.updatedAt || s.createdAt || null, lastActiveOn: s.lastActiveOn || null }));
 
     const live = await getStats();
 
@@ -92,6 +137,9 @@ module.exports = async function handler(req, res) {
     // Retention reads only createdAt and lastActiveOn, both already on the
     // subscriber record and both erased with the account. Aggregate rows only.
     const retention = buildRetention(subscribers, new Date());
+    headline.everReturnedPct = retention.totals.signups
+      ? Math.round((retention.totals.everReturned / retention.totals.signups) * 100)
+      : 0;
     let viewUsage = [];
     try { viewUsage = await getViewBreakdown(7); } catch {}
 
@@ -170,6 +218,7 @@ module.exports = async function handler(req, res) {
     try { privacyCleanup = await readPrivacyCleanup(); } catch {}
 
     return res.status(200).json({
+      headline,
       funnel,
       retention,
       viewUsage,
