@@ -94,4 +94,22 @@ assert.ok(
   "a primary button gradient starts at --purple again; white on it is 4.44:1 and fails AA",
 );
 
+
+// A surface token must never be used as a text colour.
+//
+// This is how the theme migration produced invisible text: an automated pass
+// misread single-line rules where the selector and the declaration share a
+// line — ".opening-row small, .profile-row span { color: ... }" — took the
+// property name for part of the selector, decided it was painting a surface,
+// and set the TEXT colour to var(--panel). Once --panel became #ffffff, every
+// listing's date, location and closing line went white on a white card. Around
+// 150 elements per page, all invisible, and no rule looked wrong in isolation.
+const surfaceAsText = [...css.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+  .filter(([, , body]) => /(^|;)\s*color\s*:\s*var\(--(panel|panel-strong|bg)\)/.test(body))
+  .map(([, sel]) => sel.trim().split("\n").pop().slice(0, 60));
+
+assert.deepEqual(surfaceAsText, [],
+  "these rules use a surface token as a text colour, which renders invisible:\n  " +
+  surfaceAsText.join("\n  "));
+
 console.log(`Contrast tests passed. ${checks.length} token pairs checked against WCAG AA.`);
