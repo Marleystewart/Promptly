@@ -1906,6 +1906,171 @@ function fillSelect(selector, values, current) {
   });
 }
 
+// ── Desktop recruiting calendar ─────────────────────────────────────────────
+//
+// The matrix answers "which industries move in which months". A calendar
+// answers "what happened on the 8th", which is the question a student actually
+// has. Same filtered pool, same real dates — postedAt where the employer gives
+// one, firstSeen where they do not. Nothing here is projected or invented: a
+// day with no observed postings stays empty, and empty is the useful signal.
+
+const cycleCal = { year: null, month: null, selected: null };
+
+function calKey(date) {
+  return date.slice(0, 10);
+}
+
+// filtered openings grouped by the exact day they were observed.
+function calendarByDay(filtered) {
+  const map = new Map();
+  for (const item of filtered) {
+    const raw = cycleDateOf(item);
+    if (!raw) continue;
+    const key = calKey(String(raw));
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(item);
+  }
+  return map;
+}
+
+function calLogoHtml(item) {
+  const initials = escapeHtml(item.short || String(item.company || "?").slice(0, 3).toUpperCase());
+  if (item.logo) {
+    return `<span class="cyc-logo"><img src="${escapeHtml(item.logo)}" alt="" loading="lazy"></span>`;
+  }
+  return `<span class="cyc-logo cyc-logo-text ${escapeHtml(item.logoClass || "")}">${initials}</span>`;
+}
+
+function renderCycleCalendar(filtered) {
+  const wrap = document.querySelector("[data-cycle-calendar]");
+  const grid = document.querySelector("[data-cal-grid]");
+  if (!wrap || !grid) return;
+  wrap.hidden = false;
+
+  const byDay = calendarByDay(filtered);
+
+  // Land on the most recent month that actually has activity, rather than on
+  // an empty current month that makes the page look broken.
+  if (cycleCal.year === null) {
+    const keys = [...byDay.keys()].sort();
+    const now = new Date();
+    const seed = keys.length ? new Date(keys[keys.length - 1] + "T00:00:00Z") : now;
+    cycleCal.year = seed.getUTCFullYear();
+    cycleCal.month = seed.getUTCMonth();
+  }
+
+  const first = new Date(Date.UTC(cycleCal.year, cycleCal.month, 1));
+  const title = document.querySelector("[data-cal-title]");
+  if (title) title.textContent = first.toLocaleDateString(undefined, { month: "long", year: "numeric", timeZone: "UTC" });
+
+  const startPad = first.getUTCDay();
+  const daysInMonth = new Date(Date.UTC(cycleCal.year, cycleCal.month + 1, 0)).getUTCDate();
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  let html = "";
+  for (let i = 0; i < startPad; i += 1) html += '<div class="cyc-day cyc-pad" aria-hidden="true"></div>';
+
+  for (let d = 1; d <= daysInMonth; d += 1) {
+    const key = `${cycleCal.year}-${String(cycleCal.month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const items = byDay.get(key) || [];
+    const byCompany = new Map();
+    items.forEach((it) => {
+      if (!byCompany.has(it.company)) byCompany.set(it.company, []);
+      byCompany.get(it.company).push(it);
+    });
+    const companies = [...byCompany.entries()];
+    const shown = companies.slice(0, 2);
+    const rest = items.length - shown.reduce((n, [, list]) => n + list.length, 0);
+
+    const classes = ["cyc-day"];
+    if (items.length) classes.push("has-activity");
+    if (key === todayKey) classes.push("is-today");
+    if (key === cycleCal.selected) classes.push("is-selected");
+
+    html += `<${items.length ? "button type=\"button\"" : "div"} class="${classes.join(" ")}"${items.length ? ` data-cal-day="${key}" aria-label="${d} ${escapeHtml(title ? title.textContent : "")}, ${items.length} posting${items.length === 1 ? "" : "s"}"` : ""}>
+      <span class="cyc-date">${d}</span>
+      ${shown.map(([company, list]) => `
+        <span class="cyc-emp">
+          ${calLogoHtml(list[0])}
+          <span class="cyc-emp-text">
+            <b>${escapeHtml(company)}</b>
+            <small>${list.length} role${list.length === 1 ? "" : "s"}</small>
+          </span>
+        </span>`).join("")}
+      ${rest > 0 ? `<span class="cyc-more">+${rest} more</span>` : ""}
+    </${items.length ? "button" : "div"}>`;
+  }
+  grid.innerHTML = html;
+
+  renderCycleSidePanel(byDay);
+}
+
+function renderCycleSidePanel(byDay) {
+  const side = document.querySelector("[data-cal-side]");
+  if (!side) return;
+  const key = cycleCal.selected;
+  const items = key ? (byDay.get(key) || []) : [];
+
+  if (!key) {
+    side.innerHTML = `<div class="cyc-side-empty">
+      <p><b>Pick a date</b></p>
+      <p>Days with recruiting activity are highlighted. Select one to see which employers posted and what they posted.</p>
+    </div>`;
+    return;
+  }
+
+  const label = new Date(key + "T00:00:00Z").toLocaleDateString(undefined, {
+    weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "UTC",
+  });
+  const rows = items.slice(0, 8).map((item) => `
+    <a class="cyc-post" href="${escapeHtml(safeHttpsUrl(item.sourceUrl) || "#")}" target="_blank" rel="noopener noreferrer">
+      ${calLogoHtml(item)}
+      <span class="cyc-post-text">
+        <b>${escapeHtml(item.company)}</b>
+        <small>${escapeHtml(item.role || "")}</small>
+      </span>
+      <span class="cyc-post-go" aria-hidden="true">&rsaquo;</span>
+    </a>`).join("");
+
+  side.innerHTML = `
+    <div class="cyc-side-head">
+      <h4>${escapeHtml(label)}</h4>
+      <span class="status-pill">${items.length} posting${items.length === 1 ? "" : "s"}</span>
+    </div>
+    ${rows || '<p class="cyc-side-empty">No postings on this date for these filters.</p>'}
+    ${items.length > 8 ? `<p class="cyc-side-note">Showing 8 of ${items.length}. Open Openings to see the rest.</p>` : ""}`;
+}
+
+// Calendar interactions. Delegated, so re-rendering the grid never leaves a
+// dead listener behind.
+document.addEventListener("click", (event) => {
+  const nav = event.target.closest("[data-cal-nav]");
+  if (nav) {
+    const step = Number(nav.dataset.calNav);
+    const d = new Date(Date.UTC(cycleCal.year, cycleCal.month + step, 1));
+    cycleCal.year = d.getUTCFullYear();
+    cycleCal.month = d.getUTCMonth();
+    renderCyclesView();
+    return;
+  }
+  if (event.target.closest("[data-cal-today]")) {
+    const now = new Date();
+    cycleCal.year = now.getUTCFullYear();
+    cycleCal.month = now.getUTCMonth();
+    cycleCal.selected = null;
+    renderCyclesView();
+    return;
+  }
+  const day = event.target.closest("[data-cal-day]");
+  if (day) {
+    // Clicking the selected day again clears it, so the panel can be dismissed
+    // without hunting for a close button.
+    cycleCal.selected = cycleCal.selected === day.dataset.calDay ? null : day.dataset.calDay;
+    renderCyclesView();
+  }
+});
+
 function renderCyclesView() {
   const grid = document.querySelector("[data-cycle-grid]");
   if (!grid) return;
@@ -1934,6 +2099,9 @@ function renderCyclesView() {
   );
 
   renderCycleChips();
+  // The calendar reads the same filtered pool the matrix does, so a filter
+  // change moves both and they can never disagree.
+  renderCycleCalendar(filtered);
 
   const columns = timelineColumns();
   updateCycleWindowLabel(columns);

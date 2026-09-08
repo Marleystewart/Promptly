@@ -1261,12 +1261,16 @@ body.launch-active .onboarding-brand {
   height: 70px;
   display: grid;
   place-items: center;
-  border-radius: 17px;
-  color: var(--ink);
+  border-radius: 14px;
+  /* Every .logo variant below is a saturated or dark fill, so the initials
+     stay white. The light-theme sweep turned this to ink and produced dark
+     text on a dark tile — BlackRock and every other employer without a real
+     logo file simply vanished. */
+  color: #fff;
   font-size: 16px;
   font-weight: 900;
   text-align: center;
-  background: linear-gradient(135deg, #4a4a6a, #2e2e44);
+  background: var(--purple-cta);
 }
 
 /* Field-tinted tiles for auto-pulled live listings */
@@ -2464,8 +2468,13 @@ input[type="checkbox"] {
     gap: 4px;
     padding: 8px;
     border-radius: 24px;
-    background: rgba(14,17,32,0.72);
+    /* The last dark surface. A floating bar over scrolling content is the one
+       place a blur still earns its keep, so keep the blur and lighten the
+       tint rather than dropping to a flat white bar that hides the content
+       passing under it. */
+    background: rgba(255, 255, 255, 0.88);
     border: 1px solid var(--line);
+    box-shadow: 0 4px 20px rgba(16, 24, 40, 0.08);
     box-shadow: 0 20px 60px rgba(16, 24, 40, 0.06);
     backdrop-filter: blur(20px) saturate(150%);
   }
@@ -4057,4 +4066,260 @@ body.onboarding-active .ap-panel { display: none; }
 .brand-logo,
 .launch-wordmark {
   filter: brightness(0) saturate(100%) invert(23%) sepia(94%) saturate(4270%) hue-rotate(255deg) brightness(97%) contrast(101%);
+}
+
+/* ── Desktop recruiting calendar ──────────────────────────────────────────
+   Desktop only. Below 1024px the existing Student Cycles layout renders
+   untouched — same structure, same interactions, only the light theme
+   applied. The calendar and the matrix are never both on screen. */
+.cyc-cal { display: none; }
+
+@media (min-width: 1024px) {
+  .cyc-cal {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 16px;
+    align-items: start;
+    margin-top: 14px;
+  }
+
+  /* The matrix is the mobile presentation from here up. */
+  [data-cycle-grid],
+  .cycle-window-nav { display: none; }
+
+  .cyc-cal-main {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .cyc-cal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cyc-cal-nav { display: flex; align-items: center; gap: 8px; }
+
+  .cyc-cal-title {
+    margin: 0 0 0 6px;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+
+  .cyc-mbtn,
+  .cyc-today {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--ink);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .cyc-mbtn { width: 32px; padding: 0; font-size: 18px; line-height: 1; }
+  .cyc-mbtn:hover,
+  .cyc-today:hover { background: var(--panel-strong); }
+  .cyc-mbtn:focus-visible,
+  .cyc-today:focus-visible { outline: 2px solid var(--purple-cta); outline-offset: 2px; }
+
+  .cyc-dows {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid var(--line);
+    background: var(--panel-strong);
+  }
+
+  .cyc-dows span {
+    padding: 9px 10px;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  /* Internal hairlines rather than gaps: a calendar reads as a grid, and gaps
+     between cells make it read as a pile of cards. */
+  .cyc-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  .cyc-day {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: stretch;
+    min-height: 112px;
+    padding: 8px;
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    text-align: left;
+    font: inherit;
+  }
+
+  .cyc-grid > .cyc-day:nth-child(7n) { border-right: 0; }
+  .cyc-pad { background: var(--panel-strong); }
+
+  .cyc-date {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--faint);
+  }
+
+  .cyc-day.has-activity { cursor: pointer; }
+  .cyc-day.has-activity:hover { background: var(--panel-strong); }
+  .cyc-day.has-activity .cyc-date { color: var(--ink); }
+
+  /* Today is marked with a ring, selection with a filled chip plus a purple
+     edge — two different signals, so neither depends on colour alone. */
+  .cyc-day.is-today .cyc-date {
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--purple);
+    border-radius: 50%;
+  }
+
+  .cyc-day.is-selected {
+    background: var(--purple-soft);
+    box-shadow: inset 0 0 0 2px var(--purple-cta);
+  }
+
+  .cyc-day.is-selected .cyc-date {
+    background: var(--purple-cta);
+    border-color: var(--purple-cta);
+    color: #fff;
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+  }
+
+  .cyc-day:focus-visible { outline: 2px solid var(--purple-cta); outline-offset: -2px; }
+
+  .cyc-emp {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .cyc-logo {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    overflow: hidden;
+    background: var(--panel-strong);
+    border: 1px solid var(--line);
+  }
+
+  .cyc-logo img { width: 100%; height: 100%; object-fit: contain; }
+
+  .cyc-logo-text {
+    background: var(--purple-cta);
+    border-color: transparent;
+    color: #fff;
+    font-size: 7.5px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+  }
+
+  .cyc-emp-text { min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+
+  .cyc-emp-text b {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink);
+    /* Employer names are long and cells are narrow; clip with an ellipsis
+       rather than letting a name push the grid out of shape. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cyc-emp-text small { font-size: 10.5px; color: var(--faint); }
+
+  .cyc-more {
+    margin-top: auto;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--purple-ink);
+  }
+
+  /* ── Selected-date panel ── */
+  .cyc-side {
+    position: sticky;
+    top: 16px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px;
+  }
+
+  .cyc-side-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .cyc-side-head h4 { margin: 0; font-size: 15px; font-weight: 800; color: var(--ink); }
+
+  .cyc-side-empty { color: var(--muted); font-size: 13.5px; line-height: 1.5; }
+  .cyc-side-empty p { margin: 0 0 6px; }
+  .cyc-side-empty b { color: var(--ink); }
+  .cyc-side-note { margin: 10px 0 0; font-size: 12px; color: var(--faint); }
+
+  .cyc-post {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 6px;
+    border-top: 1px solid var(--line);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .cyc-post:hover { background: var(--panel-strong); }
+  .cyc-post:focus-visible { outline: 2px solid var(--purple-cta); outline-offset: -2px; }
+  .cyc-post .cyc-logo { width: 26px; height: 26px; border-radius: 7px; font-size: 9px; }
+  .cyc-post-text { min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+  .cyc-post-text b { font-size: 13px; color: var(--ink); }
+
+  .cyc-post-text small {
+    font-size: 11.5px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cyc-post-go { margin-left: auto; color: var(--faint); font-size: 17px; }
+}
+
+@media (min-width: 1280px) {
+  .cyc-cal { grid-template-columns: minmax(0, 1fr) 344px; }
+  .cyc-day { min-height: 124px; }
 }
