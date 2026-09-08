@@ -13,7 +13,7 @@
 const assert = require("node:assert/strict");
 const fs = require("fs");
 const path = require("path");
-const { LOGO_FILES, LOGO_ALIASES, logoPathFor } = require("../api/_shared/logo-manifest");
+const { LOGO_FILES, LOGO_ALIASES, LOGO_BY_NAME, logoPathFor } = require("../api/_shared/logo-manifest");
 
 const DIR = path.join(__dirname, "..", "assets", "logos");
 const onDisk = new Set(fs.readdirSync(DIR).filter((f) => /\.(png|jpg|jpeg|svg|webp)$/i.test(f)));
@@ -48,5 +48,27 @@ assert.equal(logoPathFor(sample.toUpperCase()), "assets/logos/" + sample + ".png
 for (const [slug, file] of Object.entries(LOGO_ALIASES)) {
   assert.equal(logoPathFor(slug), "assets/logos/" + file);
 }
+
+// 6. The company-name fallback. A third of the feed comes from sources with no
+//    ATS board slug, so before this every one of them asked for
+//    assets/logos/undefined.png. Punctuation must not defeat the match:
+//    "Goldman Sachs" has to find goldman-sachs.png, and extension must not
+//    either — Mayo Clinic's file is a .jpeg.
+for (const file of Object.values(LOGO_BY_NAME)) {
+  assert.ok(onDisk.has(file), `name index points at ${file}, which is not in assets/logos`);
+}
+
+if (LOGO_BY_NAME.goldmansachs) {
+  assert.equal(logoPathFor(undefined, "Goldman Sachs"), "assets/logos/" + LOGO_BY_NAME.goldmansachs,
+    "a listing with no ATS slug must still find its logo by company name");
+}
+
+assert.equal(logoPathFor(undefined, "An Employer We Have No Logo For"), "");
+assert.equal(logoPathFor(undefined, undefined), "",
+  "no slug and no company must yield no path, never undefined.png");
+
+// The slug still wins when both could match, because it is the more specific
+// signal — two employers can share a display name, not a board token.
+assert.equal(logoPathFor("cat", "Caterpillar"), "assets/logos/caterpillar.png");
 
 console.log(`Logo manifest tests passed. ${LOGO_FILES.size} files, ${Object.keys(LOGO_ALIASES).length} aliases, no path can 404.`);
