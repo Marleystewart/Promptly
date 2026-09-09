@@ -9,6 +9,7 @@ const { listWatchedSources, listCoverageRequests } = require("./_shared/watched-
 const { listSourceHealth } = require("./_shared/source-health");
 const { listReports } = require("./_shared/reports");
 const { readEmailHealth } = require("./_shared/email-health");
+const { readHeartbeat } = require("./_shared/heartbeat");
 const { readIntegrationHealth, probeUsaJobs } = require("./_shared/integration-health");
 const { readRunHealth, readPrivacyCleanup } = require("./_shared/run-health");
 const { buildFunnel, buildRetention, isAlertReady } = require("./_shared/funnel");
@@ -179,6 +180,12 @@ module.exports = async function handler(req, res) {
         reachable: s.emailNotifications !== false && s.verified === true,
       }));
 
+    // The daily check's own verdict, read from storage rather than recomputed.
+    // Recomputing here would make the banner disagree with the email that was
+    // actually sent, and would fetch the site on every dashboard load.
+    let heartbeat = null;
+    try { heartbeat = await readHeartbeat(); } catch {}
+
     const live = await getStats();
 
     // Where people drop. Exact record counts, never blended with the anonymous
@@ -286,6 +293,7 @@ module.exports = async function handler(req, res) {
       coverage: coverageRows,
       verify,
       totalAccounts: subscribers.length,
+      heartbeat,
       withEmail,
       withEduEmail,
       withPush,

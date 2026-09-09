@@ -189,6 +189,44 @@ async function load() {
       unproven: { border: "#8a6d1f", bg: "#2a230f", text: "#e3c05c", title: "Email is configured, but has never delivered" },
       blocked:  { border: "#a3341f", bg: "#2c1512", text: "#f0897c", title: "Email CANNOT reach students" },
     }[emailState] || null;
+    // The daily check, at the very top.
+    //
+    // The heartbeat has always run; it just reported to an inbox. Email is also
+    // the least reliable channel we have and one of the things being checked, so
+    // if it breaks the report saying so cannot arrive. This shows the same
+    // verdict somewhere that does not depend on the thing under test.
+    const hb = d.heartbeat;
+    const hbAgeHours = hb && hb.at ? (Date.now() - Date.parse(hb.at)) / 3600000 : null;
+    // A green banner from three days ago is worse than no banner: it reports
+    // health for a system that may have stopped running entirely. Past ~26
+    // hours the daily check has missed a run, and that is the finding.
+    const hbStale = hbAgeHours == null || hbAgeHours > 26;
+    const hbState = !hb ? "missing" : hbStale ? "stale" : hb.healthy ? "ok" : "problems";
+    const hbSkin = {
+      ok:       { border: "#1c7a52", bg: "#0f2a1f", text: "#6fd3a3", title: "Everything is running" },
+      problems: { border: "#a3341f", bg: "#2c1512", text: "#f0897c", title: "Something needs you" },
+      stale:    { border: "#8a6d1f", bg: "#2a230f", text: "#e3c05c", title: "The daily check has not run" },
+      missing:  { border: "#8a6d1f", bg: "#2a230f", text: "#e3c05c", title: "No daily check recorded yet" },
+    }[hbState];
+    const hbWhen = hb && hb.at ? new Date(hb.at).toLocaleString() : null;
+    const hbFacts = (hb && hb.facts) || {};
+    const heartbeatBanner = `
+      <div style="border:1px solid ${hbSkin.border};background:${hbSkin.bg};border-radius:10px;padding:14px 16px;margin:0 0 18px">
+        <strong style="color:${hbSkin.text}">Daily check &mdash; ${hbSkin.title}</strong>
+        ${hb && Array.isArray(hb.problems) && hb.problems.length ? `
+          <ul style="margin:8px 0 0;padding-left:18px;color:#f0897c">
+            ${hb.problems.map((p) => `<li style="margin-bottom:4px">${escapeHtml(p)}</li>`).join("")}
+          </ul>` : ""}
+        ${hb ? `<div class="muted" style="margin-top:6px">
+            Site ${hbFacts.site ? (hbFacts.site.ok ? `loaded in ${escapeHtml(String(hbFacts.site.ms))}ms` : `NOT LOADING &mdash; ${escapeHtml(hbFacts.site.reason || "")}`) : "not checked"}
+            &middot; ${escapeHtml(String(hbFacts.listings != null ? hbFacts.listings : "?"))} listings
+          </div>` : ""}
+        <div class="muted" style="margin-top:6px">
+          ${hbWhen ? `Last run ${escapeHtml(hbWhen)}` : "Never run"}${hbStale && hbWhen ? " &mdash; that is more than a day ago, so the cron itself may have stopped." : ""}
+          ${hb && hb.emailed === false ? " &middot; the email could not be sent, which is why this banner exists." : ""}
+        </div>
+      </div>`;
+
     const emailBanner = !emailSkin ? "" : `
       <div style="border:1px solid ${emailSkin.border};background:${emailSkin.bg};border-radius:10px;padding:14px 16px;margin:0 0 18px">
         <strong style="color:${emailSkin.text}">${emailSkin.title}</strong>
@@ -431,6 +469,7 @@ async function load() {
 
     $("out").innerHTML = `
       <div class="stamp">Loaded ${escapeHtml(new Date().toLocaleString())}</div>
+      ${heartbeatBanner}
       ${heroPanel}
 
       ${section("System health", "Check this first", `
