@@ -1716,6 +1716,7 @@ function setView(name) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 
   renderVerificationNotice();
+  renderPushInvite();
   if (name === "openings") markMatchingAlertsSeen();
   if (name === "cycles") renderCyclesView();
 
@@ -3772,6 +3773,7 @@ function applyProfileToUI() {
   updateAlertIntelligence();
   setFeatured();
   renderVerificationNotice();
+  renderPushInvite();
   renderWatchList();
   renderOpenings();
 }
@@ -4171,6 +4173,7 @@ async function ensureServerVerification() {
     if (data.alreadyVerified) {
       emailVerified = true;
       renderVerificationNotice();
+  renderPushInvite();
     }
   } catch {
     // Bookkeeping the student never asked for: a failure here must not surface
@@ -4178,6 +4181,72 @@ async function ensureServerVerification() {
   } finally {
     serverVerificationSyncing = false;
   }
+}
+
+// Turning alerts on lived only in Profile > Settings, behind a tab. Every one
+// of the first 17 accounts confirmed their email, became eligible for alerts,
+// and never enabled push — which is not 17 people deciding they did not want
+// notifications from a notification app. It is a discoverability failure.
+//
+// This is deliberately not the verification bar we deleted. That one nagged
+// about a state production could not reach and its only action was a promise we
+// could not keep. This appears once, only when it is actionable, does the thing
+// it offers, and never returns after it is answered.
+const PUSH_INVITE_DISMISSED_KEY = "promptlyPushInviteDismissed";
+
+function pushInviteDismissed() {
+  try { return localStorage.getItem(PUSH_INVITE_DISMISSED_KEY) === "1"; } catch { return false; }
+}
+
+function dismissPushInvite() {
+  try { localStorage.setItem(PUSH_INVITE_DISMISSED_KEY, "1"); } catch {}
+  renderPushInvite();
+}
+
+// Already registered on this device? Then there is nothing to invite.
+function pushAlreadyOn() {
+  if (isNativeShell()) return false; // the shell asks on its own terms
+  try { if (localStorage.getItem("openingPushSubscription")) return true; } catch {}
+  return typeof Notification !== "undefined" && Notification.permission === "granted";
+}
+
+function renderPushInvite() {
+  const el = document.querySelector("[data-push-invite]");
+  if (!el) return;
+
+  // Only for signed-in students who could actually receive something, and only
+  // while the toggle is on — someone who deliberately switched push off is not
+  // asked again.
+  const eligible = Boolean(authUser)
+    && profile.pushNotifications !== false
+    && !pushAlreadyOn()
+    && !pushInviteDismissed();
+
+  el.hidden = !eligible;
+  if (!eligible) { el.innerHTML = ""; return; }
+
+  // On an iPhone in Safari, web push does not exist until Promptly is on the
+  // Home Screen. Showing an Enable button there would be a button that cannot
+  // work, so this says what to do instead. Same honesty rule as everywhere
+  // else: never offer an action the platform will refuse.
+  const needsInstall = isIOSDevice() && !isStandaloneApp();
+
+  el.innerHTML = needsInstall
+    ? `<div class="push-invite-body">
+         <strong>Get openings the moment they post</strong>
+         <p>On iPhone, add Promptly to your Home Screen first: tap Share, then Add to Home Screen. Open it from that icon to turn on alerts.</p>
+       </div>
+       <div class="push-invite-actions">
+         <button class="soft-action" data-push-invite-dismiss>Not now</button>
+       </div>`
+    : `<div class="push-invite-body">
+         <strong>Get openings the moment they post</strong>
+         <p>Alerts are off, so right now you only see new roles when you open Promptly.</p>
+       </div>
+       <div class="push-invite-actions">
+         <button class="primary-action" data-push-invite-enable>${escapeHtml(pushCopy().label)}</button>
+         <button class="soft-action" data-push-invite-dismiss>Not now</button>
+       </div>`;
 }
 
 function renderVerificationNotice() {
@@ -4252,6 +4321,7 @@ async function resendVerification() {
     if (data.alreadyVerified) {
       emailVerified = true;
       renderVerificationNotice();
+  renderPushInvite();
       return;
     }
     if (text) {
@@ -4283,6 +4353,7 @@ async function saveSubscriber(subscription = null) {
       setPushStatus("Check your inbox — tap the confirmation link and your email alerts switch on.");
     }
     renderVerificationNotice();
+  renderPushInvite();
     return response.ok || response.status === 202;
   } catch {
     return false;
@@ -4561,6 +4632,7 @@ setFeatured();
 refreshSavedList();
 
 renderVerificationNotice();
+renderPushInvite();
 
 // A confirmation or OAuth link in the URL is about to decide whose profile
 // this is. The cached profile belongs to whoever used this browser last —
@@ -4587,6 +4659,24 @@ initializeAuth();
 
 document.addEventListener("click", async (event) => {
   if (event.target.closest("[data-verify-resend]")) { event.preventDefault(); await resendVerification(); return; }
+
+  if (event.target.closest("[data-push-invite-dismiss]")) { event.preventDefault(); dismissPushInvite(); return; }
+  const pushInviteEnable = event.target.closest("[data-push-invite-enable]");
+  if (pushInviteEnable) {
+    event.preventDefault();
+    // iOS requires the permission request to come from the tap itself, so this
+    // calls the same function the settings button does rather than routing
+    // through anything asynchronous first.
+    pushInviteEnable.disabled = true;
+    const subscription = await enablePushAlerts();
+    pushInviteEnable.disabled = false;
+    // Granted, refused, or dismissed — either way the student has now answered,
+    // and the card does not ask again. The settings panel remains for anyone
+    // who changes their mind.
+    if (subscription) renderPushInvite();
+    else dismissPushInvite();
+    return;
+  }
 
   const watchSubmitButton = event.target.closest("[data-watch-submit]");
   if (watchSubmitButton) { event.preventDefault(); await submitWatch(); return; }

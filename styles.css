@@ -4337,3 +4337,41 @@ body.onboarding-active .ap-panel { display: none; }
 
 /* #c3b1ff measured 1.9:1 on a white page. */
 .cycle-info { color: var(--purple-ink); }
+
+/* The alerts invite on the feed.
+   Uses --purple-soft, the one large purple area the palette allows, so it reads
+   as an offer rather than as a warning. A red or amber bar would be wrong: no
+   student has done anything incorrect by not finding a settings tab. All colours
+   come from tokens so it holds in both themes. */
+.push-invite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  margin: 0 0 16px;
+  border: 1px solid var(--purple);
+  border-radius: 12px;
+  background: var(--purple-soft);
+}
+.push-invite-body { flex: 1 1 260px; min-width: 0; }
+.push-invite-body strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+.push-invite-body p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+.push-invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.push-invite-actions button { white-space: nowrap; }
