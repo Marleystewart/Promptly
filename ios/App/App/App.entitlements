@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Debug builds register against the APNs sandbox. The server must have
+	     APNS_USE_SANDBOX=true to reach a token minted by this build; a sandbox
+	     token sent to production returns BadDeviceToken, which is
+	     indistinguishable from an uninstalled app. See docs/NATIVE-PUSH.md. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

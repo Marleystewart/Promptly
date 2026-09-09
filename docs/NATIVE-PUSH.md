@@ -56,10 +56,31 @@ Store, which both use production.
 App Store Connect, Users and Access, Integrations, Keys. Create a key with the
 Apple Push Notifications service enabled. The `.p8` downloads exactly once.
 
+## Signing
+
+`DEVELOPMENT_TEAM` is `4QH2Q5C457` on both Debug and Release, signing stays
+automatic, and each configuration points at its own entitlements file:
+
+| Configuration | Entitlements | `aps-environment` | Server setting |
+| --- | --- | --- | --- |
+| Debug | `App/App.entitlements` | `development` | `APNS_USE_SANDBOX=true` |
+| Release | `App/AppRelease.entitlements` | `production` | `APNS_USE_SANDBOX` unset |
+
+The split is the whole point. A token minted by a Debug build is rejected by
+production APNs with `BadDeviceToken`, and our own pruning correctly reads that
+as "the app was uninstalled" and throws the token away. The symptom is a phone
+that registers happily and never receives anything.
+
+`tests/ios-signing.test.js` pins all of this, including that the two
+environments never cross.
+
 ## Still to do
 
-- Set the signing team to `4QH2Q5C457` in Xcode. The project has no team yet, so
-  it does not build to a device.
-- Enable the Push Notifications capability on the Xcode target.
-- Verify end to end on a real device. The Simulator can display a notification
-  from a local payload but does not register with APNs, so it cannot prove this.
+- Verify end to end on a real device. The Simulator does not register with APNs,
+  so it cannot prove any of this.
+- Create the APNs key in App Store Connect and set the environment variables.
+
+Note that the signing settings above were written directly into the Xcode
+project file and validated as a plist, but **not** confirmed by a real build:
+Xcode is not installed on the machine they were made on, only the Command Line
+Tools. The first `xcodebuild` or Xcode open is what will actually prove them.
