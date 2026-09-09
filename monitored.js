@@ -212,6 +212,7 @@ window.MONITORED_COMPANIES = [
   "Moelis",
   "Mondelez",
   "MongoDB",
+  "Morgan Stanley",
   "Morningstar",
   "Nasdaq",
   "Natera",
@@ -364,11 +365,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 355,
-  "companies": 355,
+  "sources": 356,
+  "companies": 356,
   "byPlatform": {
     "greenhouse": 141,
-    "custom": 54,
+    "custom": 55,
     "workday": 102,
     "lever": 9,
     "ashby": 27,
@@ -378,7 +379,7 @@ window.PROMPTLY_COVERAGE = {
     "taleo": 1
   },
   "byField": {
-    "Finance": 148,
+    "Finance": 149,
     "Technology": 66,
     "Consulting": 14,
     "Healthcare": 31,
