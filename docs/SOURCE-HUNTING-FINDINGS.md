@@ -122,11 +122,33 @@ Phenom sources each need their own scraper in `company-scrapers/`, and a shared
 parent tenant would mix Mercer, Marsh and Guy Carpenter roles into cards
 attributed to Oliver Wyman.
 
+### McKinsey: found by watching the page, not the markup
+
+McKinsey is JavaScript-rendered, so `discover-ats.js` reports nothing. Opening
+the careers page in a browser and reading its own resource list gave:
+
+```
+https://gateway.mckinsey.com/apigw-x0cceuow60/v1/api/jobs/search?pageSize=200&start=1&lang=en
+```
+
+It answers a plain server fetch — 592 postings — which is what makes it usable.
+Two behaviours would break an adapter written by analogy with the others:
+
+- **`start` is a 1-based PAGE NUMBER, not a row offset.** `start=0` and
+  `start=1` both return the first page; `start=200` returns **HTTP 500**.
+- **Sending a search term returns HTTP 400**, not an empty list, so filtering
+  has to happen after the fetch.
+
+And one data shape worth knowing: a single posting carries an **array of cities
+across several continents**. One "Business Analyst Intern" is open in Atlanta,
+Athens and Abu Dhabi at once. The scraper reduces each posting to its US cities
+and drops it when there are none.
+
 ### Checked in this sweep and not addable
 
 | Company | Found | Why not |
 |---|---|---|
-| McKinsey, Bain & Company, Kearney, Deloitte, PwC, KPMG, Mercer, Willis Towers Watson, Korn Ferry, Gartner, L.E.K., Brattle Group | nothing in the markup | Careers page renders the job list with JavaScript. Needs a browser, or the network tab. |
+| Bain & Company, Kearney, Deloitte, PwC, KPMG, Mercer, Willis Towers Watson, Korn Ferry, Gartner, L.E.K., Brattle Group | nothing in the markup | Careers page renders the job list with JavaScript. Needs a browser, or the network tab. |
 | BCG | `eightfold:bcg` | Adapter runs but returns 0 rows for `bcg.com`. Per the Eightfold note above, the `domain` parameter is the tenant's registered domain and is probably not the hostname. Worth another look. |
 | Analysis Group, Exponent, ZS Associates, Aon | iCIMS | No iCIMS adapter. |
 | Grant Thornton, BDO USA | `oracle:us2` | No Oracle adapter. |

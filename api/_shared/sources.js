@@ -453,6 +453,10 @@ const SOURCES = [
   // common field students actually use Promptly for. Every board below was
   // verified against its own stated name or a live 200 before landing here —
   // see docs/SOURCE-HUNTING-FINDINGS.md for the ones that failed that test.
+  // MBB. Not on any standard system — the job list is JavaScript-rendered, so
+  // discover-ats.js finds nothing. The gateway endpoint was found by watching
+  // the rendered page's own network calls. See company-scrapers/mckinsey.js.
+  { company: "McKinsey & Company", short: "MCK", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "custom", handler: "mckinsey" },
   { company: "AlixPartners", short: "AXP", logoClass: "consult", field: "Consulting", subField: "Restructuring", ats: "greenhouse", board: "alixpartners" },
   // Greenhouse board is literally named "West Monroe (Campus)" — a dedicated
   // student board, which is the best possible shape for this product.
