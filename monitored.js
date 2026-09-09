@@ -105,6 +105,7 @@ window.MONITORED_COMPANIES = [
   "Enova International",
   "Epic Games",
   "Estée Lauder",
+  "Evercore",
   "ExodusPoint",
   "Experian",
   "ExxonMobil",
@@ -352,11 +353,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 343,
-  "companies": 343,
+  "sources": 344,
+  "companies": 344,
   "byPlatform": {
     "greenhouse": 135,
-    "custom": 54,
+    "custom": 55,
     "workday": 98,
     "lever": 8,
     "ashby": 26,
@@ -366,7 +367,7 @@ window.PROMPTLY_COVERAGE = {
     "taleo": 1
   },
   "byField": {
-    "Finance": 145,
+    "Finance": 146,
     "Technology": 66,
     "Consulting": 8,
     "Healthcare": 31,
