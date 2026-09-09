@@ -37,6 +37,7 @@ async function getRedis() {
 }
 
 const { isSafePushSubscription } = require("./push-target");
+const { isValidDeviceToken } = require("./apns");
 
 function normalizeSubscriber(profile = {}, subscription = null) {
   const email = String(profile.email || "").trim().toLowerCase();
@@ -86,6 +87,14 @@ function normalizeSubscriber(profile = {}, subscription = null) {
       const candidate = subscription || profile.pushSubscription || null;
       return isSafePushSubscription(candidate) ? candidate : null;
     })(),
+    // The native iOS shell cannot use Web Push, so it registers an APNs device
+    // token instead. Stored beside the web endpoint rather than replacing it:
+    // the same account may have the site open in a browser and the app on a
+    // phone, and both should get the alert.
+    deviceToken: (() => {
+      const candidate = String(profile.deviceToken || "").trim();
+      return isValidDeviceToken(candidate) ? candidate : null;
+    })(),
     emailNotifications: profile.emailNotifications !== false,
     pushNotifications: profile.pushNotifications !== false,
     weeklyRecap: profile.weeklyRecap !== false,
@@ -118,6 +127,15 @@ function resolvePushSubscription(existing, subscriber, subscription) {
   return subscriber.pushSubscription || existing.pushSubscription || null;
 }
 
+// Same rules as resolvePushSubscription, for the native token. Kept as its own
+// function rather than a generalised one because the two differ in what counts
+// as "explicitly supplied": a web subscription arrives as a separate argument,
+// while a device token arrives inside the profile.
+function resolveDeviceToken(existing, subscriber) {
+  if (subscriber.pushNotifications === false) return null;
+  return subscriber.deviceToken || existing.deviceToken || null;
+}
+
 async function saveSubscriber(profile, subscription) {
   const redis = await getRedis();
   const subscriber = normalizeSubscriber(profile, subscription);
@@ -133,6 +151,7 @@ async function saveSubscriber(profile, subscription) {
     ...subscriber,
     createdAt: existing.createdAt || new Date().toISOString(),
     pushSubscription: resolvePushSubscription(existing, subscriber, subscription),
+    deviceToken: resolveDeviceToken(existing, subscriber),
   };
 
   await redis.set(key, merged);
@@ -362,6 +381,47 @@ async function clearPushSubscription(email) {
   return { cleared: true };
 }
 
+// Attach an APNs token to an existing account.
+//
+// Deliberately not routed through saveSubscriber: that function normalizes a
+// whole profile, and the native app registers its token at launch when it may
+// hold no profile at all. Sending a half-empty profile through the normal save
+// would blank the student's real settings.
+//
+// Returns { saved:false } for an account that does not exist yet, so a token is
+// never stored against an address with no subscriber record behind it.
+async function saveDeviceToken(email, token) {
+  const redis = await getRedis();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedToken = String(token || "").trim();
+  if (!isValidDeviceToken(normalizedToken)) return { saved: false, error: "Malformed device token." };
+  if (!redis || !normalizedEmail) return { saved: false, setupRequired: true };
+
+  const key = "promptly:subscriber:" + normalizedEmail;
+  const existing = await redis.get(key);
+  if (!existing) return { saved: false, error: "No account to attach that device to." };
+  // Honour the account's own setting. If push is off, registering a device
+  // must not quietly turn it back on.
+  if (existing.pushNotifications === false) return { saved: false, disabled: true };
+  if (existing.deviceToken === normalizedToken) return { saved: true, unchanged: true };
+
+  await redis.set(key, { ...existing, deviceToken: normalizedToken });
+  return { saved: true };
+}
+
+// Remove a dead APNs token (Apple returned 410 or BadDeviceToken — the app was
+// uninstalled). Mirrors clearPushSubscription.
+async function clearDeviceToken(email) {
+  const redis = await getRedis();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!redis || !normalizedEmail) return { cleared: false };
+  const key = "promptly:subscriber:" + normalizedEmail;
+  const existing = await redis.get(key);
+  if (!existing || !existing.deviceToken) return { cleared: false };
+  await redis.set(key, { ...existing, deviceToken: null });
+  return { cleared: true };
+}
+
 async function takeTestAlertSlot(email, requester = "") {
   const redis = await getRedis();
   if (!redis) return { allowed: true, stored: false };
@@ -477,7 +537,10 @@ module.exports = {
   addSubscriberWatch,
   removeSubscriberWatch,
   clearPushSubscription,
+  clearDeviceToken,
+  saveDeviceToken,
   resolvePushSubscription,
+  resolveDeviceToken,
   normalizeSubscriber,
   hasRedisEnv,
   takeTestAlertSlot,

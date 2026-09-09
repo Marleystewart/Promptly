@@ -1,6 +1,7 @@
 const webpush = require("web-push");
-const { clearPushSubscription } = require("./store");
+const { clearPushSubscription, clearDeviceToken } = require("./store");
 const { isSafePushSubscription } = require("./push-target");
+const { sendApnsNotification, buildPayload: buildApnsPayload, isConfigured: apnsConfigured } = require("./apns");
 const { REASONS: LISTING_REPORT_REASONS } = require("./reports");
 const { recordEmailOutcome, fromAddress } = require("./email-health");
 // Shared with the browser (geo.js is dual-mode) so the radius an alert uses is
@@ -27,6 +28,70 @@ async function pushWithPruning(subscriber, payload) {
     }
     throw error;
   }
+}
+
+// The native counterpart to pushWithPruning. Apple's permanent failures (410,
+// BadDeviceToken, Unregistered) mean the app is gone from that device, so the
+// token is dropped for the same reason a dead web endpoint is.
+async function apnsWithPruning(subscriber, payload) {
+  try {
+    const result = await sendApnsNotification(subscriber.deviceToken, buildApnsPayload(payload));
+    if (result.gone) {
+      try { await clearDeviceToken(subscriber.email); } catch {}
+      return { sent: false, pruned: true };
+    }
+    return result;
+  } catch (error) {
+    // A network failure to Apple must not abort the whole alert run — the
+    // subscriber may still be reachable by email and by web push.
+    console.error("APNs send failed:", error && error.message ? error.message : error);
+    return { sent: false, failed: true };
+  }
+}
+
+// One notification, every transport this subscriber has registered.
+//
+// A student can have the site open in a browser and the app installed on a
+// phone. Those are two different addresses for the same person and neither is
+// a fallback for the other, so both are sent and the call counts as delivered
+// if either one lands.
+async function deliverPush(subscriber, payload) {
+  const publicKey = process.env.VAPID_PUBLIC_KEY;
+  const privateKey = process.env.VAPID_PRIVATE_KEY;
+  const subject = process.env.VAPID_SUBJECT || "mailto:hello@example.com";
+
+  const hasWeb = Boolean(subscriber.pushSubscription);
+  const hasNative = Boolean(subscriber.deviceToken);
+  if (!hasWeb && !hasNative) return { sent: false, skipped: "No phone subscription saved." };
+
+  const webUsable = hasWeb && publicKey && privateKey;
+  const nativeUsable = hasNative && apnsConfigured();
+
+  // Report the missing configuration honestly rather than returning a bare
+  // "not sent" that reads like the student's fault.
+  if (!webUsable && !nativeUsable) {
+    return {
+      sent: false,
+      setupRequired: hasNative
+        ? "Add APNs key environment variables in Vercel."
+        : "Add VAPID push keys in Vercel.",
+    };
+  }
+
+  const results = [];
+  if (webUsable) {
+    webpush.setVapidDetails(subject, publicKey, privateKey);
+    results.push(await pushWithPruning(subscriber, payload));
+  }
+  if (nativeUsable) {
+    results.push(await apnsWithPruning(subscriber, payload));
+  }
+
+  return {
+    sent: results.some((r) => r && r.sent),
+    web: webUsable ? results[0] : null,
+    native: nativeUsable ? results[results.length - 1] : null,
+  };
 }
 
 function escapeHtml(value = "") {
@@ -284,15 +349,7 @@ async function sendDeadlineReminder(opening, subscriber, daysLeft, unsubToken) {
 }
 
 async function sendPushAlert(opening, subscriber) {
-  const publicKey = process.env.VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT || "mailto:hello@example.com";
-
-  if (!subscriber.pushSubscription) return { sent: false, skipped: "No phone subscription saved." };
-  if (!publicKey || !privateKey) return { sent: false, setupRequired: "Add VAPID push keys in Vercel." };
-
-  webpush.setVapidDetails(subject, publicKey, privateKey);
-  return pushWithPruning(subscriber, {
+  return deliverPush(subscriber, {
     title: "Promptly",
     body: `${opening.company} ${opening.role} just opened.`,
     url: safeOfficialUrl(opening.sourceUrl) || "/",
@@ -300,14 +357,8 @@ async function sendPushAlert(opening, subscriber) {
 }
 
 async function sendDeadlinePush(opening, subscriber, daysLeft) {
-  const publicKey = process.env.VAPID_PUBLIC_KEY;
-  const privateKey = process.env.VAPID_PRIVATE_KEY;
-  const subject = process.env.VAPID_SUBJECT || "mailto:hello@example.com";
-  if (!subscriber.pushSubscription) return { sent: false, skipped: "No phone subscription saved." };
-  if (!publicKey || !privateKey) return { sent: false, setupRequired: "Add VAPID push keys in Vercel." };
-  webpush.setVapidDetails(subject, publicKey, privateKey);
   const timing = daysLeft === 1 ? "tomorrow" : `in ${daysLeft} days`;
-  return pushWithPruning(subscriber, {
+  return deliverPush(subscriber, {
     title: "Promptly deadline reminder",
     body: `${opening.company} ${opening.role} closes ${timing}.`,
     url: safeOfficialUrl(opening.sourceUrl) || "/",
@@ -420,6 +471,7 @@ module.exports = {
   sendWeeklyRecap,
   sendDeadlineReminder,
   sendDeadlinePush,
+  deliverPush,
   matchesOpening,
   openingHtml,
   safeOfficialUrl,

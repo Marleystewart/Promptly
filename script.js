@@ -4289,7 +4289,100 @@ async function saveSubscriber(subscription = null) {
   }
 }
 
+// True inside the Capacitor iOS/Android shell, false in any browser.
+function isNativeShell() {
+  return Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+}
+
+// Native push, which is a different transport from the web path below.
+//
+// iOS exposes the Web Push API to Safari and to a Home Screen PWA only. The
+// WKWebView that Capacitor runs has no PushManager at all, so enablePushAlerts
+// would report "not supported" inside our own app. The shell registers with
+// APNs instead and hands the resulting device token to the server, which sends
+// to both addresses.
+//
+// The plugin is read off window.Capacitor.Plugins rather than imported: this
+// file is a plain script the browser loads directly, not a bundled module, and
+// it has to keep parsing in a browser where no plugin exists.
+let nativePushListenersBound = false;
+
+async function enableNativePushAlerts() {
+  const PushNotifications = window.Capacitor?.Plugins?.PushNotifications;
+  if (!PushNotifications) {
+    setPushStatus(pushCopy().unsupported);
+    return null;
+  }
+
+  // Bind before requesting: the token arrives through an event, and on a warm
+  // launch it can fire before an await further down has resolved.
+  if (!nativePushListenersBound) {
+    nativePushListenersBound = true;
+
+    PushNotifications.addListener("registration", async (token) => {
+      const deviceToken = token && token.value ? String(token.value) : "";
+      if (!deviceToken) return;
+      try {
+        const response = await fetch(`${API_BASE}/api/subscribe`, {
+          method: "POST",
+          headers: await authenticatedJsonHeaders(),
+          body: JSON.stringify({ action: "register-device", deviceToken, profile: { email: profile.email } }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (data.registered) setPushStatus(pushCopy().enabled);
+        else if (data.disabled) setPushStatus("Push is switched off for this account. Turn it on to get alerts here.");
+        else setPushStatus("Couldn’t register this device for alerts. Try again in a bit.");
+      } catch {
+        setPushStatus("Couldn’t reach Promptly to register this device. Check your connection.");
+      }
+    });
+
+    // Apple's own error, surfaced rather than swallowed — a silent failure here
+    // looks identical to "no internships matched you", which is the worst
+    // possible confusion for this app.
+    PushNotifications.addListener("registrationError", () => {
+      setPushStatus("iOS refused to register this device for notifications.");
+    });
+
+    // Tapping a notification should open the posting it announced, not the
+    // home screen. The url is the one the server put in the payload.
+    PushNotifications.addListener("pushNotificationActionPerformed", (event) => {
+      const url = event?.notification?.data?.url;
+      if (url && /^https:\/\//i.test(url)) window.open(url, "_blank");
+    });
+  }
+
+  let status;
+  try {
+    status = await PushNotifications.checkPermissions();
+    if (status.receive === "prompt" || status.receive === "prompt-with-rationale") {
+      status = await PushNotifications.requestPermissions();
+    }
+  } catch (e) {
+    setPushStatus("Couldn't ask for permission: " + (e.message || e));
+    return null;
+  }
+
+  if (status.receive !== "granted") {
+    const copy = pushCopy();
+    setPushStatus(status.receive === "denied" ? copy.blocked : copy.allow);
+    return null;
+  }
+
+  // Resolves as soon as iOS accepts the request; the token itself arrives on
+  // the "registration" listener above.
+  try {
+    await PushNotifications.register();
+  } catch (e) {
+    setPushStatus("Couldn't turn on push: " + (e.message || e));
+    return null;
+  }
+  return true;
+}
+
 async function enablePushAlerts() {
+  if (isNativeShell()) return enableNativePushAlerts();
+
   if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
     setPushStatus(pushCopy().unsupported);
     return null;
