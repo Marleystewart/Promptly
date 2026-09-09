@@ -126,6 +126,20 @@ module.exports = async function handler(req, res) {
     const gradRanked = sortDesc(byGradYear).filter(([k]) => k !== "Unknown");
     const topGradYear = gradRanked.length ? { band: gradRanked[0][0], count: gradRanked[0][1] } : null;
 
+    // Which campus is actually carrying this. Same rules as the year band:
+    // "Unknown" is an absence of data, never the winner, and a tie is reported
+    // as a tie rather than silently picking whichever name sorted first — with
+    // 17 accounts a one-account lead is noise, and calling it a winner would
+    // send someone to the wrong campus.
+    const schoolRanked = sortDesc(bySchool).filter(([name]) => name !== "Unknown");
+    const topSchool = schoolRanked.length
+      ? {
+          name: schoolRanked[0][0],
+          count: schoolRanked[0][1],
+          tiedWith: schoolRanked.filter(([, n]) => n === schoolRanked[0][1]).length - 1,
+        }
+      : null;
+
     // Live right now. Counted from keys that expire in two minutes, so this is
     // genuinely "in the last couple of minutes" rather than a guess.
     let liveNow = 0;
@@ -139,6 +153,7 @@ module.exports = async function handler(req, res) {
       confirmed: funnelReadyCount(subscribers),
       schools: schoolCount,
       topGradYear: topGradYear,
+      topSchool: topSchool,
       everReturnedPct: null, // filled in below, once retention is built
     };
 

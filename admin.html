@@ -414,6 +414,15 @@ async function load() {
           <div class="s">Distinct campuses reached</div>
         </div>
         <div class="h">
+          <div class="n">${hd.topSchool ? hd.topSchool.count : "&mdash;"}</div>
+          <div class="l">${hd.topSchool ? escapeHtml(hd.topSchool.name) : "Leading school"}</div>
+          <div class="s">${hd.topSchool
+            ? (hd.topSchool.tiedWith > 0
+                ? `Tied with ${hd.topSchool.tiedWith} other${hd.topSchool.tiedWith === 1 ? "" : "s"}`
+                : `Most accounts of any campus`)
+            : "No school data yet"}</div>
+        </div>
+        <div class="h">
           <div class="n">${hd.topGradYear ? hd.topGradYear.count : "&mdash;"}</div>
           <div class="l">${hd.topGradYear ? escapeHtml(classYear(hd.topGradYear.band)) : "Top year group"}</div>
           <div class="s">${hd.topGradYear ? "Most common cohort" : "No year data yet"}</div>
