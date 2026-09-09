@@ -144,6 +144,31 @@ across several continents**. One "Business Analyst Intern" is open in Atlanta,
 Athens and Abu Dhabi at once. The scraper reduces each posting to its US cities
 and drops it when there are none.
 
+### Morgan Stanley: Eightfold, found by trying the subdomain
+
+`morganstanley.com/careers` renders its job list with JavaScript and links to
+nothing an ATS pattern matches, so both `discover-ats.js` and reading the page's
+own network calls came up empty. What worked was trying the vendor subdomain
+directly: **`morganstanley.eightfold.ai`** answers, and the adapter returns 150
+US roles.
+
+The `domain` parameter is `morganstanley.com`; **`ms.com` returns 404**. Another
+instance of the rule above — this value is not reliably the hostname.
+
+### The Eightfold dates were all 1970
+
+Found while checking that feed, and it affected every Eightfold source already
+live. `eightfold.js` carried a comment stating `postedTs` is epoch
+**milliseconds** and the conversion trusted it. It is epoch **seconds**.
+
+Live Qualcomm data, 9 Sep 2026: `postedTs` `1788912000` is `2026-09-09`. Read as
+milliseconds it is `1970-01-21`. Every Qualcomm, Ford and Mayo Clinic posting
+carried a 1970 date, which feeds the recruiting-cycle calendar and the "posted"
+line on a card — they sorted as 56 years old.
+
+The conversion is now unit-guarded rather than blindly multiplied, so if
+Eightfold ever switches to milliseconds the dates do not jump to the year 58000.
+
 ### Checked in this sweep and not addable
 
 | Company | Found | Why not |
@@ -156,6 +181,18 @@ and drops it when there are none.
 | Accenture | `workday accenture/userHome` | `userHome` is the account page, not a job site. |
 | RSM US | `workday rsm/login` | Same — a login route, not a board. |
 | Evercore, Centerview, Perella Weinberg, Jefferies, Morgan Stanley, Barclays, UBS, Nomura, Mizuho, Wells Fargo, Bridgewater | nothing in the markup | Same JavaScript-rendered problem. |
+
+### Second sweep, 9 September 2026 — the JavaScript-rendered names
+
+Worked through the employers the first sweep could not see, using a browser to
+read each page's own network calls.
+
+| Company | What was found | Why it is not usable |
+|---|---|---|
+| Deloitte | Avature at `apply.deloitte.com`, and **it does serve HTML to a server** — job titles, locations and detail URLs are all in the markup | Not a rendering problem, a volume one. The page returns **10 results and ignores `jobRecordsPerPage`**, paging only via `jobOffset`, and `search=` returns an empty body. Covering Deloitte US would be 100+ requests every hourly refresh. Correcting the note below: Avature is not uniformly unreadable — Deloitte's instance is readable and simply impractical. |
+| Bain & Company | Cloudflare interstitial ("Just a moment…") before any content | Bot protection. A server fetch would be challenged even if an endpoint were found. |
+| Wells Fargo | `wellsfargo.eightfold.ai` resolves | `/api/pcsx/search` returns **403 "PCSX is not enabled for this user."** The tenant exists; the open API is switched off. |
+| Kearney, L.E.K., Gartner, Korn Ferry, Mercer, KPMG, PwC, Jefferies, Evercore, Centerview, Perella Weinberg, Barclays, UBS, Bridgewater | nothing | No Eightfold tenant, and no Workday tenant at any tried combination of tenant/datacenter/site. Guessing Workday tenants produced zero hits across 14 firms — consistent with the rule that guessing does not work. These need the network tab, one at a time. |
 
 ## Tried and NOT addable
 
