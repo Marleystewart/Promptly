@@ -44,7 +44,7 @@ function pinMatches(provided) {
   return secretsMatch(provided, pin);
 }
 
-module.exports = // What a single account's push actually is, as one of three states.
+// What a single account's push actually is, as one of three states.
 //
 // The toggle and the address are separate facts and both have to hold. An
 // account can have pushNotifications on with nothing registered (asked for it,
@@ -58,7 +58,7 @@ function pushState(s) {
   return "off";
 }
 
-async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const secret = process.env.ADMIN_SECRET || process.env.CRON_SECRET;
   const authorization = String(req.headers.authorization || "");
   const provided = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
