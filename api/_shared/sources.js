@@ -457,6 +457,9 @@ const SOURCES = [
   // discover-ats.js finds nothing. The gateway endpoint was found by watching
   // the rendered page's own network calls. See company-scrapers/mckinsey.js.
   { company: "McKinsey & Company", short: "MCK", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "custom", handler: "mckinsey" },
+  // Eightfold tenant, found by trying the careers subdomain — morganstanley.com
+  // renders its job list with JavaScript and exposes no ATS in the markup.
+  { company: "Morgan Stanley", short: "MS", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "morganstanley" },
   { company: "AlixPartners", short: "AXP", logoClass: "consult", field: "Consulting", subField: "Restructuring", ats: "greenhouse", board: "alixpartners" },
   // Greenhouse board is literally named "West Monroe (Campus)" — a dedicated
   // student board, which is the best possible shape for this product.
