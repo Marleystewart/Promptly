@@ -447,6 +447,25 @@ const SOURCES = [
   // Probed live before shipping. (A source returning 0 matches today is fine —
   // it activates the moment that employer posts a student role.)
   { company: "Keystone Strategy", short: "KEY", logoClass: "fin", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "keystonestrategy" },
+
+  // ── Consulting, added 9 Sep 2026 ──────────────────────────────────────
+  // Consulting had 8 sources against Finance's 146, while being the second most
+  // common field students actually use Promptly for. Every board below was
+  // verified against its own stated name or a live 200 before landing here —
+  // see docs/SOURCE-HUNTING-FINDINGS.md for the ones that failed that test.
+  { company: "AlixPartners", short: "AXP", logoClass: "consult", field: "Consulting", subField: "Restructuring", ats: "greenhouse", board: "alixpartners" },
+  // Greenhouse board is literally named "West Monroe (Campus)" — a dedicated
+  // student board, which is the best possible shape for this product.
+  { company: "West Monroe", short: "WM", logoClass: "consult", field: "Consulting", subField: "Tech Consulting", ats: "greenhouse", board: "westmonroe5" },
+  { company: "Cornerstone Research", short: "CRES", logoClass: "consult", field: "Consulting", subField: "Economic Consulting", ats: "workday", tenant: "cornerstone", dc: "wd501", site: "CornerstoneResearch_Careers" },
+  { company: "Baker Tilly", short: "BT", logoClass: "consult", field: "Consulting", subField: "Accounting & Advisory", ats: "workday", tenant: "bakertilly", dc: "wd5", site: "BTCareers" },
+  { company: "Forrester", short: "FORR", logoClass: "consult", field: "Consulting", subField: "Research & Advisory", ats: "workday", tenant: "forrester", dc: "wd501", site: "careers" },
+
+  // ── Finance, added 9 Sep 2026 ─────────────────────────────────────────
+  // Exchanges, which the registry had almost none of despite being a standard
+  // target for quantitative and markets-focused students.
+  { company: "Nasdaq", short: "NDAQ", logoClass: "fin", field: "Finance", subField: "Exchanges", ats: "workday", tenant: "nasdaq", dc: "wd1", site: "Global_External_Site" },
+  { company: "CME Group", short: "CME", logoClass: "fin", field: "Finance", subField: "Exchanges", ats: "workday", tenant: "cmegroup", dc: "wd1", site: "cme_careers" },
   { company: "Peloton", short: "PTON", logoClass: "consumer", field: "Consumer", subField: "Fitness", ats: "greenhouse", board: "peloton" },
 
   // ═══ ENTERPRISE + NON-TECH COVERAGE (verified July 2026) ══════════════════
