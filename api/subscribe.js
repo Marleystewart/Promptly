@@ -1,7 +1,7 @@
 const { withCors } = require("./_shared/cors");
 
 const { isValidEmail } = require("./_shared/email-validator");
-const { readBody, saveSubscriber, addSubscriberWatch, removeSubscriberWatch, getSubscriber, takeSubscribeSlot, recordActivity, recordPresence } = require("./_shared/store");
+const { readBody, saveSubscriber, addSubscriberWatch, removeSubscriberWatch, getSubscriber, takeSubscribeSlot, recordActivity, recordPresence, saveDeviceToken, clearDeviceToken } = require("./_shared/store");
 const { eraseSubscriber } = require("./_shared/erase");
 const { watchCompany, unwatchCompany } = require("./_shared/watch");
 const {
@@ -168,6 +168,29 @@ async function handler(req, res) {
       const result = await recordActivity(auth.email);
       try { await recordPresence(auth.email); } catch {}
       return res.status(200).json({ ok: true, ...result });
+    }
+
+    // ── Register the native app for push ─────────────────────────────────
+    // The iOS shell cannot use Web Push: iOS exposes PushManager to Safari and
+    // to a Home Screen PWA, never to the WKWebView that Capacitor runs. So the
+    // app hands us an APNs device token instead and the alert path sends to
+    // both addresses.
+    //
+    // Rides inside this endpoint for the same reason everything else does —
+    // Vercel's 12-function ceiling is a hard cap that a test asserts.
+    if (body.action === "register-device" || body.action === "unregister-device") {
+      if (body.action === "unregister-device") {
+        await clearDeviceToken(auth.email).catch(() => {});
+        return res.status(200).json({ ok: true, registered: false });
+      }
+      const outcome = await saveDeviceToken(auth.email, body.deviceToken);
+      if (!outcome.saved) {
+        // A device registering against an account that has push switched off is
+        // not an error the app should retry; say so plainly.
+        if (outcome.disabled) return res.status(200).json({ ok: true, registered: false, disabled: true });
+        return res.status(400).json({ error: outcome.error || "Could not register this device." });
+      }
+      return res.status(200).json({ ok: true, registered: true });
     }
 
     if (body.action === "watch" || body.action === "unwatch" || body.action === "resend-verification") {
