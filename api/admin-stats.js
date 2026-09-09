@@ -13,6 +13,7 @@ const { readIntegrationHealth, probeUsaJobs } = require("./_shared/integration-h
 const { readRunHealth, readPrivacyCleanup } = require("./_shared/run-health");
 const { buildFunnel, buildRetention, isAlertReady } = require("./_shared/funnel");
 const crypto = require("crypto");
+const { dayKey, dayKeyAgo } = require("./_shared/day");
 
 // Accounts that can actually be sent an alert today, reused for the headline.
 function funnelReadyCount(subscribers) {
@@ -106,8 +107,8 @@ module.exports = async function handler(req, res) {
     // there is: nothing tracks presence by the minute, so this cannot say who
     // is on the app RIGHT NOW and does not pretend to. Today and the last seven
     // days are the honest questions it can answer.
-    var todayStr = new Date().toISOString().slice(0, 10);
-    var sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+    var todayStr = dayKey();
+    var sevenDaysAgo = dayKeyAgo(7);
     var activeToday = 0, activeLast7 = 0;
     for (const s of subscribers) {
       const on = s.lastActiveOn;

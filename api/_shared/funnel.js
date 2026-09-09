@@ -1,3 +1,4 @@
+const { dayKey } = require("./day");
 // Where does Promptly lose people?
 //
 // The dashboard could say how many accounts exist and what schools they came
@@ -138,7 +139,7 @@ function daysBetween(fromIso, toIso) {
 // "returned", not "retained" — the honest claim is that they came back, and
 // nothing is inferred about why anyone did not.
 function buildRetention(subscribers, now = new Date()) {
-  const today = now.toISOString().slice(0, 10);
+  const today = dayKey(now);
   const cohorts = new Map();
 
   for (const sub of subscribers || []) {

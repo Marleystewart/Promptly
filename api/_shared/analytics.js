@@ -2,6 +2,8 @@
 // profiles, search text, listing details, or persistent identifiers — just
 // allowlisted event counters with a short expiry.
 
+const { dayKey, dayKeyAgo } = require("./day");
+
 function redisEnv() {
   return {
     url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL,
@@ -37,7 +39,7 @@ function viewEvent(name) {
 }
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  return dayKey();
 }
 
 const WEEK_TTL = 60 * 60 * 24 * 9; // keep daily keys ~9 days
@@ -71,7 +73,7 @@ async function getStats() {
 
   let newListingsThisWeek = 0;
   for (let i = 0; i < 7; i++) {
-    const day = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    const day = dayKeyAgo(i);
     newListingsThisWeek += await counter(redis, "new_listings", day);
   }
 
@@ -87,7 +89,7 @@ async function getViewBreakdown(days = 7) {
   for (const name of ALLOWED_VIEWS) {
     let total = 0;
     for (let i = 0; i < days; i += 1) {
-      const day = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+      const day = dayKeyAgo(i);
       total += Number(await redis.get(`promptly:a:view:${name}:${day}`)) || 0;
     }
     rows.push({ view: name, opens: total });
