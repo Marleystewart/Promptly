@@ -38,6 +38,7 @@ async function getRedis() {
 
 const { isSafePushSubscription } = require("./push-target");
 const { isValidDeviceToken } = require("./apns");
+const { dayKey } = require("./day");
 
 function normalizeSubscriber(profile = {}, subscription = null) {
   const email = String(profile.email || "").trim().toLowerCase();
@@ -318,7 +319,7 @@ async function recordActivity(email) {
   const key = "promptly:subscriber:" + normalizedEmail;
   const existing = await redis.get(key);
   if (!existing) return { recorded: false };
-  const day = new Date().toISOString().slice(0, 10);
+  const day = dayKey();
   if (existing.lastActiveOn === day) return { recorded: true, unchanged: true };
   await redis.set(key, { ...existing, lastActiveOn: day });
   return { recorded: true, unchanged: false };
