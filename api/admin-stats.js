@@ -44,7 +44,21 @@ function pinMatches(provided) {
   return secretsMatch(provided, pin);
 }
 
-module.exports = async function handler(req, res) {
+module.exports = // What a single account's push actually is, as one of three states.
+//
+// The toggle and the address are separate facts and both have to hold. An
+// account can have pushNotifications on with nothing registered (asked for it,
+// never granted permission) or an address left over from before the toggle went
+// off — resolvePushSubscription clears that on the next save, but not before.
+// Reporting either as "on" would overstate reach.
+function pushState(s) {
+  if (!s || s.pushNotifications === false) return "off";
+  if (s.deviceToken) return "app";
+  if (s.pushSubscription) return "web";
+  return "off";
+}
+
+async function handler(req, res) {
   const secret = process.env.ADMIN_SECRET || process.env.CRON_SECRET;
   const authorization = String(req.headers.authorization || "");
   const provided = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
@@ -75,7 +89,10 @@ module.exports = async function handler(req, res) {
       byGradYear[gy] = (byGradYear[gy] || 0) + 1;
       (Array.isArray(s.fields) ? s.fields : []).forEach((f) => { byField[f] = (byField[f] || 0) + 1; });
       if (s.email) withEmail += 1;
-      if (s.pushSubscription) withPush += 1;
+      // Either transport counts. A student who installed the iOS app has a
+      // device token and no web endpoint; counting only the endpoint reported
+      // them as having push switched off, which is the opposite of the truth.
+      if (pushState(s) !== "off") withPush += 1;
       // How many accounts are institutionally confirmed. Real signal for
       // school conversations — and a check that .edu detection is working.
       if (s.studentVerified === true) withEduEmail += 1;
@@ -133,7 +150,18 @@ module.exports = async function handler(req, res) {
       // the founders their own users; a masked address cannot be used to answer
       // "this student says alerts stopped, what does their record look like".
       // A PIN holder never reaches this branch — see the viaPin guard below.
-      .map((s) => ({ email: s.email || "—", school: s.school || "—", gradYear: s.gradYearBand || "—", when: s.updatedAt || s.createdAt || null, lastActiveOn: s.lastActiveOn || null }));
+      .map((s) => ({
+        email: s.email || "—", school: s.school || "—", gradYear: s.gradYearBand || "—",
+        when: s.updatedAt || s.createdAt || null, lastActiveOn: s.lastActiveOn || null,
+        // Who actually hears from us, per account. The aggregate counters above
+        // answer "how many"; this answers "which ones", which is the question
+        // you have when a student says they never got an alert.
+        push: pushState(s),
+        // A digest is never even queued for an unverified record, so email
+        // being on is not the same as email being reachable.
+        email_on: s.emailNotifications !== false,
+        reachable: s.emailNotifications !== false && s.verified === true,
+      }));
 
     const live = await getStats();
 
@@ -245,6 +273,15 @@ module.exports = async function handler(req, res) {
       withEmail,
       withEduEmail,
       withPush,
+      // Split by transport, so "we shipped an iOS app" has a number attached to
+      // it rather than a feeling.
+      pushWeb: subscribers.filter((s) => pushState(s) === "web").length,
+      pushApp: subscribers.filter((s) => pushState(s) === "app").length,
+      pushOff: subscribers.filter((s) => pushState(s) === "off").length,
+      // Accounts an email alert can actually reach today: switched on AND
+      // verified. The gap between this and withEmail is the reachable-but-not
+      // -reached group, which is the number worth acting on.
+      emailReachable: subscribers.filter((s) => s.emailNotifications !== false && s.verified === true).length,
       bySchool: sortDesc(bySchool),
       byGradYear: sortDesc(byGradYear),
       byField: sortDesc(byField),

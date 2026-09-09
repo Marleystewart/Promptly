@@ -439,6 +439,9 @@ async function load() {
           <div class="card"><div class="n">${d.withEmail}</div><div class="l">With email</div></div>
           <div class="card"><div class="n">${d.withEduEmail || 0}</div><div class="l">.edu verified</div></div>
           <div class="card"><div class="n">${d.withPush}</div><div class="l">Push enabled</div></div>
+          <div class="card"><div class="n">${d.pushApp || 0}</div><div class="l">Push via iOS app</div></div>
+          <div class="card"><div class="n">${d.pushOff || 0}</div><div class="l">Push off</div></div>
+          <div class="card"><div class="n">${d.emailReachable || 0}</div><div class="l">Email can reach</div></div>
           <div class="card"><div class="n">${live.appOpensToday || 0}</div><div class="l">App opens today</div></div>
           <div class="card"><div class="n">${live.signupsToday || 0}</div><div class="l">Signups today</div></div>
           <div class="card"><div class="n">${live.applicationsToday || 0}</div><div class="l">Apps started today</div></div>
@@ -456,7 +459,19 @@ async function load() {
           ${table("By class year", (d.byGradYear || []).map((r) => [classYear(r[0]), r[1]]), ["Class year", "#"])}
           ${table("By field interest", d.byField, ["Field", "#"])}
         </div>
-        ${fold("Recent signups", (d.recent || []).map((x) => [x.email, x.school, classYear(x.gradYear), x.when ? new Date(x.when).toLocaleString() : "—", x.lastActiveOn || "never"]), ["Email", "School", "Class year", "Joined", "Last active"], { cap: 50 })}
+        ${fold("Recent signups", (d.recent || []).map((x) => [
+          x.email,
+          x.school,
+          classYear(x.gradYear),
+          // Three states, not a tick. "Off" and "on but nothing registered"
+          // look identical from a count and are completely different problems.
+          x.push === "app" ? "iOS app" : x.push === "web" ? "Browser" : "Off",
+          // Says whether an email alert would actually go out, not just whether
+          // the toggle is on — an unverified record is never queued a digest.
+          x.reachable ? "Yes" : x.email_on ? "On, unverified" : "Off",
+          x.when ? new Date(x.when).toLocaleString() : "—",
+          x.lastActiveOn || "never",
+        ]), ["Email", "School", "Class year", "Push", "Email reaches", "Joined", "Last active"], { cap: 50 })}
       `)}
 
       ${section("Pipeline", `${d.watchedCount || 0} watched · ${d.coverageCount || 0} coverage requests · ${flaggedRows.length} flagged · ${d.reportCount || 0} reports`, `
