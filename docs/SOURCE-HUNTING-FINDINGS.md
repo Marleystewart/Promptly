@@ -93,6 +93,48 @@ refresh cron. That does not fit: the cron already runs to a 300s ceiling across
 300+ sources, and Promptly is at Vercel's 12-function limit. Treat IBM, Slalom
 and CBRE as unreachable unless that architecture changes.
 
+## Consulting and finance sweep, 9 September 2026
+
+Consulting had 8 sources against Finance's 146, while being the second most
+common field students use Promptly for. Seven added; the rest are recorded below
+so nobody repeats the search.
+
+| Company | Source | Evidence |
+|---|---|---|
+| AlixPartners | `greenhouse:alixpartners` | Board name returns **"AlixPartners"**. 6 US student roles on first run. |
+| West Monroe | `greenhouse:westmonroe5` | Board name returns **"West Monroe (Campus)"** — a dedicated student board. 12 roles, all `2027 ... Intern`. |
+| Cornerstone Research | `workday cornerstone/wd501/CornerstoneResearch_Careers` | 200 with a real total. The datacenter is **wd501**, read off the careers page; wd1/wd3/wd5 all return 422. |
+| Baker Tilly | `workday bakertilly/wd5/BTCareers` | 200, 447 roles, US-heavy. |
+| Forrester | `workday forrester/wd501/careers` | 200. Small board. |
+| Nasdaq | `workday nasdaq/wd1/Global_External_Site` | 200, 87 roles, largely international — `usOnly()` carries the filtering. |
+| CME Group | `workday cmegroup/wd1/cme_careers` | 200. The careers page does not expose the host, so the datacenter was found by trying: **wd1** works, wd5 and wd3 return 422. |
+
+### The trap this sweep hit
+
+`lever:oliverwyman` resolves, returns HTTP 200, and is **not** Oliver Wyman. It
+holds two jobs — an Account Executive and a Software Engineer, both in San
+Francisco. Oliver Wyman is a global consultancy with hundreds of roles. This is
+the same class of error as `ashby:silver` being Silver.dev: a resolving token
+proves nothing.
+
+Oliver Wyman's real board is `phenom:mmc`, the Marsh McLennan tenant. Not added:
+Phenom sources each need their own scraper in `company-scrapers/`, and a shared
+parent tenant would mix Mercer, Marsh and Guy Carpenter roles into cards
+attributed to Oliver Wyman.
+
+### Checked in this sweep and not addable
+
+| Company | Found | Why not |
+|---|---|---|
+| McKinsey, Bain & Company, Kearney, Deloitte, PwC, KPMG, Mercer, Willis Towers Watson, Korn Ferry, Gartner, L.E.K., Brattle Group | nothing in the markup | Careers page renders the job list with JavaScript. Needs a browser, or the network tab. |
+| BCG | `eightfold:bcg` | Adapter runs but returns 0 rows for `bcg.com`. Per the Eightfold note above, the `domain` parameter is the tenant's registered domain and is probably not the hostname. Worth another look. |
+| Analysis Group, Exponent, ZS Associates, Aon | iCIMS | No iCIMS adapter. |
+| Grant Thornton, BDO USA | `oracle:us2` | No Oracle adapter. |
+| Bank of America | `workday ghr/wd1/lateral-us` | Reads fine (964 roles) but it is the **lateral** board — experienced hires by definition. No campus site found: `campus-us`, `Campus_US`, `students-us`, `university-us` all 404. |
+| Accenture | `workday accenture/userHome` | `userHome` is the account page, not a job site. |
+| RSM US | `workday rsm/login` | Same — a login route, not a board. |
+| Evercore, Centerview, Perella Weinberg, Jefferies, Morgan Stanley, Barclays, UBS, Nomura, Mizuho, Wells Fargo, Bridgewater | nothing in the markup | Same JavaScript-rendered problem. |
+
 ## Tried and NOT addable
 
 None of these is a failure to try harder at. Each is a real constraint, and
