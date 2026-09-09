@@ -203,6 +203,7 @@ window.MONITORED_COMPANIES = [
   "MassMutual",
   "Mastercard",
   "Mayo Clinic",
+  "McKinsey & Company",
   "Merck",
   "Millennium",
   "Mixpanel",
@@ -363,11 +364,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 354,
-  "companies": 354,
+  "sources": 355,
+  "companies": 355,
   "byPlatform": {
     "greenhouse": 141,
-    "custom": 53,
+    "custom": 54,
     "workday": 102,
     "lever": 9,
     "ashby": 27,
@@ -379,7 +380,7 @@ window.PROMPTLY_COVERAGE = {
   "byField": {
     "Finance": 148,
     "Technology": 66,
-    "Consulting": 13,
+    "Consulting": 14,
     "Healthcare": 31,
     "Education": 4,
     "Engineering": 22,
