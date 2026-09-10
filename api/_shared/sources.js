@@ -85,7 +85,10 @@ const SOURCES = [
   { company: "Capital Group", short: "CG", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "capgroup", dc: "wd1", site: "capitalgroupcareers" },
   { company: "MetLife", short: "MET", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "metlife" },
   { company: "Wells Fargo", short: "WFC", logoClass: "fin", field: "Finance", subField: "Corporate & Commercial Banking", ats: "workday", tenant: "wf", dc: "wd1", site: "WellsFargoJobs" },
-  { company: "Fidelity", short: "FID", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "fmr", dc: "wd1", site: "FidelityCareers" },
+  // Fidelity is on Workday's newer SHARED host (wd1.myworkdaysite.com), not the
+  // per-tenant one, so without siteHost this pointed at a 404 and the card sat
+  // empty. See fetchWorkday().
+  { company: "Fidelity", short: "FID", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "fmr", dc: "wd1", site: "FidelityCareers", siteHost: true },
   // BofA's Workday tenant (ghr) is its LATERAL board - experienced hires only,
   // which is why this card never showed a student role. Campus recruiting lives
   // on tal.net (bankcampuscareers); read that instead.
