@@ -48,6 +48,7 @@ window.MONITORED_COMPANIES = [
   "Block",
   "Blue Origin",
   "Blue Owl",
+  "BMO",
   "BNY Mellon",
   "Boeing",
   "Booz Allen Hamilton",
@@ -57,6 +58,7 @@ window.MONITORED_COMPANIES = [
   "Bristol Myers Squibb",
   "Broadridge Financial",
   "Brookings Institution",
+  "Cantor Fitzgerald",
   "Capital Group",
   "Capital One",
   "Carlyle",
@@ -67,6 +69,7 @@ window.MONITORED_COMPANIES = [
   "Checkr",
   "Chicago Trading (CTC)",
   "Chime",
+  "Chubb",
   "Cigna",
   "Citadel",
   "Citi",
@@ -260,6 +263,7 @@ window.MONITORED_COMPANIES = [
   "Ramp",
   "RAND Corporation",
   "Raymond James",
+  "RBC",
   "Recursion",
   "Reddit",
   "Regions Bank",
@@ -360,11 +364,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 351,
-  "companies": 351,
+  "sources": 355,
+  "companies": 355,
   "byPlatform": {
     "greenhouse": 135,
-    "custom": 57,
+    "custom": 61,
     "workday": 103,
     "lever": 8,
     "ashby": 26,
@@ -374,7 +378,7 @@ window.PROMPTLY_COVERAGE = {
     "taleo": 1
   },
   "byField": {
-    "Finance": 153,
+    "Finance": 157,
     "Technology": 66,
     "Consulting": 8,
     "Healthcare": 31,
