@@ -69,13 +69,47 @@ assert.equal(
 // holding the phone, so it carries the employer and role and nothing personal.
 {
   const alerts = fs.readFileSync(path.join(ROOT, "api/_shared/alerts.js"), "utf8");
-  const pushes = alerts.match(/return pushWithPruning\(subscriber, \{[\s\S]*?\}\);/g) || [];
+  // deliverPush is the single place both transports are fed, so scanning its
+  // call sites covers web push and APNs at once.
+  const pushes = alerts.match(/return deliverPush\(subscriber, \{[\s\S]*?\}\);/g) || [];
   assert.ok(pushes.length >= 2, "expected the new-opening and deadline pushes");
   for (const payload of pushes) {
     for (const field of ["school", "gradYear", "major", "interests", "email", "subscriber.name"]) {
       assert.ok(!payload.includes(field), `a lock-screen payload must not carry ${field}`);
     }
   }
+}
+
+// The same minimalism has to survive the trip into an APNs payload: that is a
+// second builder, and a lock screen does not care which transport delivered it.
+{
+  const { buildPayload } = require("../api/_shared/apns");
+  const built = JSON.stringify(buildPayload({
+    title: "Promptly", body: "Stripe Software Engineering Intern just opened.", url: "https://example.com/x",
+  }));
+  for (const field of ["school", "gradYear", "major", "interests", "email"]) {
+    assert.ok(!built.includes(field), `an APNs payload must not carry ${field}`);
+  }
+}
+
+// An APNs device token identifies one phone the way an endpoint identifies one
+// browser, so it must obey the same retention rule.
+{
+  const { resolveDeviceToken } = require("../api/_shared/store");
+  const TOKEN = "b".repeat(64);
+  assert.equal(
+    resolveDeviceToken({ deviceToken: TOKEN }, { pushNotifications: true, deviceToken: null }),
+    TOKEN,
+    "an ordinary settings save must not wipe a registered device"
+  );
+  assert.equal(
+    resolveDeviceToken({ deviceToken: TOKEN }, { pushNotifications: false, deviceToken: TOKEN }),
+    null,
+    "switching push off drops the device token, the same as the web endpoint"
+  );
+  const store = fs.readFileSync(path.join(ROOT, "api/_shared/store.js"), "utf8");
+  assert.match(store, /deviceToken: resolveDeviceToken\(existing, subscriber\)/,
+    "saveSubscriber must resolve the token after the spread, not let the spread decide");
 }
 
 console.log("Push retention tests passed. Kept while on, dropped when off, payload minimal.");

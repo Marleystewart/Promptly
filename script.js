@@ -895,6 +895,9 @@ let authMode = "signup";
 // while this is in flight — that caused a post-Google-login glitch where the
 // user was bounced from the school/grade form back to the sign-in page.
 let pendingOAuthCallback = false;
+// Set when a profile was loaded but deliberately not painted, because an auth
+// callback was still deciding whose profile this browser is showing.
+let deferredProfilePaint = false;
 // Real timestamp of the last pipeline refresh, shown next to the tracked count.
 let liveFeedUpdatedAt = null;
 
@@ -982,8 +985,9 @@ function logoFallback(img) {
     return;
   }
 
-  const el = img.closest(".logo, .modal-logo, .mega-logo");
+  const el = img.closest(".logo, .modal-logo, .mega-logo, .cyc-logo");
   if (!el) return;
+  if (el.classList.contains("cyc-logo")) el.classList.add("cyc-logo-text");
   el.classList.remove("logo-tile");
   if (img.dataset.lc) el.classList.add(img.dataset.lc);
   el.textContent = img.dataset.short || "";
@@ -1703,6 +1707,9 @@ function setView(name) {
   if (!view) return;
 
   views.forEach((item) => item.classList.toggle("active", item === view));
+  // Which sections get used, as an anonymous daily counter. The server keeps a
+  // fixed allowlist of view names, so this cannot write arbitrary keys.
+  track(`view:${name}`);
   // (heading chosen below — see viewHeading)
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
   title.textContent = name === "home" ? greetingText() : viewHeading(view);
@@ -1900,6 +1907,177 @@ function fillSelect(selector, values, current) {
   });
 }
 
+// ── Desktop recruiting calendar ─────────────────────────────────────────────
+//
+// The matrix answers "which industries move in which months". A calendar
+// answers "what happened on the 8th", which is the question a student actually
+// has. Same filtered pool, same real dates — postedAt where the employer gives
+// one, firstSeen where they do not. Nothing here is projected or invented: a
+// day with no observed postings stays empty, and empty is the useful signal.
+
+const cycleCal = { year: null, month: null, selected: null };
+
+function calKey(date) {
+  return date.slice(0, 10);
+}
+
+// filtered openings grouped by the exact day they were observed.
+function calendarByDay(filtered) {
+  const map = new Map();
+  for (const item of filtered) {
+    const raw = cycleDateOf(item);
+    if (!raw) continue;
+    const key = calKey(String(raw));
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) continue;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(item);
+  }
+  return map;
+}
+
+function calLogoHtml(item) {
+  const initials = escapeHtml(item.short || String(item.company || "?").slice(0, 3).toUpperCase());
+  const url = companyLogoUrl(item);
+  if (!url) return `<span class="cyc-logo cyc-logo-text ${escapeHtml(item.logoClass || "")}">${initials}</span>`;
+  // data-logo-img wires this into the delegated error listener, which swaps a
+  // missing file for the initials tile. Most of the bundled logo paths in the
+  // feed point at files that are not in assets/logos, so without this a
+  // majority of employers render as a broken image rather than a tile.
+  return `<span class="cyc-logo">
+    <img data-logo-img src="${escapeHtml(url)}" alt=""
+         data-short="${initials}" data-lc="${escapeHtml(item.logoClass || "")}" loading="lazy">
+  </span>`;
+}
+
+function renderCycleCalendar(filtered) {
+  const wrap = document.querySelector("[data-cycle-calendar]");
+  const grid = document.querySelector("[data-cal-grid]");
+  if (!wrap || !grid) return;
+  wrap.hidden = false;
+
+  const byDay = calendarByDay(filtered);
+
+  // Land on the most recent month that actually has activity, rather than on
+  // an empty current month that makes the page look broken.
+  if (cycleCal.year === null) {
+    const keys = [...byDay.keys()].sort();
+    const now = new Date();
+    const seed = keys.length ? new Date(keys[keys.length - 1] + "T00:00:00Z") : now;
+    cycleCal.year = seed.getUTCFullYear();
+    cycleCal.month = seed.getUTCMonth();
+  }
+
+  const first = new Date(Date.UTC(cycleCal.year, cycleCal.month, 1));
+  const title = document.querySelector("[data-cal-title]");
+  if (title) title.textContent = first.toLocaleDateString(undefined, { month: "long", year: "numeric", timeZone: "UTC" });
+
+  const startPad = first.getUTCDay();
+  const daysInMonth = new Date(Date.UTC(cycleCal.year, cycleCal.month + 1, 0)).getUTCDate();
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  let html = "";
+  for (let i = 0; i < startPad; i += 1) html += '<div class="cyc-day cyc-pad" aria-hidden="true"></div>';
+
+  for (let d = 1; d <= daysInMonth; d += 1) {
+    const key = `${cycleCal.year}-${String(cycleCal.month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const items = byDay.get(key) || [];
+    const byCompany = new Map();
+    items.forEach((it) => {
+      if (!byCompany.has(it.company)) byCompany.set(it.company, []);
+      byCompany.get(it.company).push(it);
+    });
+    const companies = [...byCompany.entries()];
+    const shown = companies.slice(0, 2);
+    const rest = items.length - shown.reduce((n, [, list]) => n + list.length, 0);
+
+    const classes = ["cyc-day"];
+    if (items.length) classes.push("has-activity");
+    if (key === todayKey) classes.push("is-today");
+    if (key === cycleCal.selected) classes.push("is-selected");
+
+    html += `<${items.length ? "button type=\"button\"" : "div"} class="${classes.join(" ")}"${items.length ? ` data-cal-day="${key}" aria-label="${d} ${escapeHtml(title ? title.textContent : "")}, ${items.length} posting${items.length === 1 ? "" : "s"}"` : ""}>
+      <span class="cyc-date">${d}</span>
+      ${shown.map(([company, list]) => `
+        <span class="cyc-emp">
+          ${calLogoHtml(list[0])}
+          <span class="cyc-emp-text">
+            <b>${escapeHtml(company)}</b>
+            <small>${list.length} role${list.length === 1 ? "" : "s"}</small>
+          </span>
+        </span>`).join("")}
+      ${rest > 0 ? `<span class="cyc-more">+${rest} more</span>` : ""}
+    </${items.length ? "button" : "div"}>`;
+  }
+  grid.innerHTML = html;
+
+  renderCycleSidePanel(byDay);
+}
+
+function renderCycleSidePanel(byDay) {
+  const side = document.querySelector("[data-cal-side]");
+  if (!side) return;
+  const key = cycleCal.selected;
+  const items = key ? (byDay.get(key) || []) : [];
+
+  if (!key) {
+    side.innerHTML = `<div class="cyc-side-empty">
+      <p><b>Pick a date</b></p>
+      <p>Days with recruiting activity are highlighted. Select one to see which employers posted and what they posted.</p>
+    </div>`;
+    return;
+  }
+
+  const label = new Date(key + "T00:00:00Z").toLocaleDateString(undefined, {
+    weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "UTC",
+  });
+  const rows = items.slice(0, 8).map((item) => `
+    <a class="cyc-post" href="${escapeHtml(safeHttpsUrl(item.sourceUrl) || "#")}" target="_blank" rel="noopener noreferrer">
+      ${calLogoHtml(item)}
+      <span class="cyc-post-text">
+        <b>${escapeHtml(item.company)}</b>
+        <small>${escapeHtml(item.role || "")}</small>
+      </span>
+      <span class="cyc-post-go" aria-hidden="true">&rsaquo;</span>
+    </a>`).join("");
+
+  side.innerHTML = `
+    <div class="cyc-side-head">
+      <h4>${escapeHtml(label)}</h4>
+      <span class="status-pill">${items.length} posting${items.length === 1 ? "" : "s"}</span>
+    </div>
+    ${rows || '<p class="cyc-side-empty">No postings on this date for these filters.</p>'}
+    ${items.length > 8 ? `<p class="cyc-side-note">Showing 8 of ${items.length}. Open Openings to see the rest.</p>` : ""}`;
+}
+
+// Calendar interactions. Delegated, so re-rendering the grid never leaves a
+// dead listener behind.
+document.addEventListener("click", (event) => {
+  const nav = event.target.closest("[data-cal-nav]");
+  if (nav) {
+    const step = Number(nav.dataset.calNav);
+    const d = new Date(Date.UTC(cycleCal.year, cycleCal.month + step, 1));
+    cycleCal.year = d.getUTCFullYear();
+    cycleCal.month = d.getUTCMonth();
+    renderCyclesView();
+    return;
+  }
+  if (event.target.closest("[data-cal-today]")) {
+    const now = new Date();
+    cycleCal.year = now.getUTCFullYear();
+    cycleCal.month = now.getUTCMonth();
+    cycleCal.selected = null;
+    renderCyclesView();
+    return;
+  }
+  const day = event.target.closest("[data-cal-day]");
+  if (day) {
+    // Clicking the selected day again clears it, so the panel can be dismissed
+    // without hunting for a close button.
+    cycleCal.selected = cycleCal.selected === day.dataset.calDay ? null : day.dataset.calDay;
+    renderCyclesView();
+  }
+});
+
 function renderCyclesView() {
   const grid = document.querySelector("[data-cycle-grid]");
   if (!grid) return;
@@ -1928,6 +2106,9 @@ function renderCyclesView() {
   );
 
   renderCycleChips();
+  // The calendar reads the same filtered pool the matrix does, so a filter
+  // change moves both and they can never disagree.
+  renderCycleCalendar(filtered);
 
   const columns = timelineColumns();
   updateCycleWindowLabel(columns);
@@ -2924,6 +3105,16 @@ const routeAuthenticatedUser = window.PromptlyAuthRouting.createAuthenticatedUse
   },
 });
 
+// Render a profile whose paint was held back while an auth callback resolved.
+// Called on EVERY exit from that resolution — session, no session, or thrown —
+// so a deferred paint can never be silently dropped and leave a blank view.
+function flushDeferredProfilePaint() {
+  if (!deferredProfilePaint) return;
+  deferredProfilePaint = false;
+  applyProfileToUI();
+  setView("home");
+}
+
 function applyAccountUser(user) {
   authUser = user;
   const remoteProfile = user?.user_metadata?.promptly_profile;
@@ -2969,11 +3160,74 @@ function applyAccountUser(user) {
     localStorage.setItem(savedStorageKey, "[]");
     refreshSavedList();
   }
+  // The unseen-alerts baseline is per person, not per browser. Left alone, a
+  // device that previously held a different account starts the new one at
+  // "99+": every posting the old account never reviewed counts as unseen, and
+  // a brand-new student's first impression is a bell full of alerts they were
+  // never sent. Dropping the key lets updateAlertPulse seed a fresh baseline
+  // from what matches right now, so the badge starts at 0 and only grows with
+  // postings that genuinely arrive afterwards.
+  //
+  // Not seeded here on purpose: the live feed may still be loading, and a
+  // baseline built from the curated list alone would count every live posting
+  // as new the moment it lands.
+  if (!shouldMigrateLocal) {
+    localStorage.removeItem(seenAlertsStorageKey);
+    updateAlertBadge();
+  }
   accountSyncPaused = false;
   sessionStorage.removeItem("promptlyMigrateLocal");
   localStorage.removeItem("promptlyPendingMigrationEmail");
   if (shouldMigrateLocal && !remoteProfile) scheduleAccountSync();
   updateAccountUI();
+  // Auth has decided. Whatever was held back can now be drawn, and it is drawn
+  // from the profile this account actually carries.
+  flushDeferredProfilePaint();
+  // Mark the account active today, so retention is answerable. Fire and forget:
+  // it is bookkeeping the student did not ask for and must never surface as an
+  // error or delay anything on screen.
+  recordActivityPing();
+  startPresenceHeartbeat();
+}
+
+// Keep the presence key alive while the tab is actually being looked at.
+//
+// Only while VISIBLE. A background tab left open for three days would otherwise
+// report someone as present for three days, which makes the live number a
+// measure of forgotten tabs rather than of people. Pausing when hidden also
+// means a phone in a pocket stops pinging.
+//
+// Slightly under the server's two-minute expiry, so an ordinary session never
+// flickers out between beats.
+var presenceTimer = null;
+
+function startPresenceHeartbeat() {
+  if (presenceTimer) window.clearInterval(presenceTimer);
+  presenceTimer = window.setInterval(function () {
+    if (document.visibilityState === "visible") recordActivityPing();
+  }, 90000);
+}
+
+document.addEventListener("visibilitychange", function () {
+  // Coming back to the tab should register immediately rather than waiting out
+  // the rest of an interval that ticked away while hidden.
+  if (document.visibilityState === "visible") recordActivityPing();
+});
+
+// One authenticated call per app open, deduplicated server-side to one write
+// per day. Not sent when signed out: an anonymous ping would need its own
+// identifier, which is the thing the analytics module deliberately refuses to
+// create.
+async function recordActivityPing() {
+  if (!authUser) return;
+  try {
+    await fetch(`${API_BASE}/api/subscribe`, {
+      method: "POST",
+      headers: await authenticatedJsonHeaders(),
+      body: JSON.stringify({ action: "ping" }),
+      keepalive: true,
+    });
+  } catch {}
 }
 
 // After a failed or empty OAuth exchange, land the user on the sign-up step
@@ -3003,18 +3257,72 @@ function showAuthEntryFallback(mode) {
 // critical path means a parked-auth build makes no third-party requests at all,
 // which is what our privacy page promises.
 let supabaseSdkPromise = null;
-function loadSupabaseSdk() {
-  if (window.supabase?.createClient) return Promise.resolve(true);
-  if (supabaseSdkPromise) return supabaseSdkPromise;
-  supabaseSdkPromise = new Promise((resolve) => {
+// Where the SDK comes from matters more than it looks.
+//
+// It used to be fetched from cdn.jsdelivr.net on every cold start, and failing
+// to fetch it took the "accounts are not connected" branch below — which on
+// screen is indistinguishable from being signed out. On iOS, swiping a PWA away
+// kills the process, so reopening is a cold boot, and the OS routinely resumes
+// before the network does. Cam was signed out every time he closed the app. His
+// session was in localStorage the whole time; the app just could not load the
+// code to read it.
+//
+// The vendored copy is same-origin and precached in the service worker's app
+// shell, so it is there on a cold start with no network at all. The CDN stays
+// only as a fallback for a stale cache missing the file — never the primary.
+const SUPABASE_SDK_LOCAL = "/assets/vendor/supabase.min.js";
+const SUPABASE_SDK_CDN = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";
+
+function loadScriptOnce(src) {
+  return new Promise((resolve) => {
     const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js";
-    script.crossOrigin = "anonymous";
-    script.onload = () => resolve(true);
+    script.src = src;
+    if (/^https?:/i.test(src)) script.crossOrigin = "anonymous";
+    // Resolve on what actually matters — the global being usable — rather than
+    // on onload, which fires for a file that parsed but defined nothing.
+    script.onload = () => resolve(Boolean(window.supabase?.createClient));
     script.onerror = () => resolve(false);
     document.head.appendChild(script);
   });
+}
+
+function loadSupabaseSdk() {
+  if (window.supabase?.createClient) return Promise.resolve(true);
+  if (supabaseSdkPromise) return supabaseSdkPromise;
+  supabaseSdkPromise = (async () => {
+    if (await loadScriptOnce(SUPABASE_SDK_LOCAL)) return true;
+    return loadScriptOnce(SUPABASE_SDK_CDN);
+  })();
   return supabaseSdkPromise;
+}
+
+// Is there a session Supabase has already persisted? Answerable without the
+// SDK, which is the whole point: it separates "signed out" from "could not load
+// auth". Those looked identical on screen, and only one of them should ever
+// show a sign-in form.
+function hasStoredAuthSession() {
+  try {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (key && /^sb-.+-auth-token$/.test(key) && localStorage.getItem(key)) return true;
+    }
+  } catch {}
+  return false;
+}
+
+// Backs off rather than hammering a network that is plainly not ready yet, and
+// gives up after five tries so a genuinely broken deployment does not retry for
+// ever behind a "reconnecting" message.
+let authRetryAttempt = 0;
+function scheduleAuthRetry() {
+  if (authRetryAttempt >= 5) return false;
+  const delay = Math.min(1000 * 2 ** authRetryAttempt, 15000);
+  authRetryAttempt += 1;
+  window.setTimeout(() => {
+    supabaseSdkPromise = null;
+    initializeAuth();
+  }, delay);
+  return true;
 }
 
 async function initializeAuth() {
@@ -3032,6 +3340,17 @@ async function initializeAuth() {
     // Only reach out to the Supabase CDN when accounts are actually switched on.
     // While auth is parked, Promptly loads zero third-party scripts.
     if (config.enabled) await loadSupabaseSdk();
+    // Accounts ARE switched on and this browser holds a session, but the SDK
+    // did not load. That is a network problem, not a signed-out user — showing
+    // the sign-in screen here is what made Cam log in again every time he
+    // reopened the app. Say what is actually happening and keep trying.
+    if (config.enabled && !window.supabase?.createClient && hasStoredAuthSession()) {
+      pendingOAuthCallback = false;
+      authStatus.textContent = scheduleAuthRetry()
+        ? "Reconnecting to your account…"
+        : "Couldn't reach your account. Check your connection and reopen Promptly.";
+      return;
+    }
     if (!config.enabled || !window.supabase?.createClient) {
       pendingOAuthCallback = false;
       document.querySelector("[data-auth-password-group]").hidden = true;
@@ -3051,6 +3370,7 @@ async function initializeAuth() {
     authClient = window.supabase.createClient(config.url, config.publishableKey, {
       auth: { detectSessionInUrl: false, flowType: "pkce" },
     });
+    authRetryAttempt = 0;
     authStatus.textContent = "Your account securely keeps your profile and saved alerts in sync.";
     authClient.auth.onAuthStateChange((event, session) => {
       window.setTimeout(() => {
@@ -3090,11 +3410,19 @@ async function initializeAuth() {
         setSignupError("Google sign-in did not complete. Please try again.");
         showAuthEntryFallback();
       }
+      flushDeferredProfilePaint();
     }
   } catch {
     pendingOAuthCallback = false;
+    // Same distinction as above: /api/auth-config failing while a session is
+    // stored means the network is down, not that anyone signed out.
+    if (hasStoredAuthSession() && scheduleAuthRetry()) {
+      authStatus.textContent = "Reconnecting to your account…";
+      return;
+    }
     authStatus.textContent = "Account setup could not load. You can continue on this device and try again later.";
     showAuthEntryFallback();
+    flushDeferredProfilePaint();
   }
 }
 
@@ -3605,7 +3933,7 @@ function saveProfileEdits() {
   profileModal.close();
 }
 
-function restoreProfile() {
+function restoreProfile({ paint = true } = {}) {
   try {
     const savedProfile = JSON.parse(localStorage.getItem(profileStorageKey) || "null");
     if (!savedProfile) return false;
@@ -3632,8 +3960,14 @@ function restoreProfile() {
     fillProfileInputs();
     // Résumé matching is live now — reflect the saved file instead of the old
     // "coming soon" placeholder this used to show.
-    applyProfileToUI();
-    setView("home");
+    //
+    // The data always loads; only the PAINT is optional. An auth callback that
+    // is still resolving has not yet decided whose profile this is, and the
+    // cached one belongs to whoever used this browser last.
+    if (paint) {
+      applyProfileToUI();
+      setView("home");
+    }
     return true;
   } catch (error) {
     // Surface it: swallowing this silently once hid a real startup bug that
@@ -3847,34 +4181,24 @@ async function ensureServerVerification() {
 }
 
 function renderVerificationNotice() {
-  // A signed-in session is proof of a confirmed address, so it hides the notice
-  // outright rather than waiting for the server round trip below to land.
-  const signedIn = Boolean(authUser);
-  if (signedIn && profile.email && !emailVerified) ensureServerVerification();
-  const hide = !profile.email || emailVerified || signedIn || document.body.classList.contains("onboarding-active");
+  // There is no unconfirmed-email state left to warn about.
+  //
+  // Supabase requires a confirmed address before an account exists at all, so
+  // anyone using Promptly has already confirmed. The bar and the inline notice
+  // were written for the on-device profile flow that predates accounts, and by
+  // the end they only ever appeared in states production cannot reach —
+  // showing a student a deletion warning about an account in perfect health.
+  //
+  // What the bar was doing that still matters is the bookkeeping underneath it:
+  // `verified` on the subscriber record gates whether a digest is even QUEUED,
+  // and pressing "Resend link" was what quietly set it. That now happens on its
+  // own, so removing the bar cannot leave anyone silently un-alerted.
+  if (authUser && profile.email && !emailVerified) ensureServerVerification();
 
   const el = document.querySelector("[data-verify-notice]");
-  if (el) {
-    el.hidden = hide;
-    if (!hide) el.textContent = `Email alerts are paused until you confirm ${profile.email}. Check your inbox for the confirmation link.`;
-  }
-
-  // Persistent bar across every view — easy to miss a notice buried in Settings.
+  if (el) el.hidden = true;
   const banner = document.querySelector("[data-verify-banner]");
-  const text = document.querySelector("[data-verify-banner-text]");
-  if (!banner) return;
-  banner.hidden = hide;
-  if (!hide && text) {
-    // Two lines rather than one long sentence: the action reads first, the
-    // consequence second and quieter. On a phone the single sentence wrapped
-    // into a four-line block of uniformly bold amber text.
-    text.textContent = "";
-    const lead = document.createElement("b");
-    lead.textContent = `Confirm ${profile.email} to switch on email alerts.`;
-    const note = document.createElement("small");
-    note.textContent = "Unconfirmed profiles are deleted after 14 days.";
-    text.append(lead, note);
-  }
+  if (banner) banner.hidden = true;
 }
 
 // Tuck the confirmation bar out of the way while reading down the page, and
@@ -3965,7 +4289,100 @@ async function saveSubscriber(subscription = null) {
   }
 }
 
+// True inside the Capacitor iOS/Android shell, false in any browser.
+function isNativeShell() {
+  return Boolean(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+}
+
+// Native push, which is a different transport from the web path below.
+//
+// iOS exposes the Web Push API to Safari and to a Home Screen PWA only. The
+// WKWebView that Capacitor runs has no PushManager at all, so enablePushAlerts
+// would report "not supported" inside our own app. The shell registers with
+// APNs instead and hands the resulting device token to the server, which sends
+// to both addresses.
+//
+// The plugin is read off window.Capacitor.Plugins rather than imported: this
+// file is a plain script the browser loads directly, not a bundled module, and
+// it has to keep parsing in a browser where no plugin exists.
+let nativePushListenersBound = false;
+
+async function enableNativePushAlerts() {
+  const PushNotifications = window.Capacitor?.Plugins?.PushNotifications;
+  if (!PushNotifications) {
+    setPushStatus(pushCopy().unsupported);
+    return null;
+  }
+
+  // Bind before requesting: the token arrives through an event, and on a warm
+  // launch it can fire before an await further down has resolved.
+  if (!nativePushListenersBound) {
+    nativePushListenersBound = true;
+
+    PushNotifications.addListener("registration", async (token) => {
+      const deviceToken = token && token.value ? String(token.value) : "";
+      if (!deviceToken) return;
+      try {
+        const response = await fetch(`${API_BASE}/api/subscribe`, {
+          method: "POST",
+          headers: await authenticatedJsonHeaders(),
+          body: JSON.stringify({ action: "register-device", deviceToken, profile: { email: profile.email } }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (data.registered) setPushStatus(pushCopy().enabled);
+        else if (data.disabled) setPushStatus("Push is switched off for this account. Turn it on to get alerts here.");
+        else setPushStatus("Couldn’t register this device for alerts. Try again in a bit.");
+      } catch {
+        setPushStatus("Couldn’t reach Promptly to register this device. Check your connection.");
+      }
+    });
+
+    // Apple's own error, surfaced rather than swallowed — a silent failure here
+    // looks identical to "no internships matched you", which is the worst
+    // possible confusion for this app.
+    PushNotifications.addListener("registrationError", () => {
+      setPushStatus("iOS refused to register this device for notifications.");
+    });
+
+    // Tapping a notification should open the posting it announced, not the
+    // home screen. The url is the one the server put in the payload.
+    PushNotifications.addListener("pushNotificationActionPerformed", (event) => {
+      const url = event?.notification?.data?.url;
+      if (url && /^https:\/\//i.test(url)) window.open(url, "_blank");
+    });
+  }
+
+  let status;
+  try {
+    status = await PushNotifications.checkPermissions();
+    if (status.receive === "prompt" || status.receive === "prompt-with-rationale") {
+      status = await PushNotifications.requestPermissions();
+    }
+  } catch (e) {
+    setPushStatus("Couldn't ask for permission: " + (e.message || e));
+    return null;
+  }
+
+  if (status.receive !== "granted") {
+    const copy = pushCopy();
+    setPushStatus(status.receive === "denied" ? copy.blocked : copy.allow);
+    return null;
+  }
+
+  // Resolves as soon as iOS accepts the request; the token itself arrives on
+  // the "registration" listener above.
+  try {
+    await PushNotifications.register();
+  } catch (e) {
+    setPushStatus("Couldn't turn on push: " + (e.message || e));
+    return null;
+  }
+  return true;
+}
+
 async function enablePushAlerts() {
+  if (isNativeShell()) return enableNativePushAlerts();
+
   if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
     setPushStatus(pushCopy().unsupported);
     return null;
@@ -4145,7 +4562,20 @@ refreshSavedList();
 
 renderVerificationNotice();
 
-if (!restoreProfile()) {
+// A confirmation or OAuth link in the URL is about to decide whose profile
+// this is. The cached profile belongs to whoever used this browser last —
+// after deleting an account and signing up again, that is an account which no
+// longer exists, and it was appearing on screen for a moment before auth
+// replaced it.
+//
+// The data still loads: local→account migration reads `profile`, and a
+// confirmation link is a fresh page load, so localStorage is the only copy of
+// it. Only the paint waits, and it is flushed on every exit from the auth
+// resolution below.
+const resolvingAuthCallback = Boolean(window.PromptlyAuthRouting.parseOAuthCallback(window.location.href));
+const restoredProfile = restoreProfile({ paint: !resolvingAuthCallback });
+deferredProfilePaint = restoredProfile && resolvingAuthCallback;
+if (!restoredProfile && !resolvingAuthCallback) {
   window.setTimeout(() => {
     // A signed-in user has already been routed (or is mid-OAuth exchange) —
     // never drag them back to the sign-up screen.
@@ -4861,6 +5291,14 @@ async function loadLiveOpenings() {
     restoreSavedCompanies();
     renderFilterChips();
     renderOpenings();
+    // Again, now that the live feed is actually merged in.
+    //
+    // The call above fires as soon as `updatedAt` is read, which is BEFORE the
+    // loop that pushes live postings into `openings`. So "N hiring right now"
+    // was counted from the curated baseline alone and never recomputed: the app
+    // read "366 companies tracked / 5 hiring right now" while 196 companies had
+    // live listings in the very feed it had just downloaded.
+    updateTrackedCount();
     updateAlertBadge();
     updateAlertPulse();
     if (typeof renderPeerPulse === "function") renderPeerPulse();

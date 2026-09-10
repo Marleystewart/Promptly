@@ -165,6 +165,26 @@ const SOURCES = [
   { company: "GTCR", short: "GTCR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "gtcr" },
   // Asset management
   { company: "Artisan Partners", short: "APAM", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "greenhouse", board: "artisanpartners" },
+
+  // ═══ ADDED Sep 2026 (trey/finance-ats-feeds): watchlist → real ATS ════════
+  // Each discovered by reading the ATS off the live careers page (not guessed)
+  // and probed before adding. Ownership confirmed: Greenhouse board name,
+  // Ashby/Lever page <title>, or Workday tenant on the employer's own domain.
+  // Names match watchlist.js exactly so the placeholder card flips on flip.
+  // Payments
+  { company: "PayPal", short: "PYPL", logoClass: "fin", field: "Finance", subField: "Payments", ats: "workday", tenant: "paypal", dc: "wd1", site: "jobs" },
+  { company: "Green Dot", short: "GDOT", logoClass: "fin", field: "Finance", subField: "Payments", ats: "workday", tenant: "greendotcorp", dc: "wd1", site: "gdc" },
+  { company: "Marqeta", short: "MQ", logoClass: "fin", field: "Finance", subField: "Payments", ats: "ashby", board: "marqeta-inc" },
+  // Fintech / financial software (Bread Financial already added on main)
+  { company: "nCino", short: "NCNO", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "ncinoinc" },
+  { company: "OppFi", short: "OPFI", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "opploans" },
+  { company: "Morningstar", short: "MORN", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "workday", tenant: "morningstar", dc: "wd5", site: "morningstar" },
+  { company: "FactSet", short: "FDS", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "workday", tenant: "factset", dc: "wd108", site: "FactSetCareers" },
+  { company: "SS&C Technologies", short: "SSNC", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "workday", tenant: "ssctech", dc: "wd1", site: "SSCTechnologies" },
+  { company: "Kyriba", short: "KYRB", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "workday", tenant: "kyriba", dc: "wd5", site: "Kyriba-Careers" },
+  // Private equity
+  { company: "Thoma Bravo", short: "TB", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "lever", board: "thomabravo" },
+
   // Advisory / boutique investment banks
   { company: "Lincoln International", short: "LINC", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "greenhouse", board: "lincolninternational" },
   { company: "LionTree", short: "LT", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "greenhouse", board: "liontree" },
@@ -280,6 +300,13 @@ const SOURCES = [
   { company: "Coursera", short: "COUR", logoClass: "edu", field: "Education", subField: "Education Technology", ats: "greenhouse", board: "coursera" },
   { company: "The Athletic", short: "ATH", logoClass: "media", field: "Sports", subField: "Sports Media", ats: "lever", board: "theathletic" },
   { company: "VTS", short: "VTS", logoClass: "consumer", field: "Real Estate", subField: "Property Technology", ats: "greenhouse", board: "vts" },
+
+  // ═══ ADDED Sep 2026 (trey/eng-sports-jackhenry): watchlist → real ATS ═════
+  // ATS read off the live careers page and probed; ownership confirmed via
+  // Greenhouse board name / Phenom host on the employer's own domain.
+  { company: "RTX (Raytheon)", short: "RTX", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "custom", handler: "rtx" },
+  { company: "NFL", short: "NFL", logoClass: "media", field: "Sports", subField: "Teams & Leagues", ats: "greenhouse", board: "nflcareers" },
+  { company: "Fanatics", short: "FAN", logoClass: "consumer", field: "Sports", subField: "Sports Technology", ats: "greenhouse", board: "fanaticsinc" },
 
   // ═══ ADDED Jul 2026: probed + identity-verified boards ═══════════════════
   { company: "SpaceX", short: "SPX", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "greenhouse", board: "spacex" },
@@ -429,6 +456,45 @@ const SOURCES = [
   // Probed live before shipping. (A source returning 0 matches today is fine —
   // it activates the moment that employer posts a student role.)
   { company: "Keystone Strategy", short: "KEY", logoClass: "fin", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "keystonestrategy" },
+
+  // ── Consulting, added 9 Sep 2026 ──────────────────────────────────────
+  // Consulting had 8 sources against Finance's 146, while being the second most
+  // common field students actually use Promptly for. Every board below was
+  // verified against its own stated name or a live 200 before landing here —
+  // see docs/SOURCE-HUNTING-FINDINGS.md for the ones that failed that test.
+  // MBB. Not on any standard system — the job list is JavaScript-rendered, so
+  // discover-ats.js finds nothing. The gateway endpoint was found by watching
+  // the rendered page's own network calls. See company-scrapers/mckinsey.js.
+  { company: "McKinsey & Company", short: "MCK", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "custom", handler: "mckinsey" },
+  { company: "AlixPartners", short: "AXP", logoClass: "consult", field: "Consulting", subField: "Restructuring", ats: "greenhouse", board: "alixpartners" },
+  // Greenhouse board is literally named "West Monroe (Campus)" — a dedicated
+  // student board, which is the best possible shape for this product.
+  { company: "West Monroe", short: "WM", logoClass: "consult", field: "Consulting", subField: "Tech Consulting", ats: "greenhouse", board: "westmonroe5" },
+  { company: "Cornerstone Research", short: "CRES", logoClass: "consult", field: "Consulting", subField: "Economic Consulting", ats: "workday", tenant: "cornerstone", dc: "wd501", site: "CornerstoneResearch_Careers" },
+  { company: "Baker Tilly", short: "BT", logoClass: "consult", field: "Consulting", subField: "Accounting & Advisory", ats: "workday", tenant: "bakertilly", dc: "wd5", site: "BTCareers" },
+  { company: "Forrester", short: "FORR", logoClass: "consult", field: "Consulting", subField: "Research & Advisory", ats: "workday", tenant: "forrester", dc: "wd501", site: "careers" },
+  { company: "Riveron", short: "RIV", logoClass: "consult", field: "Consulting", subField: "Restructuring", ats: "ashby", board: "riveron" },
+  { company: "Point B", short: "PTB", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "lever", board: "pointb" },
+  { company: "Propeller Consulting", short: "PROP", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "propellerconsulting" },
+
+  // ── Finance, round three ──────────────────────────────────────────────
+  // Two categories the registry had almost nothing in: digital-asset firms,
+  // which hire heavily from quantitative and CS programmes, and venture
+  // capital, which runs some of the most competitive analyst programmes there
+  // are and appeared nowhere.
+  { company: "Gemini", short: "GEM", logoClass: "fin", field: "Finance", subField: "Digital Assets", ats: "greenhouse", board: "gemini" },
+  { company: "Ripple", short: "XRP", logoClass: "fin", field: "Finance", subField: "Digital Assets", ats: "greenhouse", board: "ripple" },
+  { company: "Fireblocks", short: "FB", logoClass: "fin", field: "Finance", subField: "Digital Assets", ats: "greenhouse", board: "fireblocks" },
+  { company: "BitGo", short: "BTGO", logoClass: "fin", field: "Finance", subField: "Digital Assets", ats: "greenhouse", board: "bitgo" },
+  { company: "Mercury", short: "MERC", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "mercury" },
+  { company: "General Catalyst", short: "GC", logoClass: "fin", field: "Finance", subField: "Venture Capital", ats: "greenhouse", board: "generalcatalyst" },
+  { company: "Bessemer Venture Partners", short: "BVP", logoClass: "fin", field: "Finance", subField: "Venture Capital", ats: "greenhouse", board: "bessemerventurepartners" },
+
+  // ── Finance, added 9 Sep 2026 ─────────────────────────────────────────
+  // Exchanges, which the registry had almost none of despite being a standard
+  // target for quantitative and markets-focused students.
+  { company: "Nasdaq", short: "NDAQ", logoClass: "fin", field: "Finance", subField: "Exchanges", ats: "workday", tenant: "nasdaq", dc: "wd1", site: "Global_External_Site" },
+  { company: "CME Group", short: "CME", logoClass: "fin", field: "Finance", subField: "Exchanges", ats: "workday", tenant: "cmegroup", dc: "wd1", site: "cme_careers" },
   { company: "Peloton", short: "PTON", logoClass: "consumer", field: "Consumer", subField: "Fitness", ats: "greenhouse", board: "peloton" },
 
   // ═══ ENTERPRISE + NON-TECH COVERAGE (verified July 2026) ══════════════════

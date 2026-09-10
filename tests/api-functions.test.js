@@ -8,6 +8,28 @@ const topLevelFunctions = fs.readdirSync(apiDir).filter((name) => name.endsWith(
 assert.equal(topLevelFunctions.length, 12, "Vercel Hobby supports at most 12 top-level API functions");
 assert.equal(topLevelFunctions.includes("status.js"), false);
 
+// Every endpoint must actually export a request handler.
+//
+// This exists because of a real outage. An edit inserted a helper function
+// immediately before `async function handler`, which happened to be the tail of
+// the line `module.exports = async function handler(req, res) {`. The file still
+// parsed, `node --check` was happy, and every other test passed — they read the
+// source as text or called one specific endpoint. But admin-stats.js was now
+// exporting the helper instead of the handler, so the live endpoint took
+// (subscriber) instead of (req, res), never wrote a response, and the admin page
+// simply would not open.
+//
+// Requiring the module is what catches it: a handler is a function of arity 2.
+for (const file of topLevelFunctions) {
+  const mod = require(path.join(apiDir, file));
+  assert.equal(typeof mod, "function", `${file} must export a request handler`);
+  assert.equal(
+    mod.length,
+    2,
+    `${file} exports a function taking ${mod.length} argument(s); a Vercel handler takes (req, res)`
+  );
+}
+
 function response() {
   return {
     statusCode: null,

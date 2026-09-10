@@ -9,12 +9,13 @@
 const { SOURCES } = require("./sources");
 const { isUsLocation: isPositiveUsLocation } = require("./us-location");
 const { classifyRoleField } = require("./role-field");
+const { logoPathFor } = require("./logo-manifest");
 
 // Non-US locations. Extended after an audit found roles in Bristol, Tel Aviv,
 // Taipei and others slipping through into a US-only product. Country names are
 // included because many feeds give "Bristol, United Kingdom" with a city we
 // don't list.
-const INTERNATIONAL = /london|hong ?kong|singapore|japan|munich|germany|india|toronto|calgary|montr|ottawa|waterloo, on|amsterdam|shanghai|sydney|melbourne|brisbane|perth|auckland|paris|zurich|geneva|dublin|tokyo|osaka|seoul|taipei|taiwan|\bhk\b|\buk\b|united kingdom|england|scotland|wales|ireland|tel aviv|israel|herzliya|madrid|barcelona|milan|rome|frankfurt|berlin|hamburg|stuttgart|warsaw|poland|krak|bucharest|romania|budapest|hungary|prague|czech|vienna|austria|bangalore|bengaluru|hyderabad|mumbai|pune|chennai|gurgaon|noida|manila|philippines|jakarta|indonesia|kuala lumpur|malaysia|selangor|petaling jaya|penang|johor|bangkok|thailand|vietnam|hanoi|shenzhen|beijing|guangzhou|china|dubai|abu dhabi|\buae\b|saudi|riyadh|qatar|doha|vancouver|ontario|quebec|alberta|british columbia|canada|stockholm|sweden|oslo|norway|copenhagen|denmark|helsinki|finland|brussels|belgium|luxembourg|switzerland|netherlands|rotterdam|eindhoven|edinburgh|manchester|glasgow|birmingham, uk|bristol|cambridge, uk|oxford, uk|leeds|belfast|são paulo|sao paulo|brazil|mexico city|guadalajara|bogot|colombia|buenos aires|argentina|santiago|chile|lima|peru|cairo|egypt|nairobi|kenya|lagos|nigeria|johannesburg|cape town|south africa|spain|portugal|lisbon|greece|athens|turkey|istanbul|ukraine|serbia|croatia|slovakia|slovenia|bulgaria|estonia|latvia|lithuania|iceland|malta|cyprus|emea\b|apac\b|latam\b/i;
+const INTERNATIONAL = /london|hong ?kong|singapore|japan|munich|germany|india|toronto|calgary|montr|ottawa|waterloo, on|amsterdam|shanghai|sydney|melbourne|brisbane|perth|auckland|paris|zurich|geneva|dublin|tokyo|osaka|seoul|taipei|taiwan|\bhk\b|\buk\b|united kingdom|england|scotland|wales|ireland|tel aviv|israel|herzliya|madrid|barcelona|milan|rome|frankfurt|berlin|hamburg|stuttgart|warsaw|poland|krak|bucharest|romania|budapest|hungary|prague|czech|vienna|austria|bangalore|bengaluru|hyderabad|mumbai|pune|chennai|gurgaon|noida|manila|philippines|jakarta|indonesia|kuala lumpur|malaysia|selangor|petaling jaya|penang|johor|bangkok|thailand|vietnam|hanoi|shenzhen|beijing|guangzhou|china|dubai|abu dhabi|\buae\b|saudi|riyadh|qatar|doha|vancouver|ontario|quebec|alberta|british columbia|canada|stockholm|sweden|oslo|norway|copenhagen|denmark|helsinki|finland|brussels|belgium|luxembourg|switzerland|netherlands|rotterdam|eindhoven|france|la d[eé]fense|edinburgh|manchester|glasgow|birmingham, uk|bristol|cambridge, uk|oxford, uk|leeds|belfast|são paulo|sao paulo|brazil|mexico city|guadalajara|bogot|colombia|buenos aires|argentina|santiago|chile|lima|peru|cairo|egypt|nairobi|kenya|lagos|nigeria|johannesburg|cape town|south africa|spain|portugal|lisbon|greece|athens|turkey|istanbul|ukraine|serbia|croatia|slovakia|slovenia|bulgaria|estonia|latvia|lithuania|iceland|malta|cyprus|emea\b|apac\b|latam\b/i;
 // Some employers publish one req for several offices, e.g. "Austin, TX,
 // United States; London, United Kingdom; Singapore". An international office
 // must not hide the same req's explicit US locations.
@@ -537,7 +538,12 @@ function normalize(src, title, url, location, cycle = "Summer 2027", workplaceTy
     company: src.company,
     short: src.short,
     logoClass: src.logoClass,
-    logo: `assets/logos/${slug}.png`, // shows if the file exists, else tile fallback
+    // Only claim a logo we actually have. This used to emit a path for every
+    // listing and let the browser find out — 73 of 121 paths in the live feed
+    // pointed at files that are not in the repo, and one slug was undefined.
+    // An empty string means the client draws the initials tile directly,
+    // deliberately, without a failed request first.
+    logo: logoPathFor(slug, src.company),
     field,
     subField,
     role: cleanRole(title),
@@ -569,8 +575,62 @@ const FETCHERS = {
 
 // Run a single source's real ATS fetcher. Used both by the aggregate loop and
 // by the "watch" flow to probe that a pasted board actually resolves.
+// A timeout is not a broken feed.
+//
+// On 9 September the daily check reported "6 sources failed to fetch (SpaceX,
+// Gopuff, Oscar Health, Okta, Virtu Financial, ...)". Every one of those boards
+// answered a direct request in under 400ms. They were not down. We were asking
+// all ~350 sources at the same instant and timing ourselves out — the failures
+// were self-inflicted congestion, and they moved around from run to run.
+//
+// Two fixes, because they address different halves. Bounded concurrency stops
+// us creating the congestion. One retry stops a single unlucky request being
+// reported as a dead employer, which is what turns the daily email into noise
+// nobody reads.
+const FETCH_CONCURRENCY = 12;
+
+// Retry only what a retry can fix. A timeout or a dropped connection is worth
+// a second attempt; an HTTP status is the board answering, and a 404 means the
+// slug is genuinely wrong. Retrying those would double our traffic against a
+// board that is telling us the truth the first time.
+function isWorthRetrying(error) {
+  if (!error) return false;
+  const name = error.name || "";
+  if (name === "TimeoutError" || name === "AbortError") return true;
+  // fetch() rejects with a TypeError for DNS and connection failures.
+  return name === "TypeError";
+}
+
 async function fetchOne(src) {
-  return (FETCHERS[src.ats] || fetchGreenhouse)(src);
+  const fetcher = FETCHERS[src.ats] || fetchGreenhouse;
+  try {
+    return await fetcher(src);
+  } catch (error) {
+    if (!isWorthRetrying(error)) throw error;
+    return fetcher(src);
+  }
+}
+
+// Run at most `limit` fetches at once, preserving input order in the results.
+// Deliberately not Promise.allSettled over everything: that is what caused the
+// problem. Deliberately not serial either — 350 sources one at a time would
+// not finish inside the function's time limit.
+async function settleWithConcurrency(items, limit, worker) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function run() {
+    while (true) {
+      const index = next++;
+      if (index >= items.length) return;
+      try {
+        results[index] = { status: "fulfilled", value: await worker(items[index]) };
+      } catch (reason) {
+        results[index] = { status: "rejected", reason };
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
+  return results;
 }
 
 async function aggregateOpenings() {
@@ -585,9 +645,7 @@ async function aggregateOpenings() {
   } catch {}
   const allSources = SOURCES.concat(Array.isArray(watched) ? watched : []);
 
-  const results = await Promise.allSettled(
-    allSources.map((src) => fetchOne(src))
-  );
+  const results = await settleWithConcurrency(allSources, FETCH_CONCURRENCY, fetchOne);
 
   // Keep the feed balanced and clean: no single employer floods it, and the
   // same role posted across multiple offices collapses to one card.
@@ -664,4 +722,4 @@ async function aggregateOpenings() {
   return { openings, sourceStatus, updatedAt: new Date().toISOString() };
 }
 
-module.exports = { aggregateOpenings, isRelevant, detectCycle, fetchOne, isPastCycle, canonicalUrl, normalizeCompany, normalizeRole, preferUsLocations };
+module.exports = { aggregateOpenings, settleWithConcurrency, isWorthRetrying, FETCH_CONCURRENCY, isRelevant, detectCycle, fetchOne, isPastCycle, canonicalUrl, normalizeCompany, normalizeRole, preferUsLocations };

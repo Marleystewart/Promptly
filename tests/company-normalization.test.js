@@ -191,7 +191,12 @@ console.log(`Company normalization tests passed. ${names.size} names, ${collisio
   // unrelated "<Name> Capital" private-credit/PE shop on the watch list. They
   // are different employers and must NOT be collapsed — aliasing any of these
   // would make that firm's card claim we can read a feed we cannot.
+
   const REVIEWED_NOT_THE_SAME = [
+    //   Reviewed 9 Sep 2026, on adding the Gemini source: Capgemini is a French
+    //   IT services group; Gemini is the US digital-asset exchange. The fuzzy
+    //   match is pure substring coincidence.
+    "Capgemini ~ Gemini",
     "Genstar Capital ~ Capital Group",
     "Golub Capital ~ Capital Group",
     "Monroe Capital ~ Capital Group",
