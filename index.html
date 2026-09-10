@@ -173,11 +173,31 @@
               <svg viewBox="0 0 24 24"><path d="M18 9.8c0-3.4-2.1-6-5-6.7V2h-2v1.1c-2.9.7-5 3.3-5 6.7v3.9l-1.8 3h15.6l-1.8-3V9.8Z"/><path d="M9.2 19.2a2.9 2.9 0 0 0 5.6 0"/></svg>
               <b data-alert-badge>0</b>
             </button>
+            <div class="help-wrap">
+              <button class="icon-btn" data-tour="help" aria-label="Help" aria-haspopup="true" aria-expanded="false" title="Help">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.7.2-1.2.9-1.2 1.6v.5"/><path d="M12 17.5h.01"/></svg>
+              </button>
+              <div class="help-menu" data-help-menu hidden role="menu" aria-label="Help and resources">
+                <p class="help-menu-head">Help &amp; resources</p>
+                <button type="button" role="menuitem" data-help-tour>
+                  <strong>Take the Promptly tour</strong><span>See how the app works</span>
+                </button>
+                <button type="button" role="menuitem" data-help-go="cycles">
+                  <strong>Recruiting cycles</strong><span>When employers actually post</span>
+                </button>
+                <a role="menuitem" href="/how-it-works">
+                  <strong>How Promptly works</strong><span>Where the listings come from</span>
+                </a>
+              </div>
+            </div>
             <button class="profile-chip" data-view="profile">P</button>
           </div>
         </header>
 
         <section class="view active" id="view-home" data-heading="Welcome back">
+          <!-- Filled by onboarding.js only after the tour is finished or
+               declined, and only until the student dismisses it. -->
+          <aside class="getting-started" data-getting-started hidden></aside>
           <article class="purpose-bar">
             <span class="purpose-dot"></span>
             <p><strong>Promptly is a student alert system.</strong> Promptly watches internships and early-career openings that match your school year, major, and interests. You apply on the employer's official site.</p>
@@ -258,12 +278,12 @@
         </section>
 
         <section class="view" id="view-openings" data-heading="Student Alert Feed">
-          <div class="search-panel">
+          <div class="search-panel" data-tour="search">
             <label>
               <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
               <input type="search" placeholder="Search Google, Goldman, McKinsey, Amazon..." />
             </label>
-            <div class="filter-row tight">
+            <div class="filter-row tight" data-tour="filters">
               <button class="filter-chip active">All</button>
               <button class="filter-chip">Technology</button>
               <button class="filter-chip">Finance</button>
@@ -282,7 +302,7 @@
             </div>
             <div class="sub-filter-row" id="sub-filter-row" hidden></div>
           </div>
-          <div class="opening-list full-list"></div>
+          <div class="opening-list full-list" data-tour="opportunity-feed"></div>
         </section>
 
         <section class="view" id="view-cycles" data-heading="Student Cycles">
@@ -314,7 +334,7 @@
             <!-- Desktop calendar. Renders the same filtered pool as the matrix
                  below it; CSS shows one or the other, never both. Mobile keeps
                  the existing layout untouched. -->
-            <div class="cyc-cal" data-cycle-calendar hidden>
+            <div class="cyc-cal" data-cycle-calendar data-tour="recruiting-cycles" hidden>
               <div class="cyc-cal-main">
                 <div class="cyc-cal-head">
                   <div class="cyc-cal-nav">
@@ -342,7 +362,7 @@
 
             <!-- Phone-only single-month view. Rendered from the SAME filtered
                  pool as the desktop grid; CSS decides which one is visible. -->
-            <div class="cycle-mobile" data-cycle-mobile hidden>
+            <div class="cycle-mobile" data-cycle-mobile data-tour="recruiting-cycles-mobile" hidden>
               <div class="cycm-monthnav" role="group" aria-label="Change month">
                 <button type="button" class="cycm-arrow" data-cycm-step="-1" aria-label="Previous month">‹</button>
                 <button type="button" class="cycm-month" data-cycm-label aria-live="polite"></button>
@@ -366,7 +386,7 @@
         </section>
 
         <section class="view" id="view-alerts" data-heading="Alerts">
-          <article class="settings-card watch-any-card">
+          <article class="settings-card watch-any-card" data-tour="follow-company">
             <span class="status-pill">WATCH ANY COMPANY</span>
             <h2>Don't see a company? Watch it.</h2>
             <p class="card-lede">Paste a company's careers link. If it runs on a supported hiring platform, Promptly starts watching it and alerts you the moment a 2027 internship posts — same as every other alert.</p>
@@ -390,7 +410,7 @@
             <button class="profile-tab active" data-profile-tab="info">Profile</button>
             <button class="profile-tab" data-profile-tab="settings">Settings</button>
           </div>
-          <div class="profile-tab-panel active" data-profile-panel="info">
+          <div class="profile-tab-panel active" data-profile-panel="info" data-tour="preferences">
             <div class="settings-grid">
               <article class="settings-card">
                 <h2>Student Profile</h2>
@@ -419,7 +439,7 @@
           </div>
           <div class="profile-tab-panel" data-profile-panel="settings">
             <div class="settings-grid">
-              <article class="settings-card">
+              <article class="settings-card" data-tour="notifications">
                 <span class="status-pill" data-push-pill>PHONE ALERTS</span>
                 <h2>Push Notifications</h2>
                 <p class="card-lede" data-push-settings-intro>Get instant lock-screen alerts when a matching internship drops. Add Promptly to your Home Screen first on iPhone.</p>
@@ -578,6 +598,7 @@
     <script src="student-email.js?v=20260910b"></script>
     <script src="listing-state.js?v=20260910b"></script>
     <script src="script.js?v=20260910b"></script>
+    <script src="onboarding.js?v=20260910b"></script>
     <script src="assistant.js?v=20260910b"></script>
   </body>
 </html>
