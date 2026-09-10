@@ -62,10 +62,15 @@ async function fetchTalnetListings(feedUrl) {
     if (!title || !href || seen.has(href)) continue;
     seen.add(href);
     const published = (entry.match(/<published[^>]*>([^<]+)<\/published>/) || [])[1] || null;
+    // Some tenants (Bank of America) put a real "City:" field in the entry
+    // body; that beats guessing from the title, so prefer it when present.
+    const body = decode((entry.match(/<content[^>]*>([\s\S]*?)<\/content>/) || [])[1] || "")
+      .replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "");
+    const cityField = (body.match(/City:\s*([^\n]{2,60})/i) || [])[1];
     out.push({
       title,
       url: href.replace(/\?instant=apply$/, ""),
-      location: locationFromTitle(title),
+      location: (cityField || "").trim() || locationFromTitle(title),
       postedAt: published && Number.isFinite(Date.parse(published)) ? new Date(published).toISOString() : null,
     });
   }

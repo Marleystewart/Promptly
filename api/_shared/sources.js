@@ -86,7 +86,10 @@ const SOURCES = [
   { company: "MetLife", short: "MET", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "metlife" },
   { company: "Wells Fargo", short: "WFC", logoClass: "fin", field: "Finance", subField: "Corporate & Commercial Banking", ats: "workday", tenant: "wf", dc: "wd1", site: "WellsFargoJobs" },
   { company: "Fidelity", short: "FID", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "fmr", dc: "wd1", site: "FidelityCareers" },
-  { company: "Bank of America", short: "BAC", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "ghr", dc: "wd1", site: "lateral-us" },
+  // BofA's Workday tenant (ghr) is its LATERAL board - experienced hires only,
+  // which is why this card never showed a student role. Campus recruiting lives
+  // on tal.net (bankcampuscareers); read that instead.
+  { company: "Bank of America", short: "BAC", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "bankofamerica", studentBoard: true },
   { company: "Jefferies", short: "JEF", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "jefferies" },
   { company: "Cantor Fitzgerald", short: "CF", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "cantorfitzgerald" },
   { company: "Chubb", short: "CB", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "chubb" },
