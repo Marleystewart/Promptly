@@ -2413,12 +2413,12 @@ input[type="checkbox"] {
     min-height: 0;
     scroll-snap-align: center;
     padding: 20px;
-    /* Cards in a scroll row stretch to the tallest sibling, which is correct —
-       ragged card heights read as broken. But the shortest card then ended
-       with a block of dead space at the bottom, which is what made the phone
-       home screen look empty. Laying each card out as a column and pushing its
-       last block down moves that slack into the middle, where it reads as
-       breathing room instead of a hole. */
+    /* Cards in a scroll row stretch to the tallest sibling, which is right —
+       ragged heights read as broken. But the shortest card then ended with
+       ~83px of empty space below its content, which is what made the phone
+       home screen look half-finished. Laying each card out as a column and
+       pushing its last block down moves that slack into the middle, where it
+       reads as breathing room instead of a hole. */
     display: flex;
     flex-direction: column;
   }
