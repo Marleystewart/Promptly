@@ -5291,6 +5291,14 @@ async function loadLiveOpenings() {
     restoreSavedCompanies();
     renderFilterChips();
     renderOpenings();
+    // Again, now that the live feed is actually merged in.
+    //
+    // The call above fires as soon as `updatedAt` is read, which is BEFORE the
+    // loop that pushes live postings into `openings`. So "N hiring right now"
+    // was counted from the curated baseline alone and never recomputed: the app
+    // read "366 companies tracked / 5 hiring right now" while 196 companies had
+    // live listings in the very feed it had just downloaded.
+    updateTrackedCount();
     updateAlertBadge();
     updateAlertPulse();
     if (typeof renderPeerPulse === "function") renderPeerPulse();
