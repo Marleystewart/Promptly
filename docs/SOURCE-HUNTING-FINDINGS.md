@@ -194,6 +194,48 @@ read each page's own network calls.
 | Wells Fargo | `wellsfargo.eightfold.ai` resolves | `/api/pcsx/search` returns **403 "PCSX is not enabled for this user."** The tenant exists; the open API is switched off. |
 | Kearney, L.E.K., Gartner, Korn Ferry, Mercer, KPMG, PwC, Jefferies, Evercore, Centerview, Perella Weinberg, Barclays, UBS, Bridgewater | nothing | No Eightfold tenant, and no Workday tenant at any tried combination of tenant/datacenter/site. Guessing Workday tenants produced zero hits across 14 firms — consistent with the rule that guessing does not work. These need the network tab, one at a time. |
 
+### Round three, 9 September 2026 — bulk token verification
+
+Sixty-odd candidate tokens checked against Greenhouse, Ashby and Lever, keeping
+only those whose board states a matching employer name. Ten added:
+
+| Company | Source | Field |
+|---|---|---|
+| Riveron | `ashby:riveron` | Consulting |
+| Point B | `lever:pointb` | Consulting |
+| Propeller Consulting | `greenhouse:propellerconsulting` | Consulting |
+| Gemini | `greenhouse:gemini` | Finance — Digital Assets |
+| Ripple | `greenhouse:ripple` | Finance — Digital Assets |
+| Fireblocks | `greenhouse:fireblocks` | Finance — Digital Assets |
+| BitGo | `greenhouse:bitgo` | Finance — Digital Assets |
+| Mercury | `greenhouse:mercury` | Finance — Fintech |
+| General Catalyst | `greenhouse:generalcatalyst` | Finance — Venture Capital |
+| Bessemer Venture Partners | `greenhouse:bessemerventurepartners` | Finance — Venture Capital |
+
+**All ten fetch cleanly and all ten produce zero student roles today.** These are
+monitoring bets on categories the registry had nothing in — digital assets and
+venture capital — not sources that add listings now. Judge them in October, when
+VC analyst programmes open.
+
+#### Rejected in this round for unproven identity
+
+Ashby exposes no employer name, so a board with the right slug is not evidence.
+
+- `ashby:circle` — 10 remote roles including "AI Core"; reads like circle.so, not
+  Circle Internet Financial. Unproven.
+- `ashby:alchemy` — 20 SF/NY roles. Plausibly Alchemy, not provable.
+- `greenhouse:alloy` **and** `lever:alloy` both exist with different jobs. Two
+  different Alloys — exactly the ambiguity that makes guessing unsafe.
+- `greenhouse:mesh` and `ashby:mesh` — same problem.
+
+#### A collision the tests caught
+
+Adding Gemini made `tests/company-normalization.test.js` fail: **"Capgemini"**
+on the watch-list fuzzy-matches **"Gemini"**, because the shorter name is a
+substring of the longer. They are unrelated — a French IT services group and a
+US digital-asset exchange. Recorded in `REVIEWED_NOT_THE_SAME` rather than
+aliased; aliasing would have sent Capgemini watchers crypto-exchange roles.
+
 ## Tried and NOT addable
 
 None of these is a failure to try harder at. Each is a real constraint, and

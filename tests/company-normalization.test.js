@@ -185,7 +185,13 @@ console.log(`Company normalization tests passed. ${names.size} names, ${collisio
   //   parent feed is mostly software, audit and data roles tagged Finance, so
   //   promising real-estate alerts from it would have been wrong; the card is
   //   now plain "Blackstone" under Finance, which the feed does support.
-  const REVIEWED_NOT_THE_SAME = [];
+  const REVIEWED_NOT_THE_SAME = [
+    //   Reviewed 9 Sep 2026, on adding the Gemini source: Capgemini is a French
+    //   IT services group; Gemini is the US digital-asset exchange. The fuzzy
+    //   match is pure substring coincidence — "Gemini" sits inside "Capgemini".
+    //   Aliasing them would send Capgemini watchers crypto-exchange roles.
+    "Capgemini ~ Gemini",
+  ];
 
   assert.deepEqual(
     nearMisses,

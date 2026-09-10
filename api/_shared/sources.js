@@ -467,6 +467,22 @@ const SOURCES = [
   { company: "Cornerstone Research", short: "CRES", logoClass: "consult", field: "Consulting", subField: "Economic Consulting", ats: "workday", tenant: "cornerstone", dc: "wd501", site: "CornerstoneResearch_Careers" },
   { company: "Baker Tilly", short: "BT", logoClass: "consult", field: "Consulting", subField: "Accounting & Advisory", ats: "workday", tenant: "bakertilly", dc: "wd5", site: "BTCareers" },
   { company: "Forrester", short: "FORR", logoClass: "consult", field: "Consulting", subField: "Research & Advisory", ats: "workday", tenant: "forrester", dc: "wd501", site: "careers" },
+  { company: "Riveron", short: "RIV", logoClass: "consult", field: "Consulting", subField: "Restructuring", ats: "ashby", board: "riveron" },
+  { company: "Point B", short: "PTB", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "lever", board: "pointb" },
+  { company: "Propeller Consulting", short: "PROP", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "propellerconsulting" },
+
+  // ── Finance, round three ──────────────────────────────────────────────
+  // Two categories the registry had almost nothing in: digital-asset firms,
+  // which hire heavily from quantitative and CS programmes, and venture
+  // capital, which runs some of the most competitive analyst programmes there
+  // are and appeared nowhere.
+  { company: "Gemini", short: "GEM", logoClass: "fin", field: "Finance", subField: "Digital Assets", ats: "greenhouse", board: "gemini" },
+  { company: "Ripple", short: "XRP", logoClass: "fin", field: "Finance", subField: "Digital Assets", ats: "greenhouse", board: "ripple" },
+  { company: "Fireblocks", short: "FB", logoClass: "fin", field: "Finance", subField: "Digital Assets", ats: "greenhouse", board: "fireblocks" },
+  { company: "BitGo", short: "BTGO", logoClass: "fin", field: "Finance", subField: "Digital Assets", ats: "greenhouse", board: "bitgo" },
+  { company: "Mercury", short: "MERC", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "mercury" },
+  { company: "General Catalyst", short: "GC", logoClass: "fin", field: "Finance", subField: "Venture Capital", ats: "greenhouse", board: "generalcatalyst" },
+  { company: "Bessemer Venture Partners", short: "BVP", logoClass: "fin", field: "Finance", subField: "Venture Capital", ats: "greenhouse", board: "bessemerventurepartners" },
 
   // ── Finance, added 9 Sep 2026 ─────────────────────────────────────────
   // Exchanges, which the registry had almost none of despite being a standard
