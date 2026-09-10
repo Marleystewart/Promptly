@@ -185,12 +185,23 @@ console.log(`Company normalization tests passed. ${names.size} names, ${collisio
   //   parent feed is mostly software, audit and data roles tagged Finance, so
   //   promising real-estate alerts from it would have been wrong; the card is
   //   now plain "Blackstone" under Finance, which the feed does support.
+  // Reviewed 8 Sep 2026. "Capital Group" is The Capital Group Companies (the
+  // American Funds manager, Workday tenant capgroup). The normalizer strips
+  // "group", leaving the bare word "capital", which fuzzy-matches every
+  // unrelated "<Name> Capital" private-credit/PE shop on the watch list. They
+  // are different employers and must NOT be collapsed — aliasing any of these
+  // would make that firm's card claim we can read a feed we cannot.
+
   const REVIEWED_NOT_THE_SAME = [
     //   Reviewed 9 Sep 2026, on adding the Gemini source: Capgemini is a French
     //   IT services group; Gemini is the US digital-asset exchange. The fuzzy
-    //   match is pure substring coincidence — "Gemini" sits inside "Capgemini".
-    //   Aliasing them would send Capgemini watchers crypto-exchange roles.
+    //   match is pure substring coincidence.
     "Capgemini ~ Gemini",
+    "Genstar Capital ~ Capital Group",
+    "Golub Capital ~ Capital Group",
+    "Monroe Capital ~ Capital Group",
+    "New Mountain Capital ~ Capital Group",
+    "Prospect Capital ~ Capital Group",
   ];
 
   assert.deepEqual(

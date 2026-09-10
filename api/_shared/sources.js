@@ -70,6 +70,15 @@ const SOURCES = [
   { company: "JPMorgan", short: "JPM", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "jpmorgan" },
   { company: "BNY Mellon", short: "BK", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "custom", handler: "bny" },
   { company: "Lazard", short: "LAZ", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "lazard", studentBoard: true },
+  // Bulge-bracket / large banks — real ATS URLs found by search, then probed.
+  { company: "Morgan Stanley", short: "MS", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "ms", dc: "wd5", site: "External" },
+  { company: "Prudential Financial", short: "PRU", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "workday", tenant: "pru", dc: "wd5", site: "Careers" },
+  { company: "Northwestern Mutual", short: "NM", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "workday", tenant: "northwesternmutual", dc: "wd5", site: "CORPORATE-CAREERS" },
+  { company: "Capital Group", short: "CG", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "capgroup", dc: "wd1", site: "capitalgroupcareers" },
+  { company: "Wells Fargo", short: "WFC", logoClass: "fin", field: "Finance", subField: "Corporate & Commercial Banking", ats: "workday", tenant: "wf", dc: "wd1", site: "WellsFargoJobs" },
+  { company: "Fidelity", short: "FID", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "fmr", dc: "wd1", site: "FidelityCareers" },
+  { company: "Bank of America", short: "BAC", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "ghr", dc: "wd1", site: "lateral-us" },
+  { company: "Jefferies", short: "JEF", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "jefferies" },
   { company: "Wealthfront", short: "WF", logoClass: "fin", field: "Finance", subField: "Wealth Management", ats: "lever", board: "wealthfront" },
   { company: "Bill.com", short: "BILL", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "billcom" },
   { company: "Carta", short: "CRTA", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "carta" },
@@ -457,9 +466,6 @@ const SOURCES = [
   // discover-ats.js finds nothing. The gateway endpoint was found by watching
   // the rendered page's own network calls. See company-scrapers/mckinsey.js.
   { company: "McKinsey & Company", short: "MCK", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "custom", handler: "mckinsey" },
-  // Eightfold tenant, found by trying the careers subdomain — morganstanley.com
-  // renders its job list with JavaScript and exposes no ATS in the markup.
-  { company: "Morgan Stanley", short: "MS", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "morganstanley" },
   { company: "AlixPartners", short: "AXP", logoClass: "consult", field: "Consulting", subField: "Restructuring", ats: "greenhouse", board: "alixpartners" },
   // Greenhouse board is literally named "West Monroe (Campus)" — a dedicated
   // student board, which is the best possible shape for this product.
