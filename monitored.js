@@ -99,6 +99,7 @@ window.MONITORED_COMPANIES = [
   "DRW",
   "Duolingo",
   "DV Trading",
+  "Edward Jones",
   "Elastic",
   "ElevenLabs",
   "Ellipsis Labs",
@@ -317,6 +318,7 @@ window.MONITORED_COMPANIES = [
   "U.S. Federal Government",
   "Uber",
   "Ubisoft",
+  "UBS",
   "Udemy",
   "Unilever",
   "Vanguard",
@@ -353,11 +355,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 344,
-  "companies": 344,
+  "sources": 346,
+  "companies": 346,
   "byPlatform": {
     "greenhouse": 135,
-    "custom": 55,
+    "custom": 57,
     "workday": 98,
     "lever": 8,
     "ashby": 26,
@@ -367,7 +369,7 @@ window.PROMPTLY_COVERAGE = {
     "taleo": 1
   },
   "byField": {
-    "Finance": 146,
+    "Finance": 148,
     "Technology": 66,
     "Consulting": 8,
     "Healthcare": 31,

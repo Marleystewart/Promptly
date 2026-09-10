@@ -71,6 +71,8 @@ const SOURCES = [
   { company: "BNY Mellon", short: "BK", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "custom", handler: "bny" },
   { company: "Lazard", short: "LAZ", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "lazard", studentBoard: true },
   { company: "Evercore", short: "EVR", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "evercore", studentBoard: true },
+  { company: "UBS", short: "UBS", logoClass: "fin", field: "Finance", subField: "Wealth Management", ats: "custom", handler: "ubs" },
+  { company: "Edward Jones", short: "EJ", logoClass: "fin", field: "Finance", subField: "Wealth Management", ats: "custom", handler: "edwardjones" },
   // Bulge-bracket / large banks — real ATS URLs found by search, then probed.
   { company: "Morgan Stanley", short: "MS", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "ms", dc: "wd5", site: "External" },
   { company: "Prudential Financial", short: "PRU", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "workday", tenant: "pru", dc: "wd5", site: "Careers" },
