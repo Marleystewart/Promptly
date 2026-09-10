@@ -1,11 +1,14 @@
-// First-run welcome, the interactive product tour, the Help menu, and the
-// getting-started checklist.
+// First-run welcome, the interactive product tour, and the Help menu.
 //
 // Kept in one file on purpose. Promptly is a plain-script app — no bundler, no
 // framework — so a folder of modules would need either a build step this repo
 // does not have or a dozen more <script> tags, each with its own cache-bust to
 // keep in sync. The sections below are the components: TOUR STEPS, SPOTLIGHT,
-// CARD, ENGINE, WELCOME, CHECKLIST, HELP.
+// CARD, ENGINE, WELCOME, HELP.
+//
+// Deliberately no getting-started checklist: every item on it was something a
+// student has to do anyway to use Promptly at all, so it was a second copy of
+// the product's own navigation asking to be ticked off.
 //
 // Everything here is additive. It reads the app through data-tour attributes
 // and public DOM, never reaches into script.js internals, and if any target is
@@ -20,7 +23,6 @@
   // because private windows throw on access rather than returning null.
   var KEY_DONE = "promptly_onboarding_completed";
   var KEY_SKIPPED = "promptly_onboarding_skipped";
-  var KEY_CHECKLIST = "promptly_getting_started_dismissed";
 
   function read(key) {
     try { return localStorage.getItem(key); } catch (e) { return null; }
@@ -297,9 +299,21 @@
     if (!view) return;
     var active = document.querySelector(".view.active");
     if (active && active.id === "view-" + view) return;
-    var nav = document.querySelector('.sidebar .nav-item[data-view="' + view + '"]')
-      || document.querySelector('.nav-item[data-view="' + view + '"]');
-    if (nav) nav.click();
+
+    // Click a VISIBLE nav item.
+    //
+    // Promptly ships two navigations — a desktop sidebar and a phone bottom
+    // bar — and both are in the DOM at every width, with CSS hiding one. A
+    // plain querySelector returns whichever comes first in the markup, which
+    // on a phone is the hidden desktop one. Clicking that did nothing, so on
+    // mobile every step found no target and the whole tour skipped straight to
+    // the finish screen.
+    var items = document.querySelectorAll('.nav-item[data-view="' + view + '"]');
+    for (var i = 0; i < items.length; i += 1) {
+      var box = items[i].getBoundingClientRect();
+      if (box.width > 0 && box.height > 0) { items[i].click(); return; }
+    }
+    if (items[0]) items[0].click();
   }
 
   // Wait briefly for a target to exist. The feed renders asynchronously, so a
@@ -473,7 +487,6 @@
     if (reason === "skipped") write(KEY_SKIPPED, "1");
     if (reason === "completed") showFinish();
     else restoreFocus();
-    refreshChecklist();
   }
 
   function restoreFocus() {
@@ -532,8 +545,7 @@
     m.node.querySelector("[data-welcome-skip]").addEventListener("click", function () {
       write(KEY_SKIPPED, "1");
       m.close();
-      refreshChecklist();
-    });
+      });
   }
 
   function showFinish() {
@@ -555,82 +567,6 @@
       m.close();
       start("restart");
     });
-  }
-
-  // ── CHECKLIST ───────────────────────────────────────────────────────────
-  // Every item reads real app state. Nothing is a box the student ticks
-  // themselves, because a checklist that can be satisfied by clicking the
-  // checklist teaches nothing and measures nothing.
-  function checklistItems() {
-    return [
-      {
-        id: "prefs",
-        label: "Set your fields and class year",
-        view: "profile",
-        done: function () {
-          return Boolean(document.querySelector(".field-chip.active, [data-field-chip].active"));
-        },
-      },
-      {
-        id: "browse",
-        label: "Look through the openings",
-        view: "openings",
-        done: function () { return read("promptly_seen_openings") === "1"; },
-      },
-      {
-        id: "cycles",
-        label: "Check when hiring happens",
-        view: "cycles",
-        done: function () { return read("promptly_seen_cycles") === "1"; },
-      },
-      {
-        id: "saved",
-        label: "Save an opening",
-        view: "saved",
-        done: function () {
-          try { return JSON.parse(localStorage.getItem("openingSaved") || "[]").length > 0; }
-          catch (e) { return false; }
-        },
-      },
-    ];
-  }
-
-  function refreshChecklist() {
-    var host = document.querySelector("[data-getting-started]");
-    if (!host) return;
-
-    var started = read(KEY_DONE) === "1" || read(KEY_SKIPPED) === "1";
-    if (!started || read(KEY_CHECKLIST) === "1") {
-      host.hidden = true;
-      return;
-    }
-
-    var items = checklistItems();
-    var done = items.filter(function (i) { return i.done(); });
-    host.hidden = false;
-
-    if (done.length === items.length) {
-      host.innerHTML = '<div class="gs-head"><strong>You’re all set.</strong>' +
-        '<button type="button" class="gs-dismiss" data-gs-dismiss aria-label="Dismiss getting started">Dismiss</button></div>';
-    } else {
-      host.innerHTML =
-        '<div class="gs-head"><strong>Get started with Promptly</strong>' +
-        '<button type="button" class="gs-dismiss" data-gs-dismiss aria-label="Dismiss getting started">Dismiss</button></div>' +
-        '<ul class="gs-list">' +
-        items.map(function (i) {
-          return i.done()
-            ? '<li class="gs-done"><span aria-hidden="true">✓</span>' + i.label + "</li>"
-            : '<li><button type="button" data-gs-go="' + i.view + '"><span aria-hidden="true">○</span>' + i.label + "</button></li>";
-        }).join("") +
-        "</ul>" +
-        '<p class="gs-count">' + done.length + " of " + items.length + " complete</p>";
-    }
-
-    host.querySelectorAll("[data-gs-go]").forEach(function (b) {
-      b.addEventListener("click", function () { switchView(b.getAttribute("data-gs-go")); });
-    });
-    var dismiss = host.querySelector("[data-gs-dismiss]");
-    if (dismiss) dismiss.addEventListener("click", function () { write(KEY_CHECKLIST, "1"); host.hidden = true; });
   }
 
   // ── HELP ────────────────────────────────────────────────────────────────
@@ -663,27 +599,41 @@
   }
 
   // ── Boot ────────────────────────────────────────────────────────────────
-  function markVisits() {
-    document.addEventListener("click", function (event) {
-      var nav = event.target.closest ? event.target.closest("[data-view]") : null;
-      if (!nav) return;
-      var view = nav.getAttribute("data-view");
-      if (view === "openings") write("promptly_seen_openings", "1");
-      if (view === "cycles") write("promptly_seen_cycles", "1");
-      setTimeout(refreshChecklist, 50);
-    });
+  // Is the student actually inside the app?
+  //
+  // Promptly opens on its own account/profile setup, and .app-shell is in the
+  // DOM the whole time — hidden behind that flow. The welcome modal was firing
+  // 700ms after load regardless, so a brand-new student met a product tour
+  // stacked on top of the signup form they had not filled in yet.
+  function inTheApp() {
+    var shell = document.querySelector(".app-shell");
+    if (!shell) return false;
+    var box = shell.getBoundingClientRect();
+    return box.width > 0 && box.height > 0;
+  }
+
+  // Poll briefly rather than firing once: the student may take a minute over
+  // the signup form, and the welcome should meet them on the other side of it
+  // rather than never appearing at all.
+  function whenInTheApp(done) {
+    var tries = 0;
+    (function look() {
+      if (inTheApp()) return done();
+      if (tries++ > 600) return; // ~5 minutes, then give up quietly
+      setTimeout(look, 500);
+    })();
   }
 
   function boot() {
     wireHelp();
-    markVisits();
-    refreshChecklist();
 
     // Auto-run once, and only for someone who has neither finished nor
     // declined. A tour that reappears after you dismissed it is the thing
     // people uninstall apps over.
     if (read(KEY_DONE) !== "1" && read(KEY_SKIPPED) !== "1") {
-      welcomeTimer = setTimeout(showWelcome, 700);
+      whenInTheApp(function () {
+        welcomeTimer = setTimeout(showWelcome, 700);
+      });
     }
   }
 
@@ -698,7 +648,6 @@
       try {
         localStorage.removeItem(KEY_DONE);
         localStorage.removeItem(KEY_SKIPPED);
-        localStorage.removeItem(KEY_CHECKLIST);
       } catch (e) { /* private window */ }
     },
     steps: steps,

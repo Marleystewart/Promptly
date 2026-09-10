@@ -4526,30 +4526,6 @@ body.tour-open { overflow: hidden; }
 .help-menu span { display: block; font-size: 0.8125rem; color: var(--faint); margin-top: 1px; }
 .help-menu button:focus-visible, .help-menu a:focus-visible { outline: 2px solid var(--purple-ink); outline-offset: -2px; }
 
-/* Getting started */
-.getting-started {
-  border: 1px solid var(--line);
-  background: var(--panel);
-  border-radius: 12px;
-  padding: 16px 18px;
-  margin: 0 0 18px;
-}
-.gs-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.gs-head strong { font-size: 0.9375rem; color: var(--ink); }
-.gs-dismiss { background: none; border: 0; color: var(--faint); font: inherit; font-size: 0.8125rem; cursor: pointer; padding: 4px; }
-.gs-dismiss:hover { color: var(--muted); }
-.gs-list { list-style: none; margin: 12px 0 8px; padding: 0; display: grid; gap: 2px; }
-.gs-list li { font-size: 0.875rem; color: var(--muted); }
-.gs-list li span { display: inline-block; width: 18px; color: var(--faint); }
-.gs-list li.gs-done { color: var(--faint); text-decoration: line-through; }
-.gs-list li.gs-done span { color: var(--keep, var(--purple-ink)); text-decoration: none; }
-.gs-list button {
-  background: none; border: 0; font: inherit; color: var(--purple-ink);
-  cursor: pointer; padding: 5px 0; text-align: left; min-height: 32px;
-}
-.gs-list button:hover { text-decoration: underline; }
-.gs-count { margin: 0; font-size: 0.8125rem; color: var(--faint); }
-
 /* When the target fills the screen there is no un-shaded space beside it, so
    the card floats in a corner and lifts off the surface instead. Preferred over
    shrinking the spotlight, which cut the recruiting calendar in half. */
