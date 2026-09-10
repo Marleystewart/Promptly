@@ -674,6 +674,22 @@ async function aggregateOpenings() {
 
     for (const o of r.value) {
       if (!o.sourceUrl) continue;
+      // A relative URL is worse than no listing.
+      //
+      // The Eightfold adapter emitted "/careers/job/549798287199" for every
+      // posting, which the client resolves against Promptly's own origin — so
+      // Apply sent students to an app.joinpromptly.co page that does not
+      // exist. Thirteen live listings were in that state on 10 Sep 2026 and
+      // nothing here noticed, because a card with a broken link looks exactly
+      // like a card with a working one until someone taps it.
+      //
+      // Guarded centrally rather than in each adapter: this is the one place
+      // every source's output passes through, so no future adapter can
+      // reintroduce it.
+      if (!/^https?:\/\//i.test(String(o.sourceUrl))) {
+        console.error(`Dropped ${src.company} listing with a non-absolute URL: ${o.sourceUrl}`);
+        continue;
+      }
       // Drop terms that have already finished, even though the req is still
       // published on the employer's board.
       if (isPastCycle(o.cycle)) continue;

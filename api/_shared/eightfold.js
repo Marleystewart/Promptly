@@ -32,6 +32,23 @@ function epochToIso(value) {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 }
 
+// Resolve whatever Eightfold gives us against the tenant's own origin.
+// Already-absolute values are returned untouched, so a tenant that starts
+// returning full URLs keeps working.
+function absoluteJobUrl(job, origin) {
+  const raw = job && job.positionUrl ? String(job.positionUrl).trim() : "";
+  if (raw) {
+    try {
+      return new URL(raw, origin).toString();
+    } catch {
+      // Unparseable — fall through to the id-based form rather than emitting
+      // something a student cannot click.
+    }
+  }
+  if (job && job.id) return `${String(origin).replace(/\/+$/, "")}/careers/job/${job.id}`;
+  return null;
+}
+
 async function fetchEightfoldListings(origin, domain, terms) {
   const seen = new Map();
 
@@ -67,7 +84,18 @@ async function fetchEightfoldListings(origin, domain, terms) {
         if (seen.has(id)) continue;
         seen.set(id, {
           title: job.name,
-          url: job.positionUrl || `${origin}/careers/job/${job.id}`,
+          // positionUrl is ALWAYS a relative path ("/careers/job/549798287199"),
+          // so the fallback beside it never ran and every Eightfold listing
+          // shipped a link that resolves against Promptly's own origin instead
+          // of the employer's. On 10 Sep 2026 that was 13 live listings across
+          // Qualcomm, Mayo Clinic and Morgan Stanley: a student tapping Apply
+          // landed on an app.joinpromptly.co URL that does not exist.
+          //
+          // For a product whose whole claim is a live link to the employer's
+          // own posting, this is the worst thing that can be wrong, and it is
+          // invisible from our side — the listing looks perfect until someone
+          // clicks it.
+          url: absoluteJobUrl(job, origin),
           // Eightfold returns an array; the first entry is the primary office.
           location: Array.isArray(job.locations) ? job.locations.join("; ") : (job.locations || ""),
           // postedTs is epoch SECONDS, not milliseconds — the comment here used
