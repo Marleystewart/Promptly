@@ -73,6 +73,11 @@ const SOURCES = [
   { company: "Evercore", short: "EVR", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "custom", handler: "evercore", studentBoard: true },
   { company: "UBS", short: "UBS", logoClass: "fin", field: "Finance", subField: "Wealth Management", ats: "custom", handler: "ubs" },
   { company: "Edward Jones", short: "EJ", logoClass: "fin", field: "Finance", subField: "Wealth Management", ats: "custom", handler: "edwardjones" },
+  { company: "Barclays", short: "BCS", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "barclays", dc: "wd3", site: "External_Career_Site_Barclays", positiveUsOnly: true },
+  { company: "Mizuho", short: "MFG", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "mizuho", dc: "wd1", site: "mizuhoamericas", positiveUsOnly: true },
+  { company: "MUFG", short: "MUFG", logoClass: "fin", field: "Finance", subField: "Corporate & Commercial Banking", ats: "workday", tenant: "mufgub", dc: "wd3", site: "MUFG-Careers", positiveUsOnly: true },
+  { company: "AIG", short: "AIG", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "workday", tenant: "aig", dc: "wd1", site: "aig", positiveUsOnly: true },
+  { company: "Travelers", short: "TRV", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "workday", tenant: "travelers", dc: "wd5", site: "External" },
   // Bulge-bracket / large banks — real ATS URLs found by search, then probed.
   { company: "Morgan Stanley", short: "MS", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "ms", dc: "wd5", site: "External" },
   { company: "Prudential Financial", short: "PRU", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "workday", tenant: "pru", dc: "wd5", site: "Careers" },

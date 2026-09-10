@@ -10,6 +10,7 @@ window.MONITORED_COMPANIES = [
   "Adidas",
   "Adobe",
   "Affirm",
+  "AIG",
   "Airbnb",
   "Airtable",
   "Akuna Capital",
@@ -36,6 +37,7 @@ window.MONITORED_COMPANIES = [
   "Baird",
   "Balyasny",
   "Bank of America",
+  "Barclays",
   "Benchling",
   "Betterment",
   "Bill.com",
@@ -203,12 +205,14 @@ window.MONITORED_COMPANIES = [
   "MetLife",
   "Millennium",
   "Mixpanel",
+  "Mizuho",
   "Modal",
   "Moderna",
   "Moelis",
   "Mondelez",
   "MongoDB",
   "Morgan Stanley",
+  "MUFG",
   "Natera",
   "NBA",
   "Netflix",
@@ -311,6 +315,7 @@ window.MONITORED_COMPANIES = [
   "Tower Research Capital",
   "TPG",
   "TransMarket Group",
+  "Travelers",
   "Truist",
   "Twitch",
   "Two Sigma",
@@ -355,12 +360,12 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 346,
-  "companies": 346,
+  "sources": 351,
+  "companies": 351,
   "byPlatform": {
     "greenhouse": 135,
     "custom": 57,
-    "workday": 98,
+    "workday": 103,
     "lever": 8,
     "ashby": 26,
     "smartrecruiters": 9,
@@ -369,7 +374,7 @@ window.PROMPTLY_COVERAGE = {
     "taleo": 1
   },
   "byField": {
-    "Finance": 148,
+    "Finance": 153,
     "Technology": 66,
     "Consulting": 8,
     "Healthcare": 31,

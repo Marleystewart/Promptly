@@ -1,65 +1,11 @@
-// Jefferies runs Oracle Recruiting Cloud. Global investment bank, so keep only
-// confirmed-US roles.
-
+const { fetchTalnetListings } = require("../talnet");
 const { usOnly } = require("../us-location");
 
-const API_URL = "https://hdid.fa.us2.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions";
-const JOB_URL = "https://hdid.fa.us2.oraclecloud.com/hcmUI/CandidateExperience/en/sites/CX_1/job";
-const SITE_NUMBER = "CX_1";
-const PAGE_SIZE = 100;
-const MAX_PAGES = 8; // safety cap per term
+// Jefferies' campus board is tal.net (Talentlink), same as Evercore.
+// vacancy/2 is the student/graduate board. Global firm, so US-only.
+const STUDENT_FEED =
+  "https://jefferies.tal.net/vx/mobile-0/appcentre-1/candidate/jobboard/vacancy/2/feed";
 
-function searchTerms() {
-  const year = new Date().getUTCFullYear();
-  return [String(year), String(year + 1), String(year + 2), "internship"];
-}
-
-async function fetchPage(term, offset) {
-  const params = new URLSearchParams({
-    onlyData: "true",
-    expand: "requisitionList",
-    finder: `findReqs;siteNumber=${SITE_NUMBER},keyword=${term},limit=${PAGE_SIZE},offset=${offset}`,
-  });
-  const res = await fetch(`${API_URL}?${params.toString()}`, {
-    headers: { Accept: "application/json" },
-    signal: AbortSignal.timeout(12000),
-  });
-  if (!res.ok) throw new Error(`${res.status} jefferies`);
-  const data = await res.json();
-  const result = Array.isArray(data.items) ? data.items[0] : null;
-  return {
-    jobs: Array.isArray(result?.requisitionList) ? result.requisitionList : [],
-    total: Number(result?.TotalJobsCount) || 0,
-  };
-}
-
-async function fetchListings() {
-  const seen = new Map();
-  for (const term of searchTerms()) {
-    for (let page = 0; page < MAX_PAGES; page += 1) {
-      const offset = page * PAGE_SIZE;
-      let result;
-      try {
-        result = await fetchPage(term, offset);
-      } catch {
-        break;
-      }
-      for (const job of result.jobs) {
-        const id = String(job.Id || "").trim();
-        const title = String(job.Title || "").replace(/\s+/g, " ").trim();
-        if (!id || !title) continue;
-        const url = `${JOB_URL}/${encodeURIComponent(id)}`;
-        seen.set(url, {
-          title,
-          url,
-          location: String(job.PrimaryLocation || "").replace(/\s+/g, " ").trim(),
-          postedAt: job.PostedDate || null,
-        });
-      }
-      if (!result.jobs.length || offset + PAGE_SIZE >= result.total) break;
-    }
-  }
-  return usOnly([...seen.values()]);
-}
-
-module.exports = fetchListings;
+module.exports = async function fetchListings() {
+  return usOnly(await fetchTalnetListings(STUDENT_FEED));
+};

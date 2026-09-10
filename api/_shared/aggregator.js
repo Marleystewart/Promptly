@@ -241,7 +241,14 @@ async function fetchWorkday(src) {
         // is deliberately permissive, so an unfamiliar foreign city can look
         // like a US role.  Sources marked positiveUsOnly must instead provide
         // affirmative US evidence (country wording or a state code).
-        if (src.positiveUsOnly && !isUsLocation(p.locationsText)) continue;
+        // A multi-office req collapses its location to "3 Locations", which
+        // carries no country at all — that dropped genuinely US postings whose
+        // TITLE states the country ("2027 Early Careers: Summer Intern,
+        // Finance – United States"). Accept affirmative US evidence from
+        // either field; a UK req names a UK town in both, so nothing leaks.
+        if (src.positiveUsOnly
+          && !isUsLocation(p.locationsText)
+          && !isUsLocation(p.title)) continue;
         const cycle = detectCycle(p.title, p.locationsText, true, Boolean(src.studentBoard));
         if (!cycle) continue;
         seenPaths.add(p.externalPath);
