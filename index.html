@@ -53,13 +53,26 @@
         <button class="primary-action wide auth-google" type="button" data-google-auth>Continue with Google</button>
         <p class="auth-fast-note" data-auth-fast-note>Fastest way in — nothing to confirm, no email to wait for.</p>
         <div class="auth-divider"><span data-auth-divider-label>or sign up with email</span></div>
-        <label class="field-label" data-auth-name-group>Name<input data-name-input type="text" placeholder="Your name" autocomplete="name" /></label>
-        <label class="field-label">Email<input data-email-input type="email" placeholder="you@example.com" autocomplete="email" /></label>
-        <p class="student-hint" data-student-hint hidden></p>
-        <label class="field-label" data-auth-password-group>Password<input data-password-input type="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" /></label>
-        <p class="form-error" data-signup-error hidden></p>
-        <button class="soft-action wide" type="button" data-auth-submit>Create Account</button>
-        <button class="text-action" type="button" data-forgot-password hidden>Forgot password?</button>
+        <!-- A real <form> with named fields, so password managers recognise this
+             as an account flow.
+             Safari offers to create a strong password only when it can see a
+             username field and a new-password field inside a form. These inputs
+             were bare, so iCloud Keychain, 1Password and the rest had nothing to
+             latch onto and students were left inventing their own passwords.
+             The submit button stays type="button" — submission is handled by the
+             existing delegated click listener, and making it a real submit would
+             fire that path twice. -->
+        <form class="auth-form" data-auth-form autocomplete="on" novalidate>
+          <label class="field-label" data-auth-name-group>Name<input data-name-input id="auth-name" name="name" type="text" placeholder="Your name" autocomplete="name" /></label>
+          <!-- autocomplete="username", not "email": "username" is the signal
+               password managers look for to pair an account with a password. -->
+          <label class="field-label">Email<input data-email-input id="auth-username" name="username" type="email" placeholder="you@example.com" autocomplete="username" /></label>
+          <p class="student-hint" data-student-hint hidden></p>
+          <label class="field-label" data-auth-password-group>Password<input data-password-input id="auth-password" name="password" type="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" /></label>
+          <p class="form-error" data-signup-error hidden></p>
+          <button class="soft-action wide" type="button" data-auth-submit>Create Account</button>
+          <button class="text-action" type="button" data-forgot-password hidden>Forgot password?</button>
+        </form>
         <p class="auth-status" data-auth-status>Checking secure account setup...</p>
         <p class="signup-privacy-note">
           Before you continue: account and alert information is stored with our account and
