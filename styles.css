@@ -4392,7 +4392,7 @@ body.tour-open { overflow: hidden; }
 
 .tour-card {
   position: fixed;
-  z-index: 901;
+  z-index: 903;
   opacity: 1;
   transform: translateY(0);
   transition: opacity 180ms ease, transform 180ms ease;
@@ -4531,4 +4531,81 @@ body.tour-open { overflow: hidden; }
    shrinking the spotlight, which cut the recruiting calendar in half. */
 .tour-card-floating {
   box-shadow: 0 24px 60px rgba(17, 24, 39, 0.32);
+}
+
+/* The nav item for the tab the tour is on.
+   Cam's note: keep everything else dimmed, but let the student see which tab
+   the walkthrough has moved to. Without it the sidebar greys out and the tour
+   appears to teleport between unrelated screens.
+   Lifted above the scrim (z-index 900) but below the card (903), so it reads at
+   full strength without ever covering the explanation. */
+body.tour-open .nav-item.tour-nav-current {
+  position: relative;
+  z-index: 901;
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow:
+    0 0 0 2px var(--purple),
+    0 6px 18px rgba(17, 24, 39, 0.18);
+  transition: box-shadow 220ms ease, background 220ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  body.tour-open .nav-item.tour-nav-current { transition: none; }
+}
+
+/* The quiet invitation for someone who already has an account. A pill beside
+   Help, not a modal over the app they already know how to use. */
+.tour-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--purple-soft);
+  border: 1px solid var(--purple);
+  border-radius: 999px;
+  padding: 0 4px 0 2px;
+  margin-right: 6px;
+}
+.tour-hint button {
+  font: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--purple-ink);
+}
+.tour-hint-open {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 7px 8px;
+  white-space: nowrap;
+  min-height: 34px;
+}
+.tour-hint-open:hover { text-decoration: underline; }
+.tour-hint-close {
+  font-size: 1rem;
+  line-height: 1;
+  padding: 6px 7px;
+  opacity: 0.7;
+  min-height: 34px;
+}
+.tour-hint-close:hover { opacity: 1; }
+.tour-hint button:focus-visible { outline: 2px solid var(--purple-ink); outline-offset: 2px; border-radius: 999px; }
+
+
+/* The phone tab bar stays readable through the tour.
+   The scrim would otherwise dim the one piece of UI that tells the student
+   which tab they are on, and the explanation sheet sits above it rather than
+   on top of it. */
+body.tour-open .mobile-nav {
+  /* z-index only — the bar is already position: fixed, and overriding that
+     with relative dropped it into the scroll flow so it slid off screen. */
+  z-index: 901;
+}
+
+/* The hint label does not fit a phone header beside four icons — it pushed the
+   row into horizontal overflow. Phones get the short form. */
+.tour-hint-short { display: none; }
+@media (max-width: 640px) {
+  .tour-hint-long { display: none; }
+  .tour-hint-short { display: inline; }
+  .tour-hint-open { padding: 7px 6px; }
 }

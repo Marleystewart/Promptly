@@ -23,6 +23,8 @@
   // because private windows throw on access rather than returning null.
   var KEY_DONE = "promptly_onboarding_completed";
   var KEY_SKIPPED = "promptly_onboarding_skipped";
+  var KEY_MODE = "promptly_onboarding_mode";   // "new" | "existing"
+  var KEY_HINT = "promptly_walkthrough_hint_dismissed";
 
   function read(key) {
     try { return localStorage.getItem(key); } catch (e) { return null; }
@@ -249,8 +251,18 @@
     if (isMobile()) {
       card.classList.add("tour-card-sheet");
       var targetLow = rect.top > vh * 0.55;
-      if (targetLow) card.style.top = "12px";
-      else card.style.bottom = "calc(12px + env(safe-area-inset-bottom, 0px))";
+      if (targetLow) {
+        card.style.top = "12px";
+      } else {
+        // Clear the bottom tab bar. The sheet used to sit flush to the bottom
+        // edge, which covered the very nav the tour highlights — so on a phone
+        // the student could not see which tab they had been moved to.
+        var bar = document.querySelector(".mobile-nav");
+        var barHeight = bar && bar.getBoundingClientRect().height > 0
+          ? Math.round(bar.getBoundingClientRect().height) + 10
+          : 12;
+        card.style.bottom = "calc(" + barHeight + "px + env(safe-area-inset-bottom, 0px))";
+      }
       return;
     }
 
@@ -402,6 +414,11 @@
         behavior: prefersReducedMotion() ? "auto" : "smooth",
       });
 
+      // Cam's note: keep everything else dimmed, but let the student SEE which
+      // tab the tour has moved to. Without this the sidebar greys out and the
+      // walkthrough appears to teleport between unrelated screens.
+      markActiveNav();
+
       el.card.querySelector("[data-tour-count]").textContent = "Step " + (index + 1) + " of " + order.length;
       el.card.querySelector("[data-tour-title]").textContent = step.title;
       el.card.querySelector("[data-tour-body]").textContent = step.body;
@@ -444,6 +461,24 @@
     });
   }
 
+  // Lift the current nav item above the scrim so it reads at full strength.
+  // Applied to every nav (desktop sidebar and phone bar), because which one is
+  // visible depends on the width.
+  function markActiveNav() {
+    document.querySelectorAll(".nav-item.tour-nav-current").forEach(function (n) {
+      n.classList.remove("tour-nav-current");
+    });
+    document.querySelectorAll(".nav-item.active").forEach(function (n) {
+      n.classList.add("tour-nav-current");
+    });
+  }
+
+  function clearActiveNav() {
+    document.querySelectorAll(".nav-item.tour-nav-current").forEach(function (n) {
+      n.classList.remove("tour-nav-current");
+    });
+  }
+
   function onKey(event) {
     if (el.root.hidden) return;
     if (event.key === "Escape") { event.preventDefault(); end("skipped"); }
@@ -478,6 +513,7 @@
       el.card.style.cssText = "";
     }
     document.body.classList.remove("tour-open");
+    clearActiveNav();
     document.removeEventListener("keydown", onKey);
     if (reposition) {
       window.removeEventListener("resize", reposition);
@@ -624,6 +660,56 @@
     })();
   }
 
+  // Brand new, or already using Promptly?
+  //
+  // Decided once, on this file's first ever run on the device, and then
+  // remembered — so it cannot flip later when the profile is created.
+  //
+  // The test is simply whether a profile already existed at that moment. A
+  // brand-new student arrives at the signup flow with nothing stored; someone
+  // who set Promptly up weeks ago already has a profile. Interrupting that
+  // second person with a full-screen welcome for an app they already use is
+  // exactly the kind of thing people close without reading.
+  function accountMode() {
+    var stored = read(KEY_MODE);
+    if (stored) return stored;
+    var hadProfile = false;
+    try { hadProfile = Boolean(localStorage.getItem("openingProfile")); } catch (e) { /* private window */ }
+    var mode = hadProfile ? "existing" : "new";
+    write(KEY_MODE, mode);
+    return mode;
+  }
+
+  // The quiet version, for someone who already has an account: a small pill
+  // beside Help rather than a modal over the app.
+  function showHint() {
+    if (read(KEY_HINT) === "1" || read(KEY_DONE) === "1") return;
+    var host = document.querySelector(".help-wrap");
+    if (!host || host.querySelector(".tour-hint")) return;
+
+    var hint = document.createElement("div");
+    hint.className = "tour-hint";
+    hint.innerHTML =
+      // Two labels rather than a CSS font-size trick: the phone header has room
+      // for four icons and not much else, and a pill that wraps or pushes them
+      // off the edge is worse than no pill.
+      '<button type="button" class="tour-hint-open" data-hint-open>' +
+        '<span class="tour-hint-long">Walkthrough available</span>' +
+        '<span class="tour-hint-short">Tour</span>' +
+      "</button>" +
+      '<button type="button" class="tour-hint-close" data-hint-close aria-label="Dismiss walkthrough hint">&times;</button>';
+    host.parentNode.insertBefore(hint, host);
+
+    hint.querySelector("[data-hint-open]").addEventListener("click", function () {
+      hint.remove();
+      start("hint");
+    });
+    hint.querySelector("[data-hint-close]").addEventListener("click", function () {
+      write(KEY_HINT, "1");
+      hint.remove();
+    });
+  }
+
   function boot() {
     wireHelp();
 
@@ -632,7 +718,8 @@
     // people uninstall apps over.
     if (read(KEY_DONE) !== "1" && read(KEY_SKIPPED) !== "1") {
       whenInTheApp(function () {
-        welcomeTimer = setTimeout(showWelcome, 700);
+        if (accountMode() === "new") welcomeTimer = setTimeout(showWelcome, 700);
+        else showHint();
       });
     }
   }
