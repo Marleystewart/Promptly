@@ -4353,3 +4353,259 @@ body.onboarding-active .ap-panel { display: none; }
 
 /* #c3b1ff measured 1.9:1 on a white page. */
 .cycle-info { color: var(--purple-ink); }
+
+/* ── Onboarding: tour, help menu, getting started ──────────────────────────
+   Every colour comes from the tokens at the top of this file, so the overlay
+   inherits the app's palette rather than introducing a second design system. */
+
+body.tour-open { overflow: hidden; }
+
+.tour-root { position: fixed; inset: 0; z-index: 900; }
+
+/* One element paints the whole scrim AND the cutout.
+   A huge spread shadow fills the viewport in every direction, and the element's
+   own box is the hole. Moving the spotlight is therefore one element changing
+   size and position — no seams, nothing to fall out of sync. The earlier
+   version used four separate shades and every transition looked like the screen
+   breaking apart. */
+.tour-ring {
+  position: fixed;
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 9999px rgba(17, 24, 39, 0.55),
+    0 0 0 2px var(--purple) inset,
+    0 0 0 5px rgba(109, 94, 252, 0.22);
+  transition:
+    top 320ms cubic-bezier(0.32, 0.72, 0, 1),
+    left 320ms cubic-bezier(0.32, 0.72, 0, 1),
+    width 320ms cubic-bezier(0.32, 0.72, 0, 1),
+    height 320ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+/* Used for the first placement, so the spotlight does not fly in from the
+   top-left corner of the screen. */
+.tour-ring.tour-no-anim { transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-ring { transition: none; }
+}
+
+.tour-card {
+  position: fixed;
+  z-index: 903;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 180ms ease, transform 180ms ease;
+  width: min(360px, calc(100vw - 24px));
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 18px 48px rgba(17, 24, 39, 0.18);
+  padding: 18px 20px 16px;
+}
+.tour-step-count {
+  margin: 0 0 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.tour-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.125rem;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.tour-body {
+  margin: 0 0 14px;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.tour-progress {
+  height: 3px;
+  border-radius: 3px;
+  background: var(--panel-strong);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.tour-progress span {
+  display: block;
+  height: 100%;
+  background: var(--purple-cta);
+  transition: width 220ms ease;
+}
+.tour-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tour-move { display: flex; gap: 8px; }
+.tour-card button {
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  min-height: 40px;
+}
+.tour-skip { background: none; border: 0; color: var(--faint); padding-left: 0; }
+.tour-skip:hover { color: var(--muted); }
+.tour-back { background: var(--panel-strong); border: 1px solid var(--line); color: var(--ink); }
+.tour-back[disabled] { opacity: 0.45; cursor: default; }
+.tour-next { background: var(--purple-cta); border: 1px solid var(--purple-cta); color: #fff; }
+.tour-card button:focus-visible { outline: 2px solid var(--purple-ink); outline-offset: 2px; }
+
+/* On a phone the card is a sheet pinned to one edge, so it never floats over
+   the thing it is describing. */
+/* While the page scrolls to the next target the card is hidden rather than
+   dragged across the screen — watching it travel was most of what made the
+   transition feel unsteady. */
+.tour-card-moving {
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-card { transition: none; }
+}
+
+.tour-card-sheet {
+  left: 12px;
+  right: 12px;
+  width: auto;
+}
+
+/* Welcome and completion */
+.tour-modal-back {
+  position: fixed; inset: 0; z-index: 950;
+  background: rgba(17, 24, 39, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.tour-modal {
+  width: min(440px, 100%);
+  background: var(--panel);
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 64px rgba(17, 24, 39, 0.24);
+  padding: 28px;
+}
+.tour-eyebrow {
+  margin: 0 0 8px;
+  font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--purple-ink);
+}
+.tour-modal h2 { margin: 0 0 10px; font-size: 1.5rem; line-height: 1.2; color: var(--ink); text-wrap: balance; }
+.tour-modal p { margin: 0 0 20px; color: var(--muted); line-height: 1.55; }
+.tour-modal-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Help */
+.help-wrap { position: relative; }
+.help-menu {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  z-index: 800;
+  width: 260px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(17, 24, 39, 0.16);
+  padding: 8px;
+}
+.help-menu-head {
+  margin: 4px 8px 8px;
+  font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--faint);
+}
+.help-menu button, .help-menu a {
+  display: block; width: 100%; text-align: left;
+  background: none; border: 0; border-radius: 8px;
+  padding: 9px 10px; cursor: pointer; text-decoration: none;
+  font: inherit; color: var(--ink);
+}
+.help-menu button:hover, .help-menu a:hover { background: var(--panel-strong); }
+.help-menu strong { display: block; font-size: 0.875rem; font-weight: 600; }
+.help-menu span { display: block; font-size: 0.8125rem; color: var(--faint); margin-top: 1px; }
+.help-menu button:focus-visible, .help-menu a:focus-visible { outline: 2px solid var(--purple-ink); outline-offset: -2px; }
+
+/* When the target fills the screen there is no un-shaded space beside it, so
+   the card floats in a corner and lifts off the surface instead. Preferred over
+   shrinking the spotlight, which cut the recruiting calendar in half. */
+.tour-card-floating {
+  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.32);
+}
+
+/* The nav item for the tab the tour is on.
+   Cam's note: keep everything else dimmed, but let the student see which tab
+   the walkthrough has moved to. Without it the sidebar greys out and the tour
+   appears to teleport between unrelated screens.
+   Lifted above the scrim (z-index 900) but below the card (903), so it reads at
+   full strength without ever covering the explanation. */
+body.tour-open .nav-item.tour-nav-current {
+  position: relative;
+  z-index: 901;
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow:
+    0 0 0 2px var(--purple),
+    0 6px 18px rgba(17, 24, 39, 0.18);
+  transition: box-shadow 220ms ease, background 220ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  body.tour-open .nav-item.tour-nav-current { transition: none; }
+}
+
+/* The quiet invitation for someone who already has an account. A pill beside
+   Help, not a modal over the app they already know how to use. */
+.tour-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--purple-soft);
+  border: 1px solid var(--purple);
+  border-radius: 999px;
+  padding: 0 4px 0 2px;
+  margin-right: 6px;
+}
+.tour-hint button {
+  font: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--purple-ink);
+}
+.tour-hint-open {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 7px 8px;
+  white-space: nowrap;
+  min-height: 34px;
+}
+.tour-hint-open:hover { text-decoration: underline; }
+.tour-hint-close {
+  font-size: 1rem;
+  line-height: 1;
+  padding: 6px 7px;
+  opacity: 0.7;
+  min-height: 34px;
+}
+.tour-hint-close:hover { opacity: 1; }
+.tour-hint button:focus-visible { outline: 2px solid var(--purple-ink); outline-offset: 2px; border-radius: 999px; }
+
+
+/* The phone tab bar stays readable through the tour.
+   The scrim would otherwise dim the one piece of UI that tells the student
+   which tab they are on, and the explanation sheet sits above it rather than
+   on top of it. */
+body.tour-open .mobile-nav {
+  /* z-index only — the bar is already position: fixed, and overriding that
+     with relative dropped it into the scroll flow so it slid off screen. */
+  z-index: 901;
+}
+
+/* The hint label does not fit a phone header beside four icons — it pushed the
+   row into horizontal overflow. Phones get the short form. */
+.tour-hint-short { display: none; }
+@media (max-width: 640px) {
+  .tour-hint-long { display: none; }
+  .tour-hint-short { display: inline; }
+  .tour-hint-open { padding: 7px 6px; }
+}
