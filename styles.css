@@ -4609,3 +4609,214 @@ body.tour-open .mobile-nav {
   .tour-hint-short { display: inline; }
   .tour-hint-open { padding: 7px 6px; }
 }
+
+/* ── Install guide ─────────────────────────────────────────────────────────
+   Mobile-only first-run card teaching Home Screen install + notifications.
+   iOS gives Web Push to Safari and to an installed Home Screen app only, so a
+   student who never installs Promptly cannot receive a notification from it at
+   all — which is the whole product. */
+
+.ig-back {
+  position: fixed;
+  inset: 0;
+  z-index: 960;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  background: rgba(17, 24, 39, 0.42);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.ig-back.ig-in { opacity: 1; }
+
+.ig-card {
+  width: 100%;
+  max-width: 460px;
+  /* Leaves the card room to breathe on a small phone while keeping the
+     buttons reachable: the content scrolls, the actions never do. */
+  max-height: min(88vh, 720px);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: 0 20px 56px rgba(17, 24, 39, 0.28);
+  transform: translateY(10px);
+  transition: transform 200ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.ig-back.ig-in .ig-card { transform: translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ig-back, .ig-card { transition: none; }
+}
+
+.ig-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  border-radius: 50%;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: var(--faint);
+  cursor: pointer;
+}
+.ig-close:hover { background: var(--panel-strong); color: var(--muted); }
+
+.ig-scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 22px 20px 4px;
+}
+
+.ig-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--purple-soft);
+  margin-bottom: 12px;
+}
+.ig-logo svg { width: 21px; height: 21px; fill: var(--purple-ink); }
+
+.ig-card h2 {
+  margin: 0 0 6px;
+  font-size: 1.3rem;
+  line-height: 1.2;
+  color: var(--ink);
+  text-wrap: balance;
+  padding-right: 30px;
+}
+.ig-lede {
+  margin: 0 0 18px;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.ig-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+.ig-step { display: flex; gap: 12px; align-items: flex-start; }
+.ig-num {
+  flex: 0 0 auto;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: var(--purple-cta);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+.ig-step-body { min-width: 0; }
+.ig-step-body h3 { margin: 0 0 3px; font-size: 0.9375rem; font-weight: 600; color: var(--ink); }
+.ig-step-body p { margin: 0; font-size: 0.875rem; line-height: 1.45; color: var(--muted); }
+
+/* Step 1 marked done when we can tell the student is already in Safari. Only
+   ever shown on a confident match — a false "you're already in Safari" sends
+   someone hunting for a Share button that is not there. */
+.ig-steps-one-done .ig-step:first-child .ig-num {
+  background: var(--panel-strong);
+  color: var(--keep, #1f6b4f);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.ig-seq {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-strong);
+  overflow-x: auto;
+}
+.ig-seq-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 66px;
+}
+.ig-seq-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.ig-seq-icon svg {
+  width: 16px; height: 16px;
+  fill: none; stroke: var(--ink); stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.ig-seq-brand { background: var(--purple-soft); border-color: var(--purple); }
+.ig-seq-brand svg { fill: var(--purple-ink); stroke: none; }
+.ig-seq-arrow { color: var(--faint); font-size: 0.9rem; flex: 0 0 auto; }
+
+.ig-link {
+  margin-top: 8px;
+  background: none;
+  border: 0;
+  padding: 7px 0;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--purple-ink);
+  cursor: pointer;
+  min-height: 38px;
+}
+.ig-link:hover { text-decoration: underline; }
+
+.ig-actions {
+  padding: 14px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 6px;
+  background: var(--panel);
+  border-radius: 0 0 20px 20px;
+}
+.ig-primary {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--purple-cta);
+  color: #fff;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ig-later {
+  width: 100%;
+  min-height: 42px;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--faint);
+  cursor: pointer;
+}
+.ig-later:hover { color: var(--muted); }
+.ig-card button:focus-visible { outline: 2px solid var(--purple-ink); outline-offset: 2px; }
