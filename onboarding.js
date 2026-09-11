@@ -605,6 +605,195 @@
     });
   }
 
+  // ── INSTALL GUIDE (iPhone) ──────────────────────────────────────────────
+  // Teaching students that Promptly can live on the Home Screen.
+  //
+  // This is not a nicety, and it is iPhone-only for a reason. Safari gives Web
+  // Push to an installed Home Screen app and to nothing else, so an iPhone
+  // student who never installs Promptly cannot be notified at all — and
+  // notifications are the product. Twenty accounts have enabled push zero
+  // times. Android has no such limit (Chrome delivers push from an ordinary
+  // tab), so an Android student loses nothing by never seeing this, and a
+  // modal they do not need is just friction.
+  //
+  // It runs at the SIGN-IN screen, before the student is inside Promptly. On
+  // iOS a session created in Safari does not carry into the Home Screen app —
+  // see homeScreenHandoffNote() in script.js — so anyone who signs in first
+  // and installs afterwards opens their new icon and finds themselves signed
+  // out. Installing first means signing in once, inside the installed app.
+
+  var KEY_INSTALL = "promptly_install_guide_dismissed";
+
+  // Two keys, both honoured. At dismissal time there is usually no account to
+  // attach this to — only the device — but once someone signs in the answer
+  // should follow them. So dismissal writes both, and either one counts.
+  // Without that, dismissing at the login screen then signing in would show
+  // the same modal a second time.
+  function installKeys() {
+    var keys = [KEY_INSTALL];
+    var email = "";
+    try {
+      var stored = JSON.parse(localStorage.getItem("openingProfile") || "{}");
+      email = String(stored.email || "").trim().toLowerCase();
+    } catch (e) { /* unreadable profile */ }
+    if (email) keys.push(KEY_INSTALL + ":" + email);
+    return keys;
+  }
+
+  function installDismissed() {
+    return installKeys().some(function (k) { return read(k) === "1"; });
+  }
+
+  function rememberInstallDismissed() {
+    installKeys().forEach(function (k) { write(k, "1"); });
+  }
+
+  function installedToHomeScreen() {
+    return window.navigator.standalone === true
+      || (typeof window.matchMedia === "function" && window.matchMedia("(display-mode: standalone)").matches);
+  }
+
+  // iPadOS reports itself as a Mac and is excluded anyway: this is written for
+  // a phone.
+  function isIPhone() {
+    return /iPhone|iPod/i.test(navigator.userAgent || "");
+  }
+
+  // In-app browsers are the reason step 1 exists. Instagram, Facebook,
+  // LinkedIn, TikTok and Gmail open links in a webview with no Add to Home
+  // Screen entry, so a student following a link from a post literally cannot
+  // install Promptly from where they are standing.
+  function inAppBrowser() {
+    return /FBAN|FBAV|Instagram|LinkedIn|Twitter|TikTok|Snapchat|Pinterest|GSA\/|Line\/|MicroMessenger/i
+      .test(navigator.userAgent || "");
+  }
+
+  // Deliberately conservative. A false "you are already in Safari" sends a
+  // student hunting for a Share button that is not there, so anything
+  // ambiguous falls through to showing the instruction normally.
+  function definitelySafari() {
+    var ua = navigator.userAgent || "";
+    if (inAppBrowser()) return false;
+    if (/CriOS|FxiOS|EdgiOS|OPiOS|Chrome|Android/i.test(ua)) return false;
+    return /Safari/i.test(ua) && /Version\//i.test(ua);
+  }
+
+  function igStep(number, title, body, extra) {
+    return '<li class="ig-step">' +
+      '<span class="ig-num" aria-hidden="true">' + number + "</span>" +
+      '<div class="ig-step-body"><h3>' + title + "</h3><p>" + body + "</p>" + (extra || "") +
+      "</div></li>";
+  }
+
+  // A three-beat diagram rather than a fake iOS screenshot: recognisable
+  // enough to follow, honest about not being a real screen capture.
+  function igSequence() {
+    return '<div class="ig-seq" role="img" aria-label="Tap Share, then Add to Home Screen, then tap Add">' +
+      '<span class="ig-seq-step"><span class="ig-seq-icon">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="m8 8 4-4 4 4"/><path d="M6 12v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-7"/></svg>' +
+      "</span>Share</span>" +
+      '<span class="ig-seq-arrow" aria-hidden="true">&rarr;</span>' +
+      '<span class="ig-seq-step"><span class="ig-seq-icon">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>' +
+      "</span>Add to Home Screen</span>" +
+      '<span class="ig-seq-arrow" aria-hidden="true">&rarr;</span>' +
+      '<span class="ig-seq-step"><span class="ig-seq-icon ig-seq-brand">' +
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg>' +
+      "</span>Tap Add</span></div>";
+  }
+
+  function showInstallGuide() {
+    if (document.querySelector(".ig-back")) return;
+
+    var safariDone = definitelySafari();
+
+    var body =
+      '<div class="ig-card" role="dialog" aria-modal="true" aria-labelledby="ig-title">' +
+        '<button type="button" class="ig-close" data-ig-close aria-label="Close">&times;</button>' +
+        '<div class="ig-scroll">' +
+          '<span class="ig-logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/></svg></span>' +
+          '<h2 id="ig-title">Get the full Promptly experience</h2>' +
+          '<p class="ig-lede">Add Promptly to your Home Screen and turn on notifications so you never miss a new opening.</p>' +
+          '<ol class="ig-steps' + (safariDone ? " ig-steps-one-done" : "") + '">' +
+            igStep(1,
+              safariDone ? "You&rsquo;re already in Safari" : "Open Promptly in Safari",
+              safariDone
+                ? "Nothing to do here &mdash; carry on to step&nbsp;2."
+                : "If you opened Promptly from Instagram, LinkedIn, Gmail or another app, open this page in Safari first.") +
+            igStep(2, "Add Promptly to your Home Screen",
+              "In Safari, tap the Share button, scroll down, then tap <strong>Add to Home Screen</strong>.",
+              igSequence()) +
+            igStep(3, "Turn on notifications",
+              "Open Promptly from your new Home Screen icon and switch alerts on. On iPhone that is the only way notifications can reach you.") +
+          "</ol>" +
+        "</div>" +
+        '<div class="ig-actions">' +
+          '<button type="button" class="ig-primary" data-ig-done>Got it</button>' +
+          '<button type="button" class="ig-later" data-ig-later>Maybe later</button>' +
+        "</div>" +
+      "</div>";
+
+    var back = document.createElement("div");
+    back.className = "ig-back";
+    back.innerHTML = body;
+    document.body.appendChild(back);
+    document.body.classList.add("tour-open");
+    requestAnimationFrame(function () { back.classList.add("ig-in"); });
+
+    var card = back.querySelector(".ig-card");
+    var opener = document.activeElement;
+
+    function close() {
+      rememberInstallDismissed();
+      back.classList.remove("ig-in");
+      var finish = function () {
+        back.remove();
+        document.body.classList.remove("tour-open");
+        try { if (opener && opener.focus) opener.focus(); } catch (e) { /* gone */ }
+      };
+      if (prefersReducedMotion()) finish(); else setTimeout(finish, 180);
+    }
+
+    back.querySelector("[data-ig-close]").addEventListener("click", close);
+    back.querySelector("[data-ig-done]").addEventListener("click", close);
+    back.querySelector("[data-ig-later]").addEventListener("click", close);
+
+    // Deliberately no Notification.requestPermission() anywhere in here. A
+    // permission prompt the student did not ask for gets denied, and on iOS a
+    // denial is effectively permanent — it would cost us the very thing this
+    // modal exists to win.
+
+    card.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") { event.preventDefault(); close(); return; }
+      if (event.key !== "Tab") return;
+      var list = card.querySelectorAll("button");
+      if (!list.length) return;
+      var first = list[0];
+      var last = list[list.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    });
+
+    back.querySelector("[data-ig-done]").focus();
+  }
+
+  function maybeShowInstallGuide() {
+    if (!isIPhone()) return false;             // see isIPhone()
+    if (installedToHomeScreen()) return false; // already done what this asks
+    if (installDismissed()) return false;
+    // New people only.
+    //
+    // Without this, a student who has used Promptly on this phone for weeks
+    // would meet the modal the first time it ships — an install prompt for an
+    // app they clearly already know how to reach. accountMode() answers the
+    // question once, on this file's first ever run, by whether a profile
+    // already existed: a brand-new visitor arrives at the sign-in screen with
+    // nothing stored, an established one does not.
+    if (accountMode() !== "new") return false;
+    showInstallGuide();
+    return true;
+  }
+
   // ── HELP ────────────────────────────────────────────────────────────────
   function wireHelp() {
     var button = document.querySelector("[data-tour='help']");
@@ -716,8 +905,13 @@
     // Auto-run once, and only for someone who has neither finished nor
     // declined. A tour that reappears after you dismissed it is the thing
     // people uninstall apps over.
+    // At the sign-in screen, before the student is inside Promptly.
+    setTimeout(maybeShowInstallGuide, 600);
+
+    // The walkthrough is about USING Promptly, so it waits until they are in it.
     if (read(KEY_DONE) !== "1" && read(KEY_SKIPPED) !== "1") {
       whenInTheApp(function () {
+        if (document.querySelector(".ig-back")) return; // install guide still open
         if (accountMode() === "new") welcomeTimer = setTimeout(showWelcome, 700);
         else showHint();
       });
@@ -735,8 +929,26 @@
       try {
         localStorage.removeItem(KEY_DONE);
         localStorage.removeItem(KEY_SKIPPED);
+        localStorage.removeItem(KEY_MODE);
+        localStorage.removeItem(KEY_HINT);
+        installKeys().forEach(function (k) { localStorage.removeItem(k); });
       } catch (e) { /* private window */ }
     },
     steps: steps,
+    // Dev hooks. The install guide branches on user agent and on whether
+    // Promptly is already installed, and neither changes when you resize a
+    // window — so calling it directly is the only way to see it from a desktop.
+    showInstallGuide: showInstallGuide,
+    installGuideState: function () {
+      return {
+        iphone: isIPhone(),
+        inAppBrowser: inAppBrowser(),
+        safari: definitelySafari(),
+        installed: installedToHomeScreen(),
+        dismissed: installDismissed(),
+        accountMode: accountMode(),
+        keys: installKeys(),
+      };
+    },
   };
 })();
