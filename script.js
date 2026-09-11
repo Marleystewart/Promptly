@@ -4585,6 +4585,26 @@ if (!restoredProfile && !resolvingAuthCallback) {
 }
 initializeAuth();
 
+// Enter submits the account form.
+//
+// Wrapping the fields in a <form> is what lets a password manager recognise
+// this as an account flow, but it also creates an expectation: people press
+// Enter. The submit button stays type="button" so the existing delegated click
+// handler remains the single path, and this bridges the keyboard to it.
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter") return;
+  const form = event.target.closest?.("[data-auth-form]");
+  if (!form) return;
+  if (event.target.tagName === "BUTTON") return; // Enter already clicks a button
+  event.preventDefault();
+  form.querySelector("[data-auth-submit]")?.click();
+});
+
+// Nothing should ever navigate away from the account screen by submitting.
+document.addEventListener("submit", (event) => {
+  if (event.target.matches?.("[data-auth-form]")) event.preventDefault();
+});
+
 document.addEventListener("click", async (event) => {
   if (event.target.closest("[data-verify-resend]")) { event.preventDefault(); await resendVerification(); return; }
 
