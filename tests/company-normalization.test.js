@@ -191,9 +191,11 @@ console.log(`Company normalization tests passed. ${names.size} names, ${collisio
   // unrelated "<Name> Capital" private-credit/PE shop on the watch list. They
   // are different employers and must NOT be collapsed — aliasing any of these
   // would make that firm's card claim we can read a feed we cannot.
+  // Golub Capital used to sit here: it was a watch-list card that fuzzy-matched
+  // the monitored "Capital Group". It now has its own real source, so the
+  // near-miss no longer fires and the pair is gone rather than resolved.
   const REVIEWED_NOT_THE_SAME = [
     "Genstar Capital ~ Capital Group",
-    "Golub Capital ~ Capital Group",
     "Monroe Capital ~ Capital Group",
     "New Mountain Capital ~ Capital Group",
     "Prospect Capital ~ Capital Group",

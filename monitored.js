@@ -142,6 +142,7 @@ window.MONITORED_COMPANIES = [
   "GitLab",
   "Glossier",
   "Goldman Sachs",
+  "Golub Capital",
   "Gopuff",
   "GSK",
   "GTCR",
@@ -150,6 +151,7 @@ window.MONITORED_COMPANIES = [
   "Guidehouse",
   "Gusto",
   "Habitat for Humanity",
+  "Harris Williams",
   "Harvey",
   "Headway",
   "Hearst",
@@ -206,6 +208,7 @@ window.MONITORED_COMPANIES = [
   "Mayo Clinic",
   "Merck",
   "MetLife",
+  "MFS Investment Management",
   "Millennium",
   "Mixpanel",
   "Mizuho",
@@ -282,6 +285,7 @@ window.MONITORED_COMPANIES = [
   "Sanofi",
   "Scale AI",
   "Schonfeld",
+  "Sculptor Capital",
   "ServiceNow",
   "Shield AI",
   "Sidley Austin",
@@ -307,6 +311,7 @@ window.MONITORED_COMPANIES = [
   "Susquehanna (SIG)",
   "Sweetgreen",
   "Synchrony",
+  "Synovus",
   "T. Rowe Price",
   "Target",
   "Teach For America",
@@ -350,6 +355,7 @@ window.MONITORED_COMPANIES = [
   "Wellington Management",
   "Wells Fargo",
   "Western Digital",
+  "WEX",
   "White & Case",
   "Wikimedia Foundation",
   "William Blair",
@@ -364,12 +370,12 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 355,
-  "companies": 355,
+  "sources": 361,
+  "companies": 361,
   "byPlatform": {
     "greenhouse": 135,
-    "custom": 62,
-    "workday": 102,
+    "custom": 65,
+    "workday": 105,
     "lever": 8,
     "ashby": 26,
     "smartrecruiters": 9,
@@ -378,7 +384,7 @@ window.PROMPTLY_COVERAGE = {
     "taleo": 1
   },
   "byField": {
-    "Finance": 157,
+    "Finance": 163,
     "Technology": 66,
     "Consulting": 8,
     "Healthcare": 31,
