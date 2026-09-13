@@ -238,7 +238,7 @@ assert.match(
     return { meta, api: ctx.promptlyTour };
   }
   const iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)";
-  assert.match(load(iphone, false).meta.content, /maximum-scale=1/, "iPhone web must not focus-zoom");
+  assert.doesNotMatch(load(iphone, false).meta.content, /maximum-scale/, "iPhone website keeps standard browser zoom");
   assert.match(load(iphone, true).meta.content, /maximum-scale=1/, "native app must not focus-zoom");
   assert.doesNotMatch(load("Mozilla/5.0 (Linux; Android 14)", false).meta.content, /maximum-scale/, "Android keeps pinch zoom");
   assert.match(src, /function installedToHomeScreen\(\) \{\s*\/*[\s\S]{0,40}return isNativeApp\(\)/, "native app counts as installed, so no install guide");
