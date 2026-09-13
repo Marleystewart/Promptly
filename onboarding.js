@@ -57,6 +57,18 @@
         lastY = y;
       });
     }, { passive: true });
+
+    // Coming back after a while starts fresh, like reopening the app: the
+    // launch animation plays again and the feed reloads, instead of resuming a
+    // stale page that iOS may have half-discarded (which is what glitched).
+    var hiddenAt = 0;
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        hiddenAt = Date.now();
+      } else if (hiddenAt && Date.now() - hiddenAt > 5 * 60 * 1000) {
+        window.location.reload();
+      }
+    });
   }
 
   // ── State ───────────────────────────────────────────────────────────────
