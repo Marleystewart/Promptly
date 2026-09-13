@@ -4920,3 +4920,12 @@ html.native-app .mega-logo { width: 60px; height: 60px; font-size: 15px; border-
 html.native-app .modal-logo { width: 64px; height: 64px; font-size: 14px; border-radius: 16px; }
 html.native-app .featured-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
 html.native-app .featured-card:active { transform: scale(0.99); transition: transform 120ms ease; }
+
+/* ── iOS app: touch response ───────────────────────────────────────────────
+   Immediate, native-feeling feedback on press, and no grey WebKit flash. */
+html.native-app { -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+html.native-app button,
+html.native-app a,
+html.native-app .nav-item { touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+html.native-app button:active,
+html.native-app .nav-item:active { opacity: 0.62; transition: opacity 0s; }
