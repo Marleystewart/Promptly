@@ -248,7 +248,15 @@ assert.match(
 // the Home headline must be re-picked afterwards (a stale "Goldman Sachs ·
 // Opens Aug 15, 2026" card with a generic search link led Home for days).
 {
-  const merge = script.match(/async function loadLiveOpenings\(\) \{[\s\S]*?\n\}/)[0];
+  const merge = script.match(/function mergeLiveOpenings\(data\) \{[\s\S]*?\n\}/)[0];
   assert.match(merge, /!o\.live && !o\.awaiting && liveCompanies\.has/, "curated entries for live-covered employers are removed");
+  // Cache then network: a posting missing from the newer snapshot must leave.
+  assert.match(merge, /o\.live && !liveUrls\.has\(o\.sourceUrl\)/, "closed postings from an older snapshot are removed");
+  assert.match(merge, /lastLocationResult = null;[\s\S]*renderOpenings\(\)/, "radius search re-run on a new data set");
   assert.match(merge, /renderOpenings\(\);[\s\S]*setFeatured\(\);/, "Home headline re-picked after the live merge");
+}
+
+// preferredOpenings() must keep its exact order after scoring once per listing.
+{
+  assert.match(script, /function preferredOpenings\(\) \{[\s\S]*?\.map\(\(item, index\) => \(\{[\s\S]*?score: openingMatch\(item\)\.score/, "listings scored once, not per comparison");
 }

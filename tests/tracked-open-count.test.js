@@ -15,7 +15,9 @@ const path = require("node:path");
 const ROOT = path.join(__dirname, "..");
 const src = fs.readFileSync(path.join(ROOT, "script.js"), "utf8");
 
-const fn = src.slice(src.indexOf("async function loadLiveOpenings()"));
+// The merge moved out of loadLiveOpenings so a cached feed and the network feed
+// share one path.
+const fn = src.slice(src.indexOf("function mergeLiveOpenings(data)"));
 const body = fn.slice(0, fn.indexOf("\n}\n"));
 
 // The merge loop is what makes the count meaningful.

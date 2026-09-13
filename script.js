@@ -6,6 +6,43 @@
 const API_ORIGIN = "https://app.joinpromptly.co";
 const API_BASE = window.Capacitor?.isNativePlatform?.() ? API_ORIGIN : "";
 
+// ── iOS app launch gate ─────────────────────────────────────────────────────
+// Inside the native shell, index.html shows a static cover identical to the
+// iOS launch image. It stays until the first screen is genuinely ready — the
+// session is resolved and the feed (cached or network) is merged — then fades
+// once. Nothing is ever held back artificially: it lifts the moment both are
+// done, and a hard cap means a slow network can never trap anyone behind it.
+// The website never has the cover, so none of this runs there.
+const appBoot = (() => {
+  const active = document.documentElement.classList.contains("app-booting");
+  const pending = new Set(["auth", "feed"]);
+  let lifted = !active;
+  function lift() {
+    if (lifted) return;
+    lifted = true;
+    // Two frames: let the final layout and first paint of the real screen land
+    // underneath before the cover leaves, so what fades in is already settled.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const cover = document.querySelector(".boot-cover");
+      if (cover) cover.classList.add("is-leaving");
+      document.documentElement.classList.remove("app-booting");
+      if (cover) setTimeout(() => cover.remove(), 320);
+    }));
+  }
+  if (active) setTimeout(lift, 3500);
+  return {
+    active,
+    ready(part) {
+      if (lifted) return;
+      // Signed in (or out) is known; the feed gets a short grace period, not
+      // an open-ended wait. With a cached feed it is already done by now.
+      if (part === "auth") setTimeout(() => this.ready("feed"), 1500);
+      pending.delete(part);
+      if (!pending.size) lift();
+    },
+  };
+})();
+
 const COLLEGES = [
   "Abilene Christian University", "Agnes Scott College", "Alabama A&M University", "Alcorn State University",
   "American University", "Amherst College", "Arizona State University", "Auburn University",
@@ -1178,19 +1215,33 @@ function preferredOpenings() {
   // In range first (graduated expansion, see locationSearch), then verified
   // listings before placeholders, then by fit — with distance as the
   // tie-breaker so the closest of two equally good roles wins.
-  return [...currentLocationResult().items]
+  //
+  // Each listing is scored ONCE, then sorted. The comparator used to call
+  // openingMatch() and distanceToListing() on both sides of every comparison —
+  // ~30,000 profile-matching passes per sort over ~1,400 listings, and this
+  // runs several times per refresh. Same keys, same order, a fraction of the
+  // work; it was the largest main-thread cost on an iPhone.
+  return currentLocationResult().items
+    .map((item, index) => ({
+      item,
+      index,
+      awaiting: isAwaitingLike(item) ? 1 : 0,
+      score: openingMatch(item).score,
+      distance: distanceToListing(item),
+    }))
     .sort((a, b) => {
-      const awaiting = (isAwaitingLike(a) ? 1 : 0) - (isAwaitingLike(b) ? 1 : 0);
+      const awaiting = a.awaiting - b.awaiting;
       if (awaiting) return awaiting;
-      const fit = openingMatch(b).score - openingMatch(a).score;
+      const fit = b.score - a.score;
       if (fit) return fit;
-      const da = distanceToListing(a);
-      const db = distanceToListing(b);
-      if (da === null && db === null) return 0;
+      const da = a.distance;
+      const db = b.distance;
+      if (da === null && db === null) return a.index - b.index;
       if (da === null) return 1;
       if (db === null) return -1;
-      return da - db;
-    });
+      return (da - db) || (a.index - b.index);
+    })
+    .map((entry) => entry.item);
 }
 
 function profileMatchText() {
@@ -1713,10 +1764,15 @@ function setView(name) {
   // (heading chosen below — see viewHeading)
   document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item.dataset.view === name));
   title.textContent = name === "home" ? greetingText() : viewHeading(view);
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  // A tab switch jumps to the top in the app, as native tab bars do; animating
+  // the old screen's scroll under the new one read as lag.
+  window.scrollTo({ top: 0, behavior: isNativeShell() ? "auto" : "smooth" });
 
   renderVerificationNotice();
-  if (name === "openings") markMatchingAlertsSeen();
+  // Bookkeeping for the unread badge (~100ms over the full feed). It changes
+  // nothing on the screen being opened, so it runs after that screen paints
+  // instead of delaying the tap.
+  if (name === "openings") requestAnimationFrame(() => setTimeout(markMatchingAlertsSeen, 0));
   if (name === "cycles") renderCyclesView();
 
   if (name === "alerts") renderAlertsList();
@@ -4590,7 +4646,7 @@ renderVerificationNotice();
 const resolvingAuthCallback = Boolean(window.PromptlyAuthRouting.parseOAuthCallback(window.location.href));
 const restoredProfile = restoreProfile({ paint: !resolvingAuthCallback });
 deferredProfilePaint = restoredProfile && resolvingAuthCallback;
-if (!restoredProfile && !resolvingAuthCallback) {
+if (!restoredProfile && !resolvingAuthCallback && !appBoot.active) {
   window.setTimeout(() => {
     // A signed-in user has already been routed (or is mid-OAuth exchange) —
     // never drag them back to the sign-up screen.
@@ -4598,7 +4654,15 @@ if (!restoredProfile && !resolvingAuthCallback) {
     setOnboardingStep(1);
   }, 1200);
 }
-initializeAuth();
+initializeAuth().finally(() => {
+  // In the app the launch cover already played the role of the web launch
+  // animation, so a signed-out student lands directly on sign-in instead of
+  // watching the logo animate a second time.
+  if (appBoot.active && !authUser && !pendingOAuthCallback && document.body.classList.contains("launch-active")) {
+    setOnboardingStep(1);
+  }
+  appBoot.ready("auth");
+});
 
 // Enter submits the account form.
 //
@@ -5286,18 +5350,73 @@ document.querySelectorAll(".profile-tab").forEach((tab) => {
   });
 });
 
-registerServiceWorker();
+// Not inside the iOS shell: WKWebView does not run service workers for the
+// app's capacitor:// scheme, so this only ever failed (and wrote a misleading
+// "Service worker setup failed" status) on every launch. Native push has its
+// own transport.
+if (!isNativeShell()) registerServiceWorker();
 
 // --- Live openings feed -----------------------------------------------------
 // The curated `openings` above are the always-present baseline (the app is
 // never empty). On load we pull the auto-aggregated, link-verified live feed
 // from /api/openings and add any postings we don't already list, then re-render.
 // If the request fails, nothing changes and the curated list still shows.
+// In the iOS app the last feed is kept on the device (IndexedDB), shown
+// instantly on launch, and quietly replaced by the network copy. The website
+// keeps its existing path; its service worker already caches.
+const LIVE_CACHE_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+let liveFeedAppliedAt = null;
+
+function liveCacheStore(mode) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("promptly", 1);
+    request.onupgradeneeded = () => request.result.createObjectStore("kv");
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result.transaction("kv", mode).objectStore("kv"));
+  });
+}
+async function readLiveCache() {
+  try {
+    const store = await liveCacheStore("readonly");
+    const entry = await new Promise((resolve) => {
+      const get = store.get("liveOpenings");
+      get.onsuccess = () => resolve(get.result);
+      get.onerror = () => resolve(null);
+    });
+    if (!entry || !entry.data || Date.now() - entry.savedAt > LIVE_CACHE_MAX_AGE_MS) return null;
+    return entry.data;
+  } catch {
+    return null;
+  }
+}
+async function writeLiveCache(data) {
+  try {
+    const store = await liveCacheStore("readwrite");
+    store.put({ savedAt: Date.now(), data }, "liveOpenings");
+  } catch {}
+}
+
 async function loadLiveOpenings() {
+  if (isNativeShell()) {
+    const cached = await readLiveCache();
+    if (cached) mergeLiveOpenings(cached);
+  }
   try {
     const res = await fetch(`${API_BASE}/api/openings`, { headers: { Accept: "application/json" } });
     if (!res.ok) return;
     const data = await res.json();
+    if (isNativeShell()) writeLiveCache(data);
+    // Same snapshot as the one already on screen: nothing to redo, and no
+    // reason to re-render the whole app under the student's finger.
+    if (data.updatedAt && data.updatedAt === liveFeedAppliedAt) return;
+    mergeLiveOpenings(data);
+  } catch (err) {
+    // Offline or API not configured — curated baseline (or cache) already rendered.
+  }
+}
+
+function mergeLiveOpenings(data) {
+  {
     // Real pipeline timestamp — surfaced in the UI as proof the feed is live.
     if (data.updatedAt) {
       liveFeedUpdatedAt = data.updatedAt;
@@ -5305,6 +5424,11 @@ async function loadLiveOpenings() {
     }
     const live = Array.isArray(data.openings) ? data.openings : [];
     if (!live.length) return;
+    liveFeedAppliedAt = data.updatedAt || null;
+
+    // A later snapshot replaces an earlier one (cache, then network): postings
+    // that have since closed must leave, not linger from the cached copy.
+    const liveUrls = new Set(live.map((o) => o && o.sourceUrl));
 
     // A hand-curated entry is only a stand-in until the live feed covers that
     // employer. Once it does, drop the stand-in: otherwise a stale curated card
@@ -5314,7 +5438,7 @@ async function loadLiveOpenings() {
     let removed = 0;
     for (let i = openings.length - 1; i >= 0; i--) {
       const o = openings[i];
-      if (!o.live && !o.awaiting && liveCompanies.has(String(o.company || "").toLowerCase())) {
+      if ((o.live && !liveUrls.has(o.sourceUrl)) || (!o.live && !o.awaiting && liveCompanies.has(String(o.company || "").toLowerCase()))) {
         openings.splice(i, 1);
         removed += 1;
       }
@@ -5335,6 +5459,8 @@ async function loadLiveOpenings() {
     }
     if (!added && !removed) return;
 
+    // The radius search is cached per data set; this is a new data set.
+    lastLocationResult = null;
     rebuildPlaceholders();
     migrateLegacyStatuses();
     restoreSavedCompanies();
@@ -5354,8 +5480,6 @@ async function loadLiveOpenings() {
     updateAlertBadge();
     updateAlertPulse();
     if (typeof renderPeerPulse === "function") renderPeerPulse();
-  } catch (err) {
-    // Offline or API not configured — curated baseline already rendered.
   }
 }
 
@@ -5363,7 +5487,7 @@ async function loadLiveOpenings() {
 rebuildPlaceholders();
 renderFilterChips();
 renderOpenings();
-loadLiveOpenings();
+loadLiveOpenings().finally(() => appBoot.ready("feed"));
 // Swap the phone-first notification copy for this device's wording, so a
 // laptop never reads "add to your Home Screen".
 applyDeviceNotificationCopy();
