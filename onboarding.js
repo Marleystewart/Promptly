@@ -26,10 +26,17 @@
   // not zoom back out. maximum-scale=1 stops that focus zoom; iOS still honours
   // pinch-to-zoom regardless, so nobody loses the ability to enlarge text.
   // Native app only: the website keeps its standard browser behaviour.
+  //
+  // html.native-app scopes the app-only CSS at the end of styles.css. The
+  // viewport renders the layout at 90% so the phone-sized UI fits a real phone
+  // screen instead of feeling zoomed in, pins the scale so a focused field
+  // cannot zoom, and uses viewport-fit=cover so env(safe-area-inset-top) is
+  // real and content clears the status bar.
   if (isNativeApp()) {
+    document.documentElement.classList.add("native-app");
     var viewport = document.querySelector('meta[name="viewport"]');
-    if (viewport && !/maximum-scale/.test(viewport.content)) {
-      viewport.content += ", maximum-scale=1";
+    if (viewport) {
+      viewport.content = "width=device-width, initial-scale=0.9, minimum-scale=0.9, maximum-scale=0.9, viewport-fit=cover";
     }
   }
 
@@ -442,7 +449,16 @@
       el.card.querySelector("[data-tour-back]").disabled = index === 0;
       el.card.querySelector("[data-tour-next]").textContent = index === order.length - 1 ? "Finish" : "Next";
 
-      whenStill(node, function (rect) {
+      whenStill(node, function (settled) {
+        // Smooth scrolling can be dropped entirely (the page is overflow-locked
+        // while the tour is open), which left step 2's search box above the
+        // screen and the spotlight pointing at nothing. If the target is not on
+        // screen once things settle, jump there and measure again.
+        var rect = settled;
+        if (isNativeApp() && (rect.bottom <= 0 || rect.top >= window.innerHeight)) {
+          node.scrollIntoView({ block: overflows ? "start" : "center", behavior: "auto" });
+          rect = node.getBoundingClientRect();
+        }
         // On the very first step the ring has no previous position, so it would
         // animate in from the top-left corner. Place it without a transition,
         // then let every later move animate.
