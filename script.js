@@ -5306,6 +5306,20 @@ async function loadLiveOpenings() {
     const live = Array.isArray(data.openings) ? data.openings : [];
     if (!live.length) return;
 
+    // A hand-curated entry is only a stand-in until the live feed covers that
+    // employer. Once it does, drop the stand-in: otherwise a stale curated card
+    // ("Goldman Sachs · Opens Aug 15, 2026", linking to a generic search page)
+    // sat beside the real, exact postings and even led the Home screen.
+    const liveCompanies = new Set(live.filter((o) => o && o.company).map((o) => o.company.toLowerCase()));
+    let removed = 0;
+    for (let i = openings.length - 1; i >= 0; i--) {
+      const o = openings[i];
+      if (!o.live && !o.awaiting && liveCompanies.has(String(o.company || "").toLowerCase())) {
+        openings.splice(i, 1);
+        removed += 1;
+      }
+    }
+
     const seen = new Set(openings.map((o) => o.sourceUrl));
     let added = 0;
     for (const item of live) {
@@ -5319,13 +5333,16 @@ async function loadLiveOpenings() {
       openings.push(item);
       added += 1;
     }
-    if (!added) return;
+    if (!added && !removed) return;
 
     rebuildPlaceholders();
     migrateLegacyStatuses();
     restoreSavedCompanies();
     renderFilterChips();
     renderOpenings();
+    // The Home headline card too: it was chosen from the curated baseline at
+    // startup and never re-picked, so it kept showing a removed stand-in.
+    setFeatured();
     // Again, now that the live feed is actually merged in.
     //
     // The call above fires as soon as `updatedAt` is read, which is BEFORE the

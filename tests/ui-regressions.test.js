@@ -243,3 +243,12 @@ assert.match(
   assert.doesNotMatch(load("Mozilla/5.0 (Linux; Android 14)", false).meta.content, /maximum-scale/, "Android keeps pinch zoom");
   assert.match(src, /function installedToHomeScreen\(\) \{\s*\/*[\s\S]{0,40}return isNativeApp\(\)/, "native app counts as installed, so no install guide");
 }
+
+// Curated stand-ins must give way to the live feed for the same employer, and
+// the Home headline must be re-picked afterwards (a stale "Goldman Sachs ·
+// Opens Aug 15, 2026" card with a generic search link led Home for days).
+{
+  const merge = script.match(/async function loadLiveOpenings\(\) \{[\s\S]*?\n\}/)[0];
+  assert.match(merge, /!o\.live && !o\.awaiting && liveCompanies\.has/, "curated entries for live-covered employers are removed");
+  assert.match(merge, /renderOpenings\(\);[\s\S]*setFeatured\(\);/, "Home headline re-picked after the live merge");
+}
