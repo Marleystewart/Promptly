@@ -4,6 +4,7 @@
 // /admin.html and paste the secret.
 
 const { listSubscribers, takeAdminAttempt, getRedis, countPresent } = require("./_shared/store");
+const { listAuthAccounts, mergeAccounts } = require("./_shared/auth-accounts");
 const { getStats, getViewBreakdown } = require("./_shared/analytics");
 const { listWatchedSources, listCoverageRequests } = require("./_shared/watched-store");
 const { listSourceHealth } = require("./_shared/source-health");
@@ -81,6 +82,12 @@ module.exports = async function handler(req, res) {
   try {
     const { subscribers = [], setupRequired } = await listSubscribers();
 
+    // Every account from Supabase Auth, joined to its profile. Falls back to
+    // profiles alone if Supabase can't be reached, and says so.
+    let accounts = { available: false, users: [] };
+    try { accounts = await listAuthAccounts(); } catch (error) { accounts = { available: false, users: [], error: error.message }; }
+    const merged = mergeAccounts(accounts.users, subscribers, { pushState });
+
     const bySchool = {}, byGradYear = {}, byField = {};
     let withEmail = 0, withPush = 0, withEduEmail = 0;
     for (const s of subscribers) {
@@ -118,6 +125,14 @@ module.exports = async function handler(req, res) {
       if (on >= sevenDaysAgo) activeLast7 += 1;
     }
 
+    // Accounts with no profile yet have no school or class year to report.
+    // They belong in the breakdowns as "Unknown" so the buckets add up to the
+    // real account total instead of silently covering only synced profiles.
+    if (accounts.available && merged.summary.withoutProfile) {
+      bySchool.Unknown = (bySchool.Unknown || 0) + merged.summary.withoutProfile;
+      byGradYear.Unknown = (byGradYear.Unknown || 0) + merged.summary.withoutProfile;
+    }
+
     // Schools, excluding the "Unknown" bucket — an account that never told us
     // where it studies is not a school we have reached.
     const schoolCount = Object.keys(bySchool).filter((k) => k !== "Unknown").length;
@@ -148,7 +163,8 @@ module.exports = async function handler(req, res) {
 
     const headline = {
       liveNow: liveNow,
-      signups: subscribers.length,
+      // Real accounts (Supabase), not just synced profiles.
+      signups: accounts.available ? merged.summary.total : subscribers.length,
       activeToday: activeToday,
       activeLast7: activeLast7,
       confirmed: funnelReadyCount(subscribers),
@@ -158,27 +174,7 @@ module.exports = async function handler(req, res) {
       everReturnedPct: null, // filled in below, once retention is built
     };
 
-    const recent = [...subscribers]
-      .sort((a, b) => Date.parse(b.updatedAt || b.createdAt || 0) - Date.parse(a.updatedAt || a.createdAt || 0))
-      .slice(0, 20)
-      // Per-account row: the most identifying view on the page, so it shows the
-      // band rather than the exact year.
-      // Full address, not masked. This page is behind ADMIN_SECRET and shows
-      // the founders their own users; a masked address cannot be used to answer
-      // "this student says alerts stopped, what does their record look like".
-      // A PIN holder never reaches this branch — see the viaPin guard below.
-      .map((s) => ({
-        email: s.email || "—", school: s.school || "—", gradYear: s.gradYearBand || "—",
-        when: s.updatedAt || s.createdAt || null, lastActiveOn: s.lastActiveOn || null,
-        // Who actually hears from us, per account. The aggregate counters above
-        // answer "how many"; this answers "which ones", which is the question
-        // you have when a student says they never got an alert.
-        push: pushState(s),
-        // A digest is never even queued for an unverified record, so email
-        // being on is not the same as email being reachable.
-        email_on: s.emailNotifications !== false,
-        reachable: s.emailNotifications !== false && s.verified === true,
-      }));
+    const recent = merged.rows;
 
     // The daily check's own verdict, read from storage rather than recomputed.
     // Recomputing here would make the banner disagree with the email that was
@@ -292,7 +288,8 @@ module.exports = async function handler(req, res) {
       watched: watchedRows,
       coverage: coverageRows,
       verify,
-      totalAccounts: subscribers.length,
+      totalAccounts: accounts.available ? merged.summary.total : subscribers.length,
+      accountsSummary: { ...merged.summary, source: accounts.available ? "supabase" : "profiles-only", error: accounts.error || null },
       heartbeat,
       withEmail,
       withEduEmail,
