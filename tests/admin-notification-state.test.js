@@ -11,7 +11,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const ROOT = path.join(__dirname, "..");
-const src = fs.readFileSync(path.join(ROOT, "api/admin-stats.js"), "utf8");
+const src = fs.readFileSync(path.join(ROOT, "api/admin-stats.js"), "utf8") + fs.readFileSync(path.join(ROOT, "api/_shared/auth-accounts.js"), "utf8");
 
 // Exercise the real classifier rather than a copy of it.
 const pushState = (() => {
@@ -73,13 +73,17 @@ assert.match(admin, /"Push", "Email reaches"/, "both columns are in the header r
 
 // This table is the most identifying view on the page. Adding columns must not
 // quietly add new personal fields to it.
-const rowMap = src.match(/\.map\(\(s\) => \(\{\s*email: s\.email[\s\S]*?\}\)\);/);
-assert.ok(rowMap, "the recent-row mapping must be findable");
+// The rows are now built in auth-accounts.js (every Supabase account joined to
+// its profile), so every row shape there is checked.
+const rowMaps = src.match(/rows\.push\(\{[\s\S]*?\}\);/g) || [];
+assert.ok(rowMaps.length >= 2, "the account row mappings must be findable");
 // gradYear is deliberately present and is already banded, never exact — see
 // gradYearBand() in script.js. These are the fields that would be new leakage.
-for (const field of ["major", "interests", "preferredLocation", "deviceToken:", "pushSubscription:", "savedAlerts"]) {
-  assert.ok(!rowMap[0].includes(field),
-    `the per-account row must not carry ${field} — it is a state summary, not a profile dump`);
+for (const rowMap of rowMaps) {
+  for (const field of ["major", "interests", "preferredLocation", "deviceToken:", "pushSubscription:", "savedAlerts"]) {
+    assert.ok(!rowMap.includes(field),
+      `the per-account row must not carry ${field} — it is a state summary, not a profile dump`);
+  }
 }
 
 console.log("Admin notification-state tests passed. Three push states, and email reach is not the toggle.");

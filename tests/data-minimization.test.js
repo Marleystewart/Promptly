@@ -106,7 +106,10 @@ for (const consumed of ["subscriber.fields", "subscriber.preferredLocation", "su
   const admin = fs.readFileSync(path.join(ROOT, "api/admin-stats.js"), "utf8");
   assert.match(admin, /s\.gradYearBand \|\| ""/, "grouping must use the band");
   assert.doesNotMatch(admin, /\(s\.gradYear \|\| ""\)\.trim\(\)/, "not the exact year");
-  assert.match(admin, /gradYear: s\.gradYearBand/, "the per-account row must show the band too");
+  // Per-account rows are built in auth-accounts.js now; they must use the band.
+  const accountsSrc = fs.readFileSync(path.join(ROOT, "api/_shared/auth-accounts.js"), "utf8");
+  assert.match(accountsSrc, /gradYear: \(?s( &&)? ?s?\.?gradYearBand/, "the per-account row must show the band too");
+  assert.doesNotMatch(accountsSrc, /s\.gradYear\b(?!Band)/, "never the exact year");
 }
 
 console.log("Data-minimization tests passed. The alert store gets only what it reads.");
