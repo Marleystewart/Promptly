@@ -152,6 +152,16 @@ function chip(label, state) {
 // readable without expanding and a long list cannot bury what is under it.
 // Capped as well as collapsed: at a few hundred signups the recent list would
 // otherwise render every row into the DOM on every load.
+// Always-visible table (no dropdown) for the list the founders read most.
+function plainTable(title, rows, cols) {
+  const list = (rows || []).filter(Boolean);
+  if (!list.length) return "";
+  const head = cols.map((c) => `<th>${escapeHtml(c)}</th>`).join("");
+  const body = list.map((r) => `<tr>${r.map((c) => `<td>${escapeHtml(c)}</td>`).join("")}</tr>`).join("");
+  return `<h3 style="margin:18px 0 8px">${escapeHtml(title)} <span class="muted" style="font-weight:500">${list.length}</span></h3>
+    <div class="scroll"><table><tr>${head}</tr>${body}</table></div>`;
+}
+
 function fold(title, rows, cols, { open = false, cap = 25 } = {}) {
   const list = (rows || []).filter(Boolean);
   if (!list.length) return "";
@@ -515,7 +525,7 @@ async function load() {
           <div class="card"><div class="n">${d.accountsSummary.withoutProfile}</div><div class="l">No profile yet</div></div>
         </div>
         ${d.accountsSummary.source !== "supabase" ? `<p class="muted">Couldn't read Supabase accounts${d.accountsSummary.error ? ` (${escapeHtml(d.accountsSummary.error)})` : ""}; showing profiles only.</p>` : ""}` : ""}
-        ${fold("All accounts", (d.recent || []).map((x) => [
+        ${plainTable("All accounts", (d.recent || []).map((x) => [
           x.email,
           x.confirmed ? "Yes" : "Not yet",
           x.hasProfile ? (x.noAccount ? "Profile only" : "Yes") : "No",
@@ -529,7 +539,7 @@ async function load() {
           x.reachable ? "Yes" : x.email_on ? "On, unverified" : "Off",
           x.when ? new Date(x.when).toLocaleString() : "—",
           x.lastActiveOn || "never",
-        ]), ["Email", "Confirmed", "Profile", "School", "Class year", "Push", "Email reaches", "Joined", "Last active"], { cap: 2000, open: true })}
+        ]), ["Email", "Confirmed", "Profile", "School", "Class year", "Push", "Email reaches", "Joined", "Last active"])}
       `)}
 
       ${section("Pipeline", `${d.watchedCount || 0} watched · ${d.coverageCount || 0} coverage requests · ${flaggedRows.length} flagged · ${d.reportCount || 0} reports`, `
