@@ -43,8 +43,42 @@ async function listAuthAccounts({ fetchImpl = fetch } = {}) {
 // One row per account, newest first, with the Promptly profile where it exists.
 // Profiles with no matching account (legacy local-only records) are kept too,
 // flagged, so nothing silently disappears from the list.
+const { studentStatus } = require("../../student-email.js");
+
+// A school for an account whose student never entered one, inferred from a
+// university email address — labelled "(from email)" everywhere so it can't be
+// mistaken for something the student told us. Two honest sources only:
+//   1. what other students on the same domain entered (trincoll.edu → the
+//      school most of them chose), or
+//   2. the domain itself (nyu.edu).
+// Non-academic addresses (gmail.com etc.) stay unknown.
+function schoolFromEmail(email, schoolsByDomain) {
+  const student = studentStatus(email);
+  if (!student.verified || !student.domain) return null;
+  const known = schoolsByDomain.get(student.domain);
+  return `${known || student.domain} (from email)`;
+}
+
+function schoolsByDomainFrom(subscribers) {
+  const tallies = new Map();
+  for (const s of subscribers) {
+    const school = String((s && s.school) || "").trim();
+    const { verified, domain } = studentStatus(s && s.email);
+    if (!school || !verified || !domain) continue;
+    const counts = tallies.get(domain) || new Map();
+    counts.set(school, (counts.get(school) || 0) + 1);
+    tallies.set(domain, counts);
+  }
+  const best = new Map();
+  for (const [domain, counts] of tallies) {
+    best.set(domain, [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0]);
+  }
+  return best;
+}
+
 function mergeAccounts(users, subscribers, { pushState = () => "off" } = {}) {
   const profiles = new Map(subscribers.filter((s) => s && s.email).map((s) => [String(s.email).trim().toLowerCase(), s]));
+  const schoolsByDomain = schoolsByDomainFrom(subscribers);
   const seen = new Set();
   const rows = [];
   for (const user of users) {
@@ -59,7 +93,7 @@ function mergeAccounts(users, subscribers, { pushState = () => "off" } = {}) {
       lastSignIn: user.last_sign_in_at || null,
       provider: (user.app_metadata && user.app_metadata.provider) || "email",
       hasProfile: Boolean(s),
-      school: (s && s.school) || "—",
+      school: (s && s.school) || schoolFromEmail(email, schoolsByDomain) || "—",
       gradYear: (s && s.gradYearBand) || "—",
       push: s ? pushState(s) : "off",
       email_on: s ? s.emailNotifications !== false : false,
@@ -98,4 +132,4 @@ function mergeAccounts(users, subscribers, { pushState = () => "off" } = {}) {
   return { rows, summary };
 }
 
-module.exports = { listAuthAccounts, mergeAccounts, usersFrom };
+module.exports = { listAuthAccounts, mergeAccounts, usersFrom, schoolFromEmail };

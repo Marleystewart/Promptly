@@ -129,7 +129,12 @@ module.exports = async function handler(req, res) {
     // They belong in the breakdowns as "Unknown" so the buckets add up to the
     // real account total instead of silently covering only synced profiles.
     if (accounts.available && merged.summary.withoutProfile) {
-      bySchool.Unknown = (bySchool.Unknown || 0) + merged.summary.withoutProfile;
+      // A university address still tells us the school; only the rest are Unknown.
+      for (const row of merged.rows) {
+        if (row.noAccount || row.hasProfile) continue;
+        const school = row.school && row.school !== "—" ? row.school : "Unknown";
+        bySchool[school] = (bySchool[school] || 0) + 1;
+      }
       byGradYear.Unknown = (byGradYear.Unknown || 0) + merged.summary.withoutProfile;
     }
 
