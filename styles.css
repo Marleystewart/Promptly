@@ -4836,3 +4836,55 @@ html.native-app .tour-card { padding: 14px 16px 12px; }
 html.native-app .tour-card h2 { font-size: 1rem; margin-bottom: 6px; }
 html.native-app .tour-body { font-size: 0.875rem; margin-bottom: 12px; }
 html.native-app .tour-progress { margin-bottom: 10px; }
+
+/* Profile tab avatar: hidden on the website, shown in the app. */
+.nav-avatar { display: none; }
+html.native-app .mobile-nav .nav-item[data-view="profile"] svg { display: none; }
+html.native-app .nav-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: var(--purple-cta) center / cover no-repeat;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+/* No photo yet: a small "+" nudges the student to add one. */
+html.native-app .nav-avatar:not(.has-photo)::after {
+  content: "+";
+  position: absolute;
+  right: -5px;
+  bottom: -4px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: var(--purple-cta);
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 800;
+}
+html.native-app .mobile-nav .nav-item.active .nav-avatar { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--purple-cta); }
+
+/* Shrink-on-scroll bottom bar (app only). */
+html.native-app .mobile-nav,
+html.native-app .mobile-nav .nav-item,
+html.native-app .mobile-nav .nav-item span:not(.nav-avatar),
+html.native-app .mobile-nav .nav-item svg,
+html.native-app .nav-avatar {
+  transition: all 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+html.native-app.nav-compact .mobile-nav { left: 48px; right: 48px; padding: 5px; border-radius: 20px; }
+html.native-app.nav-compact .mobile-nav .nav-item { min-height: 38px; gap: 0; padding: 4px; }
+html.native-app.nav-compact .mobile-nav .nav-item span:not(.nav-avatar) { font-size: 0; line-height: 0; opacity: 0; }
+html.native-app.nav-compact .mobile-nav .nav-item svg { width: 20px; height: 20px; }
+html.native-app.nav-compact .nav-avatar { width: 21px; height: 21px; font-size: 10px; }
+@media (prefers-reduced-motion: reduce) {
+  html.native-app .mobile-nav, html.native-app .mobile-nav * { transition: none; }
+}
