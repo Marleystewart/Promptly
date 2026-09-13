@@ -22,6 +22,19 @@ assert.equal(rows[0].email, "unconfirmed@gmail.com", "newest first");
 assert.equal(rows.find((r) => r.email === "confirmed@school.edu").school, "Trinity", "profile joined by email, case-insensitive");
 assert.equal(rows.find((r) => r.email === "legacy@local.com").noAccount, true);
 
+// A .edu address with no profile still has a school — inferred, and labelled.
+{
+  const withPeers = mergeAccounts(
+    [{ email: "new@trincoll.edu", created_at: "2026-09-13T00:00:00Z" }, { email: "solo@nyu.edu", created_at: "2026-09-13T00:00:00Z" }, { email: "x@gmail.com", created_at: "2026-09-13T00:00:00Z" }],
+    [{ email: "peer1@trincoll.edu", school: "Trinity College" }, { email: "peer2@trincoll.edu", school: "Trinity College" }, { email: "peer3@trincoll.edu", school: "Trinity" }],
+  ).rows;
+  const school = (email) => withPeers.find((r) => r.email === email).school;
+  assert.equal(school("new@trincoll.edu"), "Trinity College (from email)", "most common school entered on that domain");
+  assert.equal(school("solo@nyu.edu"), "nyu.edu (from email)", "otherwise the domain itself");
+  assert.equal(school("x@gmail.com"), "—", "a personal address stays unknown");
+  assert.equal(school("peer1@trincoll.edu"), "Trinity College", "an entered school is never overwritten");
+}
+
 // Supabase unreachable: fall back to profiles, not zero.
 assert.equal(mergeAccounts([], subscribers).summary.total, 2);
 
