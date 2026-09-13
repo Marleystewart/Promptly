@@ -58,6 +58,15 @@
       });
     }, { passive: true });
 
+    // The Home "Open now" card is one big tap target in the app, the way a
+    // card behaves on a phone; before, only its View Alert button responded.
+    document.addEventListener("click", function (event) {
+      var card = event.target.closest && event.target.closest(".featured-card");
+      if (!card || event.target.closest("button, a, input")) return;
+      var open = card.querySelector("[data-feature-details]");
+      if (open) open.click();
+    });
+
     // Coming back after a while starts fresh, like reopening the app: the
     // launch animation plays again and the feed reloads, instead of resuming a
     // stale page that iOS may have half-discarded (which is what glitched).

@@ -4918,3 +4918,5 @@ html.native-app body:has(dialog[open]) { overflow: hidden; }
 /* Logos in proportion with the rest of the app. */
 html.native-app .mega-logo { width: 60px; height: 60px; font-size: 15px; border-radius: 14px; }
 html.native-app .modal-logo { width: 64px; height: 64px; font-size: 14px; border-radius: 16px; }
+html.native-app .featured-card { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+html.native-app .featured-card:active { transform: scale(0.99); transition: transform 120ms ease; }
