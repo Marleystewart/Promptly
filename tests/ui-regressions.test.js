@@ -216,3 +216,30 @@ assert.match(
     assert.ok(parked.includes(selector), `the parked-auth path must hide ${selector}`);
   }
 }
+
+// Native iOS shell: no "add to home screen" guide inside the App Store app,
+// and no focus-zoom on form fields. Behavioural, not a text match: run the
+// real helpers against a fake Capacitor.
+{
+  const vm = require("node:vm");
+  const src = fs.readFileSync(path.join(root, "onboarding.js"), "utf8");
+  function load(ua, native) {
+    const meta = { content: "width=device-width, initial-scale=1.0" };
+    const ctx = {
+      navigator: { userAgent: ua, standalone: false },
+      localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+      document: { querySelector: (s) => (s.includes("viewport") ? meta : null), querySelectorAll: () => [], addEventListener() {}, readyState: "loading", body: {} },
+      matchMedia: () => ({ matches: false }),
+      addEventListener() {}, setTimeout() {},
+    };
+    ctx.window = ctx;
+    if (native) ctx.Capacitor = { isNativePlatform: () => true };
+    try { vm.runInNewContext(src, ctx); } catch (e) { /* DOM-dependent tail is irrelevant here */ }
+    return { meta, api: ctx.promptlyTour };
+  }
+  const iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)";
+  assert.match(load(iphone, false).meta.content, /maximum-scale=1/, "iPhone web must not focus-zoom");
+  assert.match(load(iphone, true).meta.content, /maximum-scale=1/, "native app must not focus-zoom");
+  assert.doesNotMatch(load("Mozilla/5.0 (Linux; Android 14)", false).meta.content, /maximum-scale/, "Android keeps pinch zoom");
+  assert.match(src, /function installedToHomeScreen\(\) \{\s*\/*[\s\S]{0,40}return isNativeApp\(\)/, "native app counts as installed, so no install guide");
+}

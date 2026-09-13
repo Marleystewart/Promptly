@@ -17,6 +17,22 @@
 (function () {
   "use strict";
 
+  function isNativeApp() {
+    var cap = window.Capacitor;
+    return !!(cap && typeof cap.isNativePlatform === "function" && cap.isNativePlatform());
+  }
+
+  // iOS zooms the page whenever a focused field's text is under 16px, and does
+  // not zoom back out. maximum-scale=1 stops that focus zoom; iOS still honours
+  // pinch-to-zoom regardless, so nobody loses the ability to enlarge text.
+  // Scoped to iOS because Android does treat it as a pinch-zoom lock.
+  if (/iPhone|iPad|iPod/i.test(navigator.userAgent || "") || isNativeApp()) {
+    var viewport = document.querySelector('meta[name="viewport"]');
+    if (viewport && !/maximum-scale/.test(viewport.content)) {
+      viewport.content += ", maximum-scale=1";
+    }
+  }
+
   // ── State ───────────────────────────────────────────────────────────────
   // localStorage only. Onboarding progress is a per-device convenience, not
   // something worth storing against the account, and every read is wrapped
@@ -648,8 +664,11 @@
     installKeys().forEach(function (k) { write(k, "1"); });
   }
 
+  // The native iOS shell counts as installed: telling someone inside the App
+  // Store app how to add it to their home screen is nonsense.
   function installedToHomeScreen() {
-    return window.navigator.standalone === true
+    return isNativeApp()
+      || window.navigator.standalone === true
       || (typeof window.matchMedia === "function" && window.matchMedia("(display-mode: standalone)").matches);
   }
 
