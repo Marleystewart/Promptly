@@ -3889,6 +3889,21 @@ function updateProfilePhoto() {
     button.style.backgroundImage = profile.photoDataUrl ? `url("${profile.photoDataUrl}")` : "";
     button.classList.toggle("has-photo", Boolean(profile.photoDataUrl));
   });
+  // Bottom-bar Profile tab shows the student's own avatar, Instagram-style, so
+  // an empty one quietly invites a photo. Only visible in the native app (see
+  // html.native-app .nav-avatar in styles.css); the website keeps its icon.
+  document.querySelectorAll('.mobile-nav .nav-item[data-view="profile"]').forEach((tab) => {
+    let avatar = tab.querySelector(".nav-avatar");
+    if (!avatar) {
+      avatar = document.createElement("span");
+      avatar.className = "nav-avatar";
+      avatar.setAttribute("aria-hidden", "true");
+      tab.prepend(avatar);
+    }
+    avatar.textContent = profile.photoDataUrl ? "" : initial;
+    avatar.style.backgroundImage = profile.photoDataUrl ? `url("${profile.photoDataUrl}")` : "";
+    avatar.classList.toggle("has-photo", Boolean(profile.photoDataUrl));
+  });
 }
 
 function openProfileEditor() {

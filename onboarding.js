@@ -38,6 +38,25 @@
     if (viewport) {
       viewport.content = "width=device-width, initial-scale=0.9, minimum-scale=0.9, maximum-scale=0.9, viewport-fit=cover";
     }
+
+    // Bottom bar shrinks while scrolling down and grows back on any scroll up
+    // or near the top, like Instagram. A small dead zone stops it flickering on
+    // tiny finger movements and on iOS rubber-band bounce.
+    var lastY = window.scrollY;
+    var ticking = false;
+    window.addEventListener("scroll", function () {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        ticking = false;
+        var y = Math.max(0, window.scrollY);
+        var delta = y - lastY;
+        if (Math.abs(delta) < 8) return;
+        var compact = delta > 0 && y > 80 && !document.body.classList.contains("tour-open");
+        document.documentElement.classList.toggle("nav-compact", compact);
+        lastY = y;
+      });
+    }, { passive: true });
   }
 
   // ── State ───────────────────────────────────────────────────────────────
