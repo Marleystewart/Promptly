@@ -25,8 +25,8 @@
   // iOS zooms the page whenever a focused field's text is under 16px, and does
   // not zoom back out. maximum-scale=1 stops that focus zoom; iOS still honours
   // pinch-to-zoom regardless, so nobody loses the ability to enlarge text.
-  // Scoped to iOS because Android does treat it as a pinch-zoom lock.
-  if (/iPhone|iPad|iPod/i.test(navigator.userAgent || "") || isNativeApp()) {
+  // Native app only: the website keeps its standard browser behaviour.
+  if (isNativeApp()) {
     var viewport = document.querySelector('meta[name="viewport"]');
     if (viewport && !/maximum-scale/.test(viewport.content)) {
       viewport.content += ", maximum-scale=1";
