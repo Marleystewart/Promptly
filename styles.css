@@ -4820,3 +4820,19 @@ body.tour-open .mobile-nav {
 }
 .ig-later:hover { color: var(--muted); }
 .ig-card button:focus-visible { outline: 2px solid var(--purple-ink); outline-offset: 2px; }
+
+/* ── Native iOS app only ────────────────────────────────────────────────────
+   html.native-app is set by onboarding.js inside the Capacitor shell, so none
+   of this reaches the website. */
+html.native-app body {
+  padding-top: env(safe-area-inset-top, 0px);
+  overscroll-behavior: none;
+}
+/* Room between the last field and the button, and a hint that reads as its
+   own line rather than a caption glued to the email pill. */
+html.native-app [data-auth-submit] { margin-top: 18px; }
+html.native-app .student-hint { margin: 10px 0 16px; text-align: center; }
+html.native-app .tour-card { padding: 14px 16px 12px; }
+html.native-app .tour-card h2 { font-size: 1rem; margin-bottom: 6px; }
+html.native-app .tour-body { font-size: 0.875rem; margin-bottom: 12px; }
+html.native-app .tour-progress { margin-bottom: 10px; }

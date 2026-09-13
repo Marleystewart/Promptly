@@ -228,7 +228,7 @@ assert.match(
     const ctx = {
       navigator: { userAgent: ua, standalone: false },
       localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
-      document: { querySelector: (s) => (s.includes("viewport") ? meta : null), querySelectorAll: () => [], addEventListener() {}, readyState: "loading", body: {} },
+      document: { documentElement: { classList: { add() {} } }, querySelector: (s) => (s.includes("viewport") ? meta : null), querySelectorAll: () => [], addEventListener() {}, readyState: "loading", body: {} },
       matchMedia: () => ({ matches: false }),
       addEventListener() {}, setTimeout() {},
     };
@@ -239,7 +239,7 @@ assert.match(
   }
   const iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)";
   assert.doesNotMatch(load(iphone, false).meta.content, /maximum-scale/, "iPhone website keeps standard browser zoom");
-  assert.match(load(iphone, true).meta.content, /maximum-scale=1/, "native app must not focus-zoom");
+  assert.match(load(iphone, true).meta.content, /maximum-scale=0\.9/, "native app must not focus-zoom");
   assert.doesNotMatch(load("Mozilla/5.0 (Linux; Android 14)", false).meta.content, /maximum-scale/, "Android keeps pinch zoom");
   assert.match(src, /function installedToHomeScreen\(\) \{\s*\/*[\s\S]{0,40}return isNativeApp\(\)/, "native app counts as installed, so no install guide");
 }
