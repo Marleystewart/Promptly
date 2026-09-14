@@ -3750,7 +3750,7 @@ function validateAcademicProfile() {
   const majorInput = document.querySelector("[data-major-input]");
   const year = yearInput.value.trim();
 
-  if (!schoolInput.value.trim()) {
+  if (schoolInput.value.trim().length < 2) {
     setAcademicError("Add your school so the tracking page is accurate.");
     schoolInput.focus();
     return false;
@@ -3978,6 +3978,21 @@ function openProfileEditor() {
 }
 
 function saveProfileEdits() {
+  // The same rule signup enforces: school and graduation year can't be emptied
+  // later from here. An account with no school can't be matched to its campus.
+  const schoolInput = document.querySelector("[data-edit-school]");
+  const yearInput = document.querySelector("[data-edit-year]");
+  if (schoolInput.value.trim().length < 2) {
+    setFormError("[data-edit-error]", "Add your school so Promptly can match you to your campus.");
+    schoolInput.focus();
+    return;
+  }
+  if (!/^20\d{2}$/.test(yearInput.value.trim())) {
+    setFormError("[data-edit-error]", "Add a graduation year like 2028.");
+    yearInput.focus();
+    return;
+  }
+  setFormError("[data-edit-error]");
   invalidateLocationSearch();
   profile.name = document.querySelector("[data-edit-name]").value.trim();
   profile.email = document.querySelector("[data-edit-email]").value.trim();

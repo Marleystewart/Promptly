@@ -260,3 +260,18 @@ assert.match(
 {
   assert.match(script, /function preferredOpenings\(\) \{[\s\S]*?\.map\(\(item, index\) => \(\{[\s\S]*?score: openingMatch\(item\)\.score/, "listings scored once, not per comparison");
 }
+
+// The school autocomplete must be readable: its item text is var(--ink), so the
+// list can't sit on a dark background (it was #10132a, and names were invisible).
+{
+  const block = css.match(/\.college-dropdown \{[\s\S]*?\n\}/)[0];
+  assert.doesNotMatch(block, /background:\s*#1[0-9a-f]{5}/i, "school dropdown must not use a dark background");
+  assert.match(block, /background:\s*var\(--panel\)/, "school dropdown sits on the light panel colour");
+}
+
+// School is required at signup AND can't be emptied later from Edit profile.
+{
+  const edit = script.match(/function saveProfileEdits\(\) \{[\s\S]*?\n\}/)[0];
+  assert.match(edit, /\[data-edit-school\][\s\S]*?length < 2[\s\S]*?return;/, "Edit profile refuses an empty school");
+  assert.ok(edit.indexOf("length < 2") < edit.indexOf("profile.school ="), "validated before anything is saved");
+}
