@@ -505,6 +505,18 @@ const SOURCES = [
   { company: "BDO", short: "BDO", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "bdo" },
   { company: "BCG", short: "BCG", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "bcg" },
   { company: "L.E.K. Consulting", short: "LEK", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "lek" },
+  { company: "ClearView Healthcare Partners", short: "CVHP", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "clearviewhealthcarepartners" },
+  { company: "Frazier & Deeter", short: "FD", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "frazierdeeter" },
+  { company: "Forvis Mazars", short: "FORV", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "forvismazars" },
+  { company: "Huge", short: "HUGE", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "greenhouse", board: "hugeinc" },
+  { company: "AKQA", short: "AKQA", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "greenhouse", board: "akqa" },
+  { company: "Trace3", short: "TR3", logoClass: "cons", field: "Consulting", subField: "Technology Consulting", ats: "greenhouse", board: "trace3" },
+  { company: "FSG", short: "FSG", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "fsg" },
+  // Expert networks: consulting-adjacent research firms that hire analysts out
+  // of undergrad in volume.
+  { company: "Guidepoint", short: "GP", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "guidepoint" },
+  { company: "Third Bridge", short: "TB3", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "thirdbridge" },
+  { company: "AlphaSights", short: "AS", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "alphasights" },
   { company: "The Brattle Group", short: "BRAT", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "thebrattlegroup" },
   { company: "Protiviti", short: "PRO", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "roberthalf", dc: "wd1", site: "ProtivitiNA" },
   { company: "RSM", short: "RSM", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "rsm", dc: "wd1", site: "RSMCareers" },
