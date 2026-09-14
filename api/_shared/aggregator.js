@@ -216,7 +216,13 @@ const WORKDAY_TERMS = ["intern", "new grad", "university graduate"];
 const WORKDAY_PAGES = 5; // per term, 20 per page
 
 async function fetchWorkday(src) {
-  const base = `https://${src.tenant}.${src.dc}.myworkdayjobs.com`;
+  // Workday serves two host shapes. The classic one is per-tenant
+  // (<tenant>.<dc>.myworkdayjobs.com); the newer one is shared
+  // (<dc>.myworkdaysite.com/recruiting/<tenant>/<site>), which is where
+  // Fidelity lives. A source opts into the newer shape with siteHost: true.
+  const base = src.siteHost
+    ? `https://${src.dc}.myworkdaysite.com`
+    : `https://${src.tenant}.${src.dc}.myworkdayjobs.com`;
   const api = `${base}/wday/cxs/${src.tenant}/${src.site}/jobs`;
   const out = [];
   const seenPaths = new Set();
@@ -242,11 +248,21 @@ async function fetchWorkday(src) {
         // is deliberately permissive, so an unfamiliar foreign city can look
         // like a US role.  Sources marked positiveUsOnly must instead provide
         // affirmative US evidence (country wording or a state code).
-        if (src.positiveUsOnly && !isUsLocation(p.locationsText)) continue;
+        // A multi-office req collapses its location to "3 Locations", which
+        // carries no country at all — that dropped genuinely US postings whose
+        // TITLE states the country ("2027 Early Careers: Summer Intern,
+        // Finance – United States"). Accept affirmative US evidence from
+        // either field; a UK req names a UK town in both, so nothing leaks.
+        if (src.positiveUsOnly
+          && !isUsLocation(p.locationsText)
+          && !isUsLocation(p.title)) continue;
         const cycle = detectCycle(p.title, p.locationsText, true, Boolean(src.studentBoard));
         if (!cycle) continue;
         seenPaths.add(p.externalPath);
-        const url = `${base}/en-US/${src.site}${p.externalPath}`;
+        // Public posting URL follows the same two shapes as the API host.
+        const url = src.siteHost
+          ? `${base}/recruiting/${src.tenant}/${src.site}${p.externalPath}`
+          : `${base}/en-US/${src.site}${p.externalPath}`;
         out.push(normalize(src, p.title, url, p.locationsText, cycle));
       }
       if (postings.length < 20) break;
