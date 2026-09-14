@@ -494,6 +494,21 @@ const SOURCES = [
   { company: "AlixPartners", short: "AXP", logoClass: "consult", field: "Consulting", subField: "Restructuring", ats: "greenhouse", board: "alixpartners" },
   // Greenhouse board is literally named "West Monroe (Campus)" — a dedicated
   // student board, which is the best possible shape for this product.
+  // Consulting — Workday tenants read off each firm's live careers page.
+  // Global firms carry positiveUsOnly: their boards return every country and an
+  // unfamiliar foreign office otherwise reads as US.
+  // Accenture is deliberately NOT here: its Workday board returns locationsText
+  // undefined on every req, so a US role cannot be told from an India one. For a
+  // firm that size the leak is certain, and a monitored card that can never
+  // surface a role is a quiet false promise. Revisit if they populate location.
+  { company: "Grant Thornton", short: "GT", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "grantthornton" },
+  { company: "BDO", short: "BDO", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "bdo" },
+  { company: "BCG", short: "BCG", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "bcg" },
+  { company: "L.E.K. Consulting", short: "LEK", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "lek" },
+  { company: "The Brattle Group", short: "BRAT", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "thebrattlegroup" },
+  { company: "Protiviti", short: "PRO", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "roberthalf", dc: "wd1", site: "ProtivitiNA" },
+  { company: "RSM", short: "RSM", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "rsm", dc: "wd1", site: "RSMCareers" },
+  { company: "Genpact", short: "G", logoClass: "cons", field: "Consulting", subField: "Technology Consulting", ats: "workday", tenant: "genpact", dc: "wd108", site: "External_Careers", positiveUsOnly: true },
   { company: "West Monroe", short: "WM", logoClass: "consult", field: "Consulting", subField: "Tech Consulting", ats: "greenhouse", board: "westmonroe5" },
   { company: "Cornerstone Research", short: "CRES", logoClass: "consult", field: "Consulting", subField: "Economic Consulting", ats: "workday", tenant: "cornerstone", dc: "wd501", site: "CornerstoneResearch_Careers" },
   { company: "Baker Tilly", short: "BT", logoClass: "consult", field: "Consulting", subField: "Accounting & Advisory", ats: "workday", tenant: "bakertilly", dc: "wd5", site: "BTCareers" },
