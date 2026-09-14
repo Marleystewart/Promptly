@@ -85,18 +85,19 @@ assert.match(policy, /graduation year only as a range/,
 // A stated minimum age is the first thing a school's counsel or an App Store
 // reviewer looks for, and Promptly had none. It must not quietly disappear in a
 // later copy edit.
+// Raised from 16 to 18 on 14 Sep 2026. At an 18+ minimum the undertaking is
+// about anyone under 18, not only the COPPA under-13 line, and the privacy
+// section is titled "Age requirement" rather than "Students under 18" — that
+// heading described an audience the service no longer accepts.
 const terms = fs.readFileSync(path.join(root, "terms.html"), "utf8");
-assert.match(terms, /aged 16 and over/, "the Terms must state a minimum age");
-assert.match(terms, /under 13/, "the Terms must carry the under-13 undertaking");
-// The privacy page already had a "Students under 18" section; the minimum age
-// and the deletion route were folded into it rather than added as a second,
-// near-identical section.
-assert.match(policy, /Students under 18/, "the privacy page needs its under-18 section");
-assert.match(policy, /intended for students aged 16 and over/,
-  "the privacy page must state the minimum age too, not only the under-13 position");
-assert.match(policy, /not directed at children under 13/,
-  "the privacy page must keep the under-13 position");
-assert.equal((policy.match(/aged 16 and over/g) || []).length, 1,
+assert.match(terms, /aged 18 and over/, "the Terms must state a minimum age");
+assert.match(terms, /under 18/, "the Terms must carry the under-18 undertaking");
+assert.match(policy, /Age requirement/, "the privacy page needs its age section");
+assert.match(policy, /intended for students aged 18 and over/,
+  "the privacy page must state the minimum age too, not only the deletion undertaking");
+assert.match(policy, /not knowingly collect information from anyone\s+under 18/,
+  "the privacy page must keep the under-18 position");
+assert.equal((policy.match(/aged 18 and over/g) || []).length, 1,
   "one statement of the minimum age, not two competing ones");
 // The undertaking is only honest because deletion actually works, which the
 // erasure tests cover — this asserts we keep pointing people at it.

@@ -134,7 +134,36 @@ For Privacy — folded into the existing "Students under 18" section:
 > delete your own account and data at any time from Profile → Settings →
 > Delete My Data.
 
-Sixteen is a judgement call, not a legal requirement — it is a common floor and
-sits comfortably above the COPPA line while not excluding the high school
-seniors who are a genuine part of the audience. Thirteen would also be
-defensible. A lawyer should confirm which fits the states you care about.
+Sixteen was a judgement call, not a legal requirement — a common floor, above
+the COPPA line, and inclusive of the high school seniors who are a genuine part
+of the audience.
+
+## RAISED TO 18 — 14 September 2026
+
+Trey's call. Both pages and the pinning test now say **18 and over**, and the
+privacy heading changed from "Students under 18" to "Age requirement" — that
+title described an audience the service no longer accepts.
+
+What this buys: the state minor-protection patchwork described above attaches to
+minors, so declining minors outright removes most of it rather than leaving
+Promptly to track which statute applies in which state. The under-13 COPPA
+wording was widened to "anyone under 18", which is the stronger and simpler
+undertaking, and deletion already works to honour it.
+
+What it costs: high school seniors and rising freshmen are now outside the
+stated audience. If school pilots ever target them, this needs revisiting —
+and that is a legal conversation, not a copy edit.
+
+The shipped wording is now:
+
+> **Terms.** Promptly is intended for students aged 18 and over. If you are
+> under 18, please do not create an account. We do not knowingly collect
+> personal information from anyone under 18; if you believe someone under 18 has
+> given us information, email help.promptly@gmail.com and we will delete it.
+
+> **Privacy (Age requirement).** Promptly is built for college students and is
+> intended for students aged 18 and over. It is not directed at children, and we
+> do not knowingly collect information from anyone under 18. …You can delete
+> your own account and data at any time from Profile → Settings → Delete My Data.
+
+A lawyer should still confirm this fits the states you care about.
