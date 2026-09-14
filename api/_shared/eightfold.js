@@ -19,6 +19,36 @@
 const PAGE = 10; // the API ignores `num` and returns 10 regardless
 const MAX = 100; // 10 pages per term is plenty for student roles
 
+// Epoch seconds or milliseconds → ISO, without guessing wrong in either
+// direction. Anything below this threshold cannot be a plausible millisecond
+// timestamp (it would be 1970), so it is seconds.
+const MS_THRESHOLD = 1e11; // ~1973 in ms, ~5138 in seconds
+
+function epochToIso(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  const ms = n < MS_THRESHOLD ? n * 1000 : n;
+  const date = new Date(ms);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+// Resolve whatever Eightfold gives us against the tenant's own origin.
+// Already-absolute values are returned untouched, so a tenant that starts
+// returning full URLs keeps working.
+function absoluteJobUrl(job, origin) {
+  const raw = job && job.positionUrl ? String(job.positionUrl).trim() : "";
+  if (raw) {
+    try {
+      return new URL(raw, origin).toString();
+    } catch {
+      // Unparseable — fall through to the id-based form rather than emitting
+      // something a student cannot click.
+    }
+  }
+  if (job && job.id) return `${String(origin).replace(/\/+$/, "")}/careers/job/${job.id}`;
+  return null;
+}
+
 async function fetchEightfoldListings(origin, domain, terms) {
   const seen = new Map();
 
@@ -54,11 +84,34 @@ async function fetchEightfoldListings(origin, domain, terms) {
         if (seen.has(id)) continue;
         seen.set(id, {
           title: job.name,
-          url: job.positionUrl || `${origin}/careers/job/${job.id}`,
+          // positionUrl is ALWAYS a relative path ("/careers/job/549798287199"),
+          // so the fallback beside it never ran and every Eightfold listing
+          // shipped a link that resolves against Promptly's own origin instead
+          // of the employer's. On 10 Sep 2026 that was 13 live listings across
+          // Qualcomm, Mayo Clinic and Morgan Stanley: a student tapping Apply
+          // landed on an app.joinpromptly.co URL that does not exist.
+          //
+          // For a product whose whole claim is a live link to the employer's
+          // own posting, this is the worst thing that can be wrong, and it is
+          // invisible from our side — the listing looks perfect until someone
+          // clicks it.
+          url: absoluteJobUrl(job, origin),
           // Eightfold returns an array; the first entry is the primary office.
           location: Array.isArray(job.locations) ? job.locations.join("; ") : (job.locations || ""),
-          // postedTs and creationTs are epoch milliseconds.
-          postedAt: job.postedTs ? new Date(Number(job.postedTs)).toISOString() : null,
+          // postedTs is epoch SECONDS, not milliseconds — the comment here used
+          // to say milliseconds and the conversion trusted it, so every
+          // Eightfold posting carried a postedAt in January 1970. Verified
+          // against live Qualcomm data on 9 Sep 2026: postedTs 1788912000 is
+          // 2026-09-09, and reading it as milliseconds gives 1970-01-21.
+          //
+          // This is not cosmetic. postedAt drives the recruiting-cycle
+          // calendar and the "posted" line on a card, so every Eightfold role
+          // sorted as 56 years old.
+          //
+          // Guarded rather than blindly multiplied: if Eightfold ever switches
+          // to milliseconds, a value already past ~2001 in seconds would be
+          // pushed to the year 58000 instead of being read correctly.
+          postedAt: epochToIso(job.postedTs),
         });
       }
 

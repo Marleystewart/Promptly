@@ -3,16 +3,23 @@
 // user info). Set ADMIN_SECRET (or reuse CRON_SECRET) in Vercel, then open
 // /admin.html and paste the secret.
 
-const { listSubscribers, takeAdminAttempt, getRedis } = require("./_shared/store");
-const { getStats } = require("./_shared/analytics");
+const { listSubscribers, takeAdminAttempt, getRedis, countPresent } = require("./_shared/store");
+const { getStats, getViewBreakdown } = require("./_shared/analytics");
 const { listWatchedSources, listCoverageRequests } = require("./_shared/watched-store");
 const { listSourceHealth } = require("./_shared/source-health");
 const { listReports } = require("./_shared/reports");
 const { readEmailHealth } = require("./_shared/email-health");
+const { readHeartbeat } = require("./_shared/heartbeat");
 const { readIntegrationHealth, probeUsaJobs } = require("./_shared/integration-health");
 const { readRunHealth, readPrivacyCleanup } = require("./_shared/run-health");
-const { buildFunnel } = require("./_shared/funnel");
+const { buildFunnel, buildRetention, isAlertReady } = require("./_shared/funnel");
 const crypto = require("crypto");
+const { dayKey, dayKeyAgo } = require("./_shared/day");
+
+// Accounts that can actually be sent an alert today, reused for the headline.
+function funnelReadyCount(subscribers) {
+  return (subscribers || []).filter((s) => isAlertReady(s)).length;
+}
 
 function mask(email) {
   if (!email) return "—";
@@ -37,6 +44,20 @@ function pinMatches(provided) {
   const pin = String(process.env.ADMIN_PIN || "").trim();
   if (!pin || !/^\d{4,8}$/.test(pin)) return false; // unset or misconfigured = no PIN path
   return secretsMatch(provided, pin);
+}
+
+// What a single account's push actually is, as one of three states.
+//
+// The toggle and the address are separate facts and both have to hold. An
+// account can have pushNotifications on with nothing registered (asked for it,
+// never granted permission) or an address left over from before the toggle went
+// off — resolvePushSubscription clears that on the next save, but not before.
+// Reporting either as "on" would overstate reach.
+function pushState(s) {
+  if (!s || s.pushNotifications === false) return "off";
+  if (s.deviceToken) return "app";
+  if (s.pushSubscription) return "web";
+  return "off";
 }
 
 module.exports = async function handler(req, res) {
@@ -70,25 +91,114 @@ module.exports = async function handler(req, res) {
       byGradYear[gy] = (byGradYear[gy] || 0) + 1;
       (Array.isArray(s.fields) ? s.fields : []).forEach((f) => { byField[f] = (byField[f] || 0) + 1; });
       if (s.email) withEmail += 1;
-      if (s.pushSubscription) withPush += 1;
+      // Either transport counts. A student who installed the iOS app has a
+      // device token and no web endpoint; counting only the endpoint reported
+      // them as having push switched off, which is the opposite of the truth.
+      if (pushState(s) !== "off") withPush += 1;
       // How many accounts are institutionally confirmed. Real signal for
       // school conversations — and a check that .edu detection is working.
       if (s.studentVerified === true) withEduEmail += 1;
     }
     const sortDesc = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]);
 
+    // The numbers worth seeing before anything else.
+    //
+    // "Active" comes from lastActiveOn, a date written once per day when a
+    // signed-in student opens the app. That is genuinely the finest resolution
+    // there is: nothing tracks presence by the minute, so this cannot say who
+    // is on the app RIGHT NOW and does not pretend to. Today and the last seven
+    // days are the honest questions it can answer.
+    var todayStr = dayKey();
+    var sevenDaysAgo = dayKeyAgo(7);
+    var activeToday = 0, activeLast7 = 0;
+    for (const s of subscribers) {
+      const on = s.lastActiveOn;
+      if (!on) continue;
+      if (on === todayStr) activeToday += 1;
+      if (on >= sevenDaysAgo) activeLast7 += 1;
+    }
+
+    // Schools, excluding the "Unknown" bucket — an account that never told us
+    // where it studies is not a school we have reached.
+    const schoolCount = Object.keys(bySchool).filter((k) => k !== "Unknown").length;
+
+    // Which cohort actually signs up. Bands, not exact years, and "Unknown" is
+    // never reported as the winner: it is an absence of data, not a year group.
+    const gradRanked = sortDesc(byGradYear).filter(([k]) => k !== "Unknown");
+    const topGradYear = gradRanked.length ? { band: gradRanked[0][0], count: gradRanked[0][1] } : null;
+
+    // Which campus is actually carrying this. Same rules as the year band:
+    // "Unknown" is an absence of data, never the winner, and a tie is reported
+    // as a tie rather than silently picking whichever name sorted first — with
+    // 17 accounts a one-account lead is noise, and calling it a winner would
+    // send someone to the wrong campus.
+    const schoolRanked = sortDesc(bySchool).filter(([name]) => name !== "Unknown");
+    const topSchool = schoolRanked.length
+      ? {
+          name: schoolRanked[0][0],
+          count: schoolRanked[0][1],
+          tiedWith: schoolRanked.filter(([, n]) => n === schoolRanked[0][1]).length - 1,
+        }
+      : null;
+
+    // Live right now. Counted from keys that expire in two minutes, so this is
+    // genuinely "in the last couple of minutes" rather than a guess.
+    let liveNow = 0;
+    try { liveNow = await countPresent(); } catch {}
+
+    const headline = {
+      liveNow: liveNow,
+      signups: subscribers.length,
+      activeToday: activeToday,
+      activeLast7: activeLast7,
+      confirmed: funnelReadyCount(subscribers),
+      schools: schoolCount,
+      topGradYear: topGradYear,
+      topSchool: topSchool,
+      everReturnedPct: null, // filled in below, once retention is built
+    };
+
     const recent = [...subscribers]
       .sort((a, b) => Date.parse(b.updatedAt || b.createdAt || 0) - Date.parse(a.updatedAt || a.createdAt || 0))
       .slice(0, 20)
       // Per-account row: the most identifying view on the page, so it shows the
       // band rather than the exact year.
-      .map((s) => ({ email: mask(s.email), school: s.school || "—", gradYear: s.gradYearBand || "—", when: s.updatedAt || s.createdAt || null }));
+      // Full address, not masked. This page is behind ADMIN_SECRET and shows
+      // the founders their own users; a masked address cannot be used to answer
+      // "this student says alerts stopped, what does their record look like".
+      // A PIN holder never reaches this branch — see the viaPin guard below.
+      .map((s) => ({
+        email: s.email || "—", school: s.school || "—", gradYear: s.gradYearBand || "—",
+        when: s.updatedAt || s.createdAt || null, lastActiveOn: s.lastActiveOn || null,
+        // Who actually hears from us, per account. The aggregate counters above
+        // answer "how many"; this answers "which ones", which is the question
+        // you have when a student says they never got an alert.
+        push: pushState(s),
+        // A digest is never even queued for an unverified record, so email
+        // being on is not the same as email being reachable.
+        email_on: s.emailNotifications !== false,
+        reachable: s.emailNotifications !== false && s.verified === true,
+      }));
+
+    // The daily check's own verdict, read from storage rather than recomputed.
+    // Recomputing here would make the banner disagree with the email that was
+    // actually sent, and would fetch the site on every dashboard load.
+    let heartbeat = null;
+    try { heartbeat = await readHeartbeat(); } catch {}
 
     const live = await getStats();
 
     // Where people drop. Exact record counts, never blended with the anonymous
     // daily activity counters below — see funnel.js for why that matters.
     const funnel = buildFunnel(subscribers, Date.now());
+    // Retention reads only createdAt and lastActiveOn, both already on the
+    // subscriber record and both erased with the account. Aggregate rows only.
+    const retention = buildRetention(subscribers, new Date());
+    headline.everReturnedPct = retention.totals.signups
+      ? Math.round((retention.totals.everReturned / retention.totals.signups) * 100)
+      : 0;
+    let viewUsage = [];
+    try { viewUsage = await getViewBreakdown(7); } catch {}
 
     // "Watch any company" intent data — what users asked Promptly to track.
     // Watched = a real ATS board now in the pipeline; coverage = a page we
@@ -165,7 +275,10 @@ module.exports = async function handler(req, res) {
     try { privacyCleanup = await readPrivacyCleanup(); } catch {}
 
     return res.status(200).json({
+      headline,
       funnel,
+      retention,
+      viewUsage,
       privacyCleanup,
       runHealth,
       emailHealth,
@@ -180,9 +293,19 @@ module.exports = async function handler(req, res) {
       coverage: coverageRows,
       verify,
       totalAccounts: subscribers.length,
+      heartbeat,
       withEmail,
       withEduEmail,
       withPush,
+      // Split by transport, so "we shipped an iOS app" has a number attached to
+      // it rather than a feeling.
+      pushWeb: subscribers.filter((s) => pushState(s) === "web").length,
+      pushApp: subscribers.filter((s) => pushState(s) === "app").length,
+      pushOff: subscribers.filter((s) => pushState(s) === "off").length,
+      // Accounts an email alert can actually reach today: switched on AND
+      // verified. The gap between this and withEmail is the reachable-but-not
+      // -reached group, which is the number worth acting on.
+      emailReachable: subscribers.filter((s) => s.emailNotifications !== false && s.verified === true).length,
       bySchool: sortDesc(bySchool),
       byGradYear: sortDesc(byGradYear),
       byField: sortDesc(byField),

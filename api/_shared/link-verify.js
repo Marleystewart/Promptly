@@ -41,7 +41,39 @@ function hasDeadLanguage(body) {
   return false;
 }
 
+// The one link signal that CAN be trusted alone.
+//
+// Everything else in this file is hedged because no single signal is reliable:
+// a fabricated Greenhouse id returns 200, a real Point72 posting redirects, and
+// bot protection 403s genuine listings. Those hedges are right.
+//
+// A malformed URL is different in kind. It is not a request that failed — it is
+// a link that cannot be dialled by anyone, from anywhere, ever. No amount of
+// corroboration would change that, and no working listing can be misclassified
+// by it.
+//
+// This matters because the distinction was missing and it cost us. Thirteen
+// listings shipped with relative URLs (see the Eightfold fix), this checker
+// fetched them, fetch() threw, and they were filed as "unreachable" — whose
+// own reported reason reads "Bot protection and timeouts hit real, working
+// listings — this is not evidence of a problem." The system looked straight at
+// thirteen unusable Apply links and said everything was fine.
+function isDialable(url) {
+  const raw = String(url || "").trim();
+  if (!raw) return false;
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return false; // relative paths land here
+  }
+  return parsed.protocol === "http:" || parsed.protocol === "https:";
+}
+
 async function checkOne(url) {
+  if (!isDialable(url)) {
+    return { signal: "malformed", error: String(url || "").slice(0, 80) };
+  }
   try {
     const res = await fetch(url, {
       redirect: "follow",
@@ -131,6 +163,11 @@ function pickSlice(openings, reportedCounts = new Map(), now = Date.now()) {
 // "unknown" rather than red: bot protection and timeouts routinely hit real,
 // working listings, and unknown beats incorrect.
 function confidenceFor({ signal, reportCount = 0 }) {
+  // Red without corroboration, and deliberately first: a link that cannot be
+  // dialled is broken for every student regardless of what anyone reports.
+  if (signal === "malformed") {
+    return { state: "red", reason: "The Apply link is not a usable URL, so it cannot open the posting for anyone." };
+  }
   const reported = Number(reportCount) > 0;
 
   if (signal === "dead_language" && reported) {

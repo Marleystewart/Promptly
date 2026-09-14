@@ -37,6 +37,8 @@ async function getRedis() {
 }
 
 const { isSafePushSubscription } = require("./push-target");
+const { isValidDeviceToken } = require("./apns");
+const { dayKey } = require("./day");
 
 function normalizeSubscriber(profile = {}, subscription = null) {
   const email = String(profile.email || "").trim().toLowerCase();
@@ -86,6 +88,14 @@ function normalizeSubscriber(profile = {}, subscription = null) {
       const candidate = subscription || profile.pushSubscription || null;
       return isSafePushSubscription(candidate) ? candidate : null;
     })(),
+    // The native iOS shell cannot use Web Push, so it registers an APNs device
+    // token instead. Stored beside the web endpoint rather than replacing it:
+    // the same account may have the site open in a browser and the app on a
+    // phone, and both should get the alert.
+    deviceToken: (() => {
+      const candidate = String(profile.deviceToken || "").trim();
+      return isValidDeviceToken(candidate) ? candidate : null;
+    })(),
     emailNotifications: profile.emailNotifications !== false,
     pushNotifications: profile.pushNotifications !== false,
     weeklyRecap: profile.weeklyRecap !== false,
@@ -118,6 +128,15 @@ function resolvePushSubscription(existing, subscriber, subscription) {
   return subscriber.pushSubscription || existing.pushSubscription || null;
 }
 
+// Same rules as resolvePushSubscription, for the native token. Kept as its own
+// function rather than a generalised one because the two differ in what counts
+// as "explicitly supplied": a web subscription arrives as a separate argument,
+// while a device token arrives inside the profile.
+function resolveDeviceToken(existing, subscriber) {
+  if (subscriber.pushNotifications === false) return null;
+  return subscriber.deviceToken || existing.deviceToken || null;
+}
+
 async function saveSubscriber(profile, subscription) {
   const redis = await getRedis();
   const subscriber = normalizeSubscriber(profile, subscription);
@@ -133,6 +152,7 @@ async function saveSubscriber(profile, subscription) {
     ...subscriber,
     createdAt: existing.createdAt || new Date().toISOString(),
     pushSubscription: resolvePushSubscription(existing, subscriber, subscription),
+    deviceToken: resolveDeviceToken(existing, subscriber),
   };
 
   await redis.set(key, merged);
@@ -237,6 +257,74 @@ async function forEachSubscriberBatch(handler, { batchSize = 200 } = {}) {
 // Attach a watched company to a subscriber's record so the alert pipeline
 // (matchesOpening) sends them that company's postings. Creates a lightweight
 // subscriber if one doesn't exist yet, so a watch never silently fails to
+// Who is on the app right now.
+//
+// lastActiveOn answers "did they come back this week" and deliberately stops
+// there: it is a date, overwritten, with no history. It cannot answer "is
+// anyone using this right now", which is a different question and needs a
+// different mechanism.
+//
+// This is that mechanism, and it is built to forget. A key per signed-in
+// account with a two-minute expiry, refreshed while the tab is open. Nothing
+// accumulates, nothing is appended, and two minutes after someone closes the
+// tab there is no record they were ever here. Counting the keys gives a live
+// number; there is nothing else to read from it.
+const PRESENCE_TTL_SECONDS = 120;
+
+async function recordPresence(email) {
+  const redis = await getRedis();
+  const normalized = String(email || "").trim().toLowerCase();
+  if (!redis || !normalized) return { recorded: false };
+  await redis.set("promptly:presence:" + normalized, "1", { ex: PRESENCE_TTL_SECONDS });
+  return { recorded: true };
+}
+
+// How many accounts are present. SCAN rather than a stored counter, because a
+// counter would have to be decremented on a disconnect that never reports
+// itself — an expiring key cannot drift out of sync with reality.
+async function countPresent() {
+  const redis = await getRedis();
+  if (!redis) return 0;
+  let cursor = 0, total = 0;
+  do {
+    const result = await redis.scan(cursor, { match: "promptly:presence:*", count: 200 });
+    cursor = Number(Array.isArray(result) ? result[0] : result?.cursor) || 0;
+    total += ((Array.isArray(result) ? result[1] : result?.keys) || []).length;
+  } while (cursor !== 0);
+  return total;
+}
+
+// Record that an account was active today.
+//
+// Retention cannot be measured from the anonymous daily counters: they have no
+// identity by design, so they can say 11 app opens and never whether that was
+// eleven people once or one person eleven times. Answering "did the people who
+// signed up last week come back this week" requires knowing that a returning
+// person is the same person.
+//
+// Kept as small as that question allows:
+//   - a DATE, not a timestamp — the cohort maths works in days, and an exact
+//     time of day would describe someone's routine for no analytical gain
+//   - one field on the subscriber record, which account deletion already
+//     erases wholesale, so it needs no separate erasure path
+//   - overwritten, never appended — there is no history here, no session log,
+//     and no way to reconstruct what anyone did or when they did it
+//
+// What this is deliberately NOT: a per-person activity feed. The dashboard
+// reads these dates only in aggregate.
+async function recordActivity(email) {
+  const redis = await getRedis();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!redis || !normalizedEmail) return { recorded: false };
+  const key = "promptly:subscriber:" + normalizedEmail;
+  const existing = await redis.get(key);
+  if (!existing) return { recorded: false };
+  const day = dayKey();
+  if (existing.lastActiveOn === day) return { recorded: true, unchanged: true };
+  await redis.set(key, { ...existing, lastActiveOn: day });
+  return { recorded: true, unchanged: false };
+}
+
 // alert. Returns the subscriber's full watch list.
 async function addSubscriberWatch(email, watch) {
   const redis = await getRedis();
@@ -291,6 +379,47 @@ async function clearPushSubscription(email) {
   const existing = await redis.get(key);
   if (!existing || !existing.pushSubscription) return { cleared: false };
   await redis.set(key, { ...existing, pushSubscription: null });
+  return { cleared: true };
+}
+
+// Attach an APNs token to an existing account.
+//
+// Deliberately not routed through saveSubscriber: that function normalizes a
+// whole profile, and the native app registers its token at launch when it may
+// hold no profile at all. Sending a half-empty profile through the normal save
+// would blank the student's real settings.
+//
+// Returns { saved:false } for an account that does not exist yet, so a token is
+// never stored against an address with no subscriber record behind it.
+async function saveDeviceToken(email, token) {
+  const redis = await getRedis();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  const normalizedToken = String(token || "").trim();
+  if (!isValidDeviceToken(normalizedToken)) return { saved: false, error: "Malformed device token." };
+  if (!redis || !normalizedEmail) return { saved: false, setupRequired: true };
+
+  const key = "promptly:subscriber:" + normalizedEmail;
+  const existing = await redis.get(key);
+  if (!existing) return { saved: false, error: "No account to attach that device to." };
+  // Honour the account's own setting. If push is off, registering a device
+  // must not quietly turn it back on.
+  if (existing.pushNotifications === false) return { saved: false, disabled: true };
+  if (existing.deviceToken === normalizedToken) return { saved: true, unchanged: true };
+
+  await redis.set(key, { ...existing, deviceToken: normalizedToken });
+  return { saved: true };
+}
+
+// Remove a dead APNs token (Apple returned 410 or BadDeviceToken — the app was
+// uninstalled). Mirrors clearPushSubscription.
+async function clearDeviceToken(email) {
+  const redis = await getRedis();
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!redis || !normalizedEmail) return { cleared: false };
+  const key = "promptly:subscriber:" + normalizedEmail;
+  const existing = await redis.get(key);
+  if (!existing || !existing.deviceToken) return { cleared: false };
+  await redis.set(key, { ...existing, deviceToken: null });
   return { cleared: true };
 }
 
@@ -394,6 +523,10 @@ async function releaseClaim(key) {
 }
 
 module.exports = {
+  recordActivity,
+  recordPresence,
+  countPresent,
+  PRESENCE_TTL_SECONDS,
   readBody,
   getRedis,
   saveSubscriber,
@@ -405,7 +538,10 @@ module.exports = {
   addSubscriberWatch,
   removeSubscriberWatch,
   clearPushSubscription,
+  clearDeviceToken,
+  saveDeviceToken,
   resolvePushSubscription,
+  resolveDeviceToken,
   normalizeSubscriber,
   hasRedisEnv,
   takeTestAlertSlot,

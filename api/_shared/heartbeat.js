@@ -16,6 +16,7 @@ const { readEmailHealth } = require("./email-health");
 const { readRunHealth } = require("./run-health");
 const { listSourceHealth, stateFor } = require("./source-health");
 const { sendEmail, DEFAULT_REPORT_TO_EMAIL, appBaseUrl } = require("./alerts");
+const { getRedis } = require("./store");
 
 function escapeHtml(value) {
   return String(value == null ? "" : value)
@@ -90,9 +91,53 @@ async function collectHeartbeat({ now = Date.now(), retentionStats = null } = {}
     }
   } catch {}
 
+  // Does the site actually load?
+  //
+  // Every other check here reads our own internal state, which a broken deploy
+  // does not touch. Redis can be healthy, the feed can be full, and the cron can
+  // be green while app.joinpromptly.co serves a white page to every student.
+  // This is the only check that looks at Promptly the way a student does.
+  facts.site = await checkSiteLoads(now);
+  if (!facts.site.ok) problems.push(`The site is not loading correctly: ${facts.site.reason}`);
+
   if (retentionStats) facts.retention = retentionStats;
 
   return { healthy: problems.length === 0, problems, facts };
+}
+
+// Fetch the real page over the public URL and confirm it is the app, not an
+// error page or an empty shell. A 200 alone is not enough: a broken build can
+// return 200 with nothing in it, which is exactly the failure this exists for.
+async function checkSiteLoads(now = Date.now()) {
+  const url = appBaseUrl();
+  const started = Date.now();
+  try {
+    const controller = new AbortController();
+    // A slow site is a broken site for a student on a phone, and an open-ended
+    // fetch would hang the cron that also sends the digests.
+    const timer = setTimeout(() => controller.abort(), 10000);
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: { "User-Agent": "Promptly-heartbeat" },
+      redirect: "follow",
+    });
+    clearTimeout(timer);
+    const ms = Date.now() - started;
+    if (!response.ok) return { ok: false, status: response.status, ms, reason: `HTTP ${response.status}` };
+
+    const body = await response.text();
+    if (body.length < 1000) return { ok: false, status: response.status, ms, reason: "the page came back nearly empty" };
+    // A marker from the app's own shell. If the build stops emitting this, the
+    // page a student receives is not the app.
+    if (!/id="view-openings"/.test(body)) {
+      return { ok: false, status: response.status, ms, reason: "the page loaded but the app shell is missing" };
+    }
+    return { ok: true, status: response.status, ms, bytes: body.length };
+  } catch (error) {
+    const ms = Date.now() - started;
+    const aborted = error && (error.name === "AbortError" || /abort/i.test(error.message || ""));
+    return { ok: false, ms, reason: aborted ? "the site did not respond within 10 seconds" : `request failed (${error && error.message ? error.message : "unknown"})` };
+  }
 }
 
 function row(label, value) {
@@ -151,7 +196,7 @@ function buildHeartbeatEmail({ healthy, problems, facts }, now = Date.now()) {
       <table style="border-collapse:collapse;font-size:14px;width:100%">
         ${row("Listings live", String(facts.listings))}
         ${facts.sources ? row("Sources", `${facts.sources.total - facts.sources.broken}/${facts.sources.total} fetching${facts.sources.dormant ? ` · ${facts.sources.dormant} dormant` : ""}${facts.sources.quiet ? ` · ${facts.sources.quiet} quiet` : ""}`) : ""}
-        ${row("Email", emailLine)}
+        ${row("Site", facts.site ? (facts.site.ok ? `loading in ${facts.site.ms}ms` : `NOT LOADING — ${facts.site.reason}`) : "not checked")}\n        ${row("Email", emailLine)}
         ${runRows}
       </table>
       <p style="color:#5b5870;font-size:13px;margin:22px 0 0">
@@ -177,7 +222,36 @@ async function sendHeartbeat({ now = Date.now(), retentionStats = null } = {}) {
   // lastSuccessAt would permanently satisfy the "no email has sent in 48 hours"
   // check below — the heartbeat would mask the outage it exists to report.
   const result = await sendEmail({ ...email, kind: "heartbeat", record: false });
-  return { sent: Boolean(result && result.sent), healthy: report.healthy, problems: report.problems };
+  const sent = Boolean(result && result.sent);
+
+  // Store the verdict regardless of whether the email went out.
+  //
+  // The email is the wrong and only channel today: if email is what broke, the
+  // report saying so cannot reach anyone. Writing it here means the dashboard
+  // can show the same verdict without depending on the thing being checked.
+  // Deliberately after the send, so `emailed` records what actually happened.
+  try {
+    await storeHeartbeat({ ...report, at: new Date(now).toISOString(), emailed: sent, to: email.to });
+  } catch {}
+
+  return { sent, healthy: report.healthy, problems: report.problems };
 }
 
-module.exports = { collectHeartbeat, buildHeartbeatEmail, sendHeartbeat };
+const HEARTBEAT_KEY = "promptly:heartbeat:last";
+
+// Kept for 8 days, not forever: this is an operational snapshot, and a stale one
+// is worse than none — it would show a green banner from last week.
+async function storeHeartbeat(report) {
+  const redis = await getRedis();
+  if (!redis) return { stored: false };
+  await redis.set(HEARTBEAT_KEY, report, { ex: 8 * 86400 });
+  return { stored: true };
+}
+
+async function readHeartbeat() {
+  const redis = await getRedis();
+  if (!redis) return null;
+  try { return (await redis.get(HEARTBEAT_KEY)) || null; } catch { return null; }
+}
+
+module.exports = { collectHeartbeat, buildHeartbeatEmail, sendHeartbeat, storeHeartbeat, readHeartbeat, checkSiteLoads, HEARTBEAT_KEY };

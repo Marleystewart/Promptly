@@ -1,0 +1,9 @@
+{
+  "appId": "com.thealmargroup.promptly",
+  "appName": "Promptly",
+  "webDir": "www",
+  "backgroundColor": "#fafafc",
+  "ios": {
+    "backgroundColor": "#fafafc"
+  }
+}

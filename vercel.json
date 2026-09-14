@@ -19,7 +19,7 @@
   },
   "crons": [
     { "path": "/api/refresh-openings", "schedule": "0 * * * *" },
-    { "path": "/api/retention", "schedule": "0 14 * * *" }
+    { "path": "/api/retention", "schedule": "0 16 * * *" }
   ],
   "headers": [
     {

@@ -216,3 +216,47 @@ assert.match(
     assert.ok(parked.includes(selector), `the parked-auth path must hide ${selector}`);
   }
 }
+
+// Native iOS shell: no "add to home screen" guide inside the App Store app,
+// and no focus-zoom on form fields. Behavioural, not a text match: run the
+// real helpers against a fake Capacitor.
+{
+  const vm = require("node:vm");
+  const src = fs.readFileSync(path.join(root, "onboarding.js"), "utf8");
+  function load(ua, native) {
+    const meta = { content: "width=device-width, initial-scale=1.0" };
+    const ctx = {
+      navigator: { userAgent: ua, standalone: false },
+      localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+      document: { documentElement: { classList: { add() {} } }, querySelector: (s) => (s.includes("viewport") ? meta : null), querySelectorAll: () => [], addEventListener() {}, readyState: "loading", body: {} },
+      matchMedia: () => ({ matches: false }),
+      addEventListener() {}, setTimeout() {},
+    };
+    ctx.window = ctx;
+    if (native) ctx.Capacitor = { isNativePlatform: () => true };
+    try { vm.runInNewContext(src, ctx); } catch (e) { /* DOM-dependent tail is irrelevant here */ }
+    return { meta, api: ctx.promptlyTour };
+  }
+  const iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)";
+  assert.doesNotMatch(load(iphone, false).meta.content, /maximum-scale/, "iPhone website keeps standard browser zoom");
+  assert.match(load(iphone, true).meta.content, /maximum-scale=0\.9/, "native app must not focus-zoom");
+  assert.doesNotMatch(load("Mozilla/5.0 (Linux; Android 14)", false).meta.content, /maximum-scale/, "Android keeps pinch zoom");
+  assert.match(src, /function installedToHomeScreen\(\) \{\s*\/*[\s\S]{0,40}return isNativeApp\(\)/, "native app counts as installed, so no install guide");
+}
+
+// Curated stand-ins must give way to the live feed for the same employer, and
+// the Home headline must be re-picked afterwards (a stale "Goldman Sachs ·
+// Opens Aug 15, 2026" card with a generic search link led Home for days).
+{
+  const merge = script.match(/function mergeLiveOpenings\(data\) \{[\s\S]*?\n\}/)[0];
+  assert.match(merge, /!o\.live && !o\.awaiting && liveCompanies\.has/, "curated entries for live-covered employers are removed");
+  // Cache then network: a posting missing from the newer snapshot must leave.
+  assert.match(merge, /o\.live && !liveUrls\.has\(o\.sourceUrl\)/, "closed postings from an older snapshot are removed");
+  assert.match(merge, /lastLocationResult = null;[\s\S]*renderOpenings\(\)/, "radius search re-run on a new data set");
+  assert.match(merge, /renderOpenings\(\);[\s\S]*setFeatured\(\);/, "Home headline re-picked after the live merge");
+}
+
+// preferredOpenings() must keep its exact order after scoring once per listing.
+{
+  assert.match(script, /function preferredOpenings\(\) \{[\s\S]*?\.map\(\(item, index\) => \(\{[\s\S]*?score: openingMatch\(item\)\.score/, "listings scored once, not per comparison");
+}

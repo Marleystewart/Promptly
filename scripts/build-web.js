@@ -39,6 +39,7 @@ const WEB_FILES = [
   "listing-state.js",
   "monitored.js",
   "watchlist.js",
+  "onboarding.js",
 ];
 
 const WEB_DIRS = ["assets"];

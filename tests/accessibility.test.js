@@ -68,16 +68,36 @@ for (const page of STATIC_PAGES) {
 
 // 2.4.1 Bypass Blocks (A). The app header and its action buttons repeat on
 // every view, so without this a keyboard user tabs through them on every
-// navigation. It must also be the FIRST focusable thing, or it does not help:
+// navigation. It must also be the FIRST focusable thing, or it does not help —
 // it originally sat below the verification banner's "Resend link" button.
+//
+// That banner is gone, so the assertion no longer names it. Testing the real
+// property instead: nothing focusable may precede the skip link. That holds
+// whatever gets added to the top of the document next, which the old version
+// did not.
 {
   const index = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   assert.match(index, /class="skip-link" href="#main-content"/, "index.html needs a skip link");
   assert.match(index, /id="main-content"/, "the skip link needs its target");
-  assert.ok(
-    index.indexOf('class="skip-link"') < index.indexOf('class="verify-banner"'),
-    "the skip link must come before the verification banner, or it is not the first focusable element"
-  );
+
+  // The skip link exists to jump past the repeated app header, so what matters
+  // is that nothing focusable sits BETWEEN it and the shell it skips into. The
+  // onboarding screen's fields appear earlier in the document but are hidden
+  // once the app is running, so document order alone is the wrong test — that
+  // is what the previous version of this assertion got wrong when the
+  // verification banner it named was removed.
+  // Measure from the END of the skip link's own anchor. Slicing from
+  // 'class="skip-link"' starts INSIDE the tag, so the anchor never appeared in
+  // the range — and dropping a "first match" to account for it silently
+  // discarded the one thing the assertion existed to catch. Written that way
+  // first, it passed with a stray button sitting right there.
+  const skipAt = index.indexOf('class="skip-link"');
+  const shellAt = index.indexOf('class="app-shell"');
+  assert.ok(skipAt > -1 && shellAt > skipAt, "the skip link must come before the app shell");
+  const afterSkipAnchor = index.indexOf("</a>", skipAt) + 4;
+  const between = index.slice(afterSkipAnchor, shellAt).match(/<(a|button|input|select|textarea)\b|tabindex="0"/gi) || [];
+  assert.deepEqual(between, [],
+    `focusable elements sit between the skip link and the app shell, so it is not first: ${between.join(", ")}`);
 
   const css = fs.readFileSync(path.join(ROOT, "styles.css"), "utf8");
   assert.match(css, /\.skip-link\s*\{[\s\S]*left:\s*-9999px/, "the skip link must be off-screen until focused");

@@ -93,6 +93,149 @@ refresh cron. That does not fit: the cron already runs to a 300s ceiling across
 300+ sources, and Promptly is at Vercel's 12-function limit. Treat IBM, Slalom
 and CBRE as unreachable unless that architecture changes.
 
+## Consulting and finance sweep, 9 September 2026
+
+Consulting had 8 sources against Finance's 146, while being the second most
+common field students use Promptly for. Seven added; the rest are recorded below
+so nobody repeats the search.
+
+| Company | Source | Evidence |
+|---|---|---|
+| AlixPartners | `greenhouse:alixpartners` | Board name returns **"AlixPartners"**. 6 US student roles on first run. |
+| West Monroe | `greenhouse:westmonroe5` | Board name returns **"West Monroe (Campus)"** — a dedicated student board. 12 roles, all `2027 ... Intern`. |
+| Cornerstone Research | `workday cornerstone/wd501/CornerstoneResearch_Careers` | 200 with a real total. The datacenter is **wd501**, read off the careers page; wd1/wd3/wd5 all return 422. |
+| Baker Tilly | `workday bakertilly/wd5/BTCareers` | 200, 447 roles, US-heavy. |
+| Forrester | `workday forrester/wd501/careers` | 200. Small board. |
+| Nasdaq | `workday nasdaq/wd1/Global_External_Site` | 200, 87 roles, largely international — `usOnly()` carries the filtering. |
+| CME Group | `workday cmegroup/wd1/cme_careers` | 200. The careers page does not expose the host, so the datacenter was found by trying: **wd1** works, wd5 and wd3 return 422. |
+
+### The trap this sweep hit
+
+`lever:oliverwyman` resolves, returns HTTP 200, and is **not** Oliver Wyman. It
+holds two jobs — an Account Executive and a Software Engineer, both in San
+Francisco. Oliver Wyman is a global consultancy with hundreds of roles. This is
+the same class of error as `ashby:silver` being Silver.dev: a resolving token
+proves nothing.
+
+Oliver Wyman's real board is `phenom:mmc`, the Marsh McLennan tenant. Not added:
+Phenom sources each need their own scraper in `company-scrapers/`, and a shared
+parent tenant would mix Mercer, Marsh and Guy Carpenter roles into cards
+attributed to Oliver Wyman.
+
+### McKinsey: found by watching the page, not the markup
+
+McKinsey is JavaScript-rendered, so `discover-ats.js` reports nothing. Opening
+the careers page in a browser and reading its own resource list gave:
+
+```
+https://gateway.mckinsey.com/apigw-x0cceuow60/v1/api/jobs/search?pageSize=200&start=1&lang=en
+```
+
+It answers a plain server fetch — 592 postings — which is what makes it usable.
+Two behaviours would break an adapter written by analogy with the others:
+
+- **`start` is a 1-based PAGE NUMBER, not a row offset.** `start=0` and
+  `start=1` both return the first page; `start=200` returns **HTTP 500**.
+- **Sending a search term returns HTTP 400**, not an empty list, so filtering
+  has to happen after the fetch.
+
+And one data shape worth knowing: a single posting carries an **array of cities
+across several continents**. One "Business Analyst Intern" is open in Atlanta,
+Athens and Abu Dhabi at once. The scraper reduces each posting to its US cities
+and drops it when there are none.
+
+### Morgan Stanley: Eightfold, found by trying the subdomain
+
+`morganstanley.com/careers` renders its job list with JavaScript and links to
+nothing an ATS pattern matches, so both `discover-ats.js` and reading the page's
+own network calls came up empty. What worked was trying the vendor subdomain
+directly: **`morganstanley.eightfold.ai`** answers, and the adapter returns 150
+US roles.
+
+The `domain` parameter is `morganstanley.com`; **`ms.com` returns 404**. Another
+instance of the rule above — this value is not reliably the hostname.
+
+### The Eightfold dates were all 1970
+
+Found while checking that feed, and it affected every Eightfold source already
+live. `eightfold.js` carried a comment stating `postedTs` is epoch
+**milliseconds** and the conversion trusted it. It is epoch **seconds**.
+
+Live Qualcomm data, 9 Sep 2026: `postedTs` `1788912000` is `2026-09-09`. Read as
+milliseconds it is `1970-01-21`. Every Qualcomm, Ford and Mayo Clinic posting
+carried a 1970 date, which feeds the recruiting-cycle calendar and the "posted"
+line on a card — they sorted as 56 years old.
+
+The conversion is now unit-guarded rather than blindly multiplied, so if
+Eightfold ever switches to milliseconds the dates do not jump to the year 58000.
+
+### Checked in this sweep and not addable
+
+| Company | Found | Why not |
+|---|---|---|
+| Bain & Company, Kearney, Deloitte, PwC, KPMG, Mercer, Willis Towers Watson, Korn Ferry, Gartner, L.E.K., Brattle Group | nothing in the markup | Careers page renders the job list with JavaScript. Needs a browser, or the network tab. |
+| BCG | `eightfold:bcg` | Adapter runs but returns 0 rows for `bcg.com`. Per the Eightfold note above, the `domain` parameter is the tenant's registered domain and is probably not the hostname. Worth another look. |
+| Analysis Group, Exponent, ZS Associates, Aon | iCIMS | No iCIMS adapter. |
+| Grant Thornton, BDO USA | `oracle:us2` | No Oracle adapter. |
+| Bank of America | `workday ghr/wd1/lateral-us` | Reads fine (964 roles) but it is the **lateral** board — experienced hires by definition. No campus site found: `campus-us`, `Campus_US`, `students-us`, `university-us` all 404. |
+| Accenture | `workday accenture/userHome` | `userHome` is the account page, not a job site. |
+| RSM US | `workday rsm/login` | Same — a login route, not a board. |
+| Evercore, Centerview, Perella Weinberg, Jefferies, Morgan Stanley, Barclays, UBS, Nomura, Mizuho, Wells Fargo, Bridgewater | nothing in the markup | Same JavaScript-rendered problem. |
+
+### Second sweep, 9 September 2026 — the JavaScript-rendered names
+
+Worked through the employers the first sweep could not see, using a browser to
+read each page's own network calls.
+
+| Company | What was found | Why it is not usable |
+|---|---|---|
+| Deloitte | Avature at `apply.deloitte.com`, and **it does serve HTML to a server** — job titles, locations and detail URLs are all in the markup | Not a rendering problem, a volume one. The page returns **10 results and ignores `jobRecordsPerPage`**, paging only via `jobOffset`, and `search=` returns an empty body. Covering Deloitte US would be 100+ requests every hourly refresh. Correcting the note below: Avature is not uniformly unreadable — Deloitte's instance is readable and simply impractical. |
+| Bain & Company | Cloudflare interstitial ("Just a moment…") before any content | Bot protection. A server fetch would be challenged even if an endpoint were found. |
+| Wells Fargo | `wellsfargo.eightfold.ai` resolves | `/api/pcsx/search` returns **403 "PCSX is not enabled for this user."** The tenant exists; the open API is switched off. |
+| Kearney, L.E.K., Gartner, Korn Ferry, Mercer, KPMG, PwC, Jefferies, Evercore, Centerview, Perella Weinberg, Barclays, UBS, Bridgewater | nothing | No Eightfold tenant, and no Workday tenant at any tried combination of tenant/datacenter/site. Guessing Workday tenants produced zero hits across 14 firms — consistent with the rule that guessing does not work. These need the network tab, one at a time. |
+
+### Round three, 9 September 2026 — bulk token verification
+
+Sixty-odd candidate tokens checked against Greenhouse, Ashby and Lever, keeping
+only those whose board states a matching employer name. Ten added:
+
+| Company | Source | Field |
+|---|---|---|
+| Riveron | `ashby:riveron` | Consulting |
+| Point B | `lever:pointb` | Consulting |
+| Propeller Consulting | `greenhouse:propellerconsulting` | Consulting |
+| Gemini | `greenhouse:gemini` | Finance — Digital Assets |
+| Ripple | `greenhouse:ripple` | Finance — Digital Assets |
+| Fireblocks | `greenhouse:fireblocks` | Finance — Digital Assets |
+| BitGo | `greenhouse:bitgo` | Finance — Digital Assets |
+| Mercury | `greenhouse:mercury` | Finance — Fintech |
+| General Catalyst | `greenhouse:generalcatalyst` | Finance — Venture Capital |
+| Bessemer Venture Partners | `greenhouse:bessemerventurepartners` | Finance — Venture Capital |
+
+**All ten fetch cleanly and all ten produce zero student roles today.** These are
+monitoring bets on categories the registry had nothing in — digital assets and
+venture capital — not sources that add listings now. Judge them in October, when
+VC analyst programmes open.
+
+#### Rejected in this round for unproven identity
+
+Ashby exposes no employer name, so a board with the right slug is not evidence.
+
+- `ashby:circle` — 10 remote roles including "AI Core"; reads like circle.so, not
+  Circle Internet Financial. Unproven.
+- `ashby:alchemy` — 20 SF/NY roles. Plausibly Alchemy, not provable.
+- `greenhouse:alloy` **and** `lever:alloy` both exist with different jobs. Two
+  different Alloys — exactly the ambiguity that makes guessing unsafe.
+- `greenhouse:mesh` and `ashby:mesh` — same problem.
+
+#### A collision the tests caught
+
+Adding Gemini made `tests/company-normalization.test.js` fail: **"Capgemini"**
+on the watch-list fuzzy-matches **"Gemini"**, because the shorter name is a
+substring of the longer. They are unrelated — a French IT services group and a
+US digital-asset exchange. Recorded in `REVIEWED_NOT_THE_SAME` rather than
+aliased; aliasing would have sent Capgemini watchers crypto-exchange roles.
+
 ## Tried and NOT addable
 
 None of these is a failure to try harder at. Each is a real constraint, and

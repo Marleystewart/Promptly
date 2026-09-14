@@ -158,6 +158,11 @@ module.exports = async function handler(req, res) {
       if (emailAllowed && subscriber.emailNotifications !== false && subscriber.email) {
         const queued = await takeDigestItems(subscriber.email);
         if (queued.length) {
+          // Deliberately UTC, unlike the dashboard's reporting days. This is an
+          // idempotency key, not a report: it exists so one account gets one
+          // digest per run-day. The cron fires at 16:00 UTC, safely mid-day in
+          // every US zone, so a UTC key is stable — and re-keying it would let
+          // a single day's digest send twice across the change.
           const dayKey = now.toISOString().slice(0, 10);
           const deliveryKey = `digest:${subscriber.email}:${dayKey}`;
           const claimed = await claimOnce(deliveryKey, 2 * 86400);
