@@ -67,7 +67,9 @@ const EXCLUDE_TITLE = /experienced|senior|staff|principal|\blead\b|manager|direc
 // right after "internship" for the plural form to land on. "?s" fixes both
 // singular and plural under one pattern; \binterns\b becomes redundant once
 // that's in place but is kept for clarity/no-regression.
-const INTERN_TITLE = /\bintern\b|\binterns\b|\binternships?\b|\bsummer analyst\b|\bsummer associate\b|\bco-?op\b/i;
+// "Summer Consultant" is the consulting-firm name for the same programme
+// (Bates White's "Summer Consultant—2027"); it was being dropped as not-a-role.
+const INTERN_TITLE = /\bintern\b|\binterns\b|\binternships?\b|\bsummer analyst\b|\bsummer associate\b|\bsummer consultant\b|\bco-?op\b/i;
 const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|ph\.?d\.? graduate|early career|entry[ -]?level|campus hire|rotational program|analyst program|\b3l applications?\b/i;
 // Titles that only mean "new grad" on a board that is ITSELF student-only.
 // "2027 Full Time Analyst" is the canonical campus-hire title in banking, but

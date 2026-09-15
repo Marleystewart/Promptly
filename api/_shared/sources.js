@@ -866,6 +866,12 @@ const SOURCES = [
   { company: "WSP", short: "WSP", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "wsp" },
   // Burns & McDonnell — Taleo REST board on its own domain; see company-scrapers/burnsmcd.js.
   { company: "Burns & McDonnell", short: "BMCD", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "burnsmcd" },
+  { company: "Stantec", short: "STN", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "stantec" },
+  { company: "Bates White", short: "BW", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "bateswhite" },
+  // jsheld.com/careers links each req on this SmartRecruiters board ("J.S. Held LLC").
+  { company: "J.S. Held", short: "JSH", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "smartrecruiters", board: "JSHeldLLC" },
+  // The open-positions page reads this Lever board (page title "CrossCountry Consulting").
+  { company: "CrossCountry Consulting", short: "XCC", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "lever", board: "crosscountry-consulting" },
   // Kearney — Yello job board (api/_shared/yello.js). Recorded as unreadable
   // before: its careers page renders the list with JavaScript, and the Yello
   // board it links to only server-renders 25 rows. The board's own search route

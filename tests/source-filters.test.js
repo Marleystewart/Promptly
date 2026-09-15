@@ -86,6 +86,10 @@ function stub(handler) {
     assert.equal(detectCycle("Early Career Analyst", "New York, NY"), "New Grad");
     assert.equal(detectCycle("Event Marketing Intern", "Austin, TX"), "Internship");
 
+    // "Summer Consultant" is an internship title at consulting firms.
+    assert.equal(detectCycle("Summer Consultant—2027", "Washington, DC"), "Summer 2027");
+    assert.equal(detectCycle("Senior Consultant", "Washington, DC"), null, "a plain Consultant title is still not a student role");
+
     // ── A graduation year is not the term ────────────────────────────────
     // Real NERA and Huron titles on 15 Sep 2026.
     assert.equal(detectCycle("NERA Summer Internship (Summer 2028 Grads) (Multiple Locations)", "New York, NY"), "Internship",
