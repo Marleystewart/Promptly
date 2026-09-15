@@ -689,6 +689,8 @@ const SOURCES = [
   // this board, which is named "Inizio" and is mostly Gurugram — hence the gate.
   { company: "Inizio", short: "INZ", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "inizio", positiveUsOnly: true },
   { company: "Valtech", short: "VALT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "greenhouse", board: "valtech" },
+  // synechron.com's careers page links this site. Global (India-heavy), so gated.
+  { company: "Synechron", short: "SYNE", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "synechron", dc: "wd1", site: "SynechronCareers", positiveUsOnly: true },
   { company: "Nordic Consulting", short: "NORD", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "nordic", dc: "wd1", site: "Nordic" },
   { company: "General Dynamics Information Technology", short: "GDIT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "gdit", dc: "wd5", site: "External_Career_Site" },
   { company: "Public Consulting Group", short: "PCG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "pcg", dc: "wd1", site: "PCG_External_Careers" },

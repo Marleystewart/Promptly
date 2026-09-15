@@ -591,6 +591,7 @@ window.MONITORED_COMPANIES = [
   "Sweetgreen",
   "Sword Health",
   "Synchrony",
+  "Synechron",
   "Syneos Health",
   "Synovus",
   "Synpulse",
@@ -698,12 +699,12 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 689,
-  "companies": 689,
+  "sources": 690,
+  "companies": 690,
   "byPlatform": {
     "greenhouse": 240,
     "custom": 141,
-    "workday": 152,
+    "workday": 153,
     "lever": 35,
     "ashby": 56,
     "smartrecruiters": 17,
@@ -728,7 +729,7 @@ window.PROMPTLY_COVERAGE = {
   "byField": {
     "Finance": 211,
     "Technology": 72,
-    "Consulting": 176,
+    "Consulting": 177,
     "Healthcare": 57,
     "Education": 4,
     "Engineering": 54,
