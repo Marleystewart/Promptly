@@ -24,11 +24,14 @@ function extractJsonObject(html, marker) {
   return null;
 }
 
-async function fetchPhenomListings(origin, terms) {
+// localePath: the site's locale prefix. Most US employers serve /us/en, but a
+// global site may only answer /global/en (NTT DATA, Quest Global) and 404s the
+// US path — which read as "no jobs", not as the wrong address.
+async function fetchPhenomListings(origin, terms, localePath = "/us/en") {
   const seen = new Map();
   for (const term of terms) {
     for (let from = 0; from < 100; from += 10) {
-      const url = new URL("/us/en/search-results", origin);
+      const url = new URL(`${localePath}/search-results`, origin);
       url.searchParams.set("keywords", term);
       if (from) url.searchParams.set("from", String(from));
       let search;

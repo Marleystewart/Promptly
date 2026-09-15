@@ -734,6 +734,24 @@ const SOURCES = [
   // the /widgets feed the page itself calls.
   { company: "Crowe", short: "CRWE", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "crowe" },
   { company: "MITRE", short: "MITR", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "mitre" },
+  // Jibe front-ends (iCIMS underneath) and Phenom sites, each on the
+  // employer's own careers domain. One file per employer in company-scrapers/.
+  { company: "ZS Associates", short: "ZS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "zs" },
+  { company: "ECG Management Consultants", short: "ECG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "ecgmc" },
+  { company: "Noblis", short: "NBLS", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "noblis" },
+  { company: "NTT DATA", short: "NTTD", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "nttdata" },
+  // Publicis Groupe runs one Jibe site for every agency; tags2 carries the
+  // brand, so each card keeps only its own reqs.
+  { company: "Publicis Sapient", short: "PSAP", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "publicissapient" },
+  { company: "Epsilon", short: "EPSL", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "custom", handler: "epsilon" },
+  { company: "Aon", short: "AON", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "aon" },
+  { company: "Gallagher", short: "AJG", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "gallagher" },
+  { company: "HUB International", short: "HUB", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "hubinternational" },
+  { company: "CDM Smith", short: "CDM", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "cdmsmith" },
+  { company: "Gannett Fleming TranSystems", short: "GFT", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "gftinc" },
+  { company: "TRC Companies", short: "TRC", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "trccompanies" },
+  { company: "Quest Global", short: "QST", logoClass: "eng", field: "Engineering", subField: "Manufacturing", ats: "custom", handler: "questglobal" },
+  { company: "Clarivate", short: "CLVT", logoClass: "tech", field: "Technology", subField: "Data", ats: "custom", handler: "clarivate" },
 
   // ── Finance, round three ──────────────────────────────────────────────
   // Two categories the registry had almost nothing in: digital-asset firms,
