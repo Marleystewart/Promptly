@@ -85,6 +85,16 @@ assert.equal(toIso("Jan 1, 1998"), null, "absurdly old dates are rejected");
   assert.equal(restLocation("[\"United States-Texas-Dallas\",\"United States-Illinois-Chicago\"]"),
     "Dallas, Texas, United States; Chicago, Illinois, United States");
   assert.equal(parseRestRequisition({ column: ["No contest number"] }, "x", "ex"), null);
+
+  // Coded countries (Burns & McDonnell): spelled out, so Canada's "CA" can never
+  // be read as California, and a custom host is kept in the job link.
+  assert.equal(restLocation("[\"US-IL-Chicago\"]"), "Chicago, IL, United States");
+  assert.equal(restLocation("[\"CA-ON-Toronto\"]"), "Toronto, ON, Canada");
+  const { isUsLocation } = require("../api/_shared/us-location.js");
+  assert.equal(isUsLocation(restLocation("[\"CA-ON-Toronto\"]")), false, "CA in the country slot is Canada");
+  assert.equal(isUsLocation(restLocation("[\"US-TX-Fort Worth\"]")), true);
+  const custom = parseRestRequisition({ contestNo: "263512", column: ["Electrical Engineering Intern (Chicago)", "[\"US-IL-Chicago\"]", "Sep 4, 2026"] }, "apply.burnsmcd.com", "external");
+  assert.equal(custom.url, "https://apply.burnsmcd.com/careersection/external/jobdetail.ftl?job=263512&lang=en");
 }
 
 console.log(`Taleo tests passed. ${rows.length} records parsed, field offsets pinned.`);

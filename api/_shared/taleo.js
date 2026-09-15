@@ -118,6 +118,14 @@ async function fetchTaleoListings(tenant, section = "1", maxPages = 8) {
 
 // One location cell is a JSON-encoded array of "Country-Region-City" strings.
 // Split on the first two hyphens only, so "Winston-Salem" stays one city.
+// Some sections code the country ("US-IL-Chicago", Burns & McDonnell). Spell
+// it out: "Toronto, ON, CA" would read as California to a state-code test.
+const COUNTRY_CODES = { US: "United States", CA: "Canada", MX: "Mexico", GB: "United Kingdom", UK: "United Kingdom", AU: "Australia", IN: "India", DE: "Germany", FR: "France", NL: "Netherlands", IE: "Ireland", SG: "Singapore", AE: "United Arab Emirates", PR: "Puerto Rico" };
+function countryName(part) {
+  const code = part.trim();
+  if (!/^[A-Z]{2}$/.test(code)) return code;
+  return COUNTRY_CODES[code] || `${code} (country)`;
+}
 function restLocation(cell) {
   let list;
   try { list = JSON.parse(cell); } catch { list = [cell]; }
@@ -125,9 +133,9 @@ function restLocation(cell) {
     .map((raw) => {
       const text = String(raw || "").trim();
       const three = text.match(/^([^-]+)-([^-]+)-(.+)$/);
-      if (three) return `${three[3].trim()}, ${three[2].trim()}, ${three[1].trim()}`;
+      if (three) return `${three[3].trim()}, ${three[2].trim()}, ${countryName(three[1])}`;
       const two = text.match(/^([^-]+)-(.+)$/);
-      return two ? `${two[2].trim()}, ${two[1].trim()}` : text;
+      return two ? `${two[2].trim()}, ${countryName(two[1])}` : text;
     })
     .filter(Boolean)
     .join("; ");
@@ -145,7 +153,7 @@ function parseRestRequisition(req, tenant, section) {
   const locationCell = cells.find((c) => c.trim().startsWith("["));
   return {
     title,
-    url: `https://${tenant}.taleo.net/careersection/${section}/jobdetail.ftl?job=${encodeURIComponent(contest)}&lang=en`,
+    url: `https://${tenant.includes(".") ? tenant : `${tenant}.taleo.net`}/careersection/${section}/jobdetail.ftl?job=${encodeURIComponent(contest)}&lang=en`,
     location: locationCell ? restLocation(locationCell) : "",
     postedAt: toIso(cells.find((c) => DATE_CELL.test(c.trim()))),
   };
@@ -158,7 +166,10 @@ async function fetchTaleoRestListings(tenant, section, portal, {
   terms = ["intern", "internship", "graduate", "co-op"], locationIds = [], maxPages = 4,
 } = {}) {
   const seen = new Map();
-  const endpoint = `https://${tenant}.taleo.net/careersection/rest/jobboard/searchjobs?lang=en&portal=${encodeURIComponent(portal)}`;
+  // A tenant with a dot is a custom host (apply.burnsmcd.com is Taleo under the
+  // employer's own domain); otherwise it is <tenant>.taleo.net.
+  const host = tenant.includes(".") ? tenant : `${tenant}.taleo.net`;
+  const endpoint = `https://${host}/careersection/rest/jobboard/searchjobs?lang=en&portal=${encodeURIComponent(portal)}`;
   for (const term of terms) {
     for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
       let data;

@@ -105,6 +105,7 @@ window.MONITORED_COMPANIES = [
   "Broadridge Financial",
   "Brookings Institution",
   "Brunswick Group",
+  "Burns & McDonnell",
   "CACI",
   "Cairneagle",
   "Callan",
@@ -665,6 +666,7 @@ window.MONITORED_COMPANIES = [
   "World 50 (Procurement Leaders)",
   "WPP",
   "Writer",
+  "WSP",
   "WTW",
   "Xcimer Energy",
   "Zeno Group",
@@ -678,11 +680,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 669,
-  "companies": 669,
+  "sources": 671,
+  "companies": 671,
   "byPlatform": {
     "greenhouse": 239,
-    "custom": 130,
+    "custom": 132,
     "workday": 152,
     "lever": 34,
     "ashby": 56,
@@ -709,7 +711,7 @@ window.PROMPTLY_COVERAGE = {
     "Consulting": 162,
     "Healthcare": 57,
     "Education": 4,
-    "Engineering": 51,
+    "Engineering": 53,
     "Law": 15,
     "Media": 15,
     "Consumer": 16,

@@ -862,6 +862,10 @@ const SOURCES = [
   // "US Remote", which positiveUsOnly would wrongly drop.
   { company: "Alira Health", short: "ALRA", logoClass: "health", field: "Healthcare", subField: "Health Systems", ats: "workday", tenant: "alirahealth", dc: "wd3", site: "Alirahealth", workdayFacets: { locationCountry: ["bc33aa3152ec42d4995f4791a106ed09"] } },
   { company: "Impact Advisors", short: "IMPA", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "impactadvisors", dc: "wd501", site: "Impactadvisors" },
+  // WSP's job-opportunities page links reqs straight into Oracle Recruiting Cloud.
+  { company: "WSP", short: "WSP", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "wsp" },
+  // Burns & McDonnell — Taleo REST board on its own domain; see company-scrapers/burnsmcd.js.
+  { company: "Burns & McDonnell", short: "BMCD", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "burnsmcd" },
   // Kearney — Yello job board (api/_shared/yello.js). Recorded as unreadable
   // before: its careers page renders the list with JavaScript, and the Yello
   // board it links to only server-renders 25 rows. The board's own search route
