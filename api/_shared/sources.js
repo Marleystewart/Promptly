@@ -766,6 +766,16 @@ const SOURCES = [
   // Vizient (Kaufman Hall and Sg2 are Vizient businesses) — Eightfold.
   { company: "Vizient", short: "VZT", logoClass: "health", field: "Healthcare", subField: "Health Systems", ats: "custom", handler: "vizient" },
   { company: "ManTech", short: "MANT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "mantech" },
+  // SAP SuccessFactors. Wipro, HCLTech and OPEN Health are on the newer Career
+  // Site Builder, read through its JSON route (api/_shared/sf-careers.js); the
+  // rest are the older server-rendered template (jobs2web.js).
+  { company: "Wipro", short: "WIT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "wipro" },
+  { company: "HCLTech", short: "HCL", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "hcltech" },
+  { company: "LTIMindtree", short: "LTIM", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "ltimindtree" },
+  { company: "Birlasoft", short: "BSFT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "birlasoft" },
+  { company: "OPEN Health", short: "OPEN", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "custom", handler: "openhealth" },
+  { company: "Black & Veatch", short: "BV", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "blackveatch" },
+  { company: "AVL", short: "AVL", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "custom", handler: "avl" },
 
   // ── Finance, round three ──────────────────────────────────────────────
   // Two categories the registry had almost nothing in: digital-asset firms,
