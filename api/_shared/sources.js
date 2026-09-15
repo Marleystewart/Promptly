@@ -15,10 +15,22 @@
 //             (jobs.smartrecruiters.com/<CompanyIdentifier>/...)
 // Flo Recruit:{ ats:"florecruit", board:"<org-friendly-name>" }
 //             (florecruit.com/v2/app/<org-friendly-name>/jobs)
+// Small public-feed ATSs (api/_shared/small-ats.js), all { ats, board }:
+//             workable, ukg ("<host>/<TENANT>/<guid>"), adp (cid), paylocity
+//             (guid), pinpoint, recruitee, jobvite, rippling, teamtailor
+//             (host), breezy, bamboohr, jazzhr, hrmdirect (ClearCompany),
+//             hibob. US-ness comes from each feed's own country field.
+// Workday extras: positiveUsOnly (keep only affirmatively-US reqs; also works
+//             on greenhouse/lever/ashby) and workdayFacets (the board's own
+//             filter, e.g. { locationCountry: [<USA id>] } for boards that
+//             write no country in locationsText).
 // Custom:     { ats:"custom", handler:"<filename>" } — for a company with NO
 //             feed on any system above. Runs company-scrapers/<filename>.js.
 //             See company-scrapers/_template.js before adding one of these;
-//             it's the expensive fallback, not the default.
+//             it's the expensive fallback, not the default. Shared readers a
+//             handler can call: phenom, jibe, eightfold, oracle-cloud, taleo
+//             (incl. REST), avature, jobs2web, sf-careers, icims, csod, yello,
+//             talnet, brassring, radancy, findly, mmc.
 //
 // All boards below were probed and confirmed responding. Field-tinted logo
 // tiles (tech/fin/health/edu) are used for auto-pulled listings.

@@ -287,3 +287,76 @@ Before adding anything:
 
 Then run the listing through `aggregateOpenings()` and check for leakage —
 foreign locations, senior titles — before merging.
+
+## 500-firm list, round three — 15 September 2026
+
+Registry 532 → 690 sources. Every entry on Trey's list now has a status in
+[`CONSULTING-500-STATUS.md`](CONSULTING-500-STATUS.md): 329 of 500 are covered
+by a live card, 146 are walls (or practice areas of a walled firm), 25 have no
+US hiring.
+
+### Methods that found boards when the careers page showed nothing
+
+- **Read the Apply link, not the careers page.** Marketing sites that block
+  servers often hand off to an ATS that does not. Open one job in a browser
+  and read where Apply goes: Kroll (Cloudflare Turnstile) → Oracle
+  `hcxs.fa.us2/CX_1`; SAIC → Oracle `eihu.fa.us8/CX`; Stantec's `.jobs` site →
+  Oracle `hdhl.fa.us6/CX_1`; Burns & McDonnell → Taleo on `apply.burnsmcd.com`;
+  Cognizant → Taleo (but that section redirects back to the challenge).
+- **Workday tenant probe.** POST `…/wday/cxs/<tenant>/<site>/jobs`: a wrong
+  datacenter or unknown tenant answers **422**; the right datacenter with a
+  wrong site answers **404** (so a 404 proves the tenant exists); the right
+  site answers 200. Found Gartner (`gartner/wd5/EXT` — jobs.gartner.com is
+  Cloudflare-walled, the Workday board is not), Parsons, CACI, Amentum (on the
+  inherited `pae` tenant, site `Amentum_Careers`), Alira Health, Impact
+  Advisors, Russell Reynolds and Spencer Stuart tenants. **Always confirm with
+  `hiringOrganization` on a real req** — see the impostors below.
+- **The ATS's own public board.** Health Advances' site is Cloudflare-walled,
+  but its jobs are ClearCompany's and `healthadvances.hrmdirect.com` is open.
+- **Public internship lists** (SimplifyJobs READMEs) carry real apply URLs;
+  CACI's Workday site came from there.
+
+### Adapters added (all in `api/_shared/`, each with a test)
+
+| Module | Unlocked | The non-obvious part |
+|---|---|---|
+| `icims.js` | Kimley-Horn, Dewberry, Peraton, BerryDunn, LMI, Geosyntec, Analysis Group, HMA, Wakely, Lumanity, IDC, Cadmus, SKDK | Portals server-render with `in_iframe=1`. Location label varies by portal, and the country code comes FIRST: `CA-ON-Toronto` is Canada, never California. |
+| `sf-careers.js` | Wipro, HCLTech, OPEN Health | Newer SuccessFactors sites render no rows; `POST /services/recruiting/v1/jobs` does, and honours the tenant's country facet. Country lives in a different field per tenant. |
+| `taleo.js` (REST) | HDR, Segal, Burns & McDonnell | `rest/jobboard/searchjobs` needs the section's portal id (published in the page's own links) and a `tz` header — without it, HTTP 500 "An Error Occurred in TEE". Custom hosts work. |
+| `csod.js` | Simon-Kucher, Mathematica | The career-site page embeds a guest token (user -5006) and API host; the search POST uses it. |
+| `mmc.js` | Mercer, Oliver Wyman, NERA, Marsh, Marsh McLennan Agency, Guy Carpenter | One Workday board for six businesses; each req's detail names its legal entity. |
+| `yello.js` | Kearney | Board pages render 25 rows; its search route returns the rest. "Americas" ≠ US, so an exact US city is required. |
+| `small-ats.js` | 35 firms on Workable, UKG, ADP, Paylocity, Pinpoint, Recruitee, Jobvite, Rippling, Teamtailor, Breezy, BambooHR, JazzHR, ClearCompany, HiBob | First-class registry types. US from each feed's own country field. HiBob needs a `companyidentifier` header. |
+
+Also: `positiveUsOnly` now works on Greenhouse/Lever/Ashby; Workday takes
+`workdayFacets` (Accenture, TYLin, Parsons, Alira write no country in
+locationsText — the Country facet is what proves US); jobs2web reads
+"US +5 more" as US (Black & Veatch 19 → 36 roles); a graduation year is no
+longer read as the term; "Summer Consultant" is an internship title; recruiting
+events are not jobs.
+
+### Impostors rejected by the hiringOrganization / page-title check
+
+`workday:envista` is Envista Holdings (dental), not enVista; `workday:slc` is
+the UK Student Loans Company, not AtkinsRéalis; `workday:ccc` is Altium
+Packaging, not CrossCountry (whose real board is `lever:crosscountry-consulting`);
+`lever:oliverwyman` is "Oliver Wyman Labs" (two SF tech roles) — the Oliver
+Wyman card now reads the real consultancy through `mmc.js`.
+
+### Leads not finished (worth an hour each)
+
+- **Paycom** (Eagle Hill, RVK, Cornerstone Advisors): the career page is a
+  shell; jobs come from `portal-applicant-tracking.us-cent.paycomonline.net`.
+- **EPAM**: `careers.epam.com/api/jobs/v2/search/careers-i18n` answers a plain
+  fetch (3,578 reqs) but no US filter parameter was found.
+- **Spencer Stuart** (`spencerstuart/wd5`) and **Infosys** (`infosys/wd103`):
+  tenants exist, site names not guessed.
+- **Dayforce** (Alliant): search needs the page's session + CSRF handshake.
+- **Arcadis**: Eightfold tenant, but the registered `domain` value is unknown.
+
+### Refresh budget
+
+A timed run of all sources at the production concurrency (12) took ~173s
+against the refresh function's 300s ceiling, before trimming the slowest new
+sources (Kearney 36s → 14s, NTT DATA 14s → 4s). Watch this number as the
+registry grows.
