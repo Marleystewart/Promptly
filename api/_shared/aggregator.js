@@ -81,6 +81,8 @@ const STUDENT_BOARD_TITLE = /\bfull[- ]?time (analyst|program)\b|\banalyst(?:\s+
 // avoids treating dated full-time retail roles on general boards as campus.
 const STUDENT_BOARD_ONLY_TITLE = /\bfull[- ]?time\b/i;
 const CYCLE_YEAR = /\b(2026|2027|2028)\b/;
+// "Summer 2028 Grads", "(Spring 2028 Graduates)", "2027 graduates" — a class year.
+const GRAD_YEAR = /\b(?:(?:spring|summer|fall|autumn|winter|may|december)\s+)?20\d{2}\s+grad(?:s|uates?)?\b/gi;
 const SEASON = /\b(spring|summer|fall|autumn|winter)\b/i;
 // Not a real, student-relevant job req: talent pools, mailing lists, general
 // "expression of interest" pages, and hourly production/technician roles that
@@ -124,12 +126,17 @@ function detectCycle(title, location, allowUndatedIntern = true, studentBoard = 
   if (INTERNATIONAL.test(location || "") && !US_LOCATION.test(location || "")) return null;
   if (EXCLUDE_TITLE.test(title)) return null;                 // not experienced / past cycles
   if (NON_ROLE.test(title)) return null;                       // talent pools / non-reqs
-  const yearMatch = title.match(CYCLE_YEAR);
+  // A GRADUATION year is not the term. NERA's "Summer Internship (Summer 2028
+  // Grads)" is a Summer 2027 internship for the class of 2028; reading 2028 off
+  // it would file the role a year late. Drop the grad-year phrase before
+  // looking for a cycle year — unknown ("Internship") beats wrong.
+  const termTitle = title.replace(GRAD_YEAR, " ");
+  const yearMatch = termTitle.match(CYCLE_YEAR);
   if (INTERN_TITLE.test(title)) {
     if (yearMatch) {
       // Use the actual season when stated ("Fall 2026" ≠ "Summer 2026"),
       // defaulting to Summer only when no season is named.
-      const seasonMatch = title.match(SEASON);
+      const seasonMatch = termTitle.match(SEASON);
       let season = seasonMatch ? titleCase(seasonMatch[1]) : "Summer";
       if (season === "Autumn") season = "Fall";
       return `${season} ${yearMatch[1]}`;

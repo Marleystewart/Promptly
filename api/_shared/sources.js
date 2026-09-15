@@ -615,7 +615,10 @@ const SOURCES = [
   { company: "Marakon", short: "MRKN", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "marakon" },
   { company: "Catalant", short: "CTL", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ashby", board: "catalant" },
   { company: "Graphite", short: "GRPH", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ashby", board: "graphite" },
-  { company: "Oliver Wyman", short: "OW", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "lever", board: "oliverwyman" },
+  // Was lever:oliverwyman — its page title is "Oliver Wyman Labs" and it holds
+  // two non-student SF tech roles. The consultancy itself hires on Marsh
+  // McLennan's shared board; see api/_shared/mmc.js for how reqs are routed.
+  { company: "Oliver Wyman", short: "OW", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "oliverwyman" },
   { company: "IDEO", short: "IDEO", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "ideo" },
   { company: "Cheiron", short: "CHRN", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ashby", board: "cheiron" },
   { company: "Capco", short: "CPCO", logoClass: "cons", field: "Consulting", subField: "Technology Consulting", ats: "greenhouse", board: "capco" },
@@ -718,6 +721,19 @@ const SOURCES = [
   { company: "Edelman", short: "EDEL", logoClass: "media", field: "Marketing", subField: "Brand", ats: "workday", tenant: "djeholdings", dc: "wd5", site: "edelman-careers-E200", positiveUsOnly: true },
   { company: "Penta Group", short: "PNTA", logoClass: "media", field: "Marketing", subField: "Brand", ats: "lever", board: "pentagrp" },
   { company: "Blue State", short: "BLST", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "greenhouse", board: "bluestatedigital" },
+  // Marsh McLennan's businesses share one Workday board whose list reply names
+  // none of them. api/_shared/mmc.js reads it once per refresh and routes each
+  // req by the legal entity on its detail record, so a Mercer internship can
+  // never be filed under Marsh. Oliver Wyman (above) reads the same feed.
+  { company: "Mercer", short: "MRCR", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "mercer" },
+  { company: "NERA Economic Consulting", short: "NERA", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "nera" },
+  { company: "Marsh McLennan Agency", short: "MMA", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "marshmclennanagency" },
+  { company: "Marsh", short: "MRSH", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "marsh" },
+  { company: "Guy Carpenter", short: "GC", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "guycarpenter" },
+  // Phenom sites whose search page does not server-render results; both read
+  // the /widgets feed the page itself calls.
+  { company: "Crowe", short: "CRWE", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "crowe" },
+  { company: "MITRE", short: "MITR", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "mitre" },
 
   // ── Finance, round three ──────────────────────────────────────────────
   // Two categories the registry had almost nothing in: digital-asset firms,

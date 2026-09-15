@@ -86,6 +86,15 @@ function stub(handler) {
     assert.equal(detectCycle("Early Career Analyst", "New York, NY"), "New Grad");
     assert.equal(detectCycle("Event Marketing Intern", "Austin, TX"), "Internship");
 
+    // ── A graduation year is not the term ────────────────────────────────
+    // Real NERA and Huron titles on 15 Sep 2026.
+    assert.equal(detectCycle("NERA Summer Internship (Summer 2028 Grads) (Multiple Locations)", "New York, NY"), "Internship",
+      "a class year must not be read as the internship's term");
+    assert.equal(detectCycle("Consulting Intern - Summer 2027, Chicago (Spring 2028 Graduates)", "Chicago, IL"), "Summer 2027");
+    assert.equal(detectCycle("Analyst Intern (Spring 2028 Graduates) - Summer 2027", "Chicago, IL"), "Summer 2027",
+      "the season must come from the term, not the graduation phrase");
+    assert.equal(detectCycle("Turnaround and Restructuring Analyst 2027 Graduates (Q3/Q4 2027 Start Dates)", "Chicago, IL"), "New Grad 2027");
+
     console.log("Source filter tests passed. US gates, Workday facets, and event exclusion hold.");
   } finally {
     global.fetch = realFetch;
