@@ -752,6 +752,20 @@ const SOURCES = [
   { company: "TRC Companies", short: "TRC", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "trccompanies" },
   { company: "Quest Global", short: "QST", logoClass: "eng", field: "Engineering", subField: "Manufacturing", ats: "custom", handler: "questglobal" },
   { company: "Clarivate", short: "CLVT", logoClass: "tech", field: "Technology", subField: "Data", ats: "custom", handler: "clarivate" },
+  // Taleo's newer REST job board (portal id read off each employer's own links;
+  // see api/_shared/taleo.js). HDR was recorded as unreadable before this.
+  { company: "HDR", short: "HDR", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "hdr" },
+  { company: "Segal", short: "SGL", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "segal" },
+  // Oracle Recruiting Cloud tenants, each linked from the employer's careers page.
+  { company: "Michael Baker International", short: "MBI", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "michaelbaker" },
+  { company: "DNV", short: "DNV", logoClass: "eng", field: "Engineering", subField: "Energy", ats: "custom", handler: "dnv" },
+  { company: "The Hackett Group", short: "HCKT", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "hackett" },
+  { company: "Abt Global", short: "ABT", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "abtglobal" },
+  { company: "EXL", short: "EXLS", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "exl" },
+  { company: "Hexaware Technologies", short: "HEXA", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "hexaware" },
+  // Vizient (Kaufman Hall and Sg2 are Vizient businesses) — Eightfold.
+  { company: "Vizient", short: "VZT", logoClass: "health", field: "Healthcare", subField: "Health Systems", ats: "custom", handler: "vizient" },
+  { company: "ManTech", short: "MANT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "mantech" },
 
   // ── Finance, round three ──────────────────────────────────────────────
   // Two categories the registry had almost nothing in: digital-asset firms,

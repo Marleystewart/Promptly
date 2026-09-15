@@ -107,4 +107,99 @@ async function fetchTaleoListings(tenant, section = "1", maxPages = 8) {
   return [...seen.values()];
 }
 
-module.exports = { fetchTaleoListings, parsePage, decode, toIso, RECORD };
+// ── Newer career sections: the REST job board ──────────────────────────────
+// Sections on Taleo's newer UI (jobsearch.ftl) serialise nothing into the HTML;
+// the page fills its list from POST /careersection/rest/jobboard/searchjobs.
+// That route answers {"careerSectionUnAvailable":true} without the section's
+// portal id — the reason given above for not using it — but on these sections
+// the id IS published, in the page's own links (HDR: portal=101430233). The
+// route also requires a `tz` header: without one it returns HTTP 500 "An Error
+// Occurred in TEE". Nothing else — no cookie, no session, no browser.
+
+// One location cell is a JSON-encoded array of "Country-Region-City" strings.
+// Split on the first two hyphens only, so "Winston-Salem" stays one city.
+function restLocation(cell) {
+  let list;
+  try { list = JSON.parse(cell); } catch { list = [cell]; }
+  return (Array.isArray(list) ? list : [list])
+    .map((raw) => {
+      const text = String(raw || "").trim();
+      const three = text.match(/^([^-]+)-([^-]+)-(.+)$/);
+      if (three) return `${three[3].trim()}, ${three[2].trim()}, ${three[1].trim()}`;
+      const two = text.match(/^([^-]+)-(.+)$/);
+      return two ? `${two[2].trim()}, ${two[1].trim()}` : text;
+    })
+    .filter(Boolean)
+    .join("; ");
+}
+
+const DATE_CELL = /^[A-Z][a-z]{2} \d{1,2}, \d{4}$/;
+
+// Column order is configured per section, so find each field by its shape:
+// the title is first, the location is the JSON array, the date looks like one.
+function parseRestRequisition(req, tenant, section) {
+  const cells = Array.isArray(req.column) ? req.column.map((c) => String(c || "")) : [];
+  const title = decode(cells[0]);
+  const contest = String(req.contestNo || "").trim();
+  if (!title || !contest) return null;
+  const locationCell = cells.find((c) => c.trim().startsWith("["));
+  return {
+    title,
+    url: `https://${tenant}.taleo.net/careersection/${section}/jobdetail.ftl?job=${encodeURIComponent(contest)}&lang=en`,
+    location: locationCell ? restLocation(locationCell) : "",
+    postedAt: toIso(cells.find((c) => DATE_CELL.test(c.trim()))),
+  };
+}
+
+// locationIds: the section's own LOCATION facet ids, applied server-side. Segal
+// writes "Multiple Locations" on every req, which no text test can place, but
+// its facet tree has exactly one country — United States (id 100016024).
+async function fetchTaleoRestListings(tenant, section, portal, {
+  terms = ["intern", "internship", "graduate", "co-op"], locationIds = [], maxPages = 4,
+} = {}) {
+  const seen = new Map();
+  const endpoint = `https://${tenant}.taleo.net/careersection/rest/jobboard/searchjobs?lang=en&portal=${encodeURIComponent(portal)}`;
+  for (const term of terms) {
+    for (let pageNo = 1; pageNo <= maxPages; pageNo += 1) {
+      let data;
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            tz: "GMT-05:00",
+            "User-Agent": "Mozilla/5.0 (compatible; PromptlyJobs/1.0)",
+          },
+          body: JSON.stringify({
+            multilineEnabled: false,
+            sortingSelection: { sortBySelectionParam: "3", ascendingSortingOrder: "false" },
+            fieldData: { fields: { KEYWORD: term, LOCATION: "", CATEGORY: "" }, valid: true },
+            filterSelectionParam: { searchFilterSelections: locationIds.length ? [{ id: "LOCATION", selectedValues: locationIds }] : [] },
+            advancedSearchFiltersSelectionParam: { searchFilterSelections: [] },
+            pageNo,
+          }),
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
+        if (!res.ok) throw new Error(`${res.status} taleo-rest ${tenant}`);
+        data = await res.json();
+      } catch (error) {
+        if (!seen.size && term === terms[0] && pageNo === 1) throw error; // report a dead section
+        break;
+      }
+      if (data.careerSectionUnAvailable) throw new Error(`taleo-rest ${tenant}/${section}: wrong portal id`);
+      const reqs = Array.isArray(data.requisitionList) ? data.requisitionList : [];
+      const before = seen.size;
+      for (const req of reqs) {
+        const row = parseRestRequisition(req, tenant, section);
+        if (row && !seen.has(row.url)) seen.set(row.url, row);
+      }
+      const total = Number(data.pagingData && data.pagingData.totalCount) || 0;
+      const pageSize = Number(data.pagingData && data.pagingData.pageSize) || reqs.length;
+      if (!reqs.length || seen.size === before || pageNo * pageSize >= total) break;
+    }
+  }
+  return [...seen.values()];
+}
+
+module.exports = { fetchTaleoListings, fetchTaleoRestListings, parseRestRequisition, restLocation, parsePage, decode, toIso, RECORD };
