@@ -8,6 +8,7 @@ function tidy(location) {
   return m ? `${m[3].trim()}, ${m[2].toUpperCase()}, USA` : text;
 }
 module.exports = async function fetchListings() {
-  const rows = await fetchAvatureListings("https://mantech.avature.net/careers/SearchJobs");
+  // Five pages (~3s each) keeps this source from dominating the refresh.
+  const rows = await fetchAvatureListings("https://mantech.avature.net/careers/SearchJobs", { pages: 5, perPage: 10 });
   return usOnly(rows.map((row) => ({ ...row, location: tidy(row.location) })));
 };
