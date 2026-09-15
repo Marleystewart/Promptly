@@ -29,7 +29,35 @@ const REQUIRED_KEYS = {
   // one silently returns a different employer's reqs.
   taleo: ["tenant", "section"],
   custom: ["handler"],
+  // Small public-feed ATSs — api/_shared/small-ats.js. `board` is whatever id
+  // that feed is keyed by (subdomain, slug, guid, or UKG host/tenant/guid).
+  workable: ["board"],
+  ukg: ["board"],
+  adp: ["board"],
+  paylocity: ["board"],
+  pinpoint: ["board"],
+  recruitee: ["board"],
+  jobvite: ["board"],
+  rippling: ["board"],
+  teamtailor: ["board"],
+  breezy: ["board"],
+  bamboohr: ["board"],
 };
+
+// Every ATS the registry may name must have a fetcher, and every small-ATS
+// reader must be reachable from the registry — otherwise a row silently falls
+// back to the Greenhouse fetcher and reports a false 404.
+{
+  const aggregatorSource = fs.readFileSync(path.join(__dirname, "../api/_shared/aggregator.js"), "utf8");
+  const fetchers = aggregatorSource.match(/const FETCHERS = \{([\s\S]*?)\};/)[1];
+  for (const ats of Object.keys(REQUIRED_KEYS)) {
+    assert.match(fetchers, new RegExp(`\\b${ats}:`), `aggregator.js FETCHERS has no entry for ats "${ats}"`);
+  }
+  const { SMALL_ATS } = require("../api/_shared/small-ats");
+  for (const ats of SMALL_ATS) {
+    assert.ok(REQUIRED_KEYS[ats], `small-ats.js reads "${ats}" but the registry lint does not know it`);
+  }
+}
 
 const SCRAPERS_DIR = path.join(__dirname, "../api/_shared/company-scrapers");
 

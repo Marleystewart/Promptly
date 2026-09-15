@@ -791,6 +791,43 @@ const SOURCES = [
   { company: "Kimley-Horn", short: "KH", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "kimleyhorn" },
   { company: "Dewberry", short: "DEW", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "dewberry" },
   { company: "Geosyntec Consultants", short: "GEO", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "geosyntec" },
+  // Small public-feed ATSs (api/_shared/small-ats.js). Each board id was read
+  // off the employer's own careers page; US-ness comes from the feed's own
+  // country field, so the global firms here (Control Risks, dss+, HKA,
+  // Anthesis) contribute only their US offices.
+  { company: "Rystad Energy", short: "RYS", logoClass: "cons", field: "Consulting", subField: "Research & Advisory", ats: "workable", board: "rystad-energy" },
+  { company: "3Degrees", short: "3DEG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workable", board: "3degrees" },
+  { company: "Clarkston Consulting", short: "CLRK", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workable", board: "clarkston-consulting" },
+  { company: "Board of Innovation", short: "BOI", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "workable", board: "boardofinnovation" },
+  { company: "Control Risks", short: "CR", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workable", board: "control-risks-6" },
+  { company: "Corcentric", short: "CORC", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workable", board: "corcentric" },
+  { company: "Rational 360", short: "R360", logoClass: "media", field: "Marketing", subField: "Brand", ats: "workable", board: "rational" },
+  { company: "ScottMadden", short: "SMAD", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ukg", board: "recruiting.ultipro.com/SCO1003/22ca7f41-78f3-cde2-bcd8-ff0e272a1bd9" },
+  { company: "Milliman", short: "MILL", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ukg", board: "recruiting2.ultipro.com/MIL1017/f54234e9-dfde-b183-fd20-4fbdb19cba7a" },
+  { company: "Dentons Global Advisors", short: "DGA", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "ukg", board: "dgahr.rec.pro.ukg.net/DEN1502DGBV/35d54f2b-b9c1-442f-9403-035c369c012b" },
+  // Procurement Leaders is a World 50 business; procurementleaders.com links here.
+  { company: "World 50 (Procurement Leaders)", short: "W50", logoClass: "cons", field: "Consulting", subField: "Research & Advisory", ats: "ukg", board: "recruiting.ultipro.com/WOR1028WORLD/d2b84cd1-d0d3-460f-93cf-92a3b91f0a10" },
+  { company: "NEPC", short: "NEPC", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "ukg", board: "recruiting.ultipro.com/NEP1001NEPC/9b5186b6-746b-4df0-8522-90c2a5fcfa17" },
+  { company: "MarshBerry", short: "MBRY", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "ukg", board: "recruiting.ultipro.com/MAR1036MBCI/0127d5ea-e4e8-48ee-a74a-cc71dcd13133" },
+  { company: "StoneTurn", short: "STRN", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "adp", board: "8f429b49-bae5-4749-b26e-36df29852d8d" },
+  { company: "Curinos", short: "CURI", logoClass: "cons", field: "Consulting", subField: "Research & Advisory", ats: "adp", board: "4d6d36b1-bedf-4c57-88e7-3817e50bbf21" },
+  // DAI's board is almost entirely overseas project posts; US roles are few.
+  { company: "DAI Global", short: "DAI", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "adp", board: "5745ed7b-7f8d-47a9-9161-d975aa7f3314" },
+  // Board title: "Development Dimensions International Inc".
+  { company: "DDI", short: "DDI", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "paylocity", board: "0ff3194a-0939-4c12-a4cc-729b385d05e7" },
+  { company: "Edgeworth Economics", short: "EDGE", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "paylocity", board: "84ca0b5b-570a-409a-8e91-242f0baca23d" },
+  // Board title: "FEV North America Inc".
+  { company: "FEV", short: "FEV", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "paylocity", board: "c4680135-a10e-4943-b198-09ecfe4c72ad" },
+  { company: "Anthesis Group", short: "ANTH", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "pinpoint", board: "anthesisgroup" },
+  { company: "dss+", short: "DSS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "recruitee", board: "consultdss" },
+  { company: "Cambridge Systematics", short: "CSYS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "jobvite", board: "camsyscareers" },
+  // RoseRyan is now part of ZRG Partners; roseryan.com links to this board.
+  { company: "ZRG Partners", short: "ZRG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "rippling", board: "zrg-partners-careers" },
+  { company: "HKA", short: "HKA", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "teamtailor", board: "hka.teamtailor.com" },
+  { company: "Precision Strategies", short: "PRCS", logoClass: "media", field: "Marketing", subField: "Brand", ats: "breezy", board: "precision-strategies" },
+  { company: "Siegel+Gale", short: "S+G", logoClass: "media", field: "Marketing", subField: "Brand", ats: "breezy", board: "siegel-gale" },
+  { company: "TiER1 Performance", short: "TIER", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "breezy", board: "tier1-performance" },
+  { company: "Proudfoot", short: "PRDF", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "bamboohr", board: "proudfoot" },
 
   // ── Finance, round three ──────────────────────────────────────────────
   // Two categories the registry had almost nothing in: digital-asset firms,

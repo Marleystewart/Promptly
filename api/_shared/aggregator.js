@@ -481,6 +481,24 @@ async function fetchTaleo(src) {
   return out;
 }
 
+// ── Small public-feed ATSs (api/_shared/small-ats.js) ─────────────────────
+// { ats:"workable"|"ukg"|"adp"|"paylocity"|"pinpoint"|"recruitee"|"jobvite"|
+//   "rippling"|"teamtailor"|"breezy"|"bamboohr", board:"<that feed's id>" }
+// Each reader reports US-ness from the feed's own country field, and only US
+// reqs survive: these are mostly global consultancies (Control Risks, dss+,
+// HKA), where the foreign-city blocklist alone would leak.
+async function fetchSmallAts(src) {
+  const { fetchSmallAtsListings } = require("./small-ats");
+  const raw = await fetchSmallAtsListings(src.ats, src.board);
+  const out = [];
+  for (const j of raw) {
+    if (j.us !== true || !j.title || !/^https:\/\//i.test(j.url || "")) continue;
+    const cycle = detectCycle(j.title, j.location, true, Boolean(src.studentBoard));
+    if (cycle) out.push(normalize(src, j.title, j.url, j.location, cycle, null, j.postedAt || null));
+  }
+  return out;
+}
+
 async function fetchCustom(src) {
   const fetchListings = require(`./company-scrapers/${src.handler}`);
   const raw = await fetchListings(src);
@@ -627,6 +645,17 @@ const FETCHERS = {
   usajobs: fetchUsaJobs,
   taleo: fetchTaleo,
   custom: fetchCustom,
+  workable: fetchSmallAts,
+  ukg: fetchSmallAts,
+  adp: fetchSmallAts,
+  paylocity: fetchSmallAts,
+  pinpoint: fetchSmallAts,
+  recruitee: fetchSmallAts,
+  jobvite: fetchSmallAts,
+  rippling: fetchSmallAts,
+  teamtailor: fetchSmallAts,
+  breezy: fetchSmallAts,
+  bamboohr: fetchSmallAts,
 };
 
 // Run a single source's real ATS fetcher. Used both by the aggregate loop and
