@@ -872,6 +872,15 @@ const SOURCES = [
   { company: "J.S. Held", short: "JSH", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "smartrecruiters", board: "JSHeldLLC" },
   // The open-positions page reads this Lever board (page title "CrossCountry Consulting").
   { company: "CrossCountry Consulting", short: "XCC", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "lever", board: "crosscountry-consulting" },
+  { company: "APCO Worldwide", short: "APCO", logoClass: "media", field: "Marketing", subField: "Brand", ats: "custom", handler: "apco" },
+  // Capgemini's own job API, US-scoped server-side; see company-scrapers/capgemini.js.
+  { company: "Capgemini", short: "CAP", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "capgemini" },
+  // SmartRecruiters ids read off each firm's own job pages; for PA, one of its
+  // listed reqs (744000149388126) resolves under "PAConsulting" and no other id.
+  { company: "PA Consulting", short: "PAC", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "smartrecruiters", board: "PAConsulting" },
+  { company: "Endava", short: "DAVA", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "smartrecruiters", board: "Endava" },
+  // bursonglobal.com/careers reads this board (name "Burson"). Global, so gated.
+  { company: "Burson", short: "BRSN", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "bursonglobalcareers", positiveUsOnly: true },
   // Kearney — Yello job board (api/_shared/yello.js). Recorded as unreadable
   // before: its careers page renders the list with JavaScript, and the Yello
   // board it links to only server-renders 25 rows. The board's own search route

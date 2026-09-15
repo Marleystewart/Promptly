@@ -200,10 +200,10 @@ console.log(`Company normalization tests passed. ${names.size} names, ${collisio
   // card claim we can read a feed that belongs to a rocket company.
   const REVIEWED_NOT_THE_SAME = [
     "AstraZeneca ~ Astra",
-    //   Reviewed 9 Sep 2026, on adding the Gemini source: Capgemini is a French
-    //   IT services group; Gemini is the US digital-asset exchange. The fuzzy
-    //   match is pure substring coincidence.
-    "Capgemini ~ Gemini",
+    //   "Capgemini ~ Gemini" (reviewed 9 Sep 2026: a French IT services group
+    //   vs the US digital-asset exchange) left this list on 15 Sep 2026: the
+    //   Capgemini card is now monitored by its own source, so it resolves
+    //   exactly and is no longer a near-miss at all.
     "Genstar Capital ~ Capital Group",
     "Monroe Capital ~ Capital Group",
     "New Mountain Capital ~ Capital Group",

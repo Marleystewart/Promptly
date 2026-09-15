@@ -44,6 +44,7 @@ window.MONITORED_COMPANIES = [
   "Anthesis Group",
   "Anthropic",
   "Aon",
+  "APCO Worldwide",
   "Apollo Global Management",
   "Applied Intuition",
   "AQR Capital",
@@ -107,6 +108,7 @@ window.MONITORED_COMPANIES = [
   "Brookings Institution",
   "Brunswick Group",
   "Burns & McDonnell",
+  "Burson",
   "CACI",
   "Cairneagle",
   "Callan",
@@ -114,6 +116,7 @@ window.MONITORED_COMPANIES = [
   "Cambridge Systematics",
   "Cantor Fitzgerald",
   "Capco",
+  "Capgemini",
   "Capital Group",
   "Capital One",
   "Capstone DC",
@@ -207,6 +210,7 @@ window.MONITORED_COMPANIES = [
   "Elixirr",
   "Ellipsis Labs",
   "Elliptic",
+  "Endava",
   "Energy and Environmental Economics (E3)",
   "Enova International",
   "Epic Games",
@@ -459,6 +463,7 @@ window.MONITORED_COMPANIES = [
   "Optiver",
   "Oscar Health",
   "Owkin",
+  "PA Consulting",
   "Pacific Fusion",
   "Pagaya",
   "Palantir",
@@ -684,15 +689,15 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 675,
-  "companies": 675,
+  "sources": 680,
+  "companies": 680,
   "byPlatform": {
-    "greenhouse": 239,
-    "custom": 134,
+    "greenhouse": 240,
+    "custom": 136,
     "workday": 152,
     "lever": 35,
     "ashby": 56,
-    "smartrecruiters": 15,
+    "smartrecruiters": 17,
     "florecruit": 11,
     "usajobs": 1,
     "taleo": 1,
@@ -712,7 +717,7 @@ window.PROMPTLY_COVERAGE = {
   "byField": {
     "Finance": 211,
     "Technology": 72,
-    "Consulting": 165,
+    "Consulting": 168,
     "Healthcare": 57,
     "Education": 4,
     "Engineering": 54,
@@ -723,7 +728,7 @@ window.PROMPTLY_COVERAGE = {
     "Sports": 5,
     "Real Estate": 7,
     "Government": 4,
-    "Marketing": 42,
+    "Marketing": 44,
     "Science": 1
   }
 };
