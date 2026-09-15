@@ -107,9 +107,11 @@ window.MONITORED_COMPANIES = [
   "Broadridge Financial",
   "Brookings Institution",
   "Brunswick Group",
+  "BTS",
   "Burns & McDonnell",
   "Burson",
   "CACI",
+  "Cadmus",
   "Cairneagle",
   "Callan",
   "Cambridge Associates",
@@ -302,6 +304,7 @@ window.MONITORED_COMPANIES = [
   "HCVT",
   "HDR",
   "Headway",
+  "Health Advances",
   "Health Management Associates",
   "HealthVerity",
   "Hearst",
@@ -532,6 +535,7 @@ window.MONITORED_COMPANIES = [
   "Rockwell Automation",
   "Roland Berger",
   "Rothschild & Co",
+  "RSG",
   "RSM",
   "RTI International",
   "RTX (Raytheon)",
@@ -560,6 +564,7 @@ window.MONITORED_COMPANIES = [
   "Simpson Thacher",
   "Sixth Street",
   "Skadden",
+  "SKDK",
   "Skydio",
   "Snowflake",
   "SoFi",
@@ -689,11 +694,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 680,
-  "companies": 680,
+  "sources": 685,
+  "companies": 685,
   "byPlatform": {
     "greenhouse": 240,
-    "custom": 136,
+    "custom": 139,
     "workday": 152,
     "lever": 35,
     "ashby": 56,
@@ -712,12 +717,13 @@ window.PROMPTLY_COVERAGE = {
     "teamtailor": 1,
     "breezy": 3,
     "bamboohr": 1,
-    "jazzhr": 3
+    "jazzhr": 3,
+    "hrmdirect": 2
   },
   "byField": {
     "Finance": 211,
     "Technology": 72,
-    "Consulting": 168,
+    "Consulting": 172,
     "Healthcare": 57,
     "Education": 4,
     "Engineering": 54,
@@ -728,7 +734,7 @@ window.PROMPTLY_COVERAGE = {
     "Sports": 5,
     "Real Estate": 7,
     "Government": 4,
-    "Marketing": 44,
+    "Marketing": 45,
     "Science": 1
   }
 };

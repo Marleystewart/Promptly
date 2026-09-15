@@ -109,6 +109,13 @@ const titlesWhereUs = (rows) => rows.filter((r) => r.us).map((r) => r.title);
     assert.deepEqual(jazz.map((r) => [r.title, r.us]), [["Consultant", true], ["Analyst", false]]);
     assert.equal(jazz[0].url, "https://bluematterconsulting.applytojob.com/apply/RaM60FxFiB/Consultant");
 
+    // ClearCompany public board — columns vary by employer.
+    respond = () => `<table><tr class="reqitem ReqRowClick" data-req-id="1"><td class="leftBorder">&nbsp;</td><td id='posTitle0' class="posTitle reqitem ReqRowClick"><a href="job-opening.php?req=1&req_loc=9&&amp;#job">Transportation Analyst</td> <td id='cities0' class="cities reqitem">Burlington</td> <td id='state0' class="state reqitem">VT</td> <td class="offices reqitem">HQ</td></tr>
+      <tr class="reqitem1 ReqRowClick" data-req-id="2"><td id='custSort11' class="custSort1 reqitem1">Assessment&nbsp;</td> <td id='custSort21' class="custSort2 reqitem1">Madrid, Spain&nbsp;</td> <td id='posTitle1' class="posTitle reqitem1"><a href="job-opening.php?req=2&req_loc=8&&amp;#job">Senior Consultant</td></tr></table>`;
+    const hrm = await READERS.hrmdirect("rsg");
+    assert.deepEqual(hrm.map((r) => [r.location, r.us]), [["Burlington, VT", true], ["Madrid, Spain", false]]);
+    assert.equal(hrm[0].url, "https://rsg.hrmdirect.com/employment/job-opening.php?req=1&req_loc=9&");
+
     // Through the production fetcher: only US reqs survive, and detectCycle still gates.
     respond = () => ({ name: "Rystad Energy", jobs: [
       { title: "Analyst Intern - Summer 2027", city: "Houston", state: "Texas", country: "United States", url: "https://apply.workable.com/j/A1" },
@@ -119,7 +126,7 @@ const titlesWhereUs = (rows) => rows.filter((r) => r.us).map((r) => r.title);
     assert.deepEqual(rows.map((r) => r.sourceUrl), ["https://apply.workable.com/j/A1"]);
     assert.equal(rows[0].cycle, "Summer 2027");
 
-    console.log("Small-ATS tests passed. Twelve feeds, US decided by each feed's own country field.");
+    console.log("Small-ATS tests passed. Thirteen feeds, US decided by each feed's own country field.");
   } finally {
     global.fetch = realFetch;
   }

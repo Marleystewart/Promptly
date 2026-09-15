@@ -274,7 +274,32 @@ async function jazzhr(sub) {
   }).filter(Boolean);
 }
 
-const READERS = { workable, ukg, adp, paylocity, pinpoint, recruitee, jobvite, rippling, teamtailor, breezy, bamboohr, jazzhr };
+// ── ClearCompany public board: board = subdomain (<sub>.hrmdirect.com) ──────
+// Server-rendered table; columns vary by employer (RSG: City/State/Office;
+// BTS: practice + a location column). Each row is a <tr class="reqitem…">
+// with a posTitle link. Location = city+state, else office, else the custom
+// column that reads as a place; US-ness from the shared positive test.
+function parseHrmdirectRows(html, sub) {
+  return String(html).split(/<tr class="reqitem/).slice(1).map((row) => {
+    const cell = (cls) => clean((row.match(new RegExp(`class=.${cls}[^>]*>([\\s\\S]*?)</td>`)) || [])[1]);
+    const link = row.match(/class=.posTitle[^>]*><a href="([^"]+)"[^>]*>([\s\S]*?)<\/(?:a|td)>/);
+    if (!link) return null;
+    const custom = [cell("custSort1"), cell("custSort2"), cell("custSort3")].find((v) => /,|remote/i.test(v)) || "";
+    const location = join(cell("cities"), cell("state")) || cell("offices") || custom;
+    return {
+      title: clean(link[2]),
+      url: `https://${sub}.hrmdirect.com/employment/${clean(link[1]).replace(/&&/g, "&").replace(/#job$/, "")}`,
+      location,
+      postedAt: null,
+      us: isUsLocation(location),
+    };
+  }).filter(Boolean);
+}
+async function hrmdirect(sub) {
+  return parseHrmdirectRows(await getText(`https://${sub}.hrmdirect.com/employment/job-openings.php?search=true`), sub);
+}
+
+const READERS = { workable, ukg, adp, paylocity, pinpoint, recruitee, jobvite, rippling, teamtailor, breezy, bamboohr, jazzhr, hrmdirect };
 
 async function fetchSmallAtsListings(ats, board) {
   const reader = READERS[ats];
@@ -282,4 +307,4 @@ async function fetchSmallAtsListings(ats, board) {
   return reader(board);
 }
 
-module.exports = { fetchSmallAtsListings, SMALL_ATS: Object.keys(READERS), READERS, clean };
+module.exports = { fetchSmallAtsListings, SMALL_ATS: Object.keys(READERS), READERS, clean, parseHrmdirectRows };

@@ -879,6 +879,14 @@ const SOURCES = [
   // listed reqs (744000149388126) resolves under "PAConsulting" and no other id.
   { company: "PA Consulting", short: "PAC", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "smartrecruiters", board: "PAConsulting" },
   { company: "Endava", short: "DAVA", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "smartrecruiters", board: "Endava" },
+  // Health Advances: healthadvances.com is behind Cloudflare; its jobs are
+  // ClearCompany's, whose own public board is not. See company-scrapers/healthadvances.js.
+  { company: "Health Advances", short: "HADV", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "healthadvances" },
+  { company: "BTS", short: "BTS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "hrmdirect", board: "bts" },
+  { company: "RSG", short: "RSG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "hrmdirect", board: "rsg" },
+  // iCIMS portals, confirmed by the portal's own title.
+  { company: "Cadmus", short: "CDMS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "cadmus" },
+  { company: "SKDK", short: "SKDK", logoClass: "media", field: "Marketing", subField: "Brand", ats: "custom", handler: "skdk" },
   // bursonglobal.com/careers reads this board (name "Burson"). Global, so gated.
   { company: "Burson", short: "BRSN", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "bursonglobalcareers", positiveUsOnly: true },
   // Kearney — Yello job board (api/_shared/yello.js). Recorded as unreadable
