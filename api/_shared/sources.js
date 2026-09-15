@@ -828,6 +828,13 @@ const SOURCES = [
   { company: "Siegel+Gale", short: "S+G", logoClass: "media", field: "Marketing", subField: "Brand", ats: "breezy", board: "siegel-gale" },
   { company: "TiER1 Performance", short: "TIER", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "breezy", board: "tier1-performance" },
   { company: "Proudfoot", short: "PRDF", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "bamboohr", board: "proudfoot" },
+  // Kearney — Yello job board (api/_shared/yello.js). Recorded as unreadable
+  // before: its careers page renders the list with JavaScript, and the Yello
+  // board it links to only server-renders 25 rows. The board's own search route
+  // serves the rest.
+  { company: "Kearney", short: "KRNY", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "kearney" },
+  // FTI's careers page links this site; Compass Lexecon sits on the same tenant.
+  { company: "FTI Consulting", short: "FCN", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "fticonsulting", dc: "wd108", site: "FTIConsultingCareers", positiveUsOnly: true },
 
   // ── Finance, round three ──────────────────────────────────────────────
   // Two categories the registry had almost nothing in: digital-asset firms,

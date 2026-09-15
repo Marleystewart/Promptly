@@ -241,6 +241,7 @@ window.MONITORED_COMPANIES = [
   "Freenome",
   "FS Investments",
   "FSG",
+  "FTI Consulting",
   "Gallagher",
   "Gallup",
   "Gannett Fleming TranSystems",
@@ -330,6 +331,7 @@ window.MONITORED_COMPANIES = [
   "Jones Day",
   "JPMorgan",
   "Jump Trading",
+  "Kearney",
   "KeyBank",
   "Keystone Strategy",
   "Khan Academy",
@@ -661,12 +663,12 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 652,
-  "companies": 652,
+  "sources": 654,
+  "companies": 654,
   "byPlatform": {
     "greenhouse": 238,
-    "custom": 124,
-    "workday": 145,
+    "custom": 125,
+    "workday": 146,
     "lever": 34,
     "ashby": 56,
     "smartrecruiters": 14,
@@ -688,7 +690,7 @@ window.PROMPTLY_COVERAGE = {
   "byField": {
     "Finance": 211,
     "Technology": 72,
-    "Consulting": 150,
+    "Consulting": 152,
     "Healthcare": 56,
     "Education": 4,
     "Engineering": 48,
