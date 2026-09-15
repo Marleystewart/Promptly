@@ -776,6 +776,21 @@ const SOURCES = [
   { company: "OPEN Health", short: "OPEN", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "custom", handler: "openhealth" },
   { company: "Black & Veatch", short: "BV", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "blackveatch" },
   { company: "AVL", short: "AVL", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "custom", handler: "avl" },
+  // iCIMS portals read directly (api/_shared/icims.js). This is the iCIMS
+  // adapter from the priority list; Peraton, Kimley-Horn and Dewberry were
+  // recorded as blocked on it.
+  { company: "Peraton", short: "PERA", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "peraton" },
+  { company: "LMI", short: "LMI", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "lmi" },
+  { company: "RTI International", short: "RTI", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "rti" },
+  { company: "Analysis Group", short: "AG", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "analysisgroup" },
+  { company: "BerryDunn", short: "BDNN", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "berrydunn" },
+  { company: "Health Management Associates", short: "HMA", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "healthmanagement" },
+  { company: "Wakely Consulting Group", short: "WAKE", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "wakely" },
+  { company: "Lumanity", short: "LUMA", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "lumanity" },
+  { company: "IDC", short: "IDC", logoClass: "cons", field: "Consulting", subField: "Research & Advisory", ats: "custom", handler: "idc" },
+  { company: "Kimley-Horn", short: "KH", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "kimleyhorn" },
+  { company: "Dewberry", short: "DEW", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "dewberry" },
+  { company: "Geosyntec Consultants", short: "GEO", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "geosyntec" },
 
   // ── Finance, round three ──────────────────────────────────────────────
   // Two categories the registry had almost nothing in: digital-asset firms,
