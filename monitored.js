@@ -404,6 +404,7 @@ window.MONITORED_COMPANIES = [
   "MarshBerry",
   "MassMutual",
   "Mastercard",
+  "Mathematica",
   "Mayo Clinic",
   "McKinsey & Company",
   "Mercer",
@@ -561,6 +562,7 @@ window.MONITORED_COMPANIES = [
   "Sidley Austin",
   "Siegel+Gale",
   "Sierra",
+  "Simon-Kucher",
   "Simpson Thacher",
   "Sixth Street",
   "Skadden",
@@ -694,11 +696,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 685,
-  "companies": 685,
+  "sources": 687,
+  "companies": 687,
   "byPlatform": {
     "greenhouse": 240,
-    "custom": 139,
+    "custom": 141,
     "workday": 152,
     "lever": 35,
     "ashby": 56,
@@ -723,7 +725,7 @@ window.PROMPTLY_COVERAGE = {
   "byField": {
     "Finance": 211,
     "Technology": 72,
-    "Consulting": 172,
+    "Consulting": 174,
     "Healthcare": 57,
     "Education": 4,
     "Engineering": 54,

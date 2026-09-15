@@ -887,6 +887,9 @@ const SOURCES = [
   // iCIMS portals, confirmed by the portal's own title.
   { company: "Cadmus", short: "CDMS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "cadmus" },
   { company: "SKDK", short: "SKDK", logoClass: "media", field: "Marketing", subField: "Brand", ats: "custom", handler: "skdk" },
+  // Cornerstone OnDemand career sites (api/_shared/csod.js).
+  { company: "Simon-Kucher", short: "SK", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "simonkucher" },
+  { company: "Mathematica", short: "MPR", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "mathematica" },
   // bursonglobal.com/careers reads this board (name "Burson"). Global, so gated.
   { company: "Burson", short: "BRSN", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "bursonglobalcareers", positiveUsOnly: true },
   // Kearney — Yello job board (api/_shared/yello.js). Recorded as unreadable
