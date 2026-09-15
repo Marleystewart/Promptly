@@ -299,7 +299,22 @@ async function hrmdirect(sub) {
   return parseHrmdirectRows(await getText(`https://${sub}.hrmdirect.com/employment/job-openings.php?search=true`), sub);
 }
 
-const READERS = { workable, ukg, adp, paylocity, pinpoint, recruitee, jobvite, rippling, teamtailor, breezy, bamboohr, jazzhr, hrmdirect };
+// ── HiBob: board = subdomain (<sub>.careers.hibob.com) ─────────────────────
+// The careers page reads /api/job-ad and names its tenant in a
+// "companyidentifier" header; without it the route answers 401. Country is a
+// structured field ("United States").
+async function hibob(sub) {
+  const data = await getJson(`https://${sub}.careers.hibob.com/api/job-ad`, { headers: { companyidentifier: sub } });
+  return (data.jobAdDetails || []).map((ad) => ({
+    title: clean(ad.title),
+    url: `https://${sub}.careers.hibob.com/jobs/${ad.id}`,
+    location: join(ad.site, ad.country),
+    postedAt: ad.publishedAt || null,
+    us: US_NAME.test(clean(ad.country)),
+  }));
+}
+
+const READERS = { workable, ukg, adp, paylocity, pinpoint, recruitee, jobvite, rippling, teamtailor, breezy, bamboohr, jazzhr, hrmdirect, hibob };
 
 async function fetchSmallAtsListings(ats, board) {
   const reader = READERS[ats];

@@ -349,6 +349,7 @@ window.MONITORED_COMPANIES = [
   "Jones Day",
   "JPMorgan",
   "Jump Trading",
+  "K2 Integrity",
   "Kaiser Associates",
   "Kearney",
   "KeyBank",
@@ -592,6 +593,7 @@ window.MONITORED_COMPANIES = [
   "Synchrony",
   "Syneos Health",
   "Synovus",
+  "Synpulse",
   "SYPartners",
   "T. Rowe Price",
   "Talkspace",
@@ -696,8 +698,8 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 687,
-  "companies": 687,
+  "sources": 689,
+  "companies": 689,
   "byPlatform": {
     "greenhouse": 240,
     "custom": 141,
@@ -720,12 +722,13 @@ window.PROMPTLY_COVERAGE = {
     "breezy": 3,
     "bamboohr": 1,
     "jazzhr": 3,
-    "hrmdirect": 2
+    "hrmdirect": 2,
+    "hibob": 2
   },
   "byField": {
     "Finance": 211,
     "Technology": 72,
-    "Consulting": 174,
+    "Consulting": 176,
     "Healthcare": 57,
     "Education": 4,
     "Engineering": 54,

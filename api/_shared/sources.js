@@ -890,6 +890,9 @@ const SOURCES = [
   // Cornerstone OnDemand career sites (api/_shared/csod.js).
   { company: "Simon-Kucher", short: "SK", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "simonkucher" },
   { company: "Mathematica", short: "MPR", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "mathematica" },
+  // HiBob careers sites, each linked from the firm's own careers page.
+  { company: "K2 Integrity", short: "K2", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "hibob", board: "k2integrity" },
+  { company: "Synpulse", short: "SYNP", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "hibob", board: "synpulse" },
   // bursonglobal.com/careers reads this board (name "Burson"). Global, so gated.
   { company: "Burson", short: "BRSN", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "bursonglobalcareers", positiveUsOnly: true },
   // Kearney — Yello job board (api/_shared/yello.js). Recorded as unreadable

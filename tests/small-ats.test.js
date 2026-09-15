@@ -116,6 +116,17 @@ const titlesWhereUs = (rows) => rows.filter((r) => r.us).map((r) => r.title);
     assert.deepEqual(hrm.map((r) => [r.location, r.us]), [["Burlington, VT", true], ["Madrid, Spain", false]]);
     assert.equal(hrm[0].url, "https://rsg.hrmdirect.com/employment/job-opening.php?req=1&req_loc=9&");
 
+    // HiBob — tenant named in a header, country structured.
+    const hibobHeaders = [];
+    respond = (url, options) => { hibobHeaders.push((options.headers || {}).companyidentifier); return { jobAdDetails: [
+      { id: "a1", title: "Senior Data Analyst", site: "Remote - US", country: "United States", publishedAt: "2026-07-22T20:40:04Z" },
+      { id: "a2", title: "Analyst", site: "Zurich", country: "Switzerland" },
+    ] }; };
+    const hb = await READERS.hibob("k2integrity");
+    assert.deepEqual(hb.map((r) => r.us), [true, false]);
+    assert.equal(hb[0].url, "https://k2integrity.careers.hibob.com/jobs/a1");
+    assert.deepEqual(hibobHeaders, ["k2integrity"], "the tenant must be named in the companyidentifier header");
+
     // Through the production fetcher: only US reqs survive, and detectCycle still gates.
     respond = () => ({ name: "Rystad Energy", jobs: [
       { title: "Analyst Intern - Summer 2027", city: "Houston", state: "Texas", country: "United States", url: "https://apply.workable.com/j/A1" },
@@ -126,7 +137,7 @@ const titlesWhereUs = (rows) => rows.filter((r) => r.us).map((r) => r.title);
     assert.deepEqual(rows.map((r) => r.sourceUrl), ["https://apply.workable.com/j/A1"]);
     assert.equal(rows[0].cycle, "Summer 2027");
 
-    console.log("Small-ATS tests passed. Thirteen feeds, US decided by each feed's own country field.");
+    console.log("Small-ATS tests passed. Fourteen feeds, US decided by each feed's own country field.");
   } finally {
     global.fetch = realFetch;
   }
