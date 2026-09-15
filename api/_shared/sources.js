@@ -845,6 +845,23 @@ const SOURCES = [
   { company: "CACI", short: "CACI", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "caci", dc: "wd1", site: "external", positiveUsOnly: true },
   // Manatt Health is a practice of the law firm; manatt.com lists these reqs.
   { company: "Manatt, Phelps & Phillips", short: "MANT2", logoClass: "law", field: "Law", subField: "Big Law", ats: "greenhouse", board: "manattphelpsphillips" },
+  // Amentum hires on the Workday tenant it inherited from PAE; locations are
+  // coded ("US-TX-Houston") — see company-scrapers/amentum.js.
+  { company: "Amentum", short: "AMTM", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "custom", handler: "amentum" },
+  // Kalypso is a Rockwell Automation company; its own Workday site refuses
+  // public reads (403), and its reqs appear on Rockwell's main site.
+  { company: "Rockwell Automation", short: "ROK", logoClass: "eng", field: "Engineering", subField: "Manufacturing", ats: "workday", tenant: "rockwellautomation", dc: "wd1", site: "External_Rockwell_Automation", positiveUsOnly: true },
+  // Both marketing sites block servers; their Apply buttons open Oracle
+  // Recruiting Cloud directly, which does not. See company-scrapers/kroll.js.
+  { company: "Kroll", short: "KRLL", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "kroll" },
+  { company: "SAIC", short: "SAIC", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "saic" },
+  { company: "Korn Ferry", short: "KFY", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "kornferry" },
+  // Found by the Workday probe; both confirmed by hiringOrganization on a req
+  // ("Alira Health SLU", "Impact Advisors LLC"). Alira is mostly Spain/France/
+  // Italy, so its Country facet filters; Impact Advisors is US-only and writes
+  // "US Remote", which positiveUsOnly would wrongly drop.
+  { company: "Alira Health", short: "ALRA", logoClass: "health", field: "Healthcare", subField: "Health Systems", ats: "workday", tenant: "alirahealth", dc: "wd3", site: "Alirahealth", workdayFacets: { locationCountry: ["bc33aa3152ec42d4995f4791a106ed09"] } },
+  { company: "Impact Advisors", short: "IMPA", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "impactadvisors", dc: "wd501", site: "Impactadvisors" },
   // Kearney — Yello job board (api/_shared/yello.js). Recorded as unreadable
   // before: its careers page renders the list with JavaScript, and the Yello
   // board it links to only server-renders 25 rows. The board's own search route
