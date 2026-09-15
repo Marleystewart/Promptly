@@ -102,6 +102,13 @@ const titlesWhereUs = (rows) => rows.filter((r) => r.us).map((r) => r.title);
     assert.deepEqual(bamboo.map((r) => r.us), [true]);
     assert.equal(bamboo[0].url, "https://proudfoot.bamboohr.com/careers/5");
 
+    // JazzHR — text location only.
+    respond = () => `<ul class='list-group'> <li class="list-group-item"> <h3 class='list-group-item-heading'> <a href="https://bluematterconsulting.applytojob.com/apply/RaM60FxFiB/Consultant"> Consultant </a> </h3> <ul class='list-inline list-group-item-text'> <li><i class='fa fa-map-marker'></i>New York, NY</li> </ul> </li>
+      <li class="list-group-item"> <h3 class='list-group-item-heading'> <a href="https://bluematterconsulting.applytojob.com/apply/Zz/Analyst"> Analyst </a> </h3> <ul class='list-inline list-group-item-text'> <li><i class='fa fa-map-marker'></i>London, United Kingdom</li> </ul> </li></ul>`;
+    const jazz = await READERS.jazzhr("bluematterconsulting");
+    assert.deepEqual(jazz.map((r) => [r.title, r.us]), [["Consultant", true], ["Analyst", false]]);
+    assert.equal(jazz[0].url, "https://bluematterconsulting.applytojob.com/apply/RaM60FxFiB/Consultant");
+
     // Through the production fetcher: only US reqs survive, and detectCycle still gates.
     respond = () => ({ name: "Rystad Energy", jobs: [
       { title: "Analyst Intern - Summer 2027", city: "Houston", state: "Texas", country: "United States", url: "https://apply.workable.com/j/A1" },
@@ -112,7 +119,7 @@ const titlesWhereUs = (rows) => rows.filter((r) => r.us).map((r) => r.title);
     assert.deepEqual(rows.map((r) => r.sourceUrl), ["https://apply.workable.com/j/A1"]);
     assert.equal(rows[0].cycle, "Summer 2027");
 
-    console.log("Small-ATS tests passed. Eleven feeds, US decided by each feed's own country field.");
+    console.log("Small-ATS tests passed. Twelve feeds, US decided by each feed's own country field.");
   } finally {
     global.fetch = realFetch;
   }

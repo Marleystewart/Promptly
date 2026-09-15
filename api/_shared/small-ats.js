@@ -260,7 +260,21 @@ async function teamtailor(host) {
   });
 }
 
-const READERS = { workable, ukg, adp, paylocity, pinpoint, recruitee, jobvite, rippling, teamtailor, breezy, bamboohr };
+// ── JazzHR: board = subdomain (<sub>.applytojob.com/apply) ──────────────────
+// Server-rendered list; the location is the map-marker line ("New York, NY")
+// with no country field, so the positive text test decides.
+async function jazzhr(sub) {
+  const html = await getText(`https://${sub}.applytojob.com/apply`);
+  const items = html.split(/<li class="list-group-item">/).slice(1);
+  return items.map((item) => {
+    const link = item.match(/<a href="(https:\/\/[^"]+\/apply\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/);
+    if (!link) return null;
+    const loc = clean((item.match(/fa-map-marker[^>]*><\/i>([\s\S]*?)<\/li>/) || [])[1]);
+    return { title: clean(link[2]), url: link[1], location: loc, postedAt: null, us: isUsLocation(loc) };
+  }).filter(Boolean);
+}
+
+const READERS = { workable, ukg, adp, paylocity, pinpoint, recruitee, jobvite, rippling, teamtailor, breezy, bamboohr, jazzhr };
 
 async function fetchSmallAtsListings(ats, board) {
   const reader = READERS[ats];

@@ -828,6 +828,23 @@ const SOURCES = [
   { company: "Siegel+Gale", short: "S+G", logoClass: "media", field: "Marketing", subField: "Brand", ats: "breezy", board: "siegel-gale" },
   { company: "TiER1 Performance", short: "TIER", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "breezy", board: "tier1-performance" },
   { company: "Proudfoot", short: "PRDF", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "bamboohr", board: "proudfoot" },
+  { company: "Blue Matter", short: "BLUM", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "jazzhr", board: "bluematterconsulting" },
+  // kaiserassociates.com/roles-and-open-positions links this board.
+  { company: "Kaiser Associates", short: "KAIS", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "jazzhr", board: "kaiserassociates" },
+  { company: "Culture Partners", short: "CULT", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "jazzhr", board: "culturepartners" },
+  // WTW — its own careers site server-renders results; see company-scrapers/wtw.js.
+  { company: "WTW", short: "WTW", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "wtw" },
+  // Workday tenants found by the datacenter/site probe (a wrong dc answers
+  // 422, the right dc with a wrong site 404, the right site 200), then checked
+  // against the reqs themselves. Gartner's jobs.gartner.com sits behind a
+  // Cloudflare challenge; its Workday board does not, same as J&J above.
+  { company: "Gartner", short: "IT", logoClass: "cons", field: "Consulting", subField: "Research & Advisory", ats: "workday", tenant: "gartner", dc: "wd5", site: "EXT", positiveUsOnly: true },
+  // Parsons, like Accenture, returns no locationsText; the Country facet filters.
+  { company: "Parsons", short: "PSN", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "workday", tenant: "parsons", dc: "wd5", site: "Search", workdayFacets: { locationCountry: ["bc33aa3152ec42d4995f4791a106ed09"] } },
+  // CACI's own apply links (e.g. its Summer 2027 intern reqs) go to this site.
+  { company: "CACI", short: "CACI", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "caci", dc: "wd1", site: "external", positiveUsOnly: true },
+  // Manatt Health is a practice of the law firm; manatt.com lists these reqs.
+  { company: "Manatt, Phelps & Phillips", short: "MANT2", logoClass: "law", field: "Law", subField: "Big Law", ats: "greenhouse", board: "manattphelpsphillips" },
   // Kearney — Yello job board (api/_shared/yello.js). Recorded as unreadable
   // before: its careers page renders the list with JavaScript, and the Yello
   // board it links to only server-renders 25 rows. The board's own search route

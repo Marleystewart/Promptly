@@ -483,7 +483,7 @@ async function fetchTaleo(src) {
 
 // ── Small public-feed ATSs (api/_shared/small-ats.js) ─────────────────────
 // { ats:"workable"|"ukg"|"adp"|"paylocity"|"pinpoint"|"recruitee"|"jobvite"|
-//   "rippling"|"teamtailor"|"breezy"|"bamboohr", board:"<that feed's id>" }
+//   "rippling"|"teamtailor"|"breezy"|"bamboohr"|"jazzhr", board:"<that feed's id>" }
 // Each reader reports US-ness from the feed's own country field, and only US
 // reqs survive: these are mostly global consultancies (Control Risks, dss+,
 // HKA), where the foreign-city blocklist alone would leak.
@@ -656,6 +656,7 @@ const FETCHERS = {
   teamtailor: fetchSmallAts,
   breezy: fetchSmallAts,
   bamboohr: fetchSmallAts,
+  jazzhr: fetchSmallAts,
 };
 
 // Run a single source's real ATS fetcher. Used both by the aggregate loop and

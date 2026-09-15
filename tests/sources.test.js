@@ -42,6 +42,7 @@ const REQUIRED_KEYS = {
   teamtailor: ["board"],
   breezy: ["board"],
   bamboohr: ["board"],
+  jazzhr: ["board"],
 };
 
 // Every ATS the registry may name must have a fetcher, and every small-ATS
