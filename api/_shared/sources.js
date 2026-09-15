@@ -549,10 +549,11 @@ const SOURCES = [
   // Consulting — Workday tenants read off each firm's live careers page.
   // Global firms carry positiveUsOnly: their boards return every country and an
   // unfamiliar foreign office otherwise reads as US.
-  // Accenture is deliberately NOT here: its Workday board returns locationsText
-  // undefined on every req, so a US role cannot be told from an India one. For a
-  // firm that size the leak is certain, and a monitored card that can never
-  // surface a role is a quiet false promise. Revisit if they populate location.
+  // Accenture was held back because its Workday board returns locationsText
+  // undefined on every req, so a US role could not be told from an India one.
+  // Resolved 15 Sep 2026 with workdayFacets: the board's own Country facet is
+  // applied server-side, so every req it returns is US by construction. See the
+  // Accenture row in the round-three block below.
   { company: "Grant Thornton", short: "GT", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "grantthornton" },
   { company: "BDO", short: "BDO", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "bdo" },
   { company: "BCG", short: "BCG", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "bcg" },
@@ -650,6 +651,73 @@ const SOURCES = [
   { company: "Riveron", short: "RIV", logoClass: "consult", field: "Consulting", subField: "Restructuring", ats: "ashby", board: "riveron" },
   { company: "Point B", short: "PTB", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "lever", board: "pointb" },
   { company: "Propeller Consulting", short: "PROP", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "propellerconsulting" },
+
+  // ── Trey's 500-firm list, round three (15 Sep 2026) ──────────────────
+  // Earlier rounds guessed Greenhouse/Lever/Ashby tokens; these were found by
+  // reading each firm's OWN careers page for the ATS it links to, then probing
+  // it through the production fetcher. Ownership evidence per row: Greenhouse
+  // board name, Lever/Ashby page title, SmartRecruiters company name, or a
+  // Workday site linked from the employer's own domain.
+  // Workday's USA country id is global across tenants, not per-board.
+  // Accenture: board returns no locationsText, so the Country facet is what
+  // proves a req is US (see workdayFacets in aggregator.js). The city shown on
+  // a card comes from the posting path and is display-only.
+  { company: "Accenture", short: "ACN", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "accenture", dc: "wd103", site: "AccentureCareers", workdayFacets: { locationCountry: ["bc33aa3152ec42d4995f4791a106ed09"] } },
+  // A separate US-only legal entity with its own board ("Accenture Federal Services").
+  { company: "Accenture Federal Services", short: "AFS", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "greenhouse", board: "accenturefederalservices" },
+  { company: "Berkeley Research Group", short: "BRG", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "workday", tenant: "thinkbrg", dc: "wd5", site: "BRG_External_Career_Site" },
+  // Compass Lexecon is FTI-owned and sits on FTI's tenant under its own site.
+  { company: "Compass Lexecon", short: "CL", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "workday", tenant: "fticonsulting", dc: "wd108", site: "CompassLexeconCareers", positiveUsOnly: true },
+  // Board name "Secretariat". One req per office, one of which is literally
+  // "International" — positiveUsOnly keeps only the US offices.
+  { company: "Secretariat", short: "SEC2", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "secretariatadvisorsllc", positiveUsOnly: true },
+  { company: "Energy and Environmental Economics (E3)", short: "E3", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "lever", board: "ethree" },
+  { company: "Econic Partners", short: "ECON", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "workday", tenant: "econicpartners", dc: "wd501", site: "econicpartnerscareers" },
+  { company: "Altman Solon", short: "ALTS", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "altmansolonuslp" },
+  // Two boards, one per US office — see company-scrapers/marsandco.js.
+  { company: "Mars & Co", short: "MARS", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "marsandco" },
+  // kxadvisors.com/careers links this board; its legal name is "BGBx Consulting".
+  { company: "Kx Advisors", short: "KX", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "bgbxconsulting" },
+  { company: "Trinity Life Sciences", short: "TRIN", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "workday", tenant: "trinitylifesciences", dc: "wd108", site: "Trinity" },
+  { company: "ghSMART", short: "GHS", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "lever", board: "ghsmartjobs" },
+  { company: "Kotter", short: "KOTR", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "kotterinternational" },
+  { company: "Capstone DC", short: "CAPS", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "workday", tenant: "capstonedc", dc: "wd501", site: "Capstone" },
+  // Putnam Associates is part of Inizio; careers.putassoc.com links straight to
+  // this board, which is named "Inizio" and is mostly Gurugram — hence the gate.
+  { company: "Inizio", short: "INZ", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "inizio", positiveUsOnly: true },
+  { company: "Valtech", short: "VALT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "greenhouse", board: "valtech" },
+  { company: "Nordic Consulting", short: "NORD", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "nordic", dc: "wd1", site: "Nordic" },
+  { company: "General Dynamics Information Technology", short: "GDIT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "gdit", dc: "wd5", site: "External_Career_Site" },
+  { company: "Public Consulting Group", short: "PCG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "pcg", dc: "wd1", site: "PCG_External_Careers" },
+  { company: "ERM", short: "ERM", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "erm", dc: "wd3", site: "ERM_Careers", positiveUsOnly: true },
+  { company: "Connor Group", short: "CONG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "connorgp", dc: "wd12", site: "CG" },
+  // MorganFranklin now operates as Highspring; morganfranklin.com points there.
+  { company: "Highspring (MorganFranklin)", short: "HSPR", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "morganfranklinconsultingllc" },
+  { company: "Bridgepoint Consulting", short: "BPC", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ashby", board: "bridgepoint-consulting" },
+  { company: "Customized Energy Solutions", short: "CES", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "smartrecruiters", board: "CustomizedEnergySolutions" },
+  { company: "Sia Partners", short: "SIA", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "smartrecruiters", board: "Sia" },
+  // Aspirant was acquired by Wavestone; aspirant.com's careers link lands here.
+  { company: "Wavestone (Aspirant)", short: "WAVE", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "smartrecruiters", board: "Wavestone1" },
+  // Chemonics' board is linked from chemonics.com and currently holds 0 reqs.
+  { company: "Chemonics", short: "CHEM", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "chemonics", dc: "wd108", site: "chemonics_careers", siteHost: true },
+  { company: "Wood Mackenzie", short: "WOOD", logoClass: "cons", field: "Consulting", subField: "Research & Advisory", ats: "workday", tenant: "woodmac", dc: "wd3", site: "woodmaccareers", positiveUsOnly: true },
+  { company: "S&P Global", short: "SPGI", logoClass: "fin", field: "Finance", subField: "Research & Advisory", ats: "workday", tenant: "spgi", dc: "wd5", site: "SPGI_Careers", positiveUsOnly: true },
+  { company: "Cambridge Associates", short: "CA", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "cambridgeassociates", dc: "wd5", site: "Cambridge_Associates", positiveUsOnly: true },
+  { company: "Wilshire Advisors", short: "WILS", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "smartrecruiters", board: "WilshireAdvisorsLLC" },
+  { company: "EPIC Insurance Brokers", short: "EPIC", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "greenhouse", board: "edgewoodpartnersinsurancecenter" },
+  { company: "IQVIA", short: "IQV", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "workday", tenant: "iqvia", dc: "wd1", site: "IQVIA", positiveUsOnly: true },
+  { company: "Syneos Health", short: "SYNH", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "syneoshealth", dc: "wd12", site: "Syneos_Health_External_Site", positiveUsOnly: true },
+  { company: "Cencora", short: "COR", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "myhrabc", dc: "wd5", site: "Global", positiveUsOnly: true },
+  { company: "Press Ganey", short: "PGA", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "workday", tenant: "pressganey", dc: "wd1", site: "Careers" },
+  { company: "HNTB", short: "HNTB", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "workday", tenant: "hntb", dc: "wd5", site: "HNTB_Careers" },
+  // TYLin hires on its parent Global Infrastructure Solutions' tenant, which is
+  // ~40% Spain/Canada/Brazil and writes locations as "US | IL | Chicago - …"
+  // with no country word, so the Country facet does the US filtering.
+  { company: "TYLin", short: "TYL", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "workday", tenant: "gi", dc: "wd1", site: "Global_Infrastructure", workdayFacets: { locationCountry: ["bc33aa3152ec42d4995f4791a106ed09"] } },
+  { company: "Ramboll", short: "RAMB", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "smartrecruiters", board: "Ramboll3" },
+  { company: "Edelman", short: "EDEL", logoClass: "media", field: "Marketing", subField: "Brand", ats: "workday", tenant: "djeholdings", dc: "wd5", site: "edelman-careers-E200", positiveUsOnly: true },
+  { company: "Penta Group", short: "PNTA", logoClass: "media", field: "Marketing", subField: "Brand", ats: "lever", board: "pentagrp" },
+  { company: "Blue State", short: "BLST", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "greenhouse", board: "bluestatedigital" },
 
   // ── Finance, round three ──────────────────────────────────────────────
   // Two categories the registry had almost nothing in: digital-asset firms,

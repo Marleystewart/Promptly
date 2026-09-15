@@ -85,7 +85,10 @@ const SEASON = /\b(spring|summer|fall|autumn|winter)\b/i;
 // Not a real, student-relevant job req: talent pools, mailing lists, general
 // "expression of interest" pages, and hourly production/technician roles that
 // aren't the college-intern/new-grad audience.
-const NON_ROLE = /mailing list|talent (community|network|pool)|future opportunit|join our|expression of interest|general application|prospective|interested in (an?|our)|register your interest|speculative|pipeline requisition|production technician|assembly technician|\btemporary\b/i;
+// Recruiting EVENTS are posted as reqs too: S&P Global's board carried "Exclusive
+// S&P Global Ratings Early Careers Networking Event", which "early career" alone
+// would have shown students as a New Grad job.
+const NON_ROLE = /mailing list|talent (community|network|pool)|future opportunit|join our|expression of interest|general application|prospective|interested in (an?|our)|register your interest|speculative|pipeline requisition|production technician|assembly technician|\btemporary\b|networking event|info(?:rmation(?:al)?)? session|\bwebinar\b/i;
 
 function titleCase(s) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
@@ -193,6 +196,15 @@ async function fetchJson(url, options) {
   return res.json();
 }
 
+// positiveUsOnly on a Greenhouse/Lever/Ashby source: keep a req only when its
+// location affirmatively names a US place. Secretariat's board lists the same
+// internship once per office, one of them literally "International" — a word
+// the foreign-city blocklist cannot know about. Same stance as Workday's flag.
+function passesUsGate(src, location, title) {
+  if (!src.positiveUsOnly) return true;
+  return isPositiveUsLocation(location) || isPositiveUsLocation(title);
+}
+
 // ── Greenhouse: public board API, no auth ────────────────────────────────
 async function fetchGreenhouse(src) {
   const data = await fetchJson(`https://boards-api.greenhouse.io/v1/boards/${src.board}/jobs`);
@@ -200,6 +212,7 @@ async function fetchGreenhouse(src) {
   const out = [];
   for (const j of jobs) {
     const loc = (j.location || {}).name;
+    if (!passesUsGate(src, loc, j.title)) continue;
     const cycle = detectCycle(j.title, loc);
     if (cycle) out.push(normalize(src, j.title, j.absolute_url, loc, cycle, null, j.first_published || j.updated_at));
   }
@@ -215,6 +228,18 @@ async function fetchGreenhouse(src) {
 const WORKDAY_TERMS = ["intern", "new grad", "university graduate"];
 const WORKDAY_PAGES = 5; // per term, 20 per page
 
+// Accenture's board omits locationsText on every req, yet the city still rides
+// in the posting path ("/job/Chicago/Title_R00123"). Display only — it never
+// feeds a filter, because a bare city ("Bristol", "Cambridge") cannot say which
+// country it is in; the source's workdayFacets is what proves the req is US.
+function workdayPathCity(externalPath) {
+  const segment = String(externalPath || "").split("/")[2] || "";
+  let city = segment;
+  try { city = decodeURIComponent(segment); } catch {}
+  city = city.replace(/-+/g, " ").trim();
+  return /^multiple\b|^\d+ locations?$/i.test(city) ? "" : city;
+}
+
 async function fetchWorkday(src) {
   // Workday serves two host shapes. The classic one is per-tenant
   // (<tenant>.<dc>.myworkdayjobs.com); the newer one is shared
@@ -226,6 +251,12 @@ async function fetchWorkday(src) {
   const api = `${base}/wday/cxs/${src.tenant}/${src.site}/jobs`;
   const out = [];
   const seenPaths = new Set();
+  // workdayFacets: the board's OWN filter, applied server-side. Some global
+  // tenants write locations with no country at all ("US | IL | Chicago - 8755
+  // West Higgins Road" on TYLin's board, "Honolulu - 201 Merchant" on Marsh
+  // McLennan's), so neither the blocklist nor positiveUsOnly can tell a US req
+  // from a Spanish one. Their country facet can, exactly.
+  const appliedFacets = src.workdayFacets || {};
 
   for (const searchText of WORKDAY_TERMS) {
     for (let page = 0; page < WORKDAY_PAGES; page += 1) {
@@ -234,7 +265,7 @@ async function fetchWorkday(src) {
         data = await fetchJson(api, {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ appliedFacets: {}, limit: 20, offset: page * 20, searchText }),
+          body: JSON.stringify({ appliedFacets, limit: 20, offset: page * 20, searchText }),
         });
       } catch {
         break; // this term failed — try the next one rather than abandoning the source
@@ -263,7 +294,7 @@ async function fetchWorkday(src) {
         const url = src.siteHost
           ? `${base}/recruiting/${src.tenant}/${src.site}${p.externalPath}`
           : `${base}/en-US/${src.site}${p.externalPath}`;
-        out.push(normalize(src, p.title, url, p.locationsText, cycle));
+        out.push(normalize(src, p.title, url, p.locationsText || workdayPathCity(p.externalPath), cycle));
       }
       if (postings.length < 20) break;
     }
@@ -278,6 +309,7 @@ async function fetchLever(src) {
   const out = [];
   for (const j of jobs) {
     const loc = (j.categories || {}).location;
+    if (!passesUsGate(src, loc, j.text)) continue;
     const cycle = detectCycle(j.text, loc);
     if (cycle) out.push(normalize(src, j.text, j.hostedUrl, loc, cycle, null, j.createdAt));
   }
@@ -292,6 +324,7 @@ async function fetchAshby(src) {
   const out = [];
   for (const j of jobs) {
     if (j.isListed === false) continue;
+    if (!passesUsGate(src, j.location, j.title)) continue;
     const cycle = detectCycle(j.title, j.location);
     if (cycle) out.push(normalize(src, j.title, j.jobUrl, j.location, cycle, j.workplaceType || null, j.publishedAt));
   }
