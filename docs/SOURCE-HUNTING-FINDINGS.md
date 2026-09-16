@@ -343,20 +343,86 @@ Packaging, not CrossCountry (whose real board is `lever:crosscountry-consulting`
 `lever:oliverwyman` is "Oliver Wyman Labs" (two SF tech roles) — the Oliver
 Wyman card now reads the real consultancy through `mmc.js`.
 
-### Leads not finished (worth an hour each)
+## 500-firm list, round four (16 Sep 2026)
 
-- **Paycom** (Eagle Hill, RVK, Cornerstone Advisors): the career page is a
-  shell; jobs come from `portal-applicant-tracking.us-cent.paycomonline.net`.
-- **EPAM**: `careers.epam.com/api/jobs/v2/search/careers-i18n` answers a plain
-  fetch (3,578 reqs) but no US filter parameter was found.
-- **Spencer Stuart** (`spencerstuart/wd5`) and **Infosys** (`infosys/wd103`):
-  tenants exist, site names not guessed.
-- **Dayforce** (Alliant): search needs the page's session + CSRF handshake.
-- **Arcadis**: Eightfold tenant, but the registered `domain` value is unknown.
+Round three closed with 329 of 500 entries covered and ~146 walls. Round four
+went back at those walls and got to **375 of 500**. Most of that jump is three
+firms: Deloitte, PwC and KPMG each carry a dozen or more of the list's entries
+as practice areas, and none of them had a card.
+
+### The walls that were not walls
+
+Every one of these had been recorded as unreadable, and every one was readable
+once the right door was tried. The pattern is worth keeping: **a "wall" is
+usually a wrong URL, a missing facet, or a front end in front of a plain board.**
+
+| Firm | What the note said | What was actually true |
+|---|---|---|
+| **PwC** | "no readable job feed (script-rendered)" | pwc.com links jobs-us.pwc.com (Phenom), and every job link on it points at `pwc/wd3/US_Entry_Level_Careers` — a plain Workday board, 448 reqs, all US entry-level. Earlier rounds probed `jobs.us.pwc.com`, which does not resolve; the host has a hyphen. |
+| **Deloitte** | "Avature serves 10 reqs a page: 100+ requests per refresh" | True but beside the point. The page's own banner config names its facet ids; field 9339 (Hire Type) = 477,478 narrows thousands of reqs to ~140. 15 pages, read four at a time, 8s. |
+| **KPMG** | "no readable job feed" | kpmguscareers.com server-renders whole rows. It honours no offset parameter under any name, but it honours `keyword`, so a union of student terms reads it. A subset, and labelled as one. |
+| **CACI** | slug search found a 14-req SmartRecruiters board | caci.com points at searchcareers.caci.com — Eightfold, 283 reqs, 28 student roles. |
+| **Lockton** | Taleo section, legacy parser saw nothing | Both Taleo and the Next.js shell render an empty list. The page fills itself from an Algolia index using the search-only key it publishes to every visitor. 21 internships. |
+| **Arcadis** | "Eightfold tenant, registered domain unknown" | The domain is `arcadis.com`; the tenant that answers is `arcadis.eightfold.ai`, not careers.arcadis.com (which 404s the API). |
+| **Paycom** (Eagle Hill, RVK, Cornerstone Advisors) | "session-bound service" | Not session-bound. `/portal/<key>/career-page` returns the boot JSON — including a `sessionJWT` minted for any anonymous caller — but ONLY when asked with `Accept: application/json`; it serves the HTML shell to anything that will take text/html. |
+| **ISG** | Jobvite board read as empty | Jobvite has two templates. The newer one uses divs, and serves `/jobs` as a marketing page with only a Featured Jobs widget; the real list is at `/search?nl=1&fr=true`. |
+
+### Ownership: a resolving slug still proves nothing
+
+Guessing slugs across 14 ATSs for 144 firms produced ~70 candidates. A hit was
+only believed when the board's own name matched the firm in full **and** the
+board pointed back at the firm's domain — and each survivor was then read by
+hand. That rejected Spencer Animal Hospital for Spencer Stuart, Kepler
+Communications for Kepler Cannon, Kin Insurance for Kin + Carta, Genesis Global
+for Genesis Research, Coalition Inc for Coalition Greenwich, a Huntsville
+defence shop for TCS, and a Dutch IT firm, a Kansas City builder and a
+construction outfit all answering to "centric".
+
+**Pinpoint's five-job boards are sales demos.** Nine firms' slugs resolved on
+pinpointhq.com, each with exactly five generic roles ("Head of DEI - Belfast",
+"Cloud Architect"). None was the firm's board.
+
+The registry's own duplicate lint caught four more: EPIC Insurance Brokers, The
+Chartis Group, Riveron and Valtech were already covered under different names,
+which is also the answer for HealthScape Advisors, Effectus Group, Putnam
+Associates (Inizio), Kalypso (Rockwell) and Insight Sourcing (Accenture).
+
+### Adapter changes this round
+
+| Change | Why |
+|---|---|
+| `paycom` reader in `small-ats.js` | Two-step: career-page JSON for a guest token, then one POST. Locations are free text carrying street addresses and legal entities, so the US test runs on the cleaned "City, ST" part. |
+| `jobvite` reader falls back to `/search?nl=1&fr=true`, accepts div rows | The newer career-site template, above. |
+| Ashby fetcher reads `address.postalAddress.addressCountry` | A remote req writes only "Remote"; the country is structured. Chartis' board is 40 reqs, mostly that shape — a text-only gate dropped a US employer entirely. |
+| `stateFirstLocations` source flag | PwC writes "IL-Rosemont" and names no country. Opt-in, never automatic: "CA-Toronto" is California to this pattern and Canada to an ISO reader, so a board earns the flag only once its locations have been checked. |
+
+### Still not addable, with the reason established this round
+
+- **Bot protection (hard line, not attempted):** Bain, Alvarez & Marsal,
+  Cognizant, Globant, UST, Steer (403 to a server); IBM, Jacobs (202 challenge
+  page); Tetra Tech (SelectMinds 403).
+- **Client-rendered with no readable route:** Avanade, Alliant (Dayforce needs
+  the page's session), CGI (njoyn answers "Session Expired"), Mott MacDonald,
+  North Highland, Credera, GEP, Efficio, Everest Group, Arup, AECOM.
+- **Feed exists but is unusable:** Slalom and Maximus (Avature feeds are a
+  fixed latest-20, no offset, no locations); EPAM (its search API answers a
+  plain fetch and ranks by relevance but does not filter — even a nonexistent
+  field returns hits — and 3,708 reqs at 50/page × 700KB is not affordable);
+  Virtusa (Phenom search ignores the keyword server-side); TCS (login-only
+  iBegin); Infosys (career.infosys.com covers India, China and Manila only —
+  there is no US portal behind it).
+- **No US hiring, having looked:** Ricardo, Emerton, Sionic, Oxera, South Pole,
+  4C Associates, Implement Consulting Group, Miebach's German board (its North
+  America board IS readable and was added), Serco.
 
 ### Refresh budget
 
-A timed run of all sources at the production concurrency (12) took ~173s
-against the refresh function's 300s ceiling, before trimming the slowest new
-sources (Kearney 36s → 14s, NTT DATA 14s → 4s). Watch this number as the
-registry grows.
+A timed run of all 710 sources at the production concurrency (12) took **177.8s**
+against the refresh function's 300s ceiling. Deloitte (8s) and KPMG (10s) are
+well outside the twenty slowest; the slowest are AbbVie (40s), Oliver Wyman
+(29s), HUB International (28s), BCG (25s) and Arcadis (20s). Watch this number
+as the registry grows.
+
+That run is also how a dead source was found: Alpine Investors' Greenhouse board
+404s — it moved to Ashby. **Time the whole registry occasionally; it is the only
+check that notices a board that quietly went away.**
