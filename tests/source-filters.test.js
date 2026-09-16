@@ -99,6 +99,22 @@ function stub(handler) {
       "the season must come from the term, not the graduation phrase");
     assert.equal(detectCycle("Turnaround and Restructuring Analyst 2027 Graduates (Q3/Q4 2027 Start Dates)", "Chicago, IL"), "New Grad 2027");
 
+    // ── stateFirstLocations: "IL-Rosemont" is Rosemont, Illinois ─────────
+    // PwC's entry-level Workday board writes the state first and names no
+    // country, so every row read as un-placeable until it was flipped. The
+    // flip is opt-in per source precisely because "CA-Toronto" is California
+    // to this pattern and Canada to an ISO reader: only a two-letter US STATE
+    // is flipped, and anything else is left exactly as the board wrote it.
+    const { flipStateFirst } = require("../api/_shared/aggregator.js");
+    assert.equal(flipStateFirst("IL-Rosemont"), "Rosemont, IL");
+    assert.equal(flipStateFirst("NY-New York"), "New York, NY");
+    assert.equal(flipStateFirst("TX-Dallas; FL-Tampa"), "Dallas, TX; Tampa, FL");
+    const { isUsLocation } = require("../api/_shared/us-location.js");
+    assert.equal(isUsLocation(flipStateFirst("IL-Rosemont")), true, "flipping is what lets the US test see the state");
+    assert.equal(flipStateFirst("14 Locations"), "14 Locations", "a collapsed multi-office req is left alone");
+    assert.equal(flipStateFirst("ZZ-Nowhere"), "ZZ-Nowhere", "a two-letter code that is not a US state is not a state");
+    assert.equal(flipStateFirst("Amsterdam, NH"), "Amsterdam, NH", "only the state-first shape is touched");
+
     console.log("Source filter tests passed. US gates, Workday facets, and event exclusion hold.");
   } finally {
     global.fetch = realFetch;

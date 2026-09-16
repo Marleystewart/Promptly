@@ -241,6 +241,30 @@ const WORKDAY_PAGES = 5; // per term, 20 per page
 // in the posting path ("/job/Chicago/Title_R00123"). Display only — it never
 // feeds a filter, because a bare city ("Bristol", "Cambridge") cannot say which
 // country it is in; the source's workdayFacets is what proves the req is US.
+// Some Workday boards write a US office as "IL-Rosemont" — state first, no
+// country. Shown raw that is hard to read, and the positive US test cannot see
+// a state code that is not after a comma, so every row on such a board gets
+// flagged as un-placeable. Sources set stateFirstLocations to flip it to
+// "Rosemont, IL".
+//
+// The flip is deliberately NOT automatic. "CA-Toronto" is California to this
+// pattern and Canada to an ISO country-code reader, and both spellings exist in
+// the wild — so a board only opts in once its locations have been checked to be
+// US states. PwC's US_Entry_Level_Careers is US entry-level hiring only, and
+// all 448 of its reqs are state-shaped or "N Locations".
+const US_STATES = new Set(["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "DC", "PR"]);
+
+function flipStateFirst(location) {
+  return String(location || "")
+    .split(";")
+    .map((part) => {
+      const m = part.trim().match(/^([A-Z]{2})-(.+)$/);
+      return m && US_STATES.has(m[1]) ? `${m[2].trim()}, ${m[1]}` : part.trim();
+    })
+    .filter(Boolean)
+    .join("; ");
+}
+
 function workdayPathCity(externalPath) {
   const segment = String(externalPath || "").split("/")[2] || "";
   let city = segment;
@@ -303,7 +327,8 @@ async function fetchWorkday(src) {
         const url = src.siteHost
           ? `${base}/recruiting/${src.tenant}/${src.site}${p.externalPath}`
           : `${base}/en-US/${src.site}${p.externalPath}`;
-        out.push(normalize(src, p.title, url, p.locationsText || workdayPathCity(p.externalPath), cycle));
+        const where = p.locationsText || workdayPathCity(p.externalPath);
+        out.push(normalize(src, p.title, url, src.stateFirstLocations ? flipStateFirst(where) : where, cycle));
       }
       if (postings.length < 20) break;
     }
@@ -829,4 +854,4 @@ async function aggregateOpenings() {
   return { openings, sourceStatus, updatedAt: new Date().toISOString() };
 }
 
-module.exports = { aggregateOpenings, settleWithConcurrency, isWorthRetrying, FETCH_CONCURRENCY, isRelevant, detectCycle, fetchOne, isPastCycle, canonicalUrl, normalizeCompany, normalizeRole, preferUsLocations };
+module.exports = { aggregateOpenings, flipStateFirst, settleWithConcurrency, isWorthRetrying, FETCH_CONCURRENCY, isRelevant, detectCycle, fetchOne, isPastCycle, canonicalUrl, normalizeCompany, normalizeRole, preferUsLocations };

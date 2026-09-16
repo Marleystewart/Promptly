@@ -384,6 +384,14 @@ const SOURCES = [
   { company: "EY", short: "EY", logoClass: "consult", field: "Consulting", subField: "Big 4", ats: "custom", handler: "ey" },
   // Deloitte US — Avature, narrowed to its own student Hire Type facet.
   { company: "Deloitte", short: "DTT", logoClass: "consult", field: "Consulting", subField: "Big 4", ats: "custom", handler: "deloitte" },
+  // KPMG US — server-rendered search that pages by keyword only, so this is a
+  // verified subset rather than the whole board. See company-scrapers/kpmg.js.
+  { company: "KPMG", short: "KPMG", logoClass: "consult", field: "Consulting", subField: "Big 4", ats: "custom", handler: "kpmg" },
+  // PwC. pwc.com/us/en/careers.html → jobs-us.pwc.com (Phenom), whose job links
+  // all point here: a Workday site that is nothing but US entry-level hiring,
+  // 448 reqs, every location US-state-shaped. The Phenom front end is a shop
+  // window for this board, so read the board.
+  { company: "PwC", short: "PWC", logoClass: "consult", field: "Consulting", subField: "Big 4", ats: "workday", tenant: "pwc", dc: "wd3", site: "US_Entry_Level_Careers", studentBoard: true, stateFirstLocations: true },
   { company: "ExxonMobil", short: "XOM", logoClass: "eng", field: "Engineering", subField: "Energy", ats: "custom", handler: "exxonmobil" },
   { company: "Coca-Cola", short: "KO", logoClass: "consumer", field: "Consumer", subField: "Beverages", ats: "custom", handler: "cocacola" },
   { company: "Cleveland Clinic", short: "CC", logoClass: "health", field: "Healthcare", subField: "Hospital Systems", ats: "custom", handler: "clevelandclinic" },

@@ -371,6 +371,7 @@ window.MONITORED_COMPANIES = [
   "Komodo Health",
   "Korn Ferry",
   "Kotter",
+  "KPMG",
   "Kraft Heinz",
   "Kreischer Miller",
   "Kroll",
@@ -525,6 +526,7 @@ window.MONITORED_COMPANIES = [
   "Public Consulting Group",
   "Publicis Sapient",
   "Purple Strategies",
+  "PwC",
   "Qualcomm",
   "Quest Global",
   "Radiant",
@@ -715,12 +717,12 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 706,
-  "companies": 706,
+  "sources": 708,
+  "companies": 708,
   "byPlatform": {
     "greenhouse": 241,
-    "custom": 145,
-    "workday": 153,
+    "custom": 146,
+    "workday": 154,
     "lever": 35,
     "ashby": 56,
     "smartrecruiters": 19,
@@ -746,7 +748,7 @@ window.PROMPTLY_COVERAGE = {
   "byField": {
     "Finance": 214,
     "Technology": 72,
-    "Consulting": 187,
+    "Consulting": 189,
     "Healthcare": 57,
     "Education": 4,
     "Engineering": 57,
