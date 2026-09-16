@@ -722,11 +722,11 @@ window.PROMPTLY_COVERAGE = {
   "sources": 710,
   "companies": 710,
   "byPlatform": {
-    "greenhouse": 241,
+    "greenhouse": 240,
     "custom": 146,
     "workday": 154,
     "lever": 35,
-    "ashby": 56,
+    "ashby": 57,
     "smartrecruiters": 19,
     "florecruit": 11,
     "usajobs": 1,

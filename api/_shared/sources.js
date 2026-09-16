@@ -204,7 +204,11 @@ const SOURCES = [
   // Asset management
   { company: "Battery Ventures", short: "BATT", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "batteryventures" },
   { company: "Level Equity", short: "LVEQ", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "levelequity" },
-  { company: "Alpine Investors", short: "ALPI", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "alpineinvestors" },
+  // Moved off Greenhouse (that board now 404s) to Ashby. alpineinvestors.com's
+  // careers page links three Ashby boards — alpine-investors, alpine-portfolio
+  // and alpine-internships; this is the firm's own hiring, which is what the
+  // Alpine Investors card means.
+  { company: "Alpine Investors", short: "ALPI", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "ashby", board: "alpine-investors" },
   { company: "Thunes", short: "THNS", logoClass: "fin", field: "Finance", subField: "Payments", ats: "greenhouse", board: "thunes" },
   { company: "Nium", short: "NIUM", logoClass: "fin", field: "Finance", subField: "Payments", ats: "lever", board: "nium" },
   { company: "Highnote", short: "HNOT", logoClass: "fin", field: "Finance", subField: "Payments", ats: "greenhouse", board: "highnote" },
