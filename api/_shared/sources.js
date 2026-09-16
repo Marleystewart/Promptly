@@ -916,6 +916,10 @@ const SOURCES = [
   // ISG — isg-one.com/careers embeds this Jobvite career site; its /jobs page
   // shows only a Featured Jobs widget, so the reader falls through to /search.
   { company: "ISG", short: "ISG", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "jobvite", board: "isg-one" },
+  // North Highland — SourceFlow; recorded as needing a session token, which it
+  // does not. See company-scrapers/northhighland.js.
+  { company: "North Highland", short: "NHIG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "northhighland" },
+
   // ── Round four, deep crawl: the ATS link lives on the job-search subpage ──
   // Miebach's German board (recruitee) is Germany-only; miebach.com/us/en
   // links a separate North America board, which is where its US interns are.

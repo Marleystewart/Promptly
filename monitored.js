@@ -465,6 +465,7 @@ window.MONITORED_COMPANIES = [
   "Nium",
   "Noblis",
   "Nordic Consulting",
+  "North Highland",
   "Northern Trust",
   "Northrop Grumman",
   "Northwestern Mutual",
@@ -724,11 +725,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 715,
-  "companies": 715,
+  "sources": 716,
+  "companies": 716,
   "byPlatform": {
     "greenhouse": 241,
-    "custom": 146,
+    "custom": 147,
     "workday": 154,
     "lever": 36,
     "ashby": 57,
@@ -755,7 +756,7 @@ window.PROMPTLY_COVERAGE = {
   "byField": {
     "Finance": 214,
     "Technology": 72,
-    "Consulting": 195,
+    "Consulting": 196,
     "Healthcare": 57,
     "Education": 4,
     "Engineering": 57,
