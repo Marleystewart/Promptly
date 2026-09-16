@@ -415,13 +415,23 @@ Associates (Inizio), Kalypso (Rockwell) and Insight Sourcing (Accenture).
   4C Associates, Implement Consulting Group, Miebach's German board (its North
   America board IS readable and was added), Serco.
 
+### The last sweep, and why the remaining walls are real
+
+North Highland's wall ("job API requires a session token") turned out to be a
+GET against a POST-only route. That is a mistake worth not repeating, so every
+still-uncovered firm was then swept for the job APIs small careers sites
+actually use — SourceFlow's `/_sf/api/v1/jobs/search.json`, the WordPress REST
+job post types, `/api/jobs`, `/jobs.json` and others — with **both** GET and
+POST, across `careers.`, `www.` and `jobs.` on each domain. 111 firms, ~4,000
+requests, **zero hits**. The remaining walls are walls.
+
 ### Refresh budget
 
-A timed run of all 710 sources at the production concurrency (12) took **177.8s**
-against the refresh function's 300s ceiling. Deloitte (8s) and KPMG (10s) are
-well outside the twenty slowest; the slowest are AbbVie (40s), Oliver Wyman
-(29s), HUB International (28s), BCG (25s) and Arcadis (20s). Watch this number
-as the registry grows.
+A timed run of all 716 sources at the production concurrency (12) took **191.5s**
+against the refresh function's 300s ceiling. Deloitte (8s), KPMG (10s) and North
+Highland (5s) are well outside the twenty slowest; the slowest are AbbVie (44s),
+Oliver Wyman (31s), HUB International (25s), BCG (22s) and Arcadis (21s). Watch
+this number as the registry grows.
 
 That run is also how a dead source was found: Alpine Investors' Greenhouse board
 404s — it moved to Ashby. **Time the whole registry occasionally; it is the only
