@@ -882,6 +882,27 @@ const SOURCES = [
   // Burns & McDonnell — Taleo REST board on its own domain; see company-scrapers/burnsmcd.js.
   { company: "Burns & McDonnell", short: "BMCD", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "burnsmcd" },
   { company: "Stantec", short: "STN", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "stantec" },
+  // Arcadis — Eightfold on arcadis.eightfold.ai; see company-scrapers/arcadis.js.
+  { company: "Arcadis", short: "ARCA", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "arcadis" },
+  // CACI — Eightfold at searchcareers.caci.com; see company-scrapers/caci.js.
+  { company: "CACI International", short: "CACI", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "custom", handler: "caci" },
+
+  // ── Round four: boards found by slug search, each confirmed by the board's
+  // own name AND by the firm's own site pointing at it. ──────────────────
+  // Lockton's list lives in an Algolia index, not in Taleo's HTML; see
+  // company-scrapers/lockton.js.
+  { company: "Lockton", short: "LKTN", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "lockton" },
+  { company: "IMA Financial Group", short: "IMA", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "greenhouse", board: "imafinancialgroup" },
+  // careers.franklincovey.com is this ClearCompany board.
+  { company: "FranklinCovey", short: "FC", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "hrmdirect", board: "franklincovey" },
+  { company: "Avasant", short: "AVSN", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "jazzhr", board: "avasant" },
+  { company: "Red Nucleus", short: "RNUC", logoClass: "cons", field: "Consulting", subField: "Life Sciences", ats: "bamboohr", board: "rednucleus" },
+  { company: "Nardello & Co.", short: "NRDL", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "bamboohr", board: "nardelloandco" },
+  { company: "Prescient Healthcare Group", short: "PRHG", logoClass: "cons", field: "Consulting", subField: "Life Sciences", ats: "bamboohr", board: "prescienthg" },
+  { company: "OC&C Strategy Consultants", short: "OCC", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "bamboohr", board: "occstrategy" },
+  // Global firms; the SmartRecruiters fetcher keeps only country "us".
+  { company: "Hitachi Solutions", short: "HTSL", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "smartrecruiters", board: "hitachisolutions" },
+  { company: "ALTEN", short: "ALTN", logoClass: "eng", field: "Engineering", subField: "Engineering Services", ats: "smartrecruiters", board: "alten" },
   { company: "Bates White", short: "BW", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "bateswhite" },
   // jsheld.com/careers links each req on this SmartRecruiters board ("J.S. Held LLC").
   { company: "J.S. Held", short: "JSH", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "smartrecruiters", board: "JSHeldLLC" },
