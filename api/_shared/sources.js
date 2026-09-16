@@ -19,7 +19,8 @@
 //             workable, ukg ("<host>/<TENANT>/<guid>"), adp (cid), paylocity
 //             (guid), pinpoint, recruitee, jobvite, rippling, teamtailor
 //             (host), breezy, bamboohr, jazzhr, hrmdirect (ClearCompany),
-//             hibob. US-ness comes from each feed's own country field.
+//             hibob, paycom (client key). US-ness comes from each feed's own
+//             country field, or where there is none, the positive US test.
 // Workday extras: positiveUsOnly (keep only affirmatively-US reqs; also works
 //             on greenhouse/lever/ashby) and workdayFacets (the board's own
 //             filter, e.g. { locationCountry: [<USA id>] } for boards that
@@ -904,6 +905,12 @@ const SOURCES = [
   // Cornerstone OnDemand career sites (api/_shared/csod.js).
   { company: "Simon-Kucher", short: "SK", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "simonkucher" },
   { company: "Mathematica", short: "MPR", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "mathematica" },
+  // Paycom portals (api/_shared/small-ats.js). board = the client key the
+  // firm's own site links: eaglehillconsulting.com/careers/search-jobs/,
+  // rvkinc.com and crnrstone.com/careers/ respectively.
+  { company: "Eagle Hill Consulting", short: "EHC", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "paycom", board: "9BC727FFD9BDD9CB60ED6876692A75B3" },
+  { company: "RVK", short: "RVK", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "paycom", board: "11B0B21AEE8A6F8D80719392F2EAB940" },
+  { company: "Cornerstone Advisors", short: "CSAD", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "paycom", board: "E8D4F53CA41BCE23AEB0AE87DE41B1A7" },
   // HiBob careers sites, each linked from the firm's own careers page.
   { company: "K2 Integrity", short: "K2", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "hibob", board: "k2integrity" },
   { company: "Synpulse", short: "SYNP", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "hibob", board: "synpulse" },

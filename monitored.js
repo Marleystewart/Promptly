@@ -164,6 +164,7 @@ window.MONITORED_COMPANIES = [
   "Continental",
   "Control Risks",
   "Corcentric",
+  "Cornerstone Advisors",
   "Cornerstone Research",
   "Coursera",
   "Cprime",
@@ -202,6 +203,7 @@ window.MONITORED_COMPANIES = [
   "dss+",
   "Duolingo",
   "DV Trading",
+  "Eagle Hill Consulting",
   "ECG Management Consultants",
   "Econic Partners",
   "Edelman",
@@ -541,6 +543,7 @@ window.MONITORED_COMPANIES = [
   "RSM",
   "RTI International",
   "RTX (Raytheon)",
+  "RVK",
   "Rystad Energy",
   "S&P Global",
   "SAIC",
@@ -699,8 +702,8 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 690,
-  "companies": 690,
+  "sources": 693,
+  "companies": 693,
   "byPlatform": {
     "greenhouse": 240,
     "custom": 141,
@@ -724,12 +727,13 @@ window.PROMPTLY_COVERAGE = {
     "bamboohr": 1,
     "jazzhr": 3,
     "hrmdirect": 2,
+    "paycom": 3,
     "hibob": 2
   },
   "byField": {
-    "Finance": 211,
+    "Finance": 212,
     "Technology": 72,
-    "Consulting": 177,
+    "Consulting": 179,
     "Healthcare": 57,
     "Education": 4,
     "Engineering": 54,

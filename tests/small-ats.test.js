@@ -127,6 +127,29 @@ const titlesWhereUs = (rows) => rows.filter((r) => r.us).map((r) => r.title);
     assert.equal(hb[0].url, "https://k2integrity.careers.hibob.com/jobs/a1");
     assert.deepEqual(hibobHeaders, ["k2integrity"], "the tenant must be named in the companyidentifier header");
 
+    // Paycom — two steps. The career page must be asked for JSON (it serves the
+    // HTML shell to anything that accepts text/html), and the search must carry
+    // the session token it hands back. Locations are free text carrying street
+    // addresses and hiring legal entities, so US-ness must be read from the
+    // cleaned "City, ST" part: "Acme Virginia Holdings - Mumbai, India" is not
+    // a Virginia job.
+    const paycomCalls = [];
+    respond = (url, options) => {
+      paycomCalls.push([url, (options.headers || {}).Accept, (options.headers || {}).Authorization]);
+      if (url.endsWith("/career-page")) return { clientKey: "KEY1", sessionJWT: "jwt-abc" };
+      return { jobPostingPreviewsCount: 3, jobPostingPreviews: [
+        { jobId: 166267, jobTitle: "2027 Consultant Intern  (19514)", locations: "7272 E INDIAN SCHOOL RD STE 400 - SCOTTSDALE, AZ 85251" },
+        { jobId: 141069, jobTitle: "Consultant | Contracts ", locations: "Cornerstone Advisors of Arizona LLC  AZ - Scottsdale, AZ 85251; Cornerstone Advisors of Arizona LLC  FL - Longwood, FL 32779" },
+        { jobId: 9, jobTitle: "Consultant", locations: "Acme Virginia Holdings ON - Toronto, ON" },
+      ] };
+    };
+    const paycom = await READERS.paycom("KEY1");
+    assert.deepEqual(paycom.map((r) => r.location), ["Scottsdale, AZ", "Scottsdale, AZ; Longwood, FL", "Toronto, ON"]);
+    assert.deepEqual(paycom.map((r) => r.us), [true, true, false]);
+    assert.equal(paycom[0].url, "https://www.paycomonline.net/v4/ats/web.php/portal/KEY1/jobs/166267");
+    assert.equal(paycomCalls[0][1], "application/json", "the career page only returns JSON when asked for JSON");
+    assert.equal(paycomCalls[1][2], "Bearer jwt-abc", "the search must carry the session token the career page issued");
+
     // Through the production fetcher: only US reqs survive, and detectCycle still gates.
     respond = () => ({ name: "Rystad Energy", jobs: [
       { title: "Analyst Intern - Summer 2027", city: "Houston", state: "Texas", country: "United States", url: "https://apply.workable.com/j/A1" },
@@ -137,7 +160,7 @@ const titlesWhereUs = (rows) => rows.filter((r) => r.us).map((r) => r.title);
     assert.deepEqual(rows.map((r) => r.sourceUrl), ["https://apply.workable.com/j/A1"]);
     assert.equal(rows[0].cycle, "Summer 2027");
 
-    console.log("Small-ATS tests passed. Fourteen feeds, US decided by each feed's own country field.");
+    console.log("Small-ATS tests passed. Fifteen feeds, US decided by each feed's own country field.");
   } finally {
     global.fetch = realFetch;
   }

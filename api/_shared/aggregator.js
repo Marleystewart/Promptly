@@ -661,6 +661,7 @@ const FETCHERS = {
   jazzhr: fetchSmallAts,
   hrmdirect: fetchSmallAts,
   hibob: fetchSmallAts,
+  paycom: fetchSmallAts,
 };
 
 // Run a single source's real ATS fetcher. Used both by the aggregate loop and

@@ -45,6 +45,7 @@ const REQUIRED_KEYS = {
   jazzhr: ["board"],
   hrmdirect: ["board"],
   hibob: ["board"],
+  paycom: ["board"],
 };
 
 // Every ATS the registry may name must have a fetcher, and every small-ATS

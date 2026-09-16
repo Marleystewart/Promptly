@@ -2,9 +2,11 @@
 //
 // Mid-size consultancies on Trey's list hire through systems too small to earn
 // a module each: Workable, UKG (UltiPro), ADP Workforce Now, Paylocity,
-// Pinpoint, Recruitee, Jobvite, Rippling, Teamtailor, Breezy and BambooHR.
-// Every one publishes the list its own careers page renders, and every one
-// answers a plain server fetch with no token. Each reader below returns
+// Pinpoint, Recruitee, Jobvite, Rippling, Teamtailor, Breezy, BambooHR and
+// Paycom. Every one publishes the list its own careers page renders, and all
+// but Paycom answer a plain server fetch with no token — Paycom hands every
+// anonymous visitor a session token on the career page itself, and the reader
+// below simply uses the one it is given. Each reader returns
 //
 //   { title, url, location, postedAt, us }
 //
@@ -314,7 +316,71 @@ async function hibob(sub) {
   }));
 }
 
-const READERS = { workable, ukg, adp, paylocity, pinpoint, recruitee, jobvite, rippling, teamtailor, breezy, bamboohr, jazzhr, hrmdirect, hibob };
+// ── Paycom: board = the employer's client key ──────────────────────────────
+// Eagle Hill, RVK and Cornerstone Advisors all link
+// paycomonline.net/v4/ats/web.php/jobs?clientkey=<KEY> from their own sites,
+// which is how each key here was confirmed to belong to the firm claiming it.
+//
+// That page is a shell. Fetching .../portal/<key>/career-page returns the JSON
+// the shell boots from, including a `sessionJWT` minted for whoever asks — no
+// login, no challenge — and the list itself comes from one POST to the
+// portal-applicant-tracking host with that token, exactly as the page does it.
+//
+// `locations` is free text and often carries a street address or the hiring
+// legal entity ("Cornerstone Advisors of Arizona LLC  AZ - Scottsdale, AZ
+// 85251"). placeOf() keeps the "City, ST" part when there is one, and the US
+// test runs on that rather than the raw string, so a state name inside a
+// company name can never be what admits a role.
+const PAYCOM_API = "https://portal-applicant-tracking.us-cent.paycomonline.net/api/ats/job-posting-previews/search";
+const CITY_STATE = /^.+,\s*[A-Z]{2}(?:\s+\d{5}(?:-\d{4})?)?$/;
+
+function placeOf(office) {
+  const parts = clean(office).split(/\s+-\s+/).map((p) => p.trim()).filter(Boolean);
+  const best = [...parts].reverse().find((p) => CITY_STATE.test(p)) || parts.join(" - ");
+  return best
+    .replace(/\s+\d{5}(?:-\d{4})?$/, "")
+    .replace(/\b[A-Z]{3,}(?:'[A-Z]+)?\b/g, (w) => w[0] + w.slice(1).toLowerCase())
+    .trim();
+}
+
+async function paycom(clientKey) {
+  const portal = `https://www.paycomonline.net/v4/ats/web.php/portal/${encodeURIComponent(clientKey)}`;
+  // The career-page route content-negotiates: it serves the HTML shell to
+  // anything that will take text/html, and the boot JSON only to Accept: json.
+  const { sessionJWT } = await getJson(`${portal}/career-page`, { headers: { Accept: "application/json" } });
+  if (!sessionJWT) throw new Error(`paycom ${clientKey}: career page issued no session token`);
+  const out = [];
+  for (let skip = 0; skip < 400; skip += 100) {
+    const data = await getJson(PAYCOM_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${sessionJWT}` },
+      body: JSON.stringify({
+        skip,
+        take: 100,
+        filtersForQuery: {
+          distanceFrom: 0, workEnvironments: [], positionTypes: [], educationLevels: [],
+          categories: [], travelTypes: [], shiftTypes: [], otherFilters: [],
+          keywordSearchText: "", location: "", sortOption: "",
+        },
+      }),
+    });
+    const previews = Array.isArray(data.jobPostingPreviews) ? data.jobPostingPreviews : [];
+    for (const job of previews) {
+      const location = clean(job.locations).split(";").map(placeOf).filter(Boolean).join("; ");
+      out.push({
+        title: clean(job.jobTitle),
+        url: `${portal}/jobs/${encodeURIComponent(job.jobId)}`,
+        location,
+        postedAt: clean(job.postedOn) || null,
+        us: isUsLocation(location),
+      });
+    }
+    if (previews.length < 100 || out.length >= (Number(data.jobPostingPreviewsCount) || 0)) break;
+  }
+  return out;
+}
+
+const READERS = { workable, ukg, adp, paylocity, pinpoint, recruitee, jobvite, rippling, teamtailor, breezy, bamboohr, jazzhr, hrmdirect, hibob, paycom };
 
 async function fetchSmallAtsListings(ats, board) {
   const reader = READERS[ats];
