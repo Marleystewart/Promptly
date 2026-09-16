@@ -55,6 +55,19 @@ function stub(handler) {
     const ashby = await fetchOne({ ...base, ats: "ashby", positiveUsOnly: true });
     assert.deepEqual(ashby.map((o) => o.location), ["Chicago, IL"]);
 
+    // A remote Ashby req writes only "Remote" as its location, but carries the
+    // country in address.postalAddress. The Chartis Group's board is 40 reqs,
+    // most of them exactly this shape — read on the text alone, a US employer's
+    // whole board reads as un-placeable and disappears.
+    stub(() => ({ jobs: [
+      { title: "Analyst Intern", location: "Remote", jobUrl: "https://jobs.ashbyhq.com/x/3", address: { postalAddress: { addressCountry: "United States" } } },
+      { title: "Analyst Intern", location: "Remote", jobUrl: "https://jobs.ashbyhq.com/x/4", address: { postalAddress: { addressCountry: "United Kingdom" } } },
+      { title: "Analyst Intern", location: "Remote", jobUrl: "https://jobs.ashbyhq.com/x/5" },
+    ] }));
+    const remote = await fetchOne({ ...base, ats: "ashby", positiveUsOnly: true });
+    assert.deepEqual(remote.map((o) => o.sourceUrl), ["https://jobs.ashbyhq.com/x/3"],
+      "the US remote req is kept; a UK one and one with no country are not");
+
     // ── Workday + workdayFacets ──────────────────────────────────────────
     const US = "bc33aa3152ec42d4995f4791a106ed09";
     const sentFacets = [];

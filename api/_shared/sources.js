@@ -916,6 +916,16 @@ const SOURCES = [
   // ISG — isg-one.com/careers embeds this Jobvite career site; its /jobs page
   // shows only a Featured Jobs widget, so the reader falls through to /search.
   { company: "ISG", short: "ISG", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "jobvite", board: "isg-one" },
+  // ── Round four, deep crawl: the ATS link lives on the job-search subpage ──
+  // Miebach's German board (recruitee) is Germany-only; miebach.com/us/en
+  // links a separate North America board, which is where its US interns are.
+  { company: "Miebach Consulting", short: "MIEB", logoClass: "cons", field: "Consulting", subField: "Supply Chain", ats: "rippling", board: "miebach-northamerica-career-page" },
+  { company: "Econ One", short: "ECON", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "workable", board: "econ-one-research", positiveUsOnly: true },
+  { company: "Kekst CNC", short: "KCNC", logoClass: "media", field: "Marketing", subField: "Communications", ats: "lever", board: "kekstcnc", positiveUsOnly: true },
+  // UK-headquartered, mostly UK reqs, so gated.
+  { company: "Cambridge Consultants", short: "CAMC", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "greenhouse", board: "cambridgeconsultantslimited", positiveUsOnly: true },
+  // tbmcg.com/available-positions embeds this ADP board.
+  { company: "TBM Consulting Group", short: "TBM", logoClass: "cons", field: "Consulting", subField: "Operations", ats: "adp", board: "a10e97c4-6dd3-4b03-bb0e-e5a8dfd59530" },
   // Prosci's careers page embeds Workable account 621396 (board name "Prosci").
   // Workable boards are usually named by slug; this one is the numeric id, which
   // the same widget route accepts.

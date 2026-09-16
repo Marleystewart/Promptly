@@ -358,7 +358,14 @@ async function fetchAshby(src) {
   const out = [];
   for (const j of jobs) {
     if (j.isListed === false) continue;
-    if (!passesUsGate(src, j.location, j.title)) continue;
+    // Ashby postings carry a structured country alongside the free-text
+    // location, and a remote req writes only "Remote" in the text. Chartis'
+    // board is 40 reqs, most of them "Remote" with
+    // address.postalAddress.addressCountry "United States" — a text-only gate
+    // reads those as un-placeable and drops a US employer's whole board.
+    const country = j.address?.postalAddress?.addressCountry;
+    if (!passesUsGate(src, j.location, j.title)
+      && !(country && passesUsGate(src, country, ""))) continue;
     const cycle = detectCycle(j.title, j.location);
     if (cycle) out.push(normalize(src, j.title, j.jobUrl, j.location, cycle, j.workplaceType || null, j.publishedAt));
   }
