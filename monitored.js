@@ -350,6 +350,7 @@ window.MONITORED_COMPANIES = [
   "Interbrand",
   "Invesco",
   "IQVIA",
+  "ISG",
   "J.S. Held",
   "Jane Street",
   "Jefferies",
@@ -518,6 +519,7 @@ window.MONITORED_COMPANIES = [
   "Prologis",
   "Propeller Consulting",
   "Prophet",
+  "Prosci",
   "Prosper Marketplace",
   "Protiviti",
   "Proudfoot",
@@ -717,8 +719,8 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 708,
-  "companies": 708,
+  "sources": 710,
+  "companies": 710,
   "byPlatform": {
     "greenhouse": 241,
     "custom": 146,
@@ -729,13 +731,13 @@ window.PROMPTLY_COVERAGE = {
     "florecruit": 11,
     "usajobs": 1,
     "taleo": 1,
-    "workable": 7,
+    "workable": 8,
     "ukg": 6,
     "adp": 3,
     "paylocity": 3,
     "pinpoint": 1,
     "recruitee": 1,
-    "jobvite": 1,
+    "jobvite": 2,
     "rippling": 1,
     "teamtailor": 1,
     "breezy": 3,
@@ -748,7 +750,7 @@ window.PROMPTLY_COVERAGE = {
   "byField": {
     "Finance": 214,
     "Technology": 72,
-    "Consulting": 189,
+    "Consulting": 191,
     "Healthcare": 57,
     "Education": 4,
     "Engineering": 57,

@@ -83,6 +83,23 @@ const titlesWhereUs = (rows) => rows.filter((r) => r.us).map((r) => r.title);
     assert.deepEqual(jobvite.map((r) => r.us), [true, false]);
     assert.equal(jobvite[0].url, "https://jobs.jobvite.com/camsyscareers/job/o1");
 
+    // Jobvite's newer career-site template (ISG): /jobs is a marketing page
+    // carrying only a Featured Jobs widget, the real list is at /search, and
+    // rows are divs rather than table cells. Both must be handled, or the
+    // board reads as empty.
+    const jobviteUrls = [];
+    respond = (url) => {
+      jobviteUrls.push(url);
+      if (url.endsWith("/jobs")) return `<div class="jv-featured-job"><a href="/isg-one/job/zz">Consulting Manager</a></div>`;
+      return `<div class="jv-job-list-name"> <a href="/isg-one/job/o1">FP&amp;A Analyst</a></div><div class="jv-job-list-location"> Stamford, CT </div>
+        <div class="jv-job-list-name"> <a href="/isg-one/job/o2">Analyst</a></div><div class="jv-job-list-location"> Frankfurt, Germany </div>`;
+    };
+    const isg = await READERS.jobvite("isg-one");
+    assert.deepEqual(isg.map((r) => r.title), ["FP&A Analyst", "Analyst"], "the div template must parse");
+    assert.deepEqual(isg.map((r) => r.us), [true, false]);
+    assert.equal(jobviteUrls.length, 2, "/jobs is tried first; /search is the fallback");
+    assert.match(jobviteUrls[1], /\/search\?nl=1&fr=true$/);
+
     // Teamtailor — RSS with tt:location nodes.
     respond = () => `<rss><channel><item><title>Junior Delay Analyst</title><link>https://careers.hka.com/jobs/1</link><pubDate>Mon, 14 Sep 2026 09:53:14 +0100</pubDate>
       <tt:locations><tt:location><tt:city>Phoenix</tt:city><tt:country>United States</tt:country></tt:location></tt:locations></item>

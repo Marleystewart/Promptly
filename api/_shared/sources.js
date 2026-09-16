@@ -711,7 +711,10 @@ const SOURCES = [
   // Putnam Associates is part of Inizio; careers.putassoc.com links straight to
   // this board, which is named "Inizio" and is mostly Gurugram — hence the gate.
   { company: "Inizio", short: "INZ", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "inizio", positiveUsOnly: true },
-  { company: "Valtech", short: "VALT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "greenhouse", board: "valtech" },
+  // Valtech is also where Kin + Carta now hires: kinandcarta.com/en/careers/
+  // is titled "Who we are | Valtech" and links valtech.com/career. Mostly
+  // non-US (131 reqs, 2 US), so gated rather than left to the blocklist.
+  { company: "Valtech", short: "VALT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "greenhouse", board: "valtech", positiveUsOnly: true },
   // synechron.com's careers page links this site. Global (India-heavy), so gated.
   { company: "Synechron", short: "SYNE", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "synechron", dc: "wd1", site: "SynechronCareers", positiveUsOnly: true },
   { company: "Nordic Consulting", short: "NORD", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "nordic", dc: "wd1", site: "Nordic" },
@@ -906,6 +909,13 @@ const SOURCES = [
   // careers.franklincovey.com is this ClearCompany board.
   { company: "FranklinCovey", short: "FC", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "hrmdirect", board: "franklincovey" },
   { company: "Avasant", short: "AVSN", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "jazzhr", board: "avasant" },
+  // ISG — isg-one.com/careers embeds this Jobvite career site; its /jobs page
+  // shows only a Featured Jobs widget, so the reader falls through to /search.
+  { company: "ISG", short: "ISG", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "jobvite", board: "isg-one" },
+  // Prosci's careers page embeds Workable account 621396 (board name "Prosci").
+  // Workable boards are usually named by slug; this one is the numeric id, which
+  // the same widget route accepts.
+  { company: "Prosci", short: "PRSC", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workable", board: "621396", positiveUsOnly: true },
   { company: "Red Nucleus", short: "RNUC", logoClass: "cons", field: "Consulting", subField: "Life Sciences", ats: "bamboohr", board: "rednucleus" },
   { company: "Nardello & Co.", short: "NRDL", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "bamboohr", board: "nardelloandco" },
   { company: "Prescient Healthcare Group", short: "PRHG", logoClass: "cons", field: "Consulting", subField: "Life Sciences", ats: "bamboohr", board: "prescienthg" },

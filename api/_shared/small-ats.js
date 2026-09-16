@@ -146,9 +146,18 @@ async function recruitee(sub) {
 
 // ── Jobvite: board = company slug (jobs.jobvite.com/<slug>/jobs) ────────────
 // Server-rendered table; no country field, so the positive text test decides.
+// Jobvite renders two templates. The older one puts each row in table cells;
+// the newer "career site" one (ISG) uses divs, serves /jobs as a marketing page
+// with only a Featured Jobs widget, and keeps the real list at
+// /search?nl=1&fr=true — the URL its own embedded iframe loads. So: try /jobs,
+// and fall back to the search page when that template turns up nothing.
+const JOBVITE_ROW = /<(?:td|div) class="jv-job-list-name">\s*<a href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<(?:td|div) class="jv-job-list-location">([\s\S]*?)<\/(?:td|div)>/g;
+
 async function jobvite(slug) {
-  const html = await getText(`https://jobs.jobvite.com/${slug}/jobs`);
-  const rows = [...html.matchAll(/<td class="jv-job-list-name">\s*<a href="([^"]+)">([\s\S]*?)<\/a>[\s\S]*?<td class="jv-job-list-location">([\s\S]*?)<\/td>/g)];
+  let rows = [...(await getText(`https://jobs.jobvite.com/${slug}/jobs`)).matchAll(JOBVITE_ROW)];
+  if (!rows.length) {
+    rows = [...(await getText(`https://jobs.jobvite.com/${slug}/search?nl=1&fr=true`)).matchAll(JOBVITE_ROW)];
+  }
   return rows.map(([, href, title, location]) => {
     const loc = clean(location);
     return {
