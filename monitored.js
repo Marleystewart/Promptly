@@ -192,6 +192,7 @@ window.MONITORED_COMPANIES = [
   "DDI",
   "DeciBio",
   "Definitive Healthcare",
+  "Deloitte",
   "Dentons Global Advisors",
   "Dentsu",
   "Dewberry",
@@ -714,11 +715,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 705,
-  "companies": 705,
+  "sources": 706,
+  "companies": 706,
   "byPlatform": {
     "greenhouse": 241,
-    "custom": 144,
+    "custom": 145,
     "workday": 153,
     "lever": 35,
     "ashby": 56,
@@ -745,7 +746,7 @@ window.PROMPTLY_COVERAGE = {
   "byField": {
     "Finance": 214,
     "Technology": 72,
-    "Consulting": 186,
+    "Consulting": 187,
     "Healthcare": 57,
     "Education": 4,
     "Engineering": 57,

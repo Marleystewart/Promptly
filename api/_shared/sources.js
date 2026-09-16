@@ -382,6 +382,8 @@ const SOURCES = [
   { company: "Ford", short: "F", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "custom", handler: "ford" },
   { company: "Mayo Clinic", short: "MAYO", logoClass: "health", field: "Healthcare", subField: "Hospital Systems", ats: "custom", handler: "mayoclinic" },
   { company: "EY", short: "EY", logoClass: "consult", field: "Consulting", subField: "Big 4", ats: "custom", handler: "ey" },
+  // Deloitte US — Avature, narrowed to its own student Hire Type facet.
+  { company: "Deloitte", short: "DTT", logoClass: "consult", field: "Consulting", subField: "Big 4", ats: "custom", handler: "deloitte" },
   { company: "ExxonMobil", short: "XOM", logoClass: "eng", field: "Engineering", subField: "Energy", ats: "custom", handler: "exxonmobil" },
   { company: "Coca-Cola", short: "KO", logoClass: "consumer", field: "Consumer", subField: "Beverages", ats: "custom", handler: "cocacola" },
   { company: "Cleveland Clinic", short: "CC", logoClass: "health", field: "Healthcare", subField: "Hospital Systems", ats: "custom", handler: "clevelandclinic" },
