@@ -93,8 +93,13 @@ async function fetchJobs2WebListings(origin, terms) {
 
 // "Spring, TX, US, 77389" -> "US";  "Noida, UP, IN, 201301" -> "IN".
 // A trailing postcode is any final segment containing a digit.
+// A multi-office req reads "Overland Park, KS, US +5 more" (Black & Veatch).
+// The "+5" contains a digit, so it used to be dropped as a postcode — taking
+// "US" with it and leaving "KS" in the country position. Strip the suffix first.
 function countryOf(location) {
-  const parts = String(location || "").split(",").map((p) => p.trim()).filter(Boolean);
+  const parts = String(location || "")
+    .replace(/\s*\+\s*\d+\s+more(?:…|\.\.\.|&hellip;)?\s*$/i, "")
+    .split(",").map((p) => p.trim()).filter(Boolean);
   while (parts.length && /\d/.test(parts[parts.length - 1])) parts.pop();
   return parts.length ? parts[parts.length - 1].toUpperCase() : "";
 }

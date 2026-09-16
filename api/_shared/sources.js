@@ -15,10 +15,22 @@
 //             (jobs.smartrecruiters.com/<CompanyIdentifier>/...)
 // Flo Recruit:{ ats:"florecruit", board:"<org-friendly-name>" }
 //             (florecruit.com/v2/app/<org-friendly-name>/jobs)
+// Small public-feed ATSs (api/_shared/small-ats.js), all { ats, board }:
+//             workable, ukg ("<host>/<TENANT>/<guid>"), adp (cid), paylocity
+//             (guid), pinpoint, recruitee, jobvite, rippling, teamtailor
+//             (host), breezy, bamboohr, jazzhr, hrmdirect (ClearCompany),
+//             hibob. US-ness comes from each feed's own country field.
+// Workday extras: positiveUsOnly (keep only affirmatively-US reqs; also works
+//             on greenhouse/lever/ashby) and workdayFacets (the board's own
+//             filter, e.g. { locationCountry: [<USA id>] } for boards that
+//             write no country in locationsText).
 // Custom:     { ats:"custom", handler:"<filename>" } — for a company with NO
 //             feed on any system above. Runs company-scrapers/<filename>.js.
 //             See company-scrapers/_template.js before adding one of these;
-//             it's the expensive fallback, not the default.
+//             it's the expensive fallback, not the default. Shared readers a
+//             handler can call: phenom, jibe, eightfold, oracle-cloud, taleo
+//             (incl. REST), avature, jobs2web, sf-careers, icims, csod, yello,
+//             talnet, brassring, radancy, findly, mmc.
 //
 // All boards below were probed and confirmed responding. Field-tinted logo
 // tiles (tech/fin/health/edu) are used for auto-pulled listings.
@@ -189,6 +201,23 @@ const SOURCES = [
   { company: "Piper Sandler", short: "PIPR", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "workday", tenant: "pipersandler", dc: "wd501", site: "Piper_Sandler_Careers" },
   { company: "GTCR", short: "GTCR", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "gtcr" },
   // Asset management
+  { company: "Battery Ventures", short: "BATT", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "batteryventures" },
+  { company: "Level Equity", short: "LVEQ", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "levelequity" },
+  { company: "Alpine Investors", short: "ALPI", logoClass: "fin", field: "Finance", subField: "Private Equity", ats: "greenhouse", board: "alpineinvestors" },
+  { company: "Thunes", short: "THNS", logoClass: "fin", field: "Finance", subField: "Payments", ats: "greenhouse", board: "thunes" },
+  { company: "Nium", short: "NIUM", logoClass: "fin", field: "Finance", subField: "Payments", ats: "lever", board: "nium" },
+  { company: "Highnote", short: "HNOT", logoClass: "fin", field: "Finance", subField: "Payments", ats: "greenhouse", board: "highnote" },
+  { company: "Beyond Finance", short: "BYND", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "beyondfinance" },
+  { company: "Pagaya", short: "PGY", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "pagaya" },
+  { company: "Lithic", short: "LTHC", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "lithic" },
+  { company: "Happy Money", short: "HPMY", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "happymoney" },
+  { company: "Treasury Prime", short: "TPRM", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "treasuryprime" },
+  { company: "Modern Treasury", short: "MTRS", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "ashby", board: "moderntreasury" },
+  { company: "Acorns", short: "ACRN", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "ashby", board: "acorns" },
+  { company: "Frec", short: "FREC", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "ashby", board: "frec" },
+  { company: "Unit", short: "UNIT", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "ashby", board: "unit" },
+  { company: "Column", short: "COLM", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "ashby", board: "column" },
+  { company: "Callan", short: "CLLN", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "lever", board: "callan" },
   { company: "Artisan Partners", short: "APAM", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "greenhouse", board: "artisanpartners" },
 
   // ═══ ADDED Sep 2026 (trey/finance-ats-feeds): watchlist → real ATS ════════
@@ -291,6 +320,22 @@ const SOURCES = [
   { company: "Flatiron Health", short: "FLAT", logoClass: "health", field: "Healthcare", ats: "greenhouse", board: "flatironhealth" },
 
   // Broader student coverage across underrepresented fields
+  { company: "Woolpert", short: "WLP", logoClass: "eng", field: "Engineering", subField: "Manufacturing", ats: "greenhouse", board: "woolpert" },
+  { company: "DLR Group", short: "DLR", logoClass: "eng", field: "Engineering", subField: "Manufacturing", ats: "greenhouse", board: "dlrgroup" },
+  { company: "Barnes & Thornburg", short: "BT", logoClass: "law", field: "Law", subField: "Big Law", ats: "ashby", board: "barnes" },
+  { company: "Turing", short: "TRNG", logoClass: "tech", field: "Technology", subField: "Software Engineering", ats: "greenhouse", board: "turing" },
+  { company: "Toptal", short: "TPTL", logoClass: "tech", field: "Technology", subField: "Software Engineering", ats: "lever", board: "toptal" },
+  { company: "Andela", short: "ANDL", logoClass: "tech", field: "Technology", subField: "Software Engineering", ats: "ashby", board: "andela" },
+  { company: "Sayari", short: "SAY", logoClass: "tech", field: "Technology", subField: "Data", ats: "greenhouse", board: "sayari" },
+  { company: "Elliptic", short: "ELPT", logoClass: "tech", field: "Technology", subField: "Data", ats: "ashby", board: "elliptic" },
+  { company: "Teague", short: "TEAG", logoClass: "eng", field: "Engineering", subField: "Manufacturing", ats: "greenhouse", board: "teague" },
+  { company: "Applied Intuition", short: "APIN", logoClass: "eng", field: "Engineering", subField: "Robotics", ats: "ashby", board: "applied" },
+  { company: "Pacific Fusion", short: "PFUS", logoClass: "eng", field: "Engineering", subField: "Energy", ats: "greenhouse", board: "pacificfusion" },
+  { company: "Xcimer Energy", short: "XCMR", logoClass: "eng", field: "Engineering", subField: "Energy", ats: "lever", board: "xcimer" },
+  { company: "Radiant", short: "RDNT", logoClass: "eng", field: "Engineering", subField: "Energy", ats: "ashby", board: "radiant" },
+  { company: "Astra", short: "ASTR", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "ashby", board: "astra" },
+  { company: "Impulse Labs", short: "IMPL", logoClass: "eng", field: "Engineering", subField: "Manufacturing", ats: "ashby", board: "impulse" },
+  { company: "Fehr & Peers", short: "FP2", logoClass: "eng", field: "Engineering", subField: "Manufacturing", ats: "lever", board: "fehrandpeers" },
   { company: "Anduril Industries", short: "AND", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "greenhouse", board: "andurilindustries" },
   { company: "Zipline", short: "ZIP", logoClass: "eng", field: "Engineering", subField: "Robotics", ats: "greenhouse", board: "flyzipline" },
   { company: "Vox Media", short: "VOX", logoClass: "media", field: "Media", subField: "Digital Media", ats: "greenhouse", board: "voxmedia" },
@@ -309,6 +354,24 @@ const SOURCES = [
   // Board name verified as "Medecins Sans Frontieres (Doctors Without Borders)
   // - United States" via /v1/boards/msfcareers, not assumed from the token.
   { company: "Doctors Without Borders", short: "MSF", logoClass: "npo", field: "Nonprofit", subField: "Humanitarian", ats: "greenhouse", board: "msfcareers" },
+  { company: "Veeva Systems", short: "VEEV", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "lever", board: "veeva" },
+  { company: "Truveta", short: "TRV2", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "truveta" },
+  { company: "HealthVerity", short: "HV", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "healthverity" },
+  { company: "Verana Health", short: "VRNA", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "veranahealth" },
+  { company: "Science 37", short: "SCI37", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "science37" },
+  { company: "Care Access", short: "CARE", logoClass: "health", field: "Healthcare", subField: "Health Systems", ats: "greenhouse", board: "careaccess" },
+  { company: "Owkin", short: "OWK", logoClass: "health", field: "Healthcare", subField: "Biotech", ats: "ashby", board: "owkin" },
+  { company: "Unlearn.AI", short: "ULRN", logoClass: "health", field: "Healthcare", subField: "Biotech", ats: "ashby", board: "unlearn" },
+  { company: "Lightship", short: "LSHP", logoClass: "health", field: "Healthcare", subField: "Health Systems", ats: "lever", board: "lightship" },
+  { company: "Sword Health", short: "SWRD", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "swordhealth" },
+  { company: "Freenome", short: "FRNM", logoClass: "health", field: "Healthcare", subField: "Biotech", ats: "greenhouse", board: "freenome" },
+  { company: "Talkspace", short: "TALK", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "talkspace" },
+  { company: "Aledade", short: "ALDE", logoClass: "health", field: "Healthcare", subField: "Health Systems", ats: "lever", board: "aledade" },
+  { company: "Everlywell", short: "EVWL", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "lever", board: "everlywell" },
+  { company: "Cedar", short: "CEDR", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "ashby", board: "cedar" },
+  { company: "Avalere Health", short: "AVLR", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "lever", board: "avalerehealth" },
+  { company: "Precision AQ", short: "PAQ", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "precisionaq" },
+  { company: "Premier Inc", short: "PINC", logoClass: "health", field: "Healthcare", subField: "Health Systems", ats: "workday", tenant: "premierinc", dc: "wd1", site: "External_Professional" },
   { company: "Oscar Health", short: "OSCR", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "oscar" },
   { company: "GSK", short: "GSK", logoClass: "health", field: "Healthcare", subField: "Pharmaceuticals", ats: "custom", handler: "gsk" },
   { company: "Genentech", short: "GENE", logoClass: "health", field: "Healthcare", subField: "Biotechnology", ats: "custom", handler: "genentech" },
@@ -324,6 +387,7 @@ const SOURCES = [
   { company: "Glossier", short: "GLOS", logoClass: "consumer", field: "Consumer", subField: "Beauty", ats: "greenhouse", board: "glossier" },
   { company: "Coursera", short: "COUR", logoClass: "edu", field: "Education", subField: "Education Technology", ats: "greenhouse", board: "coursera" },
   { company: "The Athletic", short: "ATH", logoClass: "media", field: "Sports", subField: "Sports Media", ats: "lever", board: "theathletic" },
+  { company: "Berkadia", short: "BRKD", logoClass: "consumer", field: "Real Estate", subField: "Commercial Real Estate", ats: "greenhouse", board: "berkadia" },
   { company: "VTS", short: "VTS", logoClass: "consumer", field: "Real Estate", subField: "Property Technology", ats: "greenhouse", board: "vts" },
 
   // ═══ ADDED Sep 2026 (trey/eng-sports-jackhenry): watchlist → real ATS ═════
@@ -494,6 +558,107 @@ const SOURCES = [
   { company: "AlixPartners", short: "AXP", logoClass: "consult", field: "Consulting", subField: "Restructuring", ats: "greenhouse", board: "alixpartners" },
   // Greenhouse board is literally named "West Monroe (Campus)" — a dedicated
   // student board, which is the best possible shape for this product.
+  // Consulting — Workday tenants read off each firm's live careers page.
+  // Global firms carry positiveUsOnly: their boards return every country and an
+  // unfamiliar foreign office otherwise reads as US.
+  // Accenture was held back because its Workday board returns locationsText
+  // undefined on every req, so a US role could not be told from an India one.
+  // Resolved 15 Sep 2026 with workdayFacets: the board's own Country facet is
+  // applied server-side, so every req it returns is US by construction. See the
+  // Accenture row in the round-three block below.
+  { company: "Grant Thornton", short: "GT", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "grantthornton" },
+  { company: "BDO", short: "BDO", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "bdo" },
+  { company: "BCG", short: "BCG", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "bcg" },
+  { company: "L.E.K. Consulting", short: "LEK", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "lek" },
+  { company: "ClearView Healthcare Partners", short: "CVHP", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "clearviewhealthcarepartners" },
+  { company: "Frazier & Deeter", short: "FD", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "frazierdeeter" },
+  { company: "Forvis Mazars", short: "FORV", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "forvismazars" },
+  { company: "OLIVER Agency", short: "OLV", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "oliver" },
+  { company: "VML", short: "VML", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "wundermanthompson" },
+  { company: "Zeta Global", short: "ZETA", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "greenhouse", board: "zetaglobal" },
+  { company: "Code and Theory", short: "CAT", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "greenhouse", board: "codeandtheory" },
+  { company: "Critical Mass", short: "CM", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "greenhouse", board: "criticalmass" },
+  { company: "GREY", short: "GREY", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "grey" },
+  { company: "Barbarian", short: "BARB", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "greenhouse", board: "barbarian" },
+  { company: "Instrument", short: "INST", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "lever", board: "instrument" },
+  { company: "Anomaly", short: "ANOM", logoClass: "media", field: "Marketing", subField: "Brand", ats: "lever", board: "anomaly" },
+  { company: "Viget", short: "VGT", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "lever", board: "viget" },
+  { company: "Weber Shandwick", short: "WS", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "webershandwick" },
+  { company: "FleishmanHillard", short: "FH", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "fleishmanhillard" },
+  { company: "Golin", short: "GOLN", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "golin" },
+  { company: "Method Communications", short: "MCOM", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "methodcommunications" },
+  { company: "Mission North", short: "MN", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "missionnorth" },
+  { company: "Current Global", short: "CG2", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "currentglobal" },
+  { company: "Brainlabs", short: "BRNL", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "greenhouse", board: "brainlabs" },
+  { company: "WebFX", short: "WFX", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "ashby", board: "webfx" },
+  { company: "Seer Interactive", short: "SEER", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "lever", board: "seerinteractive" },
+  { company: "LaunchSquad", short: "LSQ", logoClass: "media", field: "Marketing", subField: "Brand", ats: "lever", board: "launchsquad" },
+  { company: "Jellyfish", short: "JLY", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "ashby", board: "jellyfish" },
+  { company: "Zeno Group", short: "ZENO", logoClass: "media", field: "Marketing", subField: "Brand", ats: "ashby", board: "zeno" },
+  { company: "Fingerpaint Group", short: "FP", logoClass: "media", field: "Marketing", subField: "Brand", ats: "ashby", board: "fingerpaint" },
+  { company: "Reprise", short: "RPRS", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "ashby", board: "reprise" },
+  { company: "FGS Global", short: "FGS", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "fgsglobal" },
+  { company: "Purple Strategies", short: "PRPL", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "purplestrategies" },
+  { company: "GMMB", short: "GMMB", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "gmmb" },
+  { company: "Landor", short: "LND", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "landor" },
+  { company: "Interbrand", short: "IB", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "interbrand" },
+  { company: "Prophet", short: "PRPH", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "prophet" },
+  { company: "Definitive Healthcare", short: "DH", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "definitivehc" },
+  { company: "Huge", short: "HUGE", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "greenhouse", board: "hugeinc" },
+  { company: "AKQA", short: "AKQA", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "greenhouse", board: "akqa" },
+  { company: "Trace3", short: "TR3", logoClass: "cons", field: "Consulting", subField: "Technology Consulting", ats: "greenhouse", board: "trace3" },
+  { company: "FSG", short: "FSG", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "fsg" },
+  // Expert networks: consulting-adjacent research firms that hire analysts out
+  // of undergrad in volume.
+  { company: "Guidepoint", short: "GP", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "guidepoint" },
+  { company: "Third Bridge", short: "TB3", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "thirdbridge" },
+  { company: "AlphaSights", short: "AS", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "alphasights" },
+  { company: "Accordion", short: "ACRD", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "accordion" },
+  { company: "Pariveda", short: "PVD", logoClass: "cons", field: "Consulting", subField: "Technology Consulting", ats: "ashby", board: "pariveda" },
+  { company: "Bounteous", short: "BNTS", logoClass: "cons", field: "Consulting", subField: "Technology Consulting", ats: "lever", board: "bounteous" },
+  { company: "Morning Consult", short: "MC", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "ashby", board: "morningconsult" },
+  { company: "HCVT", short: "HCVT", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "lever", board: "hcvt" },
+  { company: "Perr&Knight", short: "PK", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "lever", board: "perrknight" },
+  { company: "Vaco", short: "VACO", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "vaco" },
+  { company: "Grassi", short: "GRSI", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "grassi" },
+  { company: "Schneider Downs", short: "SD", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "schneiderdowns" },
+  { company: "Kreischer Miller", short: "KM", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "kreischermiller" },
+  { company: "Mintel", short: "MNTL", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "mintel" },
+  { company: "Marakon", short: "MRKN", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "marakon" },
+  { company: "Catalant", short: "CTL", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ashby", board: "catalant" },
+  { company: "Graphite", short: "GRPH", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ashby", board: "graphite" },
+  // Was lever:oliverwyman — its page title is "Oliver Wyman Labs" and it holds
+  // two non-student SF tech roles. The consultancy itself hires on Marsh
+  // McLennan's shared board; see api/_shared/mmc.js for how reqs are routed.
+  { company: "Oliver Wyman", short: "OW", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "oliverwyman" },
+  { company: "IDEO", short: "IDEO", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "ideo" },
+  { company: "Cheiron", short: "CHRN", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ashby", board: "cheiron" },
+  { company: "Capco", short: "CPCO", logoClass: "cons", field: "Consulting", subField: "Technology Consulting", ats: "greenhouse", board: "capco" },
+  { company: "Baringa", short: "BRGA", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "baringa" },
+  { company: "Gallup", short: "GLP", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "gallup" },
+  { company: "BearingPoint", short: "BRPT", logoClass: "cons", field: "Consulting", subField: "Technology Consulting", ats: "greenhouse", board: "bearingpoint" },
+  { company: "Teneo", short: "TNEO", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "teneo" },
+  { company: "Brunswick Group", short: "BRNS", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "brunswickgroup" },
+  { company: "Elixirr", short: "ELXR", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "elixirr" },
+  { company: "Centri Business Consulting", short: "CNTR", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "centribusinessconsulting" },
+  { company: "LogicSource", short: "LGSC", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "logicsource" },
+  { company: "DeciBio", short: "DCBO", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "decibio" },
+  { company: "Freed Associates", short: "FREE", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "freedassociates" },
+  { company: "Cairneagle", short: "CRNE", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "cairneagle" },
+  { company: "The Berkeley Partnership", short: "TBP", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "theberkeleypartnership" },
+  { company: "CFGI", short: "CFGI", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "lever", board: "cfgi" },
+  { company: "Cprime", short: "CPRM", logoClass: "cons", field: "Consulting", subField: "Technology Consulting", ats: "lever", board: "cprime" },
+  { company: "SYPartners", short: "SYP", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "lever", board: "sypartners" },
+  { company: "The Chartis Group", short: "CHRT", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ashby", board: "chartis" },
+  { company: "Proxima", short: "PRXM", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ashby", board: "proxima" },
+  { company: "Ankura", short: "ANKR", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "ankura", dc: "wd5", site: "Ankura" },
+  { company: "Stout", short: "STOU", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "stout", dc: "wd5", site: "Stout-Student-Careers", studentBoard: true },
+  { company: "Heidrick & Struggles", short: "HSII", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "heidrick", dc: "wd1", site: "heidrickandstruggles" },
+  { company: "ICF", short: "ICFI", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "icf" },
+  { company: "The Brattle Group", short: "BRAT", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "thebrattlegroup" },
+  { company: "Protiviti", short: "PRO", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "roberthalf", dc: "wd1", site: "ProtivitiNA" },
+  { company: "RSM", short: "RSM", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "rsm", dc: "wd1", site: "RSMCareers" },
+  { company: "Genpact", short: "G", logoClass: "cons", field: "Consulting", subField: "Technology Consulting", ats: "workday", tenant: "genpact", dc: "wd108", site: "External_Careers", positiveUsOnly: true },
   { company: "West Monroe", short: "WM", logoClass: "consult", field: "Consulting", subField: "Tech Consulting", ats: "greenhouse", board: "westmonroe5" },
   { company: "Cornerstone Research", short: "CRES", logoClass: "consult", field: "Consulting", subField: "Economic Consulting", ats: "workday", tenant: "cornerstone", dc: "wd501", site: "CornerstoneResearch_Careers" },
   { company: "Baker Tilly", short: "BT", logoClass: "consult", field: "Consulting", subField: "Accounting & Advisory", ats: "workday", tenant: "bakertilly", dc: "wd5", site: "BTCareers" },
@@ -501,6 +666,256 @@ const SOURCES = [
   { company: "Riveron", short: "RIV", logoClass: "consult", field: "Consulting", subField: "Restructuring", ats: "ashby", board: "riveron" },
   { company: "Point B", short: "PTB", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "lever", board: "pointb" },
   { company: "Propeller Consulting", short: "PROP", logoClass: "consult", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "propellerconsulting" },
+
+  // ── Trey's 500-firm list, round three (15 Sep 2026) ──────────────────
+  // Earlier rounds guessed Greenhouse/Lever/Ashby tokens; these were found by
+  // reading each firm's OWN careers page for the ATS it links to, then probing
+  // it through the production fetcher. Ownership evidence per row: Greenhouse
+  // board name, Lever/Ashby page title, SmartRecruiters company name, or a
+  // Workday site linked from the employer's own domain.
+  // Workday's USA country id is global across tenants, not per-board.
+  // Accenture: board returns no locationsText, so the Country facet is what
+  // proves a req is US (see workdayFacets in aggregator.js). The city shown on
+  // a card comes from the posting path and is display-only.
+  { company: "Accenture", short: "ACN", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "accenture", dc: "wd103", site: "AccentureCareers", workdayFacets: { locationCountry: ["bc33aa3152ec42d4995f4791a106ed09"] } },
+  // A separate US-only legal entity with its own board ("Accenture Federal Services").
+  { company: "Accenture Federal Services", short: "AFS", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "greenhouse", board: "accenturefederalservices" },
+  { company: "Berkeley Research Group", short: "BRG", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "workday", tenant: "thinkbrg", dc: "wd5", site: "BRG_External_Career_Site" },
+  // Compass Lexecon is FTI-owned and sits on FTI's tenant under its own site.
+  { company: "Compass Lexecon", short: "CL", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "workday", tenant: "fticonsulting", dc: "wd108", site: "CompassLexeconCareers", positiveUsOnly: true },
+  // Board name "Secretariat". One req per office, one of which is literally
+  // "International" — positiveUsOnly keeps only the US offices.
+  { company: "Secretariat", short: "SEC2", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "greenhouse", board: "secretariatadvisorsllc", positiveUsOnly: true },
+  { company: "Energy and Environmental Economics (E3)", short: "E3", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "lever", board: "ethree" },
+  { company: "Econic Partners", short: "ECON", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "workday", tenant: "econicpartners", dc: "wd501", site: "econicpartnerscareers" },
+  { company: "Altman Solon", short: "ALTS", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "altmansolonuslp" },
+  // Two boards, one per US office — see company-scrapers/marsandco.js.
+  { company: "Mars & Co", short: "MARS", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "marsandco" },
+  // kxadvisors.com/careers links this board; its legal name is "BGBx Consulting".
+  { company: "Kx Advisors", short: "KX", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "bgbxconsulting" },
+  { company: "Trinity Life Sciences", short: "TRIN", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "workday", tenant: "trinitylifesciences", dc: "wd108", site: "Trinity" },
+  { company: "ghSMART", short: "GHS", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "lever", board: "ghsmartjobs" },
+  { company: "Kotter", short: "KOTR", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "kotterinternational" },
+  { company: "Capstone DC", short: "CAPS", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "workday", tenant: "capstonedc", dc: "wd501", site: "Capstone" },
+  // Putnam Associates is part of Inizio; careers.putassoc.com links straight to
+  // this board, which is named "Inizio" and is mostly Gurugram — hence the gate.
+  { company: "Inizio", short: "INZ", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "greenhouse", board: "inizio", positiveUsOnly: true },
+  { company: "Valtech", short: "VALT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "greenhouse", board: "valtech" },
+  // synechron.com's careers page links this site. Global (India-heavy), so gated.
+  { company: "Synechron", short: "SYNE", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "synechron", dc: "wd1", site: "SynechronCareers", positiveUsOnly: true },
+  { company: "Nordic Consulting", short: "NORD", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "nordic", dc: "wd1", site: "Nordic" },
+  { company: "General Dynamics Information Technology", short: "GDIT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "gdit", dc: "wd5", site: "External_Career_Site" },
+  { company: "Public Consulting Group", short: "PCG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "pcg", dc: "wd1", site: "PCG_External_Careers" },
+  { company: "ERM", short: "ERM", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "erm", dc: "wd3", site: "ERM_Careers", positiveUsOnly: true },
+  { company: "Connor Group", short: "CONG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "connorgp", dc: "wd12", site: "CG" },
+  // MorganFranklin now operates as Highspring; morganfranklin.com points there.
+  { company: "Highspring (MorganFranklin)", short: "HSPR", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "greenhouse", board: "morganfranklinconsultingllc" },
+  { company: "Bridgepoint Consulting", short: "BPC", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ashby", board: "bridgepoint-consulting" },
+  { company: "Customized Energy Solutions", short: "CES", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "smartrecruiters", board: "CustomizedEnergySolutions" },
+  { company: "Sia Partners", short: "SIA", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "smartrecruiters", board: "Sia" },
+  // Aspirant was acquired by Wavestone; aspirant.com's careers link lands here.
+  { company: "Wavestone (Aspirant)", short: "WAVE", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "smartrecruiters", board: "Wavestone1" },
+  // Chemonics' board is linked from chemonics.com and currently holds 0 reqs.
+  { company: "Chemonics", short: "CHEM", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "chemonics", dc: "wd108", site: "chemonics_careers", siteHost: true },
+  { company: "Wood Mackenzie", short: "WOOD", logoClass: "cons", field: "Consulting", subField: "Research & Advisory", ats: "workday", tenant: "woodmac", dc: "wd3", site: "woodmaccareers", positiveUsOnly: true },
+  { company: "S&P Global", short: "SPGI", logoClass: "fin", field: "Finance", subField: "Research & Advisory", ats: "workday", tenant: "spgi", dc: "wd5", site: "SPGI_Careers", positiveUsOnly: true },
+  { company: "Cambridge Associates", short: "CA", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "workday", tenant: "cambridgeassociates", dc: "wd5", site: "Cambridge_Associates", positiveUsOnly: true },
+  { company: "Wilshire Advisors", short: "WILS", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "smartrecruiters", board: "WilshireAdvisorsLLC" },
+  { company: "EPIC Insurance Brokers", short: "EPIC", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "greenhouse", board: "edgewoodpartnersinsurancecenter" },
+  { company: "IQVIA", short: "IQV", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "workday", tenant: "iqvia", dc: "wd1", site: "IQVIA", positiveUsOnly: true },
+  { company: "Syneos Health", short: "SYNH", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "syneoshealth", dc: "wd12", site: "Syneos_Health_External_Site", positiveUsOnly: true },
+  { company: "Cencora", short: "COR", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "workday", tenant: "myhrabc", dc: "wd5", site: "Global", positiveUsOnly: true },
+  { company: "Press Ganey", short: "PGA", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "workday", tenant: "pressganey", dc: "wd1", site: "Careers" },
+  { company: "HNTB", short: "HNTB", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "workday", tenant: "hntb", dc: "wd5", site: "HNTB_Careers" },
+  // TYLin hires on its parent Global Infrastructure Solutions' tenant, which is
+  // ~40% Spain/Canada/Brazil and writes locations as "US | IL | Chicago - …"
+  // with no country word, so the Country facet does the US filtering.
+  { company: "TYLin", short: "TYL", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "workday", tenant: "gi", dc: "wd1", site: "Global_Infrastructure", workdayFacets: { locationCountry: ["bc33aa3152ec42d4995f4791a106ed09"] } },
+  { company: "Ramboll", short: "RAMB", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "smartrecruiters", board: "Ramboll3" },
+  { company: "Edelman", short: "EDEL", logoClass: "media", field: "Marketing", subField: "Brand", ats: "workday", tenant: "djeholdings", dc: "wd5", site: "edelman-careers-E200", positiveUsOnly: true },
+  { company: "Penta Group", short: "PNTA", logoClass: "media", field: "Marketing", subField: "Brand", ats: "lever", board: "pentagrp" },
+  { company: "Blue State", short: "BLST", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "greenhouse", board: "bluestatedigital" },
+  // Marsh McLennan's businesses share one Workday board whose list reply names
+  // none of them. api/_shared/mmc.js reads it once per refresh and routes each
+  // req by the legal entity on its detail record, so a Mercer internship can
+  // never be filed under Marsh. Oliver Wyman (above) reads the same feed.
+  { company: "Mercer", short: "MRCR", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "mercer" },
+  { company: "NERA Economic Consulting", short: "NERA", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "nera" },
+  { company: "Marsh McLennan Agency", short: "MMA", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "marshmclennanagency" },
+  { company: "Marsh", short: "MRSH", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "marsh" },
+  { company: "Guy Carpenter", short: "GC", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "guycarpenter" },
+  // Phenom sites whose search page does not server-render results; both read
+  // the /widgets feed the page itself calls.
+  { company: "Crowe", short: "CRWE", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "crowe" },
+  { company: "MITRE", short: "MITR", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "mitre" },
+  // Jibe front-ends (iCIMS underneath) and Phenom sites, each on the
+  // employer's own careers domain. One file per employer in company-scrapers/.
+  { company: "ZS Associates", short: "ZS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "zs" },
+  { company: "ECG Management Consultants", short: "ECG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "ecgmc" },
+  { company: "Noblis", short: "NBLS", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "noblis" },
+  { company: "NTT DATA", short: "NTTD", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "nttdata" },
+  // Publicis Groupe runs one Jibe site for every agency; tags2 carries the
+  // brand, so each card keeps only its own reqs.
+  { company: "Publicis Sapient", short: "PSAP", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "publicissapient" },
+  { company: "Epsilon", short: "EPSL", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "custom", handler: "epsilon" },
+  { company: "Aon", short: "AON", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "aon" },
+  { company: "Gallagher", short: "AJG", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "gallagher" },
+  { company: "HUB International", short: "HUB", logoClass: "fin", field: "Finance", subField: "Insurance", ats: "custom", handler: "hubinternational" },
+  { company: "CDM Smith", short: "CDM", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "cdmsmith" },
+  { company: "Gannett Fleming TranSystems", short: "GFT", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "gftinc" },
+  { company: "TRC Companies", short: "TRC", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "trccompanies" },
+  { company: "Quest Global", short: "QST", logoClass: "eng", field: "Engineering", subField: "Manufacturing", ats: "custom", handler: "questglobal" },
+  { company: "Clarivate", short: "CLVT", logoClass: "tech", field: "Technology", subField: "Data", ats: "custom", handler: "clarivate" },
+  // Taleo's newer REST job board (portal id read off each employer's own links;
+  // see api/_shared/taleo.js). HDR was recorded as unreadable before this.
+  { company: "HDR", short: "HDR", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "hdr" },
+  { company: "Segal", short: "SGL", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "segal" },
+  // Oracle Recruiting Cloud tenants, each linked from the employer's careers page.
+  { company: "Michael Baker International", short: "MBI", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "michaelbaker" },
+  { company: "DNV", short: "DNV", logoClass: "eng", field: "Engineering", subField: "Energy", ats: "custom", handler: "dnv" },
+  { company: "The Hackett Group", short: "HCKT", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "hackett" },
+  { company: "Abt Global", short: "ABT", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "abtglobal" },
+  { company: "EXL", short: "EXLS", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "exl" },
+  { company: "Hexaware Technologies", short: "HEXA", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "hexaware" },
+  // Vizient (Kaufman Hall and Sg2 are Vizient businesses) — Eightfold.
+  { company: "Vizient", short: "VZT", logoClass: "health", field: "Healthcare", subField: "Health Systems", ats: "custom", handler: "vizient" },
+  { company: "ManTech", short: "MANT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "mantech" },
+  // SAP SuccessFactors. Wipro, HCLTech and OPEN Health are on the newer Career
+  // Site Builder, read through its JSON route (api/_shared/sf-careers.js); the
+  // rest are the older server-rendered template (jobs2web.js).
+  { company: "Wipro", short: "WIT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "wipro" },
+  { company: "HCLTech", short: "HCL", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "hcltech" },
+  { company: "LTIMindtree", short: "LTIM", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "ltimindtree" },
+  { company: "Birlasoft", short: "BSFT", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "birlasoft" },
+  { company: "OPEN Health", short: "OPEN", logoClass: "health", field: "Healthcare", subField: "Pharma", ats: "custom", handler: "openhealth" },
+  { company: "Black & Veatch", short: "BV", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "blackveatch" },
+  { company: "AVL", short: "AVL", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "custom", handler: "avl" },
+  // iCIMS portals read directly (api/_shared/icims.js). This is the iCIMS
+  // adapter from the priority list; Peraton, Kimley-Horn and Dewberry were
+  // recorded as blocked on it.
+  { company: "Peraton", short: "PERA", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "peraton" },
+  { company: "LMI", short: "LMI", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "lmi" },
+  { company: "RTI International", short: "RTI", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "rti" },
+  { company: "Analysis Group", short: "AG", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "analysisgroup" },
+  { company: "BerryDunn", short: "BDNN", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "berrydunn" },
+  { company: "Health Management Associates", short: "HMA", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "healthmanagement" },
+  { company: "Wakely Consulting Group", short: "WAKE", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "wakely" },
+  { company: "Lumanity", short: "LUMA", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "lumanity" },
+  { company: "IDC", short: "IDC", logoClass: "cons", field: "Consulting", subField: "Research & Advisory", ats: "custom", handler: "idc" },
+  { company: "Kimley-Horn", short: "KH", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "kimleyhorn" },
+  { company: "Dewberry", short: "DEW", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "dewberry" },
+  { company: "Geosyntec Consultants", short: "GEO", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "geosyntec" },
+  // Small public-feed ATSs (api/_shared/small-ats.js). Each board id was read
+  // off the employer's own careers page; US-ness comes from the feed's own
+  // country field, so the global firms here (Control Risks, dss+, HKA,
+  // Anthesis) contribute only their US offices.
+  { company: "Rystad Energy", short: "RYS", logoClass: "cons", field: "Consulting", subField: "Research & Advisory", ats: "workable", board: "rystad-energy" },
+  { company: "3Degrees", short: "3DEG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workable", board: "3degrees" },
+  { company: "Clarkston Consulting", short: "CLRK", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workable", board: "clarkston-consulting" },
+  { company: "Board of Innovation", short: "BOI", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "workable", board: "boardofinnovation" },
+  { company: "Control Risks", short: "CR", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workable", board: "control-risks-6" },
+  { company: "Corcentric", short: "CORC", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workable", board: "corcentric" },
+  { company: "Rational 360", short: "R360", logoClass: "media", field: "Marketing", subField: "Brand", ats: "workable", board: "rational" },
+  { company: "ScottMadden", short: "SMAD", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ukg", board: "recruiting.ultipro.com/SCO1003/22ca7f41-78f3-cde2-bcd8-ff0e272a1bd9" },
+  { company: "Milliman", short: "MILL", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ukg", board: "recruiting2.ultipro.com/MIL1017/f54234e9-dfde-b183-fd20-4fbdb19cba7a" },
+  { company: "Dentons Global Advisors", short: "DGA", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "ukg", board: "dgahr.rec.pro.ukg.net/DEN1502DGBV/35d54f2b-b9c1-442f-9403-035c369c012b" },
+  // Procurement Leaders is a World 50 business; procurementleaders.com links here.
+  { company: "World 50 (Procurement Leaders)", short: "W50", logoClass: "cons", field: "Consulting", subField: "Research & Advisory", ats: "ukg", board: "recruiting.ultipro.com/WOR1028WORLD/d2b84cd1-d0d3-460f-93cf-92a3b91f0a10" },
+  { company: "NEPC", short: "NEPC", logoClass: "fin", field: "Finance", subField: "Asset Management", ats: "ukg", board: "recruiting.ultipro.com/NEP1001NEPC/9b5186b6-746b-4df0-8522-90c2a5fcfa17" },
+  { company: "MarshBerry", short: "MBRY", logoClass: "fin", field: "Finance", subField: "Investment Banking", ats: "ukg", board: "recruiting.ultipro.com/MAR1036MBCI/0127d5ea-e4e8-48ee-a74a-cc71dcd13133" },
+  { company: "StoneTurn", short: "STRN", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "adp", board: "8f429b49-bae5-4749-b26e-36df29852d8d" },
+  { company: "Curinos", short: "CURI", logoClass: "cons", field: "Consulting", subField: "Research & Advisory", ats: "adp", board: "4d6d36b1-bedf-4c57-88e7-3817e50bbf21" },
+  // DAI's board is almost entirely overseas project posts; US roles are few.
+  { company: "DAI Global", short: "DAI", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "adp", board: "5745ed7b-7f8d-47a9-9161-d975aa7f3314" },
+  // Board title: "Development Dimensions International Inc".
+  { company: "DDI", short: "DDI", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "paylocity", board: "0ff3194a-0939-4c12-a4cc-729b385d05e7" },
+  { company: "Edgeworth Economics", short: "EDGE", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "paylocity", board: "84ca0b5b-570a-409a-8e91-242f0baca23d" },
+  // Board title: "FEV North America Inc".
+  { company: "FEV", short: "FEV", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "paylocity", board: "c4680135-a10e-4943-b198-09ecfe4c72ad" },
+  { company: "Anthesis Group", short: "ANTH", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "pinpoint", board: "anthesisgroup" },
+  { company: "dss+", short: "DSS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "recruitee", board: "consultdss" },
+  { company: "Cambridge Systematics", short: "CSYS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "jobvite", board: "camsyscareers" },
+  // RoseRyan is now part of ZRG Partners; roseryan.com links to this board.
+  { company: "ZRG Partners", short: "ZRG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "rippling", board: "zrg-partners-careers" },
+  { company: "HKA", short: "HKA", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "teamtailor", board: "hka.teamtailor.com" },
+  { company: "Precision Strategies", short: "PRCS", logoClass: "media", field: "Marketing", subField: "Brand", ats: "breezy", board: "precision-strategies" },
+  { company: "Siegel+Gale", short: "S+G", logoClass: "media", field: "Marketing", subField: "Brand", ats: "breezy", board: "siegel-gale" },
+  { company: "TiER1 Performance", short: "TIER", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "breezy", board: "tier1-performance" },
+  { company: "Proudfoot", short: "PRDF", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "bamboohr", board: "proudfoot" },
+  { company: "Blue Matter", short: "BLUM", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "jazzhr", board: "bluematterconsulting" },
+  // kaiserassociates.com/roles-and-open-positions links this board.
+  { company: "Kaiser Associates", short: "KAIS", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "jazzhr", board: "kaiserassociates" },
+  { company: "Culture Partners", short: "CULT", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "jazzhr", board: "culturepartners" },
+  // WTW — its own careers site server-renders results; see company-scrapers/wtw.js.
+  { company: "WTW", short: "WTW", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "wtw" },
+  // Workday tenants found by the datacenter/site probe (a wrong dc answers
+  // 422, the right dc with a wrong site 404, the right site 200), then checked
+  // against the reqs themselves. Gartner's jobs.gartner.com sits behind a
+  // Cloudflare challenge; its Workday board does not, same as J&J above.
+  { company: "Gartner", short: "IT", logoClass: "cons", field: "Consulting", subField: "Research & Advisory", ats: "workday", tenant: "gartner", dc: "wd5", site: "EXT", positiveUsOnly: true },
+  // Parsons, like Accenture, returns no locationsText; the Country facet filters.
+  { company: "Parsons", short: "PSN", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "workday", tenant: "parsons", dc: "wd5", site: "Search", workdayFacets: { locationCountry: ["bc33aa3152ec42d4995f4791a106ed09"] } },
+  // CACI's own apply links (e.g. its Summer 2027 intern reqs) go to this site.
+  { company: "CACI", short: "CACI", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "caci", dc: "wd1", site: "external", positiveUsOnly: true },
+  // Manatt Health is a practice of the law firm; manatt.com lists these reqs.
+  { company: "Manatt, Phelps & Phillips", short: "MANT2", logoClass: "law", field: "Law", subField: "Big Law", ats: "greenhouse", board: "manattphelpsphillips" },
+  // Amentum hires on the Workday tenant it inherited from PAE; locations are
+  // coded ("US-TX-Houston") — see company-scrapers/amentum.js.
+  { company: "Amentum", short: "AMTM", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "custom", handler: "amentum" },
+  // Kalypso is a Rockwell Automation company; its own Workday site refuses
+  // public reads (403), and its reqs appear on Rockwell's main site.
+  { company: "Rockwell Automation", short: "ROK", logoClass: "eng", field: "Engineering", subField: "Manufacturing", ats: "workday", tenant: "rockwellautomation", dc: "wd1", site: "External_Rockwell_Automation", positiveUsOnly: true },
+  // Both marketing sites block servers; their Apply buttons open Oracle
+  // Recruiting Cloud directly, which does not. See company-scrapers/kroll.js.
+  { company: "Kroll", short: "KRLL", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "kroll" },
+  { company: "SAIC", short: "SAIC", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "saic" },
+  { company: "Korn Ferry", short: "KFY", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "kornferry" },
+  // Found by the Workday probe; both confirmed by hiringOrganization on a req
+  // ("Alira Health SLU", "Impact Advisors LLC"). Alira is mostly Spain/France/
+  // Italy, so its Country facet filters; Impact Advisors is US-only and writes
+  // "US Remote", which positiveUsOnly would wrongly drop.
+  { company: "Alira Health", short: "ALRA", logoClass: "health", field: "Healthcare", subField: "Health Systems", ats: "workday", tenant: "alirahealth", dc: "wd3", site: "Alirahealth", workdayFacets: { locationCountry: ["bc33aa3152ec42d4995f4791a106ed09"] } },
+  { company: "Impact Advisors", short: "IMPA", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "workday", tenant: "impactadvisors", dc: "wd501", site: "Impactadvisors" },
+  // WSP's job-opportunities page links reqs straight into Oracle Recruiting Cloud.
+  { company: "WSP", short: "WSP", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "wsp" },
+  // Burns & McDonnell — Taleo REST board on its own domain; see company-scrapers/burnsmcd.js.
+  { company: "Burns & McDonnell", short: "BMCD", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "burnsmcd" },
+  { company: "Stantec", short: "STN", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "stantec" },
+  { company: "Bates White", short: "BW", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "bateswhite" },
+  // jsheld.com/careers links each req on this SmartRecruiters board ("J.S. Held LLC").
+  { company: "J.S. Held", short: "JSH", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "smartrecruiters", board: "JSHeldLLC" },
+  // The open-positions page reads this Lever board (page title "CrossCountry Consulting").
+  { company: "CrossCountry Consulting", short: "XCC", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "lever", board: "crosscountry-consulting" },
+  { company: "APCO Worldwide", short: "APCO", logoClass: "media", field: "Marketing", subField: "Brand", ats: "custom", handler: "apco" },
+  // Capgemini's own job API, US-scoped server-side; see company-scrapers/capgemini.js.
+  { company: "Capgemini", short: "CAP", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "custom", handler: "capgemini" },
+  // SmartRecruiters ids read off each firm's own job pages; for PA, one of its
+  // listed reqs (744000149388126) resolves under "PAConsulting" and no other id.
+  { company: "PA Consulting", short: "PAC", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "smartrecruiters", board: "PAConsulting" },
+  { company: "Endava", short: "DAVA", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "smartrecruiters", board: "Endava" },
+  // Health Advances: healthadvances.com is behind Cloudflare; its jobs are
+  // ClearCompany's, whose own public board is not. See company-scrapers/healthadvances.js.
+  { company: "Health Advances", short: "HADV", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "healthadvances" },
+  { company: "BTS", short: "BTS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "hrmdirect", board: "bts" },
+  { company: "RSG", short: "RSG", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "hrmdirect", board: "rsg" },
+  // iCIMS portals, confirmed by the portal's own title.
+  { company: "Cadmus", short: "CDMS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "custom", handler: "cadmus" },
+  { company: "SKDK", short: "SKDK", logoClass: "media", field: "Marketing", subField: "Brand", ats: "custom", handler: "skdk" },
+  // Cornerstone OnDemand career sites (api/_shared/csod.js).
+  { company: "Simon-Kucher", short: "SK", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "simonkucher" },
+  { company: "Mathematica", short: "MPR", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "mathematica" },
+  // HiBob careers sites, each linked from the firm's own careers page.
+  { company: "K2 Integrity", short: "K2", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "hibob", board: "k2integrity" },
+  { company: "Synpulse", short: "SYNP", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "hibob", board: "synpulse" },
+  // bursonglobal.com/careers reads this board (name "Burson"). Global, so gated.
+  { company: "Burson", short: "BRSN", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "bursonglobalcareers", positiveUsOnly: true },
+  // Kearney — Yello job board (api/_shared/yello.js). Recorded as unreadable
+  // before: its careers page renders the list with JavaScript, and the Yello
+  // board it links to only server-renders 25 rows. The board's own search route
+  // serves the rest.
+  { company: "Kearney", short: "KRNY", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "kearney" },
+  // FTI's careers page links this site; Compass Lexecon sits on the same tenant.
+  { company: "FTI Consulting", short: "FCN", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "workday", tenant: "fticonsulting", dc: "wd108", site: "FTIConsultingCareers", positiveUsOnly: true },
 
   // ── Finance, round three ──────────────────────────────────────────────
   // Two categories the registry had almost nothing in: digital-asset firms,

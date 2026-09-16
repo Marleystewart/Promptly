@@ -3,7 +3,11 @@
 // itself is client-rendered, but this endpoint returns the full job list with
 // title, full location, and the real apply URL. Reusable across any Jibe site.
 
-async function fetchJibeListings(origin, terms) {
+// `where` (optional) sees each job's raw Jibe record and decides whether to
+// keep it. Needed where one Jibe site serves several employers: Publicis
+// Groupe's lists Publicis Sapient, Epsilon, Leo and a dozen agencies side by
+// side, telling them apart only by the brand in tags2.
+async function fetchJibeListings(origin, terms, { where } = {}) {
   const seen = new Map();
   for (const term of terms) {
     for (let page = 1; page <= 5; page += 1) {
@@ -23,6 +27,7 @@ async function fetchJibeListings(origin, terms) {
       if (!jobs.length) break;
       for (const raw of jobs) {
         const job = raw.data || raw;
+        if (where && !where(job)) continue;
         const title = String(job.title || "").replace(/\s+/g, " ").trim();
         const url = String(job.apply_url || job.canonical_url || job.url || "").trim();
         if (!title || !/^https:\/\//i.test(url)) continue;

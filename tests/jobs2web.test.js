@@ -54,4 +54,11 @@ for (const location of [
   assert.equal(isUsJobs2Web(rows[0].location), true, "a multi-site US posting still reads as US");
 }
 
+// Black & Veatch writes the multi-office suffix straight after the country, with
+// no postcode between: "Overland Park, KS, US +5 more". The digit in "+5" made
+// the whole last segment look like a postcode, so "KS" took the country slot.
+assert.equal(isUsJobs2Web("Overland Park, KS, US +5 more"), true, "a +N more suffix must not hide the country");
+assert.equal(isUsJobs2Web("Overland Park, KS, US +1 more…"), true);
+assert.equal(isUsJobs2Web("Vikhroli, West Mumbai, MH, IN +2 more"), false, "the fix must not admit a foreign country");
+
 console.log("jobs2web tests passed. The country position decides, not a state-shaped code.");

@@ -67,7 +67,9 @@ const EXCLUDE_TITLE = /experienced|senior|staff|principal|\blead\b|manager|direc
 // right after "internship" for the plural form to land on. "?s" fixes both
 // singular and plural under one pattern; \binterns\b becomes redundant once
 // that's in place but is kept for clarity/no-regression.
-const INTERN_TITLE = /\bintern\b|\binterns\b|\binternships?\b|\bsummer analyst\b|\bsummer associate\b|\bco-?op\b/i;
+// "Summer Consultant" is the consulting-firm name for the same programme
+// (Bates White's "Summer Consultant—2027"); it was being dropped as not-a-role.
+const INTERN_TITLE = /\bintern\b|\binterns\b|\binternships?\b|\bsummer analyst\b|\bsummer associate\b|\bsummer consultant\b|\bco-?op\b/i;
 const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|ph\.?d\.? graduate|early career|entry[ -]?level|campus hire|rotational program|analyst program|\b3l applications?\b/i;
 // Titles that only mean "new grad" on a board that is ITSELF student-only.
 // "2027 Full Time Analyst" is the canonical campus-hire title in banking, but
@@ -81,11 +83,16 @@ const STUDENT_BOARD_TITLE = /\bfull[- ]?time (analyst|program)\b|\banalyst(?:\s+
 // avoids treating dated full-time retail roles on general boards as campus.
 const STUDENT_BOARD_ONLY_TITLE = /\bfull[- ]?time\b/i;
 const CYCLE_YEAR = /\b(2026|2027|2028)\b/;
+// "Summer 2028 Grads", "(Spring 2028 Graduates)", "2027 graduates" — a class year.
+const GRAD_YEAR = /\b(?:(?:spring|summer|fall|autumn|winter|may|december)\s+)?20\d{2}\s+grad(?:s|uates?)?\b/gi;
 const SEASON = /\b(spring|summer|fall|autumn|winter)\b/i;
 // Not a real, student-relevant job req: talent pools, mailing lists, general
 // "expression of interest" pages, and hourly production/technician roles that
 // aren't the college-intern/new-grad audience.
-const NON_ROLE = /mailing list|talent (community|network|pool)|future opportunit|join our|expression of interest|general application|prospective|interested in (an?|our)|register your interest|speculative|pipeline requisition|production technician|assembly technician|\btemporary\b/i;
+// Recruiting EVENTS are posted as reqs too: S&P Global's board carried "Exclusive
+// S&P Global Ratings Early Careers Networking Event", which "early career" alone
+// would have shown students as a New Grad job.
+const NON_ROLE = /mailing list|talent (community|network|pool)|future opportunit|join our|expression of interest|general application|prospective|interested in (an?|our)|register your interest|speculative|pipeline requisition|production technician|assembly technician|\btemporary\b|networking event|info(?:rmation(?:al)?)? session|\bwebinar\b/i;
 
 function titleCase(s) {
   return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
@@ -121,12 +128,17 @@ function detectCycle(title, location, allowUndatedIntern = true, studentBoard = 
   if (INTERNATIONAL.test(location || "") && !US_LOCATION.test(location || "")) return null;
   if (EXCLUDE_TITLE.test(title)) return null;                 // not experienced / past cycles
   if (NON_ROLE.test(title)) return null;                       // talent pools / non-reqs
-  const yearMatch = title.match(CYCLE_YEAR);
+  // A GRADUATION year is not the term. NERA's "Summer Internship (Summer 2028
+  // Grads)" is a Summer 2027 internship for the class of 2028; reading 2028 off
+  // it would file the role a year late. Drop the grad-year phrase before
+  // looking for a cycle year — unknown ("Internship") beats wrong.
+  const termTitle = title.replace(GRAD_YEAR, " ");
+  const yearMatch = termTitle.match(CYCLE_YEAR);
   if (INTERN_TITLE.test(title)) {
     if (yearMatch) {
       // Use the actual season when stated ("Fall 2026" ≠ "Summer 2026"),
       // defaulting to Summer only when no season is named.
-      const seasonMatch = title.match(SEASON);
+      const seasonMatch = termTitle.match(SEASON);
       let season = seasonMatch ? titleCase(seasonMatch[1]) : "Summer";
       if (season === "Autumn") season = "Fall";
       return `${season} ${yearMatch[1]}`;
@@ -193,6 +205,15 @@ async function fetchJson(url, options) {
   return res.json();
 }
 
+// positiveUsOnly on a Greenhouse/Lever/Ashby source: keep a req only when its
+// location affirmatively names a US place. Secretariat's board lists the same
+// internship once per office, one of them literally "International" — a word
+// the foreign-city blocklist cannot know about. Same stance as Workday's flag.
+function passesUsGate(src, location, title) {
+  if (!src.positiveUsOnly) return true;
+  return isPositiveUsLocation(location) || isPositiveUsLocation(title);
+}
+
 // ── Greenhouse: public board API, no auth ────────────────────────────────
 async function fetchGreenhouse(src) {
   const data = await fetchJson(`https://boards-api.greenhouse.io/v1/boards/${src.board}/jobs`);
@@ -200,6 +221,7 @@ async function fetchGreenhouse(src) {
   const out = [];
   for (const j of jobs) {
     const loc = (j.location || {}).name;
+    if (!passesUsGate(src, loc, j.title)) continue;
     const cycle = detectCycle(j.title, loc);
     if (cycle) out.push(normalize(src, j.title, j.absolute_url, loc, cycle, null, j.first_published || j.updated_at));
   }
@@ -215,6 +237,18 @@ async function fetchGreenhouse(src) {
 const WORKDAY_TERMS = ["intern", "new grad", "university graduate"];
 const WORKDAY_PAGES = 5; // per term, 20 per page
 
+// Accenture's board omits locationsText on every req, yet the city still rides
+// in the posting path ("/job/Chicago/Title_R00123"). Display only — it never
+// feeds a filter, because a bare city ("Bristol", "Cambridge") cannot say which
+// country it is in; the source's workdayFacets is what proves the req is US.
+function workdayPathCity(externalPath) {
+  const segment = String(externalPath || "").split("/")[2] || "";
+  let city = segment;
+  try { city = decodeURIComponent(segment); } catch {}
+  city = city.replace(/-+/g, " ").trim();
+  return /^multiple\b|^\d+ locations?$/i.test(city) ? "" : city;
+}
+
 async function fetchWorkday(src) {
   // Workday serves two host shapes. The classic one is per-tenant
   // (<tenant>.<dc>.myworkdayjobs.com); the newer one is shared
@@ -226,6 +260,12 @@ async function fetchWorkday(src) {
   const api = `${base}/wday/cxs/${src.tenant}/${src.site}/jobs`;
   const out = [];
   const seenPaths = new Set();
+  // workdayFacets: the board's OWN filter, applied server-side. Some global
+  // tenants write locations with no country at all ("US | IL | Chicago - 8755
+  // West Higgins Road" on TYLin's board, "Honolulu - 201 Merchant" on Marsh
+  // McLennan's), so neither the blocklist nor positiveUsOnly can tell a US req
+  // from a Spanish one. Their country facet can, exactly.
+  const appliedFacets = src.workdayFacets || {};
 
   for (const searchText of WORKDAY_TERMS) {
     for (let page = 0; page < WORKDAY_PAGES; page += 1) {
@@ -234,7 +274,7 @@ async function fetchWorkday(src) {
         data = await fetchJson(api, {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ appliedFacets: {}, limit: 20, offset: page * 20, searchText }),
+          body: JSON.stringify({ appliedFacets, limit: 20, offset: page * 20, searchText }),
         });
       } catch {
         break; // this term failed — try the next one rather than abandoning the source
@@ -263,7 +303,7 @@ async function fetchWorkday(src) {
         const url = src.siteHost
           ? `${base}/recruiting/${src.tenant}/${src.site}${p.externalPath}`
           : `${base}/en-US/${src.site}${p.externalPath}`;
-        out.push(normalize(src, p.title, url, p.locationsText, cycle));
+        out.push(normalize(src, p.title, url, p.locationsText || workdayPathCity(p.externalPath), cycle));
       }
       if (postings.length < 20) break;
     }
@@ -278,6 +318,7 @@ async function fetchLever(src) {
   const out = [];
   for (const j of jobs) {
     const loc = (j.categories || {}).location;
+    if (!passesUsGate(src, loc, j.text)) continue;
     const cycle = detectCycle(j.text, loc);
     if (cycle) out.push(normalize(src, j.text, j.hostedUrl, loc, cycle, null, j.createdAt));
   }
@@ -292,6 +333,7 @@ async function fetchAshby(src) {
   const out = [];
   for (const j of jobs) {
     if (j.isListed === false) continue;
+    if (!passesUsGate(src, j.location, j.title)) continue;
     const cycle = detectCycle(j.title, j.location);
     if (cycle) out.push(normalize(src, j.title, j.jobUrl, j.location, cycle, j.workplaceType || null, j.publishedAt));
   }
@@ -435,6 +477,24 @@ async function fetchTaleo(src) {
   const raw = await fetchTaleoListings(src.tenant, src.section || "1");
   const out = [];
   for (const j of raw) {
+    const cycle = detectCycle(j.title, j.location, true, Boolean(src.studentBoard));
+    if (cycle) out.push(normalize(src, j.title, j.url, j.location, cycle, null, j.postedAt || null));
+  }
+  return out;
+}
+
+// ── Small public-feed ATSs (api/_shared/small-ats.js) ─────────────────────
+// { ats:"workable"|"ukg"|"adp"|"paylocity"|"pinpoint"|"recruitee"|"jobvite"|
+//   "rippling"|"teamtailor"|"breezy"|"bamboohr"|"jazzhr"|"hrmdirect"|"hibob", board:"<that feed's id>" }
+// Each reader reports US-ness from the feed's own country field, and only US
+// reqs survive: these are mostly global consultancies (Control Risks, dss+,
+// HKA), where the foreign-city blocklist alone would leak.
+async function fetchSmallAts(src) {
+  const { fetchSmallAtsListings } = require("./small-ats");
+  const raw = await fetchSmallAtsListings(src.ats, src.board);
+  const out = [];
+  for (const j of raw) {
+    if (j.us !== true || !j.title || !/^https:\/\//i.test(j.url || "")) continue;
     const cycle = detectCycle(j.title, j.location, true, Boolean(src.studentBoard));
     if (cycle) out.push(normalize(src, j.title, j.url, j.location, cycle, null, j.postedAt || null));
   }
@@ -587,6 +647,20 @@ const FETCHERS = {
   usajobs: fetchUsaJobs,
   taleo: fetchTaleo,
   custom: fetchCustom,
+  workable: fetchSmallAts,
+  ukg: fetchSmallAts,
+  adp: fetchSmallAts,
+  paylocity: fetchSmallAts,
+  pinpoint: fetchSmallAts,
+  recruitee: fetchSmallAts,
+  jobvite: fetchSmallAts,
+  rippling: fetchSmallAts,
+  teamtailor: fetchSmallAts,
+  breezy: fetchSmallAts,
+  bamboohr: fetchSmallAts,
+  jazzhr: fetchSmallAts,
+  hrmdirect: fetchSmallAts,
+  hibob: fetchSmallAts,
 };
 
 // Run a single source's real ATS fetcher. Used both by the aggregate loop and

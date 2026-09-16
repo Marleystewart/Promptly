@@ -62,4 +62,39 @@ assert.equal(toIso(""), null);
 assert.equal(toIso("Aug 28, 2026").slice(0, 10), "2026-08-28");
 assert.equal(toIso("Jan 1, 1998"), null, "absurdly old dates are rejected");
 
+// ── REST job board (newer jobsearch.ftl sections) ─────────────────────────
+// Real HDR requisition shape, 15 Sep 2026.
+{
+  const { parseRestRequisition, restLocation } = require("../api/_shared/taleo.js");
+  const hdr = parseRestRequisition({
+    jobId: "788195", contestNo: "194646",
+    column: ["Kansas City Construction Inspection Intern", "[\"United States-Missouri-Kansas City\"]", "Aug 7, 2026"],
+  }, "hdr", "ex");
+  assert.equal(hdr.title, "Kansas City Construction Inspection Intern");
+  assert.equal(hdr.location, "Kansas City, Missouri, United States");
+  assert.equal(hdr.url, "https://hdr.taleo.net/careersection/ex/jobdetail.ftl?job=194646&lang=en");
+  assert.equal(hdr.postedAt.slice(0, 10), "2026-08-07");
+
+  // Column order is per-section config; fields are found by shape, not index.
+  const reordered = parseRestRequisition({ contestNo: "7", column: ["Analyst Intern", "Sep 1, 2026", "[\"Canada-Alberta-Calgary\"]"] }, "x", "ex");
+  assert.equal(reordered.location, "Calgary, Alberta, Canada");
+  assert.equal(reordered.postedAt.slice(0, 10), "2026-09-01");
+
+  // A hyphenated city must survive: split on the first two hyphens only.
+  assert.equal(restLocation("[\"United States-North Carolina-Winston-Salem\"]"), "Winston-Salem, North Carolina, United States");
+  assert.equal(restLocation("[\"United States-Texas-Dallas\",\"United States-Illinois-Chicago\"]"),
+    "Dallas, Texas, United States; Chicago, Illinois, United States");
+  assert.equal(parseRestRequisition({ column: ["No contest number"] }, "x", "ex"), null);
+
+  // Coded countries (Burns & McDonnell): spelled out, so Canada's "CA" can never
+  // be read as California, and a custom host is kept in the job link.
+  assert.equal(restLocation("[\"US-IL-Chicago\"]"), "Chicago, IL, United States");
+  assert.equal(restLocation("[\"CA-ON-Toronto\"]"), "Toronto, ON, Canada");
+  const { isUsLocation } = require("../api/_shared/us-location.js");
+  assert.equal(isUsLocation(restLocation("[\"CA-ON-Toronto\"]")), false, "CA in the country slot is Canada");
+  assert.equal(isUsLocation(restLocation("[\"US-TX-Fort Worth\"]")), true);
+  const custom = parseRestRequisition({ contestNo: "263512", column: ["Electrical Engineering Intern (Chicago)", "[\"US-IL-Chicago\"]", "Sep 4, 2026"] }, "apply.burnsmcd.com", "external");
+  assert.equal(custom.url, "https://apply.burnsmcd.com/careersection/external/jobdetail.ftl?job=263512&lang=en");
+}
+
 console.log(`Taleo tests passed. ${rows.length} records parsed, field offsets pinned.`);

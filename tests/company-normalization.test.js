@@ -195,11 +195,15 @@ console.log(`Company normalization tests passed. ${names.size} names, ${collisio
   // Golub Capital used to sit here as a watch-list card that fuzzy-matched the
   // monitored "Capital Group". It now has its own real source, so the near-miss
   // no longer fires and the pair is gone rather than resolved.
+  // "AstraZeneca ~ Astra" is the CIA/Intel case in the wild: Astra is a launch
+  // company, AstraZeneca is pharma. Aliasing them would make the AstraZeneca
+  // card claim we can read a feed that belongs to a rocket company.
   const REVIEWED_NOT_THE_SAME = [
-    //   Reviewed 9 Sep 2026, on adding the Gemini source: Capgemini is a French
-    //   IT services group; Gemini is the US digital-asset exchange. The fuzzy
-    //   match is pure substring coincidence.
-    "Capgemini ~ Gemini",
+    "AstraZeneca ~ Astra",
+    //   "Capgemini ~ Gemini" (reviewed 9 Sep 2026: a French IT services group
+    //   vs the US digital-asset exchange) left this list on 15 Sep 2026: the
+    //   Capgemini card is now monitored by its own source, so it resolves
+    //   exactly and is no longer a near-miss at all.
     "Genstar Capital ~ Capital Group",
     "Monroe Capital ~ Capital Group",
     "New Mountain Capital ~ Capital Group",
