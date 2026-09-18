@@ -153,14 +153,19 @@ body:not(.onboarding-active) .onboarding-shell {
 }
 
 .launch-icon {
-  width: clamp(116px, 22vw, 178px);
-  height: clamp(116px, 22vw, 178px);
+  /* Sized from the MINIMUM, because that is what a phone actually gets: 22vw
+     was 82px at 375px wide, well under the old 116px floor, so the middle term
+     never applied and every phone saw the floor. The vw term is set so it takes
+     over right at phone width and the lockup grows with the screen from there.
+     The icon:wordmark ratio is held at 1:1.29, as it was. */
+  width: clamp(142px, 38vw, 200px);
+  height: clamp(142px, 38vw, 200px);
   border-radius: 34px;
   box-shadow: 0 32px 90px rgba(16, 24, 40, 0.06), 0 0 52px rgba(128, 87, 255, 0.5);
 }
 
 .launch-wordmark {
-  width: clamp(150px, 32vw, 230px);
+  width: clamp(184px, 49vw, 258px);
   height: auto;
   border-radius: 16px;
   /* wordmark.png is white artwork drawn for a dark page, and on white it
