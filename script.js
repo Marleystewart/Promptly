@@ -3428,6 +3428,9 @@ async function initializeAuth() {
     });
     authRetryAttempt = 0;
     authStatus.textContent = "Your account securely keeps your profile and saved alerts in sync.";
+    // Must be attached before any Google tap: iOS delivers the callback URL
+    // through the plugin, and a listener registered later would miss it.
+    listenForNativeAuthCallback();
     authClient.auth.onAuthStateChange((event, session) => {
       window.setTimeout(() => {
         if (event === "PASSWORD_RECOVERY") {
@@ -3578,18 +3581,82 @@ function renderStudentHint() {
 
 document.querySelector("[data-email-input]")?.addEventListener("input", renderStudentHint);
 
+// Where Google sends the student back inside the native shell. The web build
+// can use its own origin, but the iOS app lives at capacitor://localhost —
+// an origin Google will never redirect to, and one Capacitor hands straight to
+// Safari the moment anything navigates off it. That is why TestFlight testers
+// tapped "Continue with Google", got bounced into Safari, and finished signing
+// in on the website instead of in the app. Native builds keep the consent
+// screen in an in-app browser and come back through this custom URL scheme,
+// which is registered in ios/App/App/Info.plist.
+const NATIVE_AUTH_REDIRECT = "com.thealmargroup.promptly://auth-callback";
+
 async function signInWithGoogle() {
   if (!authClient) return;
   if (authMode === "signup") sessionStorage.setItem("promptlyMigrateLocal", "1");
   else sessionStorage.removeItem("promptlyMigrateLocal");
-  const { error } = await authClient.auth.signInWithOAuth({
+  const native = isNativeShell();
+  const { data, error } = await authClient.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: window.location.origin },
+    options: native
+      ? { redirectTo: NATIVE_AUTH_REDIRECT, skipBrowserRedirect: true }
+      : { redirectTo: window.location.origin },
   });
   if (error) {
     sessionStorage.removeItem("promptlyMigrateLocal");
     setSignupError(error.message || "Google sign-in could not start.");
+    return;
   }
+  if (!native) return;
+  // skipBrowserRedirect means nothing navigated: the app owns the URL and
+  // opens it itself. The PKCE verifier was already written to this webview's
+  // storage, so the exchange below happens in the same browser that started
+  // the flow — the reason the consent screen must not be handed to Safari.
+  const Browser = window.Capacitor?.Plugins?.Browser;
+  if (!Browser || !data?.url) {
+    sessionStorage.removeItem("promptlyMigrateLocal");
+    setSignupError("Google sign-in could not start.");
+    return;
+  }
+  try {
+    await Browser.open({ url: data.url, presentationStyle: "popover" });
+  } catch {
+    sessionStorage.removeItem("promptlyMigrateLocal");
+    setSignupError("Google sign-in could not start.");
+  }
+}
+
+// The native counterpart to the callback handling in initializeAuth(): iOS
+// reopens the app on the custom scheme instead of reloading a page, so the
+// code arrives through appUrlOpen rather than window.location.
+let nativeAuthCallbackAttached = false;
+function listenForNativeAuthCallback() {
+  if (nativeAuthCallbackAttached || !isNativeShell()) return;
+  const App = window.Capacitor?.Plugins?.App;
+  if (!App) return;
+  nativeAuthCallbackAttached = true;
+  App.addListener("appUrlOpen", async ({ url }) => {
+    const callback = window.PromptlyAuthRouting.parseOAuthCallback(url || "");
+    if (!callback || !authClient) return;
+    // Dismiss the consent screen first so the student is looking at Promptly
+    // while the exchange finishes, not at a spent Google page.
+    try { await window.Capacitor?.Plugins?.Browser?.close(); } catch {}
+    try {
+      const session = await window.PromptlyAuthRouting.establishAuthSession(authClient.auth, callback);
+      if (session?.user && callback.recovery) await completePasswordReset();
+      routeAuthenticatedUser(session?.user);
+      if (!session?.user) {
+        setSignupError("Google sign-in did not complete. Please try again.");
+        showAuthEntryFallback();
+        flushDeferredProfilePaint();
+      }
+    } catch (err) {
+      sessionStorage.removeItem("promptlyMigrateLocal");
+      setSignupError(err?.message || "Google sign-in did not complete. Please try again.");
+      showAuthEntryFallback();
+      flushDeferredProfilePaint();
+    }
+  });
 }
 
 // Finish the password-reset flow: the recovery link signs the user in, then
