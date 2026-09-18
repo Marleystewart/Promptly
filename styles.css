@@ -4829,8 +4829,11 @@ body.tour-open .mobile-nav {
 .ig-card button:focus-visible { outline: 2px solid var(--purple-ink); outline-offset: 2px; }
 
 /* ── Native iOS app only ────────────────────────────────────────────────────
-   html.native-app is set by onboarding.js inside the Capacitor shell, so none
-   of this reaches the website. */
+   html.native-app is set by index.html's head script, before any CSS or
+   content, so none of this reaches the website and none of it lands late.
+   (onboarding.js sets the same class again at the end of <body>; that is a
+   harmless no-op kept so the file stands alone. It must not also rewrite the
+   viewport — see the note there.) */
 html.native-app body {
   padding-top: env(safe-area-inset-top, 0px);
   overscroll-behavior: none;
