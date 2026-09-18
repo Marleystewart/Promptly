@@ -76,4 +76,27 @@ for (const src of ["assets/app-icon.png", "assets/wordmark.png"]) {
 assert.match(htmlCss, /background: radial-gradient\([^;]*#fafafc/,
   "the cover's ground must stay the splash's #fafafc with its glow");
 
+// ── 5. The viewport is written once, before anything is visible ───────────
+// index.html's head script sets the native viewport before any CSS or content.
+// onboarding.js runs at the end of <body> and holds the same value so it can
+// still stand alone — but assigning meta[viewport].content makes WebKit
+// re-parse the viewport and re-lay out the page, and at that point the app is
+// already on screen. That relayout IS the launch jump. The late write is
+// skipped only while the two strings match exactly, so they are pinned here.
+const onboarding = fs.readFileSync(path.join(root, "onboarding.js"), "utf8");
+const headViewport = (html.match(/vp\.content = "([^"]+)"/) || [])[1];
+const lateViewport = (onboarding.match(/var wanted = "([^"]+)"/) || [])[1];
+assert.ok(headViewport, "index.html must set the native viewport in its head script");
+assert.ok(lateViewport, "onboarding.js must keep its viewport value in one named variable");
+assert.equal(
+  lateViewport,
+  headViewport,
+  "the two viewport strings must stay identical, or onboarding.js starts rewriting it after paint again"
+);
+assert.match(
+  onboarding,
+  /if \(viewport && viewport\.content !== wanted\)/,
+  "the late viewport write must stay guarded — an unconditional assignment relayouts the visible app"
+);
+
 console.log("App launch tests passed. The app opens on the website's own launch lockup.");
