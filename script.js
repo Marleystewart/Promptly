@@ -2353,6 +2353,15 @@ function isPhoneCycles() {
 // Months from the current month. 0 = now; negative = past.
 let cycmOffset = 0;
 const cycmExpanded = new Set(); // industries the student opened via "+N more"
+// The phone calendar leads with the student's own fields. Cam opened it and
+// found Finance at the top of a list he had no interest in — the groups were
+// ordered by how busy each industry was, which on this dataset means Finance
+// for everyone. A month of every industry is a wall of noise on a phone, where
+// only a few rows are visible at once.
+//
+// Phone only, by request: the desktop calendar has the room to show everything
+// and its filter selects are always on screen.
+let cycmMineOnly = true;
 
 function cycmPoint(offset = cycmOffset, now = new Date()) {
   const index = now.getUTCFullYear() * 12 + now.getUTCMonth() + offset;
@@ -2414,6 +2423,29 @@ function cycmMonthLabel(point) {
   return `${MONTH_LABELS[point.month]} ${point.year}`;
 }
 
+// The fields the student actually picked. userFields() deliberately falls back
+// to everything when nothing is chosen, which is right for the feed chips but
+// wrong here: this has to distinguish "wants these" from "has not said".
+function chosenFields() {
+  return Array.isArray(profile.fields) ? profile.fields.filter(Boolean) : [];
+}
+
+// The scope control states what the list is limited to and what tapping does.
+// Deliberately not a bare icon or a "filter" label: the student needs to know
+// the list is narrowed, or a quiet month in their own field reads as Promptly
+// having no data.
+function renderCycmScope(canPersonalize, chosen, starved) {
+  const button = document.querySelector("[data-cycm-scope]");
+  if (!button) return;
+  button.hidden = !canPersonalize;
+  if (!canPersonalize) return;
+  const showingMine = cycmMineOnly && !starved;
+  const fieldList = chosen.length <= 2 ? chosen.join(" and ") : `${chosen.length} fields`;
+  button.textContent = showingMine ? `Your fields: ${fieldList} · Show all` : "All fields · Show only yours";
+  button.setAttribute("aria-pressed", showingMine ? "true" : "false");
+  button.classList.toggle("is-mine", showingMine);
+}
+
 function renderCyclesMobile(filtered) {
   const wrap = document.querySelector("[data-cycle-mobile]");
   const list = document.querySelector("[data-cycm-list]");
@@ -2430,10 +2462,28 @@ function renderCyclesMobile(filtered) {
     btn.disabled = next < CYCM_MIN_OFFSET || next > CYCM_MAX_OFFSET;
   });
 
+  const monthItems = cycmItemsFor(filtered, point, future);
+
+  // Narrow to the student's own fields. Skipped when they have chosen none
+  // (nothing to narrow to) and when a track is explicitly selected — picking
+  // "Finance" from the dropdown IS the request, and filtering it away again
+  // would make the control look broken.
+  const chosen = chosenFields();
+  const canPersonalize = chosen.length > 0 && !cycleFilters.track;
+  const mineItems = canPersonalize ? monthItems.filter((item) => chosen.includes(item.field)) : monthItems;
+  // Never answer a narrowing with a blank screen: if the student's fields drew
+  // nothing this month, show everything and say why rather than implying there
+  // is no activity at all.
+  const starved = canPersonalize && cycmMineOnly && !mineItems.length && monthItems.length > 0;
+  const personalized = canPersonalize && cycmMineOnly && !starved;
+  const shownItems = personalized ? mineItems : monthItems;
+
+  renderCycmScope(canPersonalize, chosen, starved);
+
   // Group into industries, drop the empty ones entirely rather than reserving
   // rows for them, and lead with the busiest.
   const groups = new Map();
-  for (const item of cycmItemsFor(filtered, point, future)) {
+  for (const item of shownItems) {
     const key = timelineRowKey(item);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(item);
@@ -2447,7 +2497,11 @@ function renderCyclesMobile(filtered) {
     return;
   }
 
-  list.innerHTML = ordered.map(([name, items]) => {
+  const starvedNote = starved
+    ? `<p class="cycm-note">Nothing in ${esc(chosen.join(", "))} this month, so this shows every field.</p>`
+    : "";
+
+  list.innerHTML = starvedNote + ordered.map(([name, items]) => {
     const open = cycmExpanded.has(name);
     const shown = open ? items : items.slice(0, CYCM_VISIBLE);
     const hidden = items.length - shown.length;
@@ -5231,6 +5285,12 @@ document.querySelectorAll("[data-cycm-step]").forEach((btn) => {
     cycmExpanded.clear(); // a new month starts collapsed
     renderCyclesView();
   });
+});
+
+document.querySelector("[data-cycm-scope]")?.addEventListener("click", () => {
+  cycmMineOnly = !cycmMineOnly;
+  cycmExpanded.clear(); // group sizes change, so old expansions no longer apply
+  renderCyclesView();
 });
 
 // Tapping the month label jumps back to the current month — the fast way home
