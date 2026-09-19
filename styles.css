@@ -3606,6 +3606,40 @@ body.onboarding-active .ap-panel { display: none; }
     cursor: pointer;
   }
 
+  /* Scope control. Full width and stated in words, because a narrowed list
+     that does not announce itself reads as missing data. */
+  .cycm-scope {
+    display: block;
+    width: 100%;
+    margin: 0 0 10px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--panel-strong);
+    color: var(--muted);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 650;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  /* Narrowed is the notable state, so it carries the accent. */
+  .cycm-scope.is-mine {
+    border-color: var(--purple);
+    color: var(--purple-ink);
+  }
+
+  .cycm-note {
+    margin: 0 0 10px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    background: var(--panel-strong);
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+
   .cycm-empty {
     margin: 0;
     padding: 26px 16px;
