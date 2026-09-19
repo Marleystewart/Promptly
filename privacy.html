@@ -72,11 +72,10 @@
       <div class="legal-card good">
         <h2>Stays on your device</h2>
         <p style="margin:0">
-          Your <strong>profile photo</strong> and
-          <strong>application progress</strong> (applied, interview, offer) stay in your
-          browser. Promptly does not send them to its backend, analytics, email provider,
+          Your <strong>application progress</strong> (applied, interview, offer) stays in your
+          browser. Promptly does not send it to its backend, analytics, email provider,
           authentication provider, or an AI service. Clearing Promptly's browser data removes
-          them from that device.
+          it from that device.
         </p>
       </div>
 
@@ -116,10 +115,25 @@
         Vercel's own retention practices.
       </p>
 
+      <div class="legal-card">
+        <h2>Your profile photo</h2>
+        <p style="margin:0">
+          If you add a <strong>profile photo</strong>, it is stored with your account at our
+          authentication provider (Supabase) so it appears when you sign in on another device.
+          It is held in a private store that only your own signed-in account can read: it is
+          never shown to other students, never attached to an alert or an email, never sent to
+          an AI service, and never used for anything but drawing your own avatar in the app.
+          Promptly resizes it on your device before it is uploaded. Remove it any time from
+          <strong>Profile → Profile photo → Remove photo</strong>, and deleting your account
+          deletes it with the account. Application progress is different and still never
+          leaves your browser at all.
+        </p>
+      </div>
+
       <h2>Browser storage, cookies, and caching</h2>
       <p>
         Promptly's own code does not set cookies. It uses browser local storage for your
-        on-device profile, photo, progress, saved-list references, seen-alert
+        on-device profile, a local copy of your photo, progress, saved-list references, seen-alert
         markers, and push subscription. When you sign in, Supabase also persists the account
         session in browser storage. Signing out, restarting the demo, or deleting your data
         clears Promptly's local and session storage on that device.
@@ -214,8 +228,9 @@
         You can view and correct profile information, change each notification category,
         remove your photo, and clear a listing's progress inside the app. Open
         <strong>Profile → Settings → Delete My Data</strong> to remove the active Supabase
-        account, Promptly alert profile, saved alerts, watched-company links, queued digest,
-        unsubscribe mapping, and push subscription, and to clear this device. You can also
+        account, your profile photo, Promptly alert profile, saved alerts, watched-company
+        links, queued digest, unsubscribe mapping, and push subscription, and to clear this
+        device. You can also
         email us to request access, correction, deletion, or a copy of stored account
         information; a self-service download is not available yet.
       </p>

@@ -898,6 +898,9 @@ const profile = {
   willingToRelocate: false,
   interests: "",
   photoDataUrl: "",
+  // Set when a photo is uploaded. Lives in the account profile (not the image
+  // itself) so another device knows there is something newer to fetch.
+  photoUpdatedAt: "",
   fields: [],
   // Fields the student turned on/off by hand, kept apart from the ones inferred
   // from their major and interests (see syncInferredFields).
@@ -2954,6 +2957,9 @@ function accountProfile() {
     remoteOkay: profile.remoteOkay,
     willingToRelocate: profile.willingToRelocate,
     interests: profile.interests,
+    // The stamp only — never photoDataUrl. This object is embedded in the
+    // access token JWT; the image itself lives in Storage.
+    photoUpdatedAt: profile.photoUpdatedAt || "",
     fields: Array.isArray(profile.fields) ? profile.fields : [],
     emailNotifications: profile.emailNotifications !== false,
     pushNotifications: profile.pushNotifications !== false,
@@ -3193,6 +3199,7 @@ function applyAccountUser(user) {
       willingToRelocate: false,
       interests: "",
       photoDataUrl: "",
+      photoUpdatedAt: "",
           fields: [],
       manualFieldsOn: [],
       manualFieldsOff: [],
@@ -3205,6 +3212,10 @@ function applyAccountUser(user) {
   }
   profile.email = user?.email || profile.email;
   profile.name = profile.name || user?.user_metadata?.full_name || user?.user_metadata?.name || "";
+  // Fire and forget: a new device paints the rest of the profile now and the
+  // photo drops in when it arrives, rather than holding the screen on a
+  // download that may not exist.
+  syncRemotePhoto();
   fillProfileInputs();
   localStorage.setItem(profileStorageKey, JSON.stringify(profile));
   if (Array.isArray(remoteSaved)) {
@@ -4005,6 +4016,123 @@ async function removeWatch(id) {
   } catch {}
 }
 
+// ── Profile photo, across devices ───────────────────────────────────────────
+// The photo used to live only in localStorage. That made it vanish on a new
+// phone, which students read as the app losing their profile rather than as a
+// deliberate privacy choice — so it now belongs to the account.
+//
+// It is stored in a PRIVATE Supabase Storage bucket at "<user id>/avatar", one
+// object per account, and read back with an authenticated download rather than
+// a public URL. See supabase/migrations/20260919_avatar_storage.sql for the
+// per-user policies that make one student's path unreadable to another.
+//
+// Deliberately NOT in user_metadata: that object is embedded in the access
+// token JWT, so a photo there would be attached to every request the app makes.
+// Only the timestamp lives in the account profile, which is what tells another
+// device there is something newer to fetch.
+const AVATAR_BUCKET = "avatars";
+const photoStampStorageKey = "promptlyPhotoStamp";
+const MAX_AVATAR_EDGE = 512;
+
+function avatarObjectPath() {
+  return authUser?.id ? `${authUser.id}/avatar` : "";
+}
+
+// Downscale before upload. A modern phone camera produces several megabytes,
+// and the photo is only ever drawn into a circle a few dozen pixels wide —
+// uploading the original would cost the student's data plan and fill the
+// bucket for no visible gain. Also normalises HEIC/PNG/WebP to one JPEG, so
+// the bucket's allowed MIME list stays narrow.
+function downscaleImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("error", () => reject(new Error("Could not read that image.")));
+    reader.addEventListener("load", () => {
+      const image = new Image();
+      image.addEventListener("error", () => reject(new Error("That file is not an image Promptly can read.")));
+      image.addEventListener("load", () => {
+        const scale = Math.min(1, MAX_AVATAR_EDGE / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => (blob ? resolve({ blob, dataUrl: canvas.toDataURL("image/jpeg", 0.85) }) : reject(new Error("Could not process that image."))),
+          "image/jpeg",
+          0.85,
+        );
+      });
+      image.src = String(reader.result || "");
+    });
+    reader.readAsDataURL(file);
+  });
+}
+
+// Signed out, or accounts parked: the photo stays on this device exactly as it
+// always did. Nothing is uploaded for a user who has no account to attach it to.
+async function uploadProfilePhoto(blob) {
+  const path = avatarObjectPath();
+  if (!authClient || !authUser || !path) return false;
+  const { error } = await authClient.storage
+    .from(AVATAR_BUCKET)
+    .upload(path, blob, { upsert: true, contentType: "image/jpeg", cacheControl: "0" });
+  if (error) throw new Error(error.message || "Your photo could not be saved to your account.");
+  return true;
+}
+
+// Pull the account's photo onto this device. Called after sign-in hydration,
+// so a student who just installed the app on a second phone sees their own
+// face rather than a grey initial.
+async function fetchRemotePhoto() {
+  const path = avatarObjectPath();
+  if (!authClient || !authUser || !path) return "";
+  const { data, error } = await authClient.storage.from(AVATAR_BUCKET).download(path);
+  // A missing object is the normal case for anyone who never set a photo —
+  // it is not an error worth reporting to the student.
+  if (error || !data) return "";
+  return await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(String(reader.result || "")));
+    reader.addEventListener("error", () => resolve(""));
+    reader.readAsDataURL(data);
+  });
+}
+
+// Decide whether this device needs to go and get the photo. The stamp comes
+// from the account profile, so it is the same on every device; the local copy
+// records what this device last downloaded. Different, or no local photo at
+// all, means fetch.
+async function syncRemotePhoto() {
+  if (!authClient || !authUser) return;
+  const stamp = String(profile.photoUpdatedAt || "");
+  if (!stamp) return;
+  const localStamp = localStorage.getItem(photoStampStorageKey) || "";
+  if (stamp === localStamp && profile.photoDataUrl) return;
+  const dataUrl = await fetchRemotePhoto();
+  if (!dataUrl) return;
+  profile.photoDataUrl = dataUrl;
+  localStorage.setItem(photoStampStorageKey, stamp);
+  saveProfile();
+  updateProfilePhoto();
+}
+
+// Remove the photo from the account as well as this device. Without the
+// storage delete the image would outlive the student's decision to remove it,
+// which is the kind of gap the August privacy audit was written to catch.
+async function removeProfilePhoto() {
+  const path = avatarObjectPath();
+  profile.photoDataUrl = "";
+  profile.photoUpdatedAt = "";
+  localStorage.removeItem(photoStampStorageKey);
+  saveProfile();
+  updateProfilePhoto();
+  if (!authClient || !authUser || !path) return;
+  try {
+    await authClient.storage.from(AVATAR_BUCKET).remove([path]);
+  } catch {}
+  scheduleAccountSync();
+}
+
 function updateProfilePhoto() {
   const initial = profile.name.trim()[0]?.toUpperCase() || "P";
   document.querySelectorAll(".profile-chip, [data-photo-button]").forEach((button) => {
@@ -4027,6 +4155,10 @@ function updateProfilePhoto() {
     avatar.style.backgroundImage = profile.photoDataUrl ? `url("${profile.photoDataUrl}")` : "";
     avatar.classList.toggle("has-photo", Boolean(profile.photoDataUrl));
   });
+  // Nothing to remove when there is no photo, and an always-visible "Remove"
+  // under an empty circle reads as an error.
+  const removeButton = document.querySelector("[data-remove-photo]");
+  if (removeButton) removeButton.hidden = !profile.photoDataUrl;
 }
 
 function openProfileEditor() {
@@ -4769,6 +4901,17 @@ document.addEventListener("submit", (event) => {
 document.addEventListener("click", async (event) => {
   if (event.target.closest("[data-verify-resend]")) { event.preventDefault(); await resendVerification(); return; }
 
+  if (event.target.closest("[data-remove-photo]")) {
+    event.preventDefault();
+    await removeProfilePhoto();
+    const status = document.querySelector("[data-photo-status]");
+    if (status) {
+      status.hidden = false;
+      status.textContent = "Photo removed.";
+    }
+    return;
+  }
+
   const watchSubmitButton = event.target.closest("[data-watch-submit]");
   if (watchSubmitButton) { event.preventDefault(); await submitWatch(); return; }
   const watchRemoveButton = event.target.closest("[data-watch-remove]");
@@ -5288,16 +5431,42 @@ document.addEventListener("keydown", (event) => {
   openDetails(row.dataset.openDetails);
 });
 
-document.querySelector("[data-photo-input]")?.addEventListener("change", (event) => {
+document.querySelector("[data-photo-input]")?.addEventListener("change", async (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.addEventListener("load", () => {
-    profile.photoDataUrl = String(reader.result || "");
+  // Clear the input so picking the same file twice still fires a change.
+  event.target.value = "";
+  const status = document.querySelector("[data-photo-status]");
+  const setStatus = (message) => {
+    if (!status) return;
+    status.hidden = !message;
+    status.textContent = message || "";
+  };
+  try {
+    const { blob, dataUrl } = await downscaleImage(file);
+    // Show it immediately. The upload is what makes it follow the account, but
+    // the student should never wait on the network to see their own photo.
+    profile.photoDataUrl = dataUrl;
     saveProfile();
     applyProfileToUI();
-  });
-  reader.readAsDataURL(file);
+    if (!authClient || !authUser) {
+      setStatus("Saved on this device. Sign in to keep it across devices.");
+      return;
+    }
+    setStatus("Saving to your account…");
+    await uploadProfilePhoto(blob);
+    const stamp = new Date().toISOString();
+    profile.photoUpdatedAt = stamp;
+    localStorage.setItem(photoStampStorageKey, stamp);
+    saveProfile();
+    scheduleAccountSync();
+    setStatus("Saved to your account.");
+  } catch (error) {
+    // The photo is already on screen and in local storage at this point, so
+    // say plainly that only the account copy failed rather than implying the
+    // picture was lost.
+    setStatus(error?.message || "Saved on this device, but not to your account yet.");
+  }
 });
 
 document.querySelector(".search-panel input")?.addEventListener("input", (event) => {

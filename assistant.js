@@ -125,7 +125,7 @@
     {
       keys: ["my data", "privacy", "sell my data", "personal information", "what data", "resume safe", "is my data safe", "gdpr", "delete my data"],
       answer:
-        "Short version: Promptly never asks for your résumé, your profile photo and application progress stay on your device, and we never sell your data. We store the account and alert details needed to match and reach you — name, email, school, year, major, interests, saved alerts, and notification settings. You can delete the active account and alert data from <b>Profile → Settings → Delete My Data</b>. Provider logs and retention details are explained on the <a href=\"/privacy\">privacy page</a>.",
+        "Short version: Promptly never asks for your résumé, your application progress stays on your device, your profile photo is saved to your account so it follows you to a new phone and is readable only by you, and we never sell your data. We store the account and alert details needed to match and reach you — name, email, school, year, major, interests, saved alerts, and notification settings. You can delete the active account and alert data from <b>Profile → Settings → Delete My Data</b>. Provider logs and retention details are explained on the <a href=\"/privacy\">privacy page</a>.",
     },
     {
       keys: ["how many companies", "which companies", "what companies", "who do you track", "coverage", "do you track"],
