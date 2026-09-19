@@ -86,6 +86,21 @@ async function deleteAccount(req, res) {
     return res.status(502).json({ error: "Promptly could not finish deleting your alert data. Nothing else was deleted; please try again." });
   }
 
+  // The profile photo lives in Storage, and deleting an auth user does NOT
+  // cascade to it — the object would outlive the account and the student who
+  // asked for it to be gone. Best effort on purpose: a Storage hiccup must not
+  // block the deletion itself, and a missing object is the normal case for
+  // anyone who never set a photo. Before the auth delete, because afterwards
+  // there is no id left to build the path from.
+  try {
+    await fetch(
+      `${supabaseUrl}/storage/v1/object/avatars/${encodeURIComponent(auth.user.id)}/avatar`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${serverSecret}`, apikey: serverSecret } },
+    );
+  } catch (error) {
+    console.error("Avatar delete failed:", error && error.message ? error.message : error);
+  }
+
   const deleteResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(auth.user.id)}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${serverSecret}`, apikey: serverSecret },

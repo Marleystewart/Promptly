@@ -111,7 +111,8 @@
         <p class="auth-status" data-auth-status>Checking secure account setup...</p>
         <p class="signup-privacy-note">
           Before you continue: account and alert information is stored with our account and
-          alert providers; your profile photo stays on this device. Read
+          alert providers; your profile photo is saved to your account so it follows you to a
+          new device, and is deleted when you delete your account. Read
           <a href="/privacy">Privacy</a> and <a href="/terms">Terms</a>.
         </p>
       </div>
@@ -463,9 +464,11 @@
                   <button class="profile-photo" data-photo-button aria-label="Change profile photo">P</button>
                   <div>
                     <strong>Profile photo</strong>
-                    <small>Use a picture that feels like you.</small>
+                    <small>Use a picture that feels like you. Saved to your account, so it follows you to a new phone.</small>
+                    <button class="link-action" type="button" data-remove-photo hidden>Remove photo</button>
                   </div>
                 </div>
+                <p class="photo-status" data-photo-status hidden role="status"></p>
                 <input class="sr-only" data-photo-input type="file" accept="image/*" />
                 <div class="profile-row"><span>School</span><strong data-profile-school>Not set</strong></div>
                 <div class="profile-row"><span>Graduation year</span><strong data-profile-year>Not set</strong></div>
@@ -507,7 +510,7 @@
                 <span class="status-pill">YOUR DATA AND SAFETY</span>
                 <h2>What Promptly does with your information</h2>
                 <ul class="trust-list">
-                  <li><b>Your profile photo never leaves this device.</b> It is stored in your browser only — we have no copy.</li>
+                  <li><b>Your profile photo is yours alone.</b> It is stored with your account so it follows you to a new phone, readable only by you, never shown to other students or shared with anyone, and deleted when you remove it or delete your account.</li>
                   <li><b>We never sell your data.</b> Not to advertisers, not to data brokers, not to recruiters.</li>
                   <li><b>We never apply for you.</b> Every alert links to the employer's own official posting.</li>
                   <li><b>Promptly is free, and always will be for students.</b> If any posting asks you to pay to apply, it is a scam — tell us and we will pull the source.</li>

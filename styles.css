@@ -2131,6 +2131,34 @@ input[type="checkbox"] {
   border: 1px solid var(--line);
 }
 
+/* The caption grew when the photo started following the account, and an
+   inline label ran straight into it. */
+.profile-photo-row strong { display: block; }
+
+/* "Remove photo" sits under the photo caption. A link rather than a button:
+   it is a rare, reversible action and should not compete with the photo
+   itself for attention. --purple-ink measures 6.34:1 on white. */
+.link-action {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--purple-ink);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Upload feedback. role="status" on the element announces changes, so this
+   only has to carry the visual weight of secondary text. */
+.photo-status {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .profile-photo {
   width: 62px;
   height: 62px;
