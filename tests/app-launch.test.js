@@ -99,4 +99,28 @@ assert.match(
   "the late viewport write must stay guarded — an unconditional assignment relayouts the visible app"
 );
 
+// ── 6. Page links must carry a file extension ─────────────────────────────
+// Capacitor's CapacitorRouter (node_modules/@capacitor/ios/.../Router.swift):
+//
+//     if pathUrl.pathExtension.isEmpty { return basePath + "/index.html" }
+//
+// So inside the app a link to "/privacy" does not 404 — it silently serves
+// index.html, and tapping Privacy bounces the student back to the home screen.
+// The website only made those work because vercel.json sets cleanUrls: true,
+// which the app has no equivalent of. Linking to the real filename works in
+// both: the app serves the file, and Vercel 308s /privacy.html to /privacy.
+// The service worker precaches the .html names too, so this is also what makes
+// those pages available offline on the web.
+const PAGES = ["privacy", "terms", "how-it-works"];
+for (const file of ["index.html", "privacy.html", "terms.html", "how-it-works.html", "assistant.js"]) {
+  const body = fs.readFileSync(path.join(root, file), "utf8");
+  for (const page of PAGES) {
+    assert.doesNotMatch(
+      body,
+      new RegExp(`href=\\\\?"/${page}"`),
+      `${file}: href="/${page}" serves index.html inside the app — link to ${page}.html instead`
+    );
+  }
+}
+
 console.log("App launch tests passed. The app opens on the website's own launch lockup.");
