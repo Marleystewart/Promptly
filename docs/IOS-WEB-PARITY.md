@@ -84,7 +84,24 @@ launch — the same string that was already there, but assigning it at all makes
 WebKit re-parse the viewport and relayout, after the app is visible. Now guarded
 so it only writes when the value would actually change.
 
-### 3. The lockup was too small on a phone — FIXED
+### 3. Privacy, Terms and How-it-works opened the home screen — FIXED
+
+Capacitor's router (`node_modules/@capacitor/ios/.../Router.swift`):
+
+```swift
+if pathUrl.pathExtension.isEmpty { return basePath + "/index.html" }
+```
+
+A path with no file extension is served `index.html`. So `/privacy` in the app
+did not 404 — it silently re-served the home screen, with no error to explain
+it. Those links only worked on the website because `vercel.json` sets
+`cleanUrls: true`, which the app has no equivalent of. 19 links, including the
+just-in-time notice on the sign-up screen — the one link App Store review
+checks. Now linked by filename, which works in both places, and which also
+fixes the website offline: `service-worker.js` precaches the `.html` names, so
+the clean-URL links were a cache miss on every visit.
+
+### 4. The lockup was too small on a phone — FIXED
 
 Both sizes were `clamp(min, 22vw, max)`, but 22vw is 82px on a 375px phone —
 under the 116px floor. The middle term never applied on any phone, so the icon
@@ -125,6 +142,20 @@ shell simulated. These need a real device:
 - **10 × `100vh` with no `dvh` fallback.** Worth doing, but it changes nothing
   in the app: a webview has no collapsing toolbar, so `vh` and `dvh` are equal
   there. It repairs the mobile *website*.
+
+## Building for TestFlight
+
+Two things bite here, and both are silent.
+
+1. **`npm install` first.** `ios/App/CapApp-SPM/Package.swift` declares a local
+   path dependency on `../../../node_modules/@capacitor/push-notifications`.
+   With node_modules absent — as it was on a fresh checkout here — SPM cannot
+   resolve and Xcode will not build at all.
+2. **`npm run ios:sync` after every web change.** `ios/App/App/public` is the
+   copy of `www/` that actually ships, and it is gitignored, so it is never in
+   the repo and never updated by pulling. Skip the sync and you build a stale
+   bundle that looks fine — this happened mid-audit: the synced copy had the
+   launch fix but not the link fix, because the sync predated it.
 
 ## Before shipping
 
