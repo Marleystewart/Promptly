@@ -311,7 +311,11 @@ const SOURCES = [
   { company: "Vatic Labs", short: "VATC", logoClass: "fin", field: "Finance", subField: "Quant Trading", ats: "greenhouse", board: "vaticlabs" },
   { company: "Marshall Wace", short: "MW", logoClass: "fin", field: "Finance", subField: "Hedge Fund", ats: "greenhouse", board: "mwinternshipprogram", studentBoard: true },
   // Finance — fintech
-  { company: "Nubank", short: "NU", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "nubank" },
+  // Moved off Greenhouse (that board is now empty) to Ashby, which
+  // international.nubank.com.br/careers links. Brazilian company: the board
+  // is mostly São Paulo, Ciudad de México and Bogotá, with a real US office
+  // in Palo Alto and Miami. The blocklist separates them.
+  { company: "Nubank", short: "NU", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "ashby", board: "nubank" },
   // Technology
   { company: "DoorDash", short: "DASH", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "doordashusa" },
   // Moved off Greenhouse (404) to Workday; postman.com/company/careers links

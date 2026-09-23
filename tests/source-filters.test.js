@@ -142,7 +142,10 @@ function stub(handler) {
     // US". Rome NY, Melbourne FL, Vancouver WA and North Wales PA are the real
     // rows that a naive foreign-city check threw away.
     for (const loc of ["Aarhus", "København K", "Ho Chi Minh City", "Beirut", "Aalborg",
-                       "Tianjin, Tianjin", "Wuxi, Jiangsu", "Suzhou, Jiangsu"]) {
+                       "Tianjin, Tianjin", "Wuxi, Jiangsu", "Suzhou, Jiangsu",
+                       // Nubank writes its Mexican office in Spanish; the list
+                       // only knew the English "Mexico City".
+                       "Ciudad de México", "Ciudad de Mexico"]) {
       assert.equal(detectCycle("Summer Intern 2027", loc), null, `${loc} is not a US location`);
     }
     for (const loc of ["Rome, NY", "Melbourne, FL", "Vancouver, WA", "North Wales, PA",

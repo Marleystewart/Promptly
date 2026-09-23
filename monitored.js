@@ -728,11 +728,11 @@ window.PROMPTLY_COVERAGE = {
   "sources": 716,
   "companies": 716,
   "byPlatform": {
-    "greenhouse": 239,
+    "greenhouse": 238,
     "custom": 147,
     "workday": 156,
     "lever": 37,
-    "ashby": 56,
+    "ashby": 57,
     "smartrecruiters": 19,
     "florecruit": 11,
     "usajobs": 1,
