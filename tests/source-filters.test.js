@@ -128,6 +128,28 @@ function stub(handler) {
     assert.equal(flipStateFirst("ZZ-Nowhere"), "ZZ-Nowhere", "a two-letter code that is not a US state is not a state");
     assert.equal(flipStateFirst("Amsterdam, NH"), "Amsterdam, NH", "only the state-first shape is touched");
 
+    // ── US-only: the leaks a full run actually found ─────────────────────
+    // Reading all 716 sources showed foreign student roles reaching US
+    // students: Dentsu's DAN_GLOBAL board (Aarhus, København, Ho Chi Minh
+    // City, Beirut), Caterpillar (Wuxi, Tianjin, Suzhou) and Balyasny
+    // (Aalborg). Dentsu and Caterpillar are gated by their own Workday country
+    // facet; these cities are also added to the blocklist so no future source
+    // reintroduces them.
+    //
+    // The other half matters just as much: the blocklist is deliberately
+    // permissive, and every one of these US towns MATCHES a foreign name in
+    // it. They survive only because the guard is "blocked AND not positively
+    // US". Rome NY, Melbourne FL, Vancouver WA and North Wales PA are the real
+    // rows that a naive foreign-city check threw away.
+    for (const loc of ["Aarhus", "København K", "Ho Chi Minh City", "Beirut", "Aalborg",
+                       "Tianjin, Tianjin", "Wuxi, Jiangsu", "Suzhou, Jiangsu"]) {
+      assert.equal(detectCycle("Summer Intern 2027", loc), null, `${loc} is not a US location`);
+    }
+    for (const loc of ["Rome, NY", "Melbourne, FL", "Vancouver, WA", "North Wales, PA",
+                       "Pojoaque, New Mexico", "United States-Florida-Melbourne"]) {
+      assert.ok(detectCycle("Summer Intern 2027", loc), `${loc} is a US town and must survive the blocklist`);
+    }
+
     console.log("Source filter tests passed. US gates, Workday facets, and event exclusion hold.");
   } finally {
     global.fetch = realFetch;

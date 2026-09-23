@@ -314,7 +314,9 @@ const SOURCES = [
   { company: "Nubank", short: "NU", logoClass: "fin", field: "Finance", subField: "Fintech", ats: "greenhouse", board: "nubank" },
   // Technology
   { company: "DoorDash", short: "DASH", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "doordashusa" },
-  { company: "Postman", short: "PSTM", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "postman" },
+  // Moved off Greenhouse (404) to Workday; postman.com/company/careers links
+  // it. Gated — the same board carries Bangalore reqs.
+  { company: "Postman", short: "PSTM", logoClass: "tech", field: "Technology", ats: "workday", tenant: "postman", dc: "wd108", site: "careers", positiveUsOnly: true },
   { company: "LaunchDarkly", short: "LD", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "launchdarkly" },
   { company: "CockroachDB", short: "CRDB", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "cockroachlabs" },
   { company: "Webflow", short: "WFLO", logoClass: "tech", field: "Technology", ats: "greenhouse", board: "webflow" },
@@ -353,7 +355,8 @@ const SOURCES = [
   { company: "Zoox", short: "ZOOX", logoClass: "eng", field: "Engineering", subField: "Robotics", ats: "lever", board: "zoox" },
   { company: "Nuro", short: "NURO", logoClass: "eng", field: "Engineering", subField: "Robotics", ats: "greenhouse", board: "nuro" },
   { company: "Lucid Motors", short: "LCID", logoClass: "eng", field: "Engineering", subField: "Automotive", ats: "greenhouse", board: "lucidmotors" },
-  { company: "Shield AI", short: "SHLD", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "ashby", board: "shield-ai" },
+  // Moved off Ashby (that board now 404s) to Lever; shield.ai/careers links it.
+  { company: "Shield AI", short: "SHLD", logoClass: "eng", field: "Engineering", subField: "Aerospace & Defense", ats: "lever", board: "shieldai", positiveUsOnly: true },
   { company: "Gopuff", short: "GPUF", logoClass: "consumer", field: "Consumer", subField: "Retail", ats: "lever", board: "gopuff" },
   { company: "Wikimedia Foundation", short: "WIKI", logoClass: "npo", field: "Nonprofit", subField: "Technology & Knowledge", ats: "greenhouse", board: "wikimedia" },
   // Board name verified as "Medecins Sans Frontieres (Doctors Without Borders)
@@ -402,7 +405,10 @@ const SOURCES = [
   { company: "Glossier", short: "GLOS", logoClass: "consumer", field: "Consumer", subField: "Beauty", ats: "greenhouse", board: "glossier" },
   { company: "Coursera", short: "COUR", logoClass: "edu", field: "Education", subField: "Education Technology", ats: "greenhouse", board: "coursera" },
   { company: "The Athletic", short: "ATH", logoClass: "media", field: "Sports", subField: "Sports Media", ats: "lever", board: "theathletic" },
-  { company: "Berkadia", short: "BRKD", logoClass: "consumer", field: "Real Estate", subField: "Commercial Real Estate", ats: "greenhouse", board: "berkadia" },
+  // Moved off Greenhouse (404) to Workday. Gated: the same board carries
+  // Hyderabad reqs, and berkadia.com also has a separate "berkadiaindia"
+  // Greenhouse board that is not this card.
+  { company: "Berkadia", short: "BRKD", logoClass: "consumer", field: "Real Estate", subField: "Commercial Real Estate", ats: "workday", tenant: "berkadia", dc: "wd1", site: "Berkadia", positiveUsOnly: true },
   { company: "VTS", short: "VTS", logoClass: "consumer", field: "Real Estate", subField: "Property Technology", ats: "greenhouse", board: "vts" },
 
   // ═══ ADDED Sep 2026 (trey/eng-sports-jackhenry): watchlist → real ATS ═════
@@ -546,8 +552,13 @@ const SOURCES = [
   { company: "Cigna", short: "CI", logoClass: "health", field: "Healthcare", ats: "workday", tenant: "cigna", dc: "wd5", site: "cignacareers" },
   { company: "RAND Corporation", short: "RAND", logoClass: "gov", field: "Government", ats: "workday", tenant: "rand", dc: "wd5", site: "External_Career_Site" },
   { company: "Live Nation", short: "LYV", logoClass: "media", field: "Media", ats: "workday", tenant: "livenation", dc: "wd503", site: "LNExternalSite" },
-  { company: "Dentsu", short: "DNTS", logoClass: "mkt", field: "Marketing", ats: "workday", tenant: "dentsuaegis", dc: "wd3", site: "DAN_GLOBAL" },
-  { company: "Caterpillar", short: "CAT", logoClass: "eng", field: "Engineering", ats: "workday", tenant: "cat", dc: "wd5", site: "CaterpillarCareers" },
+  // DAN_GLOBAL is exactly that: 892 reqs, and the student roles reaching US
+  // students were Aarhus, København, Ho Chi Minh City and Beirut. Its own
+  // country facet cuts it to the 123 that are US.
+  { company: "Dentsu", short: "DNTS", logoClass: "mkt", field: "Marketing", ats: "workday", tenant: "dentsuaegis", dc: "wd3", site: "DAN_GLOBAL", workdayFacets: { locationCountry: ["bc33aa3152ec42d4995f4791a106ed09"] } },
+  // Global board — Wuxi, Tianjin and Suzhou reqs were reaching US students.
+  // The country facet takes 1,025 reqs down to the 531 that are US.
+  { company: "Caterpillar", short: "CAT", logoClass: "eng", field: "Engineering", ats: "workday", tenant: "cat", dc: "wd5", site: "CaterpillarCareers", workdayFacets: { locationCountry: ["bc33aa3152ec42d4995f4791a106ed09"] } },
   { company: "Howard Hughes (HHMI)", short: "HHMI", logoClass: "sci", field: "Science", ats: "workday", tenant: "hhmi", dc: "wd1", site: "External" },
   { company: "Teach For America", short: "TFA", logoClass: "npo", field: "Nonprofit", ats: "workday", tenant: "teachforamerica", dc: "wd1", site: "TFA_Careers" },
   { company: "American Red Cross", short: "ARC", logoClass: "npo", field: "Nonprofit", ats: "workday", tenant: "americanredcross", dc: "wd1", site: "American_Red_Cross_Careers" },
@@ -616,7 +627,8 @@ const SOURCES = [
   { company: "Purple Strategies", short: "PRPL", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "purplestrategies" },
   { company: "GMMB", short: "GMMB", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "gmmb" },
   { company: "Landor", short: "LND", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "landor" },
-  { company: "Interbrand", short: "IB", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "interbrand" },
+  // Both live student reqs were Cologne; gated so a German role never shows.
+  { company: "Interbrand", short: "IB", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "interbrand", positiveUsOnly: true },
   { company: "Prophet", short: "PRPH", logoClass: "media", field: "Marketing", subField: "Brand", ats: "greenhouse", board: "prophet" },
   { company: "Definitive Healthcare", short: "DH", logoClass: "health", field: "Healthcare", subField: "Health Technology", ats: "greenhouse", board: "definitivehc" },
   { company: "Huge", short: "HUGE", logoClass: "media", field: "Marketing", subField: "Digital Media", ats: "greenhouse", board: "hugeinc" },
