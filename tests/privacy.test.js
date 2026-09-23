@@ -71,8 +71,13 @@ assert.match(testPush, /requestedEndpoint\s*!==\s*storedEndpoint/);
 for (const disclosure of ["Supabase", "jsDelivr", "Upstash", "Resend", "Vercel", "session-replay", "large-language-model"]) {
   assert.match(policy, new RegExp(disclosure, "i"), `privacy page must disclose ${disclosure}`);
 }
-assert.match(index, /signup-privacy-note[\s\S]*href="\/privacy"[\s\S]*href="\/terms"/,
-  "account collection must include a just-in-time privacy and terms notice");
+// Extension-bearing hrefs, not "/privacy". Capacitor's router serves
+// index.html for any path without a file extension, so inside the iOS app the
+// clean URLs silently bounced back to the home screen — this notice's links
+// included, which is the one link App Store review checks. See
+// tests/app-launch.test.js, which forbids the clean form.
+assert.match(index, /signup-privacy-note[\s\S]*href="privacy\.html"[\s\S]*href="terms\.html"/,
+  "account collection must include a just-in-time privacy and terms notice, linked so the app can open it");
 
 // The policy must describe the two stores as they actually differ, not as one
 // undifferentiated blob — it is the difference students are being asked to
