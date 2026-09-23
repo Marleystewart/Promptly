@@ -436,3 +436,77 @@ this number as the registry grows.
 That run is also how a dead source was found: Alpine Investors' Greenhouse board
 404s — it moved to Ashby. **Time the whole registry occasionally; it is the only
 check that notices a board that quietly went away.**
+
+## 500-firm list, round five (22-23 Sep 2026)
+
+Round four closed at 375 of 500 with 86 "not addable". This round re-attacked
+those, and the headline is a method error rather than a set of new walls.
+
+### The miss: every sweep had only read careers LANDING pages
+
+48 of the 86 were recorded as "no job board found: careers page has no ATS
+link, feed or embed". That was true of the page each sweep looked at, and
+wrong about the firm. The board is routinely on a careers SUBPAGE:
+
+| Firm | Landing page | Where the board actually is |
+|---|---|---|
+| Logic20/20 | nothing | `/careers/join-the-team/` — SmartRecruiters `Logic2020Inc` |
+| Centric Consulting | `/careers/` 404s | `/about-us/careers/` — Taleo Business Edition |
+| GEP | nothing | `/careers/join-us/campus-connect` — iCIMS (dead, see below) |
+| Credera | nothing | `/careers/students` — Greenhouse (dead, see below) |
+
+Following one level of careers subpages, and scanning each subpage's own JS
+bundles, is now the baseline. Landing-page-only sweeps produce false walls.
+
+### Taleo Business Edition is a second Taleo, and it needs two requests
+
+`phg.tbe.taleo.net` is a different product from the `careersection` Taleo in
+`taleo.js`; they share a brand and nothing else. Asking `/searchResults`
+directly returns the search FORM — 200, 98KB, no rows, no error — which is
+indistinguishable from an employer with nothing open. `/jobSearch` first issues
+a JSESSIONID; the results only exist for a caller carrying it. Ten rows a page,
+paging on `rowFrom`. See `api/_shared/tbe.js`.
+
+That also settles an old ambiguity: slug-guessing had found three "centric"
+boards (a Dutch IT firm, a Kansas City builder, a construction outfit) and
+rejected all three without finding the real one.
+
+### Boards the firm itself links, and which are dead
+
+Worth separating from "we could not find it" — these were found, and are gone:
+
+- **Credera** embeds Greenhouse `crederacampuses` on its students page. That
+  board 404s, and the page's "apply here" link loops back to it. Their own
+  student board is broken.
+- **GEP** links iCIMS `jobsamericas-gep`, which answers with iCIMS' own
+  decommissioned-portal page: `gone: jobsamericas-gep.icims.com : dc409`. Every
+  GEP variant tried (`gep`, `careers-gep`, `jobs-gep`, `gepcareers`,
+  `jobsindia-apac-gep`) returns the same. GEP has left iCIMS.
+
+### No board because there is no board
+
+Eight firms take applications by email, which is a real answer rather than a
+failed search — there is nothing to monitor and never will be until they adopt
+an ATS:
+
+Bully Pulpit (`jobs@bpigroup.com`), Genesis Research (`careers@genesisrg.com`),
+Hattaway (`hr@hattaway.com`), NovaRest (`careers@novarest.com`), Patomak
+(`jobs@patomak.com`), Wolff Olins (`talent@wolffolins.com`), Boston Strategic
+Partners (`info@bostonsp.com`), and GEP/Jump Associates/Maine Pointe/Nagarro on
+generic company addresses.
+
+**Epsilon Economics has no DNS at all** — the firm's site is gone.
+
+**Persistent Systems** redirects to `validate.perfdrive.com`, a Radware bot
+check. Off-limits, as ever.
+
+### Method note for next time
+
+The three techniques that found everything this round, in order of yield:
+
+1. Follow careers subpages, and scan their JS bundles — not just the landing page.
+2. Classify what is actually on the page (ATS / email / nothing), so a firm
+   without a board gets a status instead of another sweep.
+3. When a board answers 200 but shows no rows, check whether it wants a session
+   before concluding it is empty. That single check was the difference between
+   "Centric has no board" and 24 live requisitions.

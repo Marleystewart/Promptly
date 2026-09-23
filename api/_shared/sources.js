@@ -980,6 +980,11 @@ const SOURCES = [
   // Cornerstone OnDemand career sites (api/_shared/csod.js).
   { company: "Simon-Kucher", short: "SK", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "simonkucher" },
   { company: "Mathematica", short: "MPR", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "mathematica" },
+  // Logic20/20 — SmartRecruiters. Recorded as "no job board found" because the
+  // board is on a careers SUBPAGE (/careers/join-the-team/), not the careers
+  // landing page, which is all any earlier sweep looked at.
+  { company: "Logic20/20", short: "L2020", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "smartrecruiters", board: "Logic2020Inc" },
+
   // Centric Consulting — Taleo Business Edition (api/_shared/tbe.js).
   // Recorded as "no job board found" because its careers page is at
   // /about-us/careers/, not /careers/, and because the board it links answers a

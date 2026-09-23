@@ -402,6 +402,7 @@ window.MONITORED_COMPANIES = [
   "LMI",
   "LoanCore Capital",
   "Lockton",
+  "Logic20/20",
   "LogicSource",
   "Lone Pine Capital",
   "Lord Abbett",
@@ -726,15 +727,15 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 717,
-  "companies": 717,
+  "sources": 718,
+  "companies": 718,
   "byPlatform": {
     "greenhouse": 238,
     "custom": 147,
     "workday": 156,
     "lever": 37,
     "ashby": 57,
-    "smartrecruiters": 19,
+    "smartrecruiters": 20,
     "florecruit": 11,
     "usajobs": 1,
     "taleo": 1,
@@ -758,7 +759,7 @@ window.PROMPTLY_COVERAGE = {
   "byField": {
     "Finance": 214,
     "Technology": 72,
-    "Consulting": 197,
+    "Consulting": 198,
     "Healthcare": 57,
     "Education": 4,
     "Engineering": 57,
