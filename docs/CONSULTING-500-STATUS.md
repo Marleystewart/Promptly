@@ -4,19 +4,25 @@ Checked 16 Sep 2026, after round four. Generated from the classification behind
 the round-three and round-four commits on `trey/min-age-18`; the reasons for
 every wall are in [`SOURCE-HUNTING-FINDINGS.md`](SOURCE-HUNTING-FINDINGS.md).
 
+Round five went back at the 86 remaining walls. The important correction is
+that 48 of them were mis-filed: every earlier sweep read only careers LANDING
+pages, and the board is routinely on a subpage. It also separates, for the
+first time, firms with no readable board from firms with **no board at all** —
+eight take applications by email, and one no longer has a website.
+
 Round four went back at the firms round three had given up on. Deloitte, PwC and
 KPMG all have cards now, which is most of the jump in the table below: a single
 Big Four firm carries dozens of the list's entries as practice areas.
 
 | | Entries |
 |---|---|
-| Covered by a live card now | **375** of 500 |
+| Covered by a live card now | **377** of 500 |
 | - live before this round | 71 |
-| - added this round | 177 |
+| - added | 179 |
 | - a practice area of a firm with a live card | 127 |
-| Not addable (no readable feed, or bot protection) | 86 |
+| Not addable (no readable feed, bot protection, or no board at all) | 83 |
 | - a practice area of a firm that is not addable (IBM, Slalom, Cognizant...) | 13 |
-| No US hiring to monitor | 26 |
+| No US hiring to monitor | 27 |
 
 A job board is per employer, not per practice, so "Monitor Deloitte" and
 "Deloitte Human Capital" are the same board as Deloitte. Entry #50 is missing
@@ -111,7 +117,7 @@ from the original list.
 | 85 | Capco | Live (before this round) | Capco |
 | 86 | Eagle Hill Consulting | **Added** | Eagle Hill Consulting |
 | 87 | Kin + Carta | Same firm | → Valtech (kinandcarta.com/careers is now titled "Who we are \| Valtech") |
-| 88 | Credera | Not addable | Credera: no job board found: careers page has no ATS link, feed or embed |
+| 88 | Credera | Not addable | Credera: its students page embeds Greenhouse `crederacampuses`, which 404s — their own board is dead |
 | 89 | Hitachi Solutions | **Added** | Hitachi Solutions |
 | 90 | Slalom Build | Same firm (not addable) | → Slalom |
 | 91 | West Monroe Digital | Same firm | → West Monroe |
@@ -177,7 +183,7 @@ from the original list.
 | 151 | FTI Delta | Same firm | → FTI Consulting |
 | 152 | Baringa | Live (before this round) | Baringa |
 | 153 | Argon & Co | Not addable | Argon & Co: no job board found: careers page has no ATS link, feed or embed |
-| 154 | GEP | Not addable | GEP: no job board found: careers page has no ATS link, feed or embed |
+| 154 | GEP | Not addable | GEP: its campus page links iCIMS `jobsamericas-gep`, which returns iCIMS' decommissioned-portal page; every GEP variant does |
 | 155 | Efficio | Not addable | Efficio: no job board found: careers page has no ATS link, feed or embed |
 | 156 | Proxima | Live (before this round) | Proxima |
 | 157 | The Hackett Group | **Added** | The Hackett Group |
@@ -195,8 +201,8 @@ from the original list.
 | 169 | 4C Associates | No US hiring | 4C Associates: its teamtailor board is London-only |
 | 170 | Clarkston Consulting | **Added** | Clarkston Consulting |
 | 171 | Kalypso | Same firm | → Rockwell Automation (Kalypso's own site refuses public reads) |
-| 172 | Centric Consulting | Not addable | Centric Consulting: no job board found: careers page has no ATS link, feed or embed |
-| 173 | Logic20/20 | Not addable | Logic20/20: no job board found: careers page has no ATS link, feed or embed |
+| 172 | Centric Consulting | **Added** | Centric Consulting |
+| 173 | Logic20/20 | **Added** | Logic20/20 |
 | 174 | Pariveda | Live (before this round) | Pariveda |
 | 175 | Sia Partners | **Added** | Sia Partners |
 | 176 | Sionic | No US hiring | Sionic: hires through Davies' Pinpoint board, which is UK-only |
@@ -214,10 +220,10 @@ from the original list.
 | 188 | EXL | **Added** | EXL |
 | 189 | WNS | Not addable | WNS: no job board found: careers page has no ATS link, feed or embed |
 | 190 | UST | Not addable | UST: careers site refuses server requests (403) |
-| 191 | Persistent Systems | Not addable | Persistent Systems: no job board found: careers page has no ATS link, feed or embed |
+| 191 | Persistent Systems | Not addable | Persistent Systems: careers site redirects to validate.perfdrive.com, a Radware bot check |
 | 192 | Mphasis | Not addable | Mphasis: no job board found: careers page has no ATS link, feed or embed |
 | 193 | Birlasoft | **Added** | Birlasoft |
-| 194 | Zensar Technologies | Not addable | Zensar: Oracle site returns 0 reqs for every search |
+| 194 | Zensar Technologies | No US hiring | Zensar: its Oracle board reads fine — 311 reqs, none of them US (India, UK, South Africa) |
 | 195 | Coforge | Not addable | Coforge: no job board found: careers page has no ATS link, feed or embed |
 | 196 | Nagarro | Not addable | Nagarro: no job board found: careers page has no ATS link, feed or embed |
 | 197 | Valtech | **Added** | Valtech |
@@ -239,7 +245,7 @@ from the original list.
 | 213 | Interbrand | Live (before this round) | Interbrand |
 | 214 | Siegel+Gale | **Added** | Siegel+Gale |
 | 215 | FutureBrand | Not addable | FutureBrand: only parent IPG's Workday tenant found |
-| 216 | Wolff Olins | Not addable | Wolff Olins: no job board found: careers page has no ATS link, feed or embed |
+| 216 | Wolff Olins | Not addable | Wolff Olins: applications by email (talent@wolffolins.com); no board exists |
 | 217 | The Alexander Group | Not addable | The Alexander Group: no job board found: careers page has no ATS link, feed or embed |
 | 218 | Korn Ferry Advisory | Same firm | → Korn Ferry |
 | 219 | Segal | **Added** | Segal |
@@ -291,9 +297,9 @@ from the original list.
 | 265 | Cornerstone Research Healthcare | Same firm | → Cornerstone Research |
 | 266 | Precision AQ | Live (before this round) | Precision AQ |
 | 267 | HEOR | No US hiring | HEOR Ltd: UK firm; site refuses servers |
-| 268 | Genesis Research | Not addable | Genesis Research Group: no job board found: careers page has no ATS link, feed or embed |
+| 268 | Genesis Research | Not addable | Genesis Research: applications by email (careers@genesisrg.com); no board exists |
 | 269 | OPEN Health | **Added** | OPEN Health |
-| 270 | Boston Strategic Partners | Not addable | Boston Strategic Partners: no job board found: careers page has no ATS link, feed or embed |
+| 270 | Boston Strategic Partners | Not addable | Boston Strategic Partners: applications by email (info@bostonsp.com); no board exists |
 | 271 | HealthScape Advisors | Same firm | → The Chartis Group |
 | 272 | Kaufman Hall | Same firm | → Vizient (Kaufman Hall) |
 | 273 | Sg2 | Same firm | → Vizient (Sg2) |
@@ -316,7 +322,7 @@ from the original list.
 | 290 | Econ One Research | **Added** | Econ One |
 | 291 | Secretariat Economists | **Added** | Secretariat |
 | 292 | Competition Economics | Not addable | Competition Economics: no job board found: careers page has no ATS link, feed or embed |
-| 293 | Epsilon Economics | Not addable | Epsilon Economics: no job board found: careers page has no ATS link, feed or embed |
+| 293 | Epsilon Economics | Not addable | Epsilon Economics: epsilonecon.com has no DNS — the firm's site is gone |
 | 294 | Resolution Economics | Not addable | Resolution Economics: no job board found: careers page has no ATS link, feed or embed |
 | 295 | Keystone Strategy | Live (before this round) | Keystone Strategy |
 | 296 | Econic Partners | **Added** | Econic Partners |
@@ -425,12 +431,12 @@ from the original list.
 | 399 | Wakely Consulting Group | **Added** | Wakely Consulting Group |
 | 400 | Lewis & Ellis | Not addable | Lewis & Ellis: iSolved board shows no openings; no reader built |
 | 401 | Axene Health Partners | Not addable | Axene Health Partners: no job board found: careers page has no ATS link, feed or embed |
-| 402 | NovaRest | Not addable | NovaRest: no job board found: careers page has no ATS link, feed or embed |
+| 402 | NovaRest | Not addable | NovaRest: applications by email (careers@novarest.com); no board exists |
 | 403 | Oliver Wyman Financial Services | Same firm | → Oliver Wyman |
 | 404 | Capco Financial Services | Same firm | → Capco |
 | 405 | Promontory Financial Group | Same firm (not addable) | → IBM (Promontory) |
 | 406 | Treliant | Same firm | → Huron (acquired Treliant) |
-| 407 | Patomak Global Partners | Not addable | Patomak: no job board found: careers page has no ATS link, feed or embed |
+| 407 | Patomak Global Partners | Not addable | Patomak: applications by email (jobs@patomak.com); no board exists |
 | 408 | Guidehouse Financial Services | Same firm | → Guidehouse |
 | 409 | CrossCountry Financial Services | Same firm | → CrossCountry Consulting |
 | 410 | Synpulse | **Added** | Synpulse |
@@ -476,11 +482,11 @@ from the original list.
 | 450 | Rational 360 | **Added** | Rational 360 |
 | 451 | SKDK | **Added** | SKDK |
 | 452 | Targeted Victory | Not addable | Targeted Victory: posts on LinkedIn only |
-| 453 | Bully Pulpit Interactive | Not addable | Bully Pulpit Interactive: no job board found: careers page has no ATS link, feed or embed |
+| 453 | Bully Pulpit Interactive | Not addable | Bully Pulpit: applications by email (jobs@bpigroup.com); no board exists |
 | 454 | Blue State | **Added** | Blue State |
 | 455 | GMMB | Live (before this round) | GMMB |
 | 456 | Precision Strategies | **Added** | Precision Strategies |
-| 457 | Hattaway Communications | Not addable | Hattaway: no job board found: careers page has no ATS link, feed or embed |
+| 457 | Hattaway Communications | Not addable | Hattaway: applications by email (hr@hattaway.com); no board exists |
 | 458 | Cambridge Systematics | **Added** | Cambridge Systematics |
 | 459 | Steer | Not addable | Steer: careers site refuses server requests (403) |
 | 460 | HNTB Advisory | **Added** | HNTB |
