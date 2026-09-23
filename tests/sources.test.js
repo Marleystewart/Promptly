@@ -28,6 +28,8 @@ const REQUIRED_KEYS = {
   // career section explicit — a Taleo tenant can host several, and the wrong
   // one silently returns a different employer's reqs.
   taleo: ["tenant", "section"],
+  // Taleo Business Edition — a different product from taleo above.
+  tbe: ["board"],
   custom: ["handler"],
   // Small public-feed ATSs — api/_shared/small-ats.js. `board` is whatever id
   // that feed is keyed by (subdomain, slug, guid, or UKG host/tenant/guid).

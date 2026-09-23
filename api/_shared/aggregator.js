@@ -515,6 +515,22 @@ async function fetchTaleo(src) {
   return out;
 }
 
+// ── Taleo Business Edition (api/_shared/tbe.js) ───────────────────────────
+// { ats:"tbe", board:"<segment>/<ORG>/<cws>" } e.g. "phg02/CENTCONS/38".
+// Needs two requests — the first is only there to be issued a session. See
+// tbe.js for why asking for results directly returns the search form instead.
+async function fetchTbe(src) {
+  const { fetchTbeListings } = require("./tbe");
+  const raw = await fetchTbeListings(src.board);
+  const out = [];
+  for (const j of raw) {
+    if (!passesUsGate(src, j.location, j.title)) continue;
+    const cycle = detectCycle(j.title, j.location, true, Boolean(src.studentBoard));
+    if (cycle) out.push(normalize(src, j.title, j.url, j.location, cycle, null, j.postedAt || null));
+  }
+  return out;
+}
+
 // ── Small public-feed ATSs (api/_shared/small-ats.js) ─────────────────────
 // { ats:"workable"|"ukg"|"adp"|"paylocity"|"pinpoint"|"recruitee"|"jobvite"|
 //   "rippling"|"teamtailor"|"breezy"|"bamboohr"|"jazzhr"|"hrmdirect"|"hibob", board:"<that feed's id>" }
@@ -678,6 +694,7 @@ const FETCHERS = {
   florecruit: fetchFloRecruit,
   usajobs: fetchUsaJobs,
   taleo: fetchTaleo,
+  tbe: fetchTbe,
   custom: fetchCustom,
   workable: fetchSmallAts,
   ukg: fetchSmallAts,

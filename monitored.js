@@ -136,6 +136,7 @@ window.MONITORED_COMPANIES = [
   "Cedar",
   "Cencora",
   "Centri Business Consulting",
+  "Centric Consulting",
   "CFGI",
   "Charles River Associates",
   "Charles Schwab",
@@ -725,8 +726,8 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 716,
-  "companies": 716,
+  "sources": 717,
+  "companies": 717,
   "byPlatform": {
     "greenhouse": 238,
     "custom": 147,
@@ -750,13 +751,14 @@ window.PROMPTLY_COVERAGE = {
     "bamboohr": 5,
     "jazzhr": 4,
     "hrmdirect": 3,
+    "tbe": 1,
     "paycom": 3,
     "hibob": 2
   },
   "byField": {
     "Finance": 214,
     "Technology": 72,
-    "Consulting": 196,
+    "Consulting": 197,
     "Healthcare": 57,
     "Education": 4,
     "Engineering": 57,

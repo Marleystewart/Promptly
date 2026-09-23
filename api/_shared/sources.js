@@ -980,6 +980,17 @@ const SOURCES = [
   // Cornerstone OnDemand career sites (api/_shared/csod.js).
   { company: "Simon-Kucher", short: "SK", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "simonkucher" },
   { company: "Mathematica", short: "MPR", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "mathematica" },
+  // Centric Consulting — Taleo Business Edition (api/_shared/tbe.js).
+  // Recorded as "no job board found" because its careers page is at
+  // /about-us/careers/, not /careers/, and because the board it links answers a
+  // plain request with its search FORM rather than any results.
+  // This is also the answer to an earlier ambiguity: slug-guessing found three
+  // different "centric" boards — a Dutch IT firm, a Kansas City builder and a
+  // construction outfit — and none of them was this company. The office list on
+  // this board (Columbus, Cincinnati, Indianapolis, Cleveland, Chicago, Boston,
+  // St. Louis, Omaha) is Centric Consulting's own.
+  { company: "Centric Consulting", short: "CNTC", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "tbe", board: "phg02/CENTCONS/38" },
+
   // Paycom portals (api/_shared/small-ats.js). board = the client key the
   // firm's own site links: eaglehillconsulting.com/careers/search-jobs/,
   // rvkinc.com and crnrstone.com/careers/ respectively.
