@@ -3186,9 +3186,67 @@ async function signOutAndReset() {
   window.location.replace(`${window.location.origin}/`);
 }
 
+let authAttemptInFlight = false;
+
+function setAuthBusy(busy, action = "email") {
+  authAttemptInFlight = busy;
+  const entry = document.querySelector("[data-auth-entry]");
+  const submit = document.querySelector("[data-auth-submit]");
+  const google = document.querySelector("[data-google-auth]");
+  const googleLabel = document.querySelector("[data-google-label]");
+  const forgotPassword = document.querySelector("[data-forgot-password]");
+  if (entry) entry.setAttribute("aria-busy", busy ? "true" : "false");
+  document.querySelectorAll("[data-auth-mode]").forEach((button) => { button.disabled = busy; });
+  if (submit) {
+    submit.disabled = busy;
+    submit.textContent = busy && action === "email"
+      ? (authMode === "signin" ? "Signing in…" : "Creating account…")
+      : (authMode === "signin" ? "Sign In" : "Create Account");
+  }
+  if (google) google.disabled = busy;
+  if (forgotPassword) forgotPassword.disabled = busy;
+  if (googleLabel) googleLabel.textContent = busy && action === "google" ? "Connecting…" : "Continue with Google";
+}
+
+function authErrorMessage(error, action = "account") {
+  const raw = String(error?.message || error?.error_description || error || "").toLowerCase();
+  if (raw.includes("invalid login credentials")) return "That email and password don’t match. Try again, or reset your password.";
+  if (raw.includes("email not confirmed")) return "Confirm your email first, then come back here to sign in.";
+  if (raw.includes("already registered") || raw.includes("already been registered")) return "You already have an account with this email. Switch to Sign in instead.";
+  if (raw.includes("rate limit") || raw.includes("too many")) return "Too many attempts. Wait a minute, then try again.";
+  if (raw.includes("network") || raw.includes("fetch")) return "We couldn’t reach Promptly. Check your connection and try again.";
+  if (action === "google") return "Google sign-in didn’t finish. Please try again.";
+  if (action === "confirmation") return "We couldn’t resend the confirmation email. Wait a minute, then try again.";
+  if (action === "reset") return "We couldn’t send the reset email. Check your connection and try again.";
+  return "We couldn’t complete that. Please check your details and try again.";
+}
+
+function showAuthConfirmation(email) {
+  const entry = document.querySelector("[data-auth-entry]");
+  const confirmation = document.querySelector("[data-auth-confirmation]");
+  const emailLabel = document.querySelector("[data-auth-confirmation-email]");
+  if (entry) entry.hidden = true;
+  if (confirmation) confirmation.hidden = false;
+  if (emailLabel) emailLabel.textContent = email;
+  const password = document.querySelector("[data-password-input]");
+  if (password) password.value = "";
+}
+
+function showAuthEntry() {
+  const entry = document.querySelector("[data-auth-entry]");
+  const confirmation = document.querySelector("[data-auth-confirmation]");
+  if (entry) entry.hidden = false;
+  if (confirmation) confirmation.hidden = true;
+}
+
 function setAuthMode(mode) {
+  showAuthEntry();
   authMode = mode === "signin" ? "signin" : "signup";
-  document.querySelectorAll("[data-auth-mode]").forEach((button) => button.classList.toggle("active", button.dataset.authMode === authMode));
+  document.querySelectorAll("[data-auth-mode]").forEach((button) => {
+    const selected = button.dataset.authMode === authMode;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-selected", selected ? "true" : "false");
+  });
   document.querySelector("[data-auth-name-group]").hidden = authMode === "signin";
   document.querySelector("[data-auth-submit]").textContent = authMode === "signin" ? "Sign In" : "Create Account";
   document.querySelector("[data-forgot-password]").hidden = authMode !== "signin" || !authClient;
@@ -3530,6 +3588,13 @@ async function initializeAuth() {
         setSignupError();
         prefillPendingEmail();
         authStatus.textContent = `Email confirmed. Sign in to finish setting up your alerts.${homeScreenHandoffNote()}`;
+      } else if (oauthCallback.type === "error") {
+        const canceled = /access_denied|cancel/i.test(`${oauthCallback.errorCode} ${oauthCallback.errorDescription}`);
+        showAuthEntryFallback("signin");
+        setSignupError(canceled
+          ? "Google sign-in was canceled. Nothing changed — try again when you’re ready."
+          : authErrorMessage(oauthCallback.errorDescription, "google"));
+        authStatus.textContent = "You’re still signed out.";
       } else {
         setSignupError("Google sign-in did not complete. Please try again.");
         showAuthEntryFallback();
@@ -3551,6 +3616,7 @@ async function initializeAuth() {
 }
 
 async function handleAuthSubmit() {
+  if (authAttemptInFlight) return;
   const email = document.querySelector("[data-email-input]").value.trim();
   const password = document.querySelector("[data-password-input]").value;
   const name = document.querySelector("[data-name-input]").value.trim();
@@ -3568,59 +3634,57 @@ async function handleAuthSubmit() {
   if (authMode === "signup" && !name) return setSignupError("Add your name first.");
 
   setSignupError();
-  status.textContent = authMode === "signin" ? "Signing you in..." : "Creating your account...";
+  status.textContent = authMode === "signin" ? "Signing you in securely…" : "Creating your account securely…";
   if (authMode === "signup") {
     sessionStorage.setItem("promptlyMigrateLocal", "1");
     localStorage.setItem("promptlyPendingMigrationEmail", email);
   }
   else sessionStorage.removeItem("promptlyMigrateLocal");
-  const result = authMode === "signin"
-    ? await authClient.auth.signInWithPassword({ email, password })
-    : await authClient.auth.signUp({ email, password, options: { data: { name } } });
-  if (result.error) {
+  setAuthBusy(true, "email");
+  try {
+    const result = authMode === "signin"
+      ? await authClient.auth.signInWithPassword({ email, password })
+      : await authClient.auth.signUp({
+          email,
+          password,
+          options: { data: { name }, emailRedirectTo: authEmailRedirectUrl() },
+        });
+    if (result.error) throw result.error;
+
+    // Supabase returns a FAKE SUCCESS when you sign up with an address that
+    // already has an account — no error, no session — so that an attacker cannot
+    // discover which emails are registered. The empty identities array is the
+    // documented signal that this was not a new account.
+    const alreadyRegistered = authMode === "signup"
+      && result.data?.user
+      && Array.isArray(result.data.user.identities)
+      && result.data.user.identities.length === 0;
+    if (alreadyRegistered) {
+      sessionStorage.removeItem("promptlyMigrateLocal");
+      localStorage.removeItem("promptlyPendingMigrationEmail");
+      setAuthMode("signin");
+      setSignupError("You already have an account with this email — signing in instead.");
+      status.textContent = "Enter your password to sign in.";
+      document.querySelector("[data-password-input]")?.focus();
+      return;
+    }
+
+    profile.name = name || result.data.user?.user_metadata?.name || profile.name;
+    profile.email = result.data.user?.email || email;
+    if (result.data.session?.user) {
+      routeAuthenticatedUser(result.data.session.user);
+    } else {
+      saveProfile();
+      showAuthConfirmation(email);
+      status.textContent = `Check your email to confirm your account, then come back and sign in.${homeScreenHandoffNote()}`;
+    }
+  } catch (error) {
     sessionStorage.removeItem("promptlyMigrateLocal");
     localStorage.removeItem("promptlyPendingMigrationEmail");
-    setSignupError(result.error.message || "Account setup failed.");
-    status.textContent = "Check your details and try again.";
-    return;
-  }
-
-  // Supabase returns a FAKE SUCCESS when you sign up with an address that
-  // already has an account — no error, no session — so that an attacker cannot
-  // discover which emails are registered. That protection is correct and stays
-  // on; what was missing is our ability to recognise it.
-  //
-  // Without this check the fake success is indistinguishable from a real
-  // signup, so the branch below promised "check your email to confirm" for a
-  // confirmation Supabase deliberately never sends. The student waits forever
-  // for a message that does not exist, presses Create Account again, and gets
-  // the same promise — the loop Marley hit on his phone after confirming the
-  // account on his laptop.
-  //
-  // The tell is documented: an existing user comes back with an empty
-  // `identities` array, where a genuine new signup has one entry.
-  const alreadyRegistered = authMode === "signup"
-    && result.data?.user
-    && Array.isArray(result.data.user.identities)
-    && result.data.user.identities.length === 0;
-  if (alreadyRegistered) {
-    sessionStorage.removeItem("promptlyMigrateLocal");
-    localStorage.removeItem("promptlyPendingMigrationEmail");
-    setAuthMode("signin");
-    setSignupError("You already have an account with this email — signing in instead.");
-    status.textContent = "Enter your password to sign in.";
-    return;
-  }
-
-  profile.name = name || result.data.user?.user_metadata?.name || profile.name;
-  profile.email = result.data.user?.email || email;
-  if (result.data.session?.user) {
-    routeAuthenticatedUser(result.data.session.user);
-  } else {
-    saveProfile();
-    // On iPhone the confirmation link opens Safari, never the Home Screen app,
-    // so "return here" is not something the student can simply tap back to.
-    status.textContent = `Check your email to confirm your account, then come back and sign in.${homeScreenHandoffNote()}`;
+    setSignupError(authErrorMessage(error, authMode));
+    status.textContent = "Nothing changed — you can try again.";
+  } finally {
+    setAuthBusy(false);
   }
 }
 
@@ -3656,20 +3720,33 @@ document.querySelector("[data-email-input]")?.addEventListener("input", renderSt
 // which is registered in ios/App/App/Info.plist.
 const NATIVE_AUTH_REDIRECT = "com.thealmargroup.promptly://auth-callback";
 
+function authEmailRedirectUrl() {
+  return isNativeShell() ? API_ORIGIN : window.location.origin;
+}
+
 async function signInWithGoogle() {
-  if (!authClient) return;
+  if (!authClient || authAttemptInFlight) return;
   if (authMode === "signup") sessionStorage.setItem("promptlyMigrateLocal", "1");
   else sessionStorage.removeItem("promptlyMigrateLocal");
   const native = isNativeShell();
-  const { data, error } = await authClient.auth.signInWithOAuth({
-    provider: "google",
-    options: native
-      ? { redirectTo: NATIVE_AUTH_REDIRECT, skipBrowserRedirect: true }
-      : { redirectTo: window.location.origin },
-  });
-  if (error) {
+  setSignupError();
+  setAuthBusy(true, "google");
+  document.querySelector("[data-auth-status]").textContent = "Opening Google securely…";
+  let data;
+  try {
+    const result = await authClient.auth.signInWithOAuth({
+      provider: "google",
+      options: native
+        ? { redirectTo: NATIVE_AUTH_REDIRECT, skipBrowserRedirect: true }
+        : { redirectTo: window.location.origin },
+    });
+    if (result.error) throw result.error;
+    data = result.data;
+  } catch (error) {
     sessionStorage.removeItem("promptlyMigrateLocal");
-    setSignupError(error.message || "Google sign-in could not start.");
+    setSignupError(authErrorMessage(error, "google"));
+    document.querySelector("[data-auth-status]").textContent = "Nothing changed — you can try again.";
+    setAuthBusy(false);
     return;
   }
   if (!native) return;
@@ -3681,6 +3758,7 @@ async function signInWithGoogle() {
   if (!Browser || !data?.url) {
     sessionStorage.removeItem("promptlyMigrateLocal");
     setSignupError("Google sign-in could not start.");
+    setAuthBusy(false);
     return;
   }
   try {
@@ -3688,6 +3766,8 @@ async function signInWithGoogle() {
   } catch {
     sessionStorage.removeItem("promptlyMigrateLocal");
     setSignupError("Google sign-in could not start.");
+  } finally {
+    setAuthBusy(false);
   }
 }
 
@@ -3756,8 +3836,68 @@ async function sendPasswordReset() {
   if (!authClient) return;
   const email = document.querySelector("[data-email-input]").value.trim();
   if (!isValidEmail(email)) return setSignupError("Enter your email first.");
-  const { error } = await authClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
-  document.querySelector("[data-auth-status]").textContent = error ? error.message : "Password reset email sent.";
+  const button = document.querySelector("[data-forgot-password]");
+  const status = document.querySelector("[data-auth-status]");
+  button.disabled = true;
+  button.textContent = "Sending…";
+  setSignupError();
+  try {
+    const { error } = await authClient.auth.resetPasswordForEmail(email, { redirectTo: authEmailRedirectUrl() });
+    if (error) throw error;
+    status.textContent = `Password reset sent to ${email}. Check spam or promotions if you don’t see it.`;
+  } catch (error) {
+    setSignupError(authErrorMessage(error, "reset"));
+    status.textContent = "Nothing changed — you can try again.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Forgot password?";
+  }
+}
+
+let confirmationResendTimer = null;
+async function resendSignupConfirmation() {
+  if (!authClient) return;
+  const email = document.querySelector("[data-auth-confirmation-email]")?.textContent?.trim()
+    || localStorage.getItem("promptlyPendingMigrationEmail")
+    || "";
+  const button = document.querySelector("[data-auth-confirmation-resend]");
+  const status = document.querySelector("[data-auth-status]");
+  if (!isValidEmail(email) || !button) return;
+  button.disabled = true;
+  button.textContent = "Sending…";
+  try {
+    const { error } = await authClient.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: authEmailRedirectUrl() },
+    });
+    if (error) throw error;
+    status.textContent = `Confirmation sent again to ${email}.`;
+    button.textContent = "Sent — try again in 30s";
+    window.clearTimeout(confirmationResendTimer);
+    confirmationResendTimer = window.setTimeout(() => {
+      button.disabled = false;
+      button.textContent = "Resend email";
+    }, 30000);
+  } catch (error) {
+    status.textContent = authErrorMessage(error, "confirmation");
+    button.disabled = false;
+    button.textContent = "Resend email";
+  }
+}
+
+function changeSignupEmail() {
+  window.clearTimeout(confirmationResendTimer);
+  sessionStorage.removeItem("promptlyMigrateLocal");
+  localStorage.removeItem("promptlyPendingMigrationEmail");
+  setAuthMode("signup");
+  setSignupError();
+  const input = document.querySelector("[data-email-input]");
+  if (input) {
+    input.focus();
+    input.select();
+  }
+  document.querySelector("[data-auth-status]").textContent = "Use another school address or a personal email — both work with Promptly.";
 }
 
 async function deleteAccount() {
@@ -4952,6 +5092,13 @@ document.addEventListener("submit", (event) => {
   if (event.target.matches?.("[data-auth-form]")) event.preventDefault();
 });
 
+// Returning from Google's chooser can restore this page from the browser's
+// back/forward cache. Reset the progress state so a canceled attempt never
+// leaves every account control disabled on "Connecting…".
+window.addEventListener("pageshow", () => {
+  if (authAttemptInFlight) setAuthBusy(false);
+});
+
 document.addEventListener("click", async (event) => {
   if (event.target.closest("[data-verify-resend]")) { event.preventDefault(); await resendVerification(); return; }
 
@@ -5016,6 +5163,10 @@ document.addEventListener("click", async (event) => {
   const authSubmitButton = event.target.closest("[data-auth-submit]");
   const googleAuthButton = event.target.closest("[data-google-auth]");
   const forgotPasswordButton = event.target.closest("[data-forgot-password]");
+  const passwordToggle = event.target.closest("[data-password-toggle]");
+  const confirmationSigninButton = event.target.closest("[data-auth-confirmation-signin]");
+  const confirmationResendButton = event.target.closest("[data-auth-confirmation-resend]");
+  const confirmationChangeButton = event.target.closest("[data-auth-confirmation-change]");
   const signOutButton = event.target.closest("[data-sign-out]");
   const deleteAccountButton = event.target.closest("[data-delete-account]");
 
@@ -5023,6 +5174,22 @@ document.addEventListener("click", async (event) => {
   if (authSubmitButton) handleAuthSubmit();
   if (googleAuthButton) signInWithGoogle();
   if (forgotPasswordButton) sendPasswordReset();
+  if (passwordToggle) {
+    const input = document.querySelector("[data-password-input]");
+    const showing = input?.type === "text";
+    if (input) input.type = showing ? "password" : "text";
+    passwordToggle.textContent = showing ? "Show" : "Hide";
+    passwordToggle.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+    passwordToggle.setAttribute("aria-pressed", showing ? "false" : "true");
+  }
+  if (confirmationSigninButton) {
+    setAuthMode("signin");
+    setSignupError();
+    document.querySelector("[data-auth-status]").textContent = "Sign in after you confirm the link in your email.";
+    document.querySelector("[data-password-input]")?.focus();
+  }
+  if (confirmationResendButton) await resendSignupConfirmation();
+  if (confirmationChangeButton) changeSignupEmail();
   if (signOutButton) {
     await signOutAndReset();
     return;
