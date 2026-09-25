@@ -109,34 +109,56 @@
         <p class="eyebrow">Your account</p>
         <h1>Build alerts around you.</h1>
         <p>Create an account so your profile and saved alerts follow you across devices.</p>
-        <div class="auth-tabs" role="tablist" aria-label="Account action">
-          <button class="active" type="button" data-auth-mode="signup">Sign up</button>
-          <button type="button" data-auth-mode="signin">Sign in</button>
+        <div data-auth-entry>
+          <div class="auth-tabs" role="tablist" aria-label="Account action">
+            <button class="active" type="button" role="tab" aria-selected="true" data-auth-mode="signup">Sign up</button>
+            <button type="button" role="tab" aria-selected="false" data-auth-mode="signin">Sign in</button>
+          </div>
+          <button class="primary-action wide auth-google" type="button" data-google-auth>
+            <svg viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.95 10.7A5.4 5.4 0 0 1 3.67 9c0-.59.1-1.16.28-1.7V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.03l2.99-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.97l2.99 2.33C4.66 5.17 6.65 3.58 9 3.58z"/></svg>
+            <span data-google-label>Continue with Google</span>
+          </button>
+          <p class="auth-fast-note" data-auth-fast-note>Fastest way in — nothing to confirm, no email to wait for.</p>
+          <div class="auth-divider"><span data-auth-divider-label>or sign up with email</span></div>
+          <!-- A real <form> with named fields, so password managers recognise this
+               as an account flow.
+               Safari offers to create a strong password only when it can see a
+               username field and a new-password field inside a form. These inputs
+               were bare, so iCloud Keychain, 1Password and the rest had nothing to
+               latch onto and students were left inventing their own passwords.
+               The submit button stays type="button" — submission is handled by the
+               existing delegated click listener, and making it a real submit would
+               fire that path twice. -->
+          <form class="auth-form" data-auth-form autocomplete="on" novalidate>
+            <label class="field-label" data-auth-name-group>Name<input data-name-input id="auth-name" name="name" type="text" placeholder="Your name" autocomplete="name" /></label>
+            <!-- autocomplete="username", not "email": "username" is the signal
+                 password managers look for to pair an account with a password. -->
+            <label class="field-label">Email<input data-email-input id="auth-username" name="username" type="email" placeholder="you@example.com" autocomplete="username" /></label>
+            <p class="student-hint" data-student-hint hidden></p>
+            <label class="field-label" data-auth-password-group>Password
+              <span class="password-input-wrap">
+                <input data-password-input id="auth-password" name="password" type="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" />
+                <button class="password-toggle" type="button" data-password-toggle aria-label="Show password" aria-pressed="false">Show</button>
+              </span>
+            </label>
+            <p class="form-error" data-signup-error role="alert" hidden></p>
+            <button class="soft-action wide" type="button" data-auth-submit>Create Account</button>
+            <button class="text-action" type="button" data-forgot-password hidden>Forgot password?</button>
+          </form>
         </div>
-        <button class="primary-action wide auth-google" type="button" data-google-auth>Continue with Google</button>
-        <p class="auth-fast-note" data-auth-fast-note>Fastest way in — nothing to confirm, no email to wait for.</p>
-        <div class="auth-divider"><span data-auth-divider-label>or sign up with email</span></div>
-        <!-- A real <form> with named fields, so password managers recognise this
-             as an account flow.
-             Safari offers to create a strong password only when it can see a
-             username field and a new-password field inside a form. These inputs
-             were bare, so iCloud Keychain, 1Password and the rest had nothing to
-             latch onto and students were left inventing their own passwords.
-             The submit button stays type="button" — submission is handled by the
-             existing delegated click listener, and making it a real submit would
-             fire that path twice. -->
-        <form class="auth-form" data-auth-form autocomplete="on" novalidate>
-          <label class="field-label" data-auth-name-group>Name<input data-name-input id="auth-name" name="name" type="text" placeholder="Your name" autocomplete="name" /></label>
-          <!-- autocomplete="username", not "email": "username" is the signal
-               password managers look for to pair an account with a password. -->
-          <label class="field-label">Email<input data-email-input id="auth-username" name="username" type="email" placeholder="you@example.com" autocomplete="username" /></label>
-          <p class="student-hint" data-student-hint hidden></p>
-          <label class="field-label" data-auth-password-group>Password<input data-password-input id="auth-password" name="password" type="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" /></label>
-          <p class="form-error" data-signup-error hidden></p>
-          <button class="soft-action wide" type="button" data-auth-submit>Create Account</button>
-          <button class="text-action" type="button" data-forgot-password hidden>Forgot password?</button>
-        </form>
-        <p class="auth-status" data-auth-status>Checking secure account setup...</p>
+        <div class="auth-confirmation" data-auth-confirmation role="status" hidden>
+          <span class="auth-confirmation-icon" aria-hidden="true">✓</span>
+          <h2>Check your inbox</h2>
+          <p>We sent a confirmation link to <strong data-auth-confirmation-email></strong>.</p>
+          <p>Open the link, then return here to sign in.</p>
+          <p class="auth-delivery-tip"><strong>School email on Outlook?</strong> Check Junk, the Other tab, and your school’s quarantine. If it still doesn’t arrive, a personal email works too.</p>
+          <button class="soft-action wide" type="button" data-auth-confirmation-signin>I confirmed my email</button>
+          <div class="auth-confirmation-links">
+            <button class="text-action" type="button" data-auth-confirmation-resend>Resend email</button>
+            <button class="text-action" type="button" data-auth-confirmation-change>Use a different email</button>
+          </div>
+        </div>
+        <p class="auth-status" data-auth-status role="status" aria-live="polite">Checking secure account setup...</p>
         <p class="signup-privacy-note">
           Before you continue: account and alert information is stored with our account and
           alert providers; your profile photo is saved to your account so it follows you to a

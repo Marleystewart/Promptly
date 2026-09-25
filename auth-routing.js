@@ -20,6 +20,12 @@
     // reported to the student as a failed Google sign-in.
     const linkType = hash.get("type") || url.searchParams.get("type") || "";
     const recovery = linkType === "recovery";
+    const errorCode = hash.get("error_code") || url.searchParams.get("error_code") ||
+      hash.get("error") || url.searchParams.get("error");
+    const errorDescription = hash.get("error_description") || url.searchParams.get("error_description") || "";
+    if (errorCode || errorDescription) {
+      return { type: "error", errorCode: errorCode || "auth_error", errorDescription, recovery, linkType };
+    }
     const accessToken = hash.get("access_token");
     const refreshToken = hash.get("refresh_token");
     if (accessToken && refreshToken) return { type: "tokens", accessToken, refreshToken, recovery, linkType };

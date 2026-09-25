@@ -61,6 +61,19 @@ function scenario(complete) {
 }
 
 {
+  const callback = parseOAuthCallback("https://promptly.example/?error=access_denied&error_code=oauth_access_denied&error_description=User+cancelled&campaign=summer");
+  assert.deepEqual(callback, {
+    type: "error",
+    errorCode: "oauth_access_denied",
+    errorDescription: "User cancelled",
+    recovery: false,
+    linkType: "",
+  });
+  const clean = cleanOAuthCallbackUrl("https://promptly.example/?error=access_denied&error_description=User+cancelled&campaign=summer");
+  assert.equal(clean, "/?campaign=summer", "OAuth errors must be removed without dropping unrelated query parameters");
+}
+
+{
   // Password-recovery links must be flagged so the app prompts for a new password.
   const hashRecovery = parseOAuthCallback("https://promptly.example/#access_token=a&refresh_token=r&type=recovery");
   assert.equal(hashRecovery.recovery, true, "hash recovery link should flag recovery");
@@ -156,6 +169,16 @@ sessionScenarios().then(() => {
 }
 
 console.log("Auth callback landing tests passed.");
+
+// A canceled OAuth picker is a real callback even though it carries no token.
+// It needs a calm, recoverable message instead of silently returning to signup.
+{
+  const script = require("fs").readFileSync(require("path").join(__dirname, "..", "script.js"), "utf8");
+  assert.match(script, /oauthCallback\.type === "error"/, "OAuth error callbacks need their own recovery branch");
+  assert.match(script, /Google sign-in was canceled\. Nothing changed/, "a canceled picker must explain that no account changed");
+}
+
+console.log("OAuth cancellation recovery tests passed.");
 
 // iOS cannot deliver an emailed link into an installed web app, so a student
 // who added Promptly to their Home Screen confirms in Safari and returns to an

@@ -45,6 +45,25 @@ assert.match(
 assert.match(body, /<button[^>]*type="button"[^>]*data-auth-submit/,
   "the submit control must remain type=button");
 
+assert.match(body, /data-password-toggle/, "students need a way to reveal a mistyped password");
+assert.match(script, /input\.type = showing \? "password" : "text"/,
+  "the password visibility control must switch the real input type");
+
+assert.match(html, /data-auth-confirmation/, "email signup needs a distinct check-your-inbox state");
+assert.match(script, /function showAuthConfirmation\(email\)/,
+  "successful email signup must leave the editable account form");
+assert.match(script, /if \(authAttemptInFlight\) return;/,
+  "repeated taps must not launch duplicate account requests");
+assert.match(html, /School email on Outlook\?/, "the confirmation screen must name the common Outlook school-inbox failure");
+assert.match(html, /data-auth-confirmation-resend/, "a missing confirmation email must be resendable without restarting signup");
+assert.match(html, /data-auth-confirmation-change/, "students need a personal-email escape hatch when a school blocks auth mail");
+assert.match(script, /authClient\.auth\.resend\(\{[\s\S]*type: "signup"/,
+  "resend must request another signup confirmation from the auth provider");
+assert.match(script, /emailRedirectTo: authEmailRedirectUrl\(\)/,
+  "confirmation links must return to the current Promptly web origin");
+assert.match(script, /return isNativeShell\(\) \? API_ORIGIN : window\.location\.origin/,
+  "native confirmation links must open the web app instead of capacitor://localhost");
+
 // Which means Enter needs bridging, and nothing may navigate away.
 assert.match(script, /form\.querySelector\("\[data-auth-submit\]"\)\?\.click\(\)/,
   "Enter inside the form must trigger the same submit path");
