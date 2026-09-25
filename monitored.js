@@ -56,6 +56,7 @@ window.MONITORED_COMPANIES = [
   "Artisan Partners",
   "Asana",
   "Astra",
+  "AtkinsRéalis",
   "Audax Private Equity",
   "Avalere Health",
   "Avasant",
@@ -727,12 +728,12 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 718,
-  "companies": 718,
+  "sources": 719,
+  "companies": 719,
   "byPlatform": {
     "greenhouse": 238,
     "custom": 147,
-    "workday": 156,
+    "workday": 157,
     "lever": 37,
     "ashby": 57,
     "smartrecruiters": 20,
@@ -762,7 +763,7 @@ window.PROMPTLY_COVERAGE = {
     "Consulting": 198,
     "Healthcare": 57,
     "Education": 4,
-    "Engineering": 57,
+    "Engineering": 58,
     "Law": 15,
     "Media": 15,
     "Consumer": 16,

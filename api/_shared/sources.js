@@ -980,6 +980,16 @@ const SOURCES = [
   // Cornerstone OnDemand career sites (api/_shared/csod.js).
   { company: "Simon-Kucher", short: "SK", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "simonkucher" },
   { company: "Mathematica", short: "MPR", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "mathematica" },
+  // AtkinsRéalis — Workday. Recorded as "board not identified": the earlier
+  // guess `slc` was the UK Student Loans Company, and the real tenant is
+  // slihrms — SNC-Lavalin HRMS, the company's former name, which is why no
+  // amount of guessing at "atkins" or "atkinsrealis" ever found it. Its own
+  // careers site gives it away: every job link points at this board.
+  // The country facet here is Location_Country, NOT the locationCountry used
+  // by Accenture and the rest — same US id, different parameter name, and the
+  // wrong one returns HTTP 400 rather than an empty list. 310 US reqs.
+  { company: "AtkinsRéalis", short: "ATRL", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "workday", tenant: "slihrms", dc: "wd3", site: "Careers", workdayFacets: { Location_Country: ["bc33aa3152ec42d4995f4791a106ed09"] } },
+
   // Logic20/20 — SmartRecruiters. Recorded as "no job board found" because the
   // board is on a careers SUBPAGE (/careers/join-the-team/), not the careers
   // landing page, which is all any earlier sweep looked at.
