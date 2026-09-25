@@ -121,6 +121,15 @@ function stub(handler) {
     const { flipStateFirst } = require("../api/_shared/aggregator.js");
     assert.equal(flipStateFirst("IL-Rosemont"), "Rosemont, IL");
     assert.equal(flipStateFirst("NY-New York"), "New York, NY");
+    // AtkinsRéalis writes the same idea with dots and a trailing street:
+    // "US.FL.Orlando.482 S Keller Rd". The street is dropped — a student
+    // scanning a list wants the city, and the address is on the posting.
+    assert.equal(flipStateFirst("US.FL.Orlando.482 S Keller Rd"), "Orlando, FL");
+    assert.equal(flipStateFirst("US.CO.Denver"), "Denver, CO");
+    assert.equal(flipStateFirst("US.NY.New York.10 East 40 Street"), "New York, NY");
+    // The same board carries Canadian offices in the identical shape. Only a
+    // US. prefix is flipped, so Mississauga is never relabelled as a US city.
+    assert.equal(flipStateFirst("CA.ON.Mississauga.2251 Speakman Drive"), "CA.ON.Mississauga.2251 Speakman Drive");
     assert.equal(flipStateFirst("TX-Dallas; FL-Tampa"), "Dallas, TX; Tampa, FL");
     const { isUsLocation } = require("../api/_shared/us-location.js");
     assert.equal(isUsLocation(flipStateFirst("IL-Rosemont")), true, "flipping is what lets the US test see the state");

@@ -254,12 +254,21 @@ const WORKDAY_PAGES = 5; // per term, 20 per page
 // all 448 of its reqs are state-shaped or "N Locations".
 const US_STATES = new Set(["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "DC", "PR"]);
 
+// Two shapes, same idea: the country or state is written before the city.
+//   "IL-Rosemont"                     (PwC)
+//   "US.FL.Orlando.482 S Keller Rd"   (AtkinsRéalis — trailing street address)
+// Both become "City, ST". The street is dropped: a student scanning a list
+// wants the city, and the full address is on the posting itself.
 function flipStateFirst(location) {
   return String(location || "")
     .split(";")
-    .map((part) => {
-      const m = part.trim().match(/^([A-Z]{2})-(.+)$/);
-      return m && US_STATES.has(m[1]) ? `${m[2].trim()}, ${m[1]}` : part.trim();
+    .map((raw) => {
+      const part = raw.trim();
+      const dashed = part.match(/^([A-Z]{2})-(.+)$/);
+      if (dashed && US_STATES.has(dashed[1])) return `${dashed[2].trim()}, ${dashed[1]}`;
+      const dotted = part.match(/^US\.([A-Z]{2})\.([^.]+)/);
+      if (dotted && US_STATES.has(dotted[1])) return `${dotted[2].trim()}, ${dotted[1]}`;
+      return part;
     })
     .filter(Boolean)
     .join("; ");

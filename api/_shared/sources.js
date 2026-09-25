@@ -988,7 +988,7 @@ const SOURCES = [
   // The country facet here is Location_Country, NOT the locationCountry used
   // by Accenture and the rest — same US id, different parameter name, and the
   // wrong one returns HTTP 400 rather than an empty list. 310 US reqs.
-  { company: "AtkinsRéalis", short: "ATRL", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "workday", tenant: "slihrms", dc: "wd3", site: "Careers", workdayFacets: { Location_Country: ["bc33aa3152ec42d4995f4791a106ed09"] } },
+  { company: "AtkinsRéalis", short: "ATRL", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "workday", tenant: "slihrms", dc: "wd3", site: "Careers", workdayFacets: { Location_Country: ["bc33aa3152ec42d4995f4791a106ed09"] }, stateFirstLocations: true },
 
   // Logic20/20 — SmartRecruiters. Recorded as "no job board found" because the
   // board is on a careers SUBPAGE (/careers/join-the-team/), not the careers
