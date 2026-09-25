@@ -162,6 +162,20 @@ function stub(handler) {
       assert.ok(detectCycle("Summer Intern 2027", loc), `${loc} is a US town and must survive the blocklist`);
     }
 
+    // A season plus a practice word plus "Analyst" is an internship, not a
+    // new-grad class. Arthur D. Little's entire student board is written that
+    // way, and all six reqs were being shown to students as New Grad roles.
+    assert.equal(detectCycle("Summer Business Analyst 2027", "Boston, US"), "Summer 2027");
+    assert.equal(detectCycle("Winter Business Analyst 2027, 8 - 10 weeks (Advanced Degree)", "Boston, US"), "Winter 2027");
+    assert.equal(detectCycle("Summer Technology Associate 2027", "New York, NY"), "Summer 2027");
+    // The other direction, which is why the qualifier word is required: a bank's
+    // "Fall Analyst Program" is a full-time campus class. There is no word
+    // between the season and "Analyst", so it must stay on the new-grad path —
+    // and INTERN_TITLE is tested first, so getting this wrong is silent.
+    assert.equal(detectCycle("2027 Fall Analyst Program", "New York, NY"), "New Grad 2027");
+    assert.equal(detectCycle("Winter Analyst Program 2027", "New York, NY"), "New Grad 2027");
+    assert.equal(detectCycle("2027 Investment Banking Full-Time Analyst", "New York, NY"), "New Grad 2027");
+
     console.log("Source filter tests passed. US gates, Workday facets, and event exclusion hold.");
   } finally {
     global.fetch = realFetch;

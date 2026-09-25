@@ -69,7 +69,16 @@ const EXCLUDE_TITLE = /experienced|senior|staff|principal|\blead\b|manager|direc
 // that's in place but is kept for clarity/no-regression.
 // "Summer Consultant" is the consulting-firm name for the same programme
 // (Bates White's "Summer Consultant—2027"); it was being dropped as not-a-role.
-const INTERN_TITLE = /\bintern\b|\binterns\b|\binternships?\b|\bsummer analyst\b|\bsummer associate\b|\bsummer consultant\b|\bco-?op\b/i;
+// Firms also slot a practice word in the middle — Arthur D. Little's whole
+// student board is "Summer Business Analyst 2027" and "Winter Business Analyst
+// 2027, 8 - 10 weeks", which the fixed phrases above miss, so all six were
+// being served to students as New Grad roles.
+//
+// The qualifier word is REQUIRED, and only after summer/winter. That is what
+// keeps a bank's "2027 Fall Analyst Program" — a full-time campus class, not an
+// internship — out: it has no word between the season and "analyst", and this
+// pattern is tested before the new-grad one.
+const INTERN_TITLE = /\bintern\b|\binterns\b|\binternships?\b|\bsummer analyst\b|\bsummer associate\b|\bsummer consultant\b|\b(?:summer|winter)\s+(?:\w+\s+){1,2}(?:analysts?|associates?|consultants?)\b|\bco-?op\b/i;
 const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|ph\.?d\.? graduate|early career|entry[ -]?level|campus hire|rotational program|analyst program|\b3l applications?\b/i;
 // Titles that only mean "new grad" on a board that is ITSELF student-only.
 // "2027 Full Time Analyst" is the canonical campus-hire title in banking, but
@@ -274,6 +283,28 @@ function flipStateFirst(location) {
     .join("; ");
 }
 
+// Workday writes a multi-office req's location as "5 Locations" — a count, not
+// a place. Its own detail endpoint lists the offices, so a collapsed req is
+// expanded from the board rather than inferred from the URL. Only reqs that
+// already look student-relevant get here, so this is a handful of requests per
+// refresh. A failure falls back to whatever the caller already had.
+const COLLAPSED_LOCATIONS = /^\d+\s+locations?$/i;
+
+async function expandCollapsedLocations(detailBase, externalPath, fallback) {
+  let info;
+  try {
+    const data = await fetchJson(`${detailBase}${externalPath}`, { headers: { Accept: "application/json" } });
+    info = data && data.jobPostingInfo;
+  } catch {
+    return fallback;
+  }
+  if (!info) return fallback;
+  const offices = [info.location, ...(Array.isArray(info.additionalLocations) ? info.additionalLocations : [])]
+    .map((office) => String(office || "").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  return offices.length ? offices.join("; ") : fallback;
+}
+
 function workdayPathCity(externalPath) {
   const segment = String(externalPath || "").split("/")[2] || "";
   let city = segment;
@@ -291,6 +322,7 @@ async function fetchWorkday(src) {
     ? `https://${src.dc}.myworkdaysite.com`
     : `https://${src.tenant}.${src.dc}.myworkdayjobs.com`;
   const api = `${base}/wday/cxs/${src.tenant}/${src.site}/jobs`;
+  const detailBase = `${base}/wday/cxs/${src.tenant}/${src.site}`;
   const out = [];
   const seenPaths = new Set();
   // workdayFacets: the board's OWN filter, applied server-side. Some global
@@ -316,27 +348,52 @@ async function fetchWorkday(src) {
       if (!postings.length) break;
       for (const p of postings) {
         if (!p.externalPath || seenPaths.has(p.externalPath)) continue;
+        // Mark it decided, not just kept. Every check below reads only the
+        // posting's own fields, so the verdict is the same on every search
+        // term — and the board returns the same req under several of them.
+        // Recording it only on success meant a rejected req was re-examined
+        // once per term, which since the location expansion below costs a
+        // network request each time.
+        seenPaths.add(p.externalPath);
         // Global employers often return a loose keyword match from every
         // country on one Workday board.  The general international blocklist
         // is deliberately permissive, so an unfamiliar foreign city can look
         // like a US role.  Sources marked positiveUsOnly must instead provide
         // affirmative US evidence (country wording or a state code).
-        // A multi-office req collapses its location to "3 Locations", which
-        // carries no country at all — that dropped genuinely US postings whose
-        // TITLE states the country ("2027 Early Careers: Summer Intern,
-        // Finance – United States"). Accept affirmative US evidence from
-        // either field; a UK req names a UK town in both, so nothing leaks.
-        if (src.positiveUsOnly
-          && !isUsLocation(p.locationsText)
-          && !isUsLocation(p.title)) continue;
-        const cycle = detectCycle(p.title, p.locationsText, true, Boolean(src.studentBoard));
+        //
+        // A multi-office req collapses its location to "5 Locations", which
+        // names no city and no country, so the test has nothing to confirm and
+        // a genuinely US role is thrown away. The TITLE sometimes states the
+        // country ("2027 Early Careers: Summer Intern, Finance – United
+        // States"); when it does not, ASK THE BOARD rather than guess —
+        // expandCollapsedLocations reads the posting's own offices. Spencer
+        // Stuart's one student req is exactly this shape: five offices, every
+        // one of them US, behind a string that proves nothing.
+        const collapsed = COLLAPSED_LOCATIONS.test(String(p.locationsText || "").trim());
+        // The path city is a cheap stand-in until then — enough for the cycle
+        // check, which only needs to see no foreign city.
+        let where = collapsed || !p.locationsText
+          ? workdayPathCity(p.externalPath)
+          : p.locationsText;
+        // Cycle first: it costs nothing, and it is what keeps the expansion
+        // below down to a handful of requests instead of one per req.
+        const cycle = detectCycle(p.title, where, true, Boolean(src.studentBoard));
         if (!cycle) continue;
-        seenPaths.add(p.externalPath);
+        if (collapsed) where = await expandCollapsedLocations(detailBase, p.externalPath, where);
+        // Two positive tests, because they read different spellings. The local
+        // one wants a state CODE or the country ("Chicago, IL", "United
+        // States"); us-location's also knows state NAMES, which is all an
+        // expanded office list gives you ("New York; Washington, D.C.;
+        // Boston"), and it vetoes a foreign country in the country position so
+        // "Ontario, Canada" cannot sneak through on the word Ontario.
+        if (src.positiveUsOnly
+          && !isUsLocation(where)
+          && !isUsLocation(p.title)
+          && !isPositiveUsLocation(where)) continue;
         // Public posting URL follows the same two shapes as the API host.
         const url = src.siteHost
           ? `${base}/recruiting/${src.tenant}/${src.site}${p.externalPath}`
           : `${base}/en-US/${src.site}${p.externalPath}`;
-        const where = p.locationsText || workdayPathCity(p.externalPath);
         out.push(normalize(src, p.title, url, src.stateFirstLocations ? flipStateFirst(where) : where, cycle));
       }
       if (postings.length < 20) break;
