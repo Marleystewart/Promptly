@@ -375,6 +375,30 @@ body.launch-active .onboarding-brand {
 .auth-confirmation strong { color: var(--ink); overflow-wrap: anywhere; }
 .auth-confirmation .soft-action { margin-top: 18px; }
 
+.auth-code-form { margin-top: 16px; }
+
+.auth-code-input {
+  width: 100%;
+  min-height: 56px;
+  padding: 0 14px;
+  border: 1px solid rgba(93, 56, 242, 0.28);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+
+.auth-code-input::placeholder { color: rgba(0, 0, 0, 0.18); }
+.auth-code-input:focus { outline: 2px solid var(--purple-2); outline-offset: 2px; }
+.auth-code-form .form-error { margin-top: 8px; text-align: left; }
+.auth-code-form .soft-action { margin-top: 12px; }
+.auth-confirmation > .text-action { margin-top: 12px; font-size: 13px; }
+
 .auth-delivery-tip {
   padding: 12px 14px;
   border-radius: 12px;

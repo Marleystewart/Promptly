@@ -3216,6 +3216,10 @@ function authErrorMessage(error, action = "account") {
   if (raw.includes("rate limit") || raw.includes("too many")) return "Too many attempts. Wait a minute, then try again.";
   if (raw.includes("network") || raw.includes("fetch")) return "We couldn’t reach Promptly. Check your connection and try again.";
   if (action === "google") return "Google sign-in didn’t finish. Please try again.";
+  if (action === "code") {
+    if (raw.includes("expired") || raw.includes("invalid")) return "That code didn’t work. If you got more than one email, use the code in the newest one — or tap Resend email for a fresh code.";
+    return "We couldn’t check that code. Check your connection and try again.";
+  }
   if (action === "confirmation") return "We couldn’t resend the confirmation email. Wait a minute, then try again.";
   if (action === "reset") return "We couldn’t send the reset email. Check your connection and try again.";
   return "We couldn’t complete that. Please check your details and try again.";
@@ -3230,6 +3234,19 @@ function showAuthConfirmation(email) {
   if (emailLabel) emailLabel.textContent = email;
   const password = document.querySelector("[data-password-input]");
   if (password) password.value = "";
+  const code = document.querySelector("[data-auth-code-input]");
+  if (code) {
+    code.value = "";
+    code.focus();
+  }
+  setCodeError();
+}
+
+function setCodeError(message = "") {
+  const error = document.querySelector("[data-auth-code-error]");
+  if (!error) return;
+  error.textContent = message;
+  error.hidden = !message;
 }
 
 function showAuthEntry() {
@@ -3676,7 +3693,7 @@ async function handleAuthSubmit() {
     } else {
       saveProfile();
       showAuthConfirmation(email);
-      status.textContent = `Check your email to confirm your account, then come back and sign in.${homeScreenHandoffNote()}`;
+      status.textContent = "Enter the code from your email to finish.";
     }
   } catch (error) {
     sessionStorage.removeItem("promptlyMigrateLocal");
@@ -3854,6 +3871,59 @@ async function sendPasswordReset() {
   }
 }
 
+// Confirm the address with the code from the email instead of the link.
+//
+// School Microsoft 365 tenants run every inbound link through Safe Links /
+// Defender, which OPENS it before the student does. A confirmation link is
+// single-use, so the scanner spends it and the student taps a dead link — the
+// "it's broken" moment on their very first visit. The same email also opens
+// Safari rather than the app on iPhone, and a different browser than the one
+// that signed up loses the PKCE verifier. A code typed here dodges all three:
+// scanners can't type, and the session lands in the browser that asked for it.
+//
+// Requires {{ .Token }} in the Supabase "Confirm signup" template. The link
+// stays in that email too, so either path confirms the account.
+let codeVerifyInFlight = false;
+async function verifySignupCode() {
+  if (!authClient || codeVerifyInFlight) return;
+  const email = document.querySelector("[data-auth-confirmation-email]")?.textContent?.trim()
+    || localStorage.getItem("promptlyPendingMigrationEmail")
+    || "";
+  const input = document.querySelector("[data-auth-code-input]");
+  const button = document.querySelector("[data-auth-code-submit]");
+  const status = document.querySelector("[data-auth-status]");
+  // Pasted codes arrive as "123 456" or with a trailing newline.
+  const token = String(input?.value || "").replace(/\D/g, "");
+  if (input) input.value = token;
+  if (!isValidEmail(email)) return setCodeError("Go back and re-enter your email, then try again.");
+  if (token.length < 6) return setCodeError("Enter the 6-digit code from the email.");
+
+  setCodeError();
+  codeVerifyInFlight = true;
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Checking…";
+  }
+  try {
+    const { data, error } = await authClient.auth.verifyOtp({ email, token, type: "email" });
+    if (error) throw error;
+    window.clearTimeout(confirmationResendTimer);
+    status.textContent = "Email confirmed — you’re in.";
+    // onAuthStateChange fires SIGNED_IN as well; the router ignores a repeat.
+    if (data?.session?.user) routeAuthenticatedUser(data.session.user);
+  } catch (error) {
+    setCodeError(authErrorMessage(error, "code"));
+    input?.focus();
+    input?.select();
+  } finally {
+    codeVerifyInFlight = false;
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Confirm email";
+    }
+  }
+}
+
 let confirmationResendTimer = null;
 async function resendSignupConfirmation() {
   if (!authClient) return;
@@ -3872,13 +3942,23 @@ async function resendSignupConfirmation() {
       options: { emailRedirectTo: authEmailRedirectUrl() },
     });
     if (error) throw error;
-    status.textContent = `Confirmation sent again to ${email}.`;
-    button.textContent = "Sent — try again in 30s";
+    // A resend replaces the earlier code, and a slow school inbox can deliver
+    // both at once — say which one to use before the student has to wonder.
+    status.textContent = `New code sent to ${email}. Use the code in the newest email.`;
+    setCodeError();
+    let secondsLeft = 60;
+    const tick = () => {
+      if (secondsLeft <= 0) {
+        button.disabled = false;
+        button.textContent = "Resend email";
+        return;
+      }
+      button.textContent = `Sent — resend in ${secondsLeft}s`;
+      secondsLeft -= 1;
+      confirmationResendTimer = window.setTimeout(tick, 1000);
+    };
     window.clearTimeout(confirmationResendTimer);
-    confirmationResendTimer = window.setTimeout(() => {
-      button.disabled = false;
-      button.textContent = "Resend email";
-    }, 30000);
+    tick();
   } catch (error) {
     status.textContent = authErrorMessage(error, "confirmation");
     button.disabled = false;
@@ -3888,6 +3968,11 @@ async function resendSignupConfirmation() {
 
 function changeSignupEmail() {
   window.clearTimeout(confirmationResendTimer);
+  const resend = document.querySelector("[data-auth-confirmation-resend]");
+  if (resend) {
+    resend.disabled = false;
+    resend.textContent = "Resend email";
+  }
   sessionStorage.removeItem("promptlyMigrateLocal");
   localStorage.removeItem("promptlyPendingMigrationEmail");
   setAuthMode("signup");
@@ -5080,9 +5165,15 @@ initializeAuth().finally(() => {
 // handler remains the single path, and this bridges the keyboard to it.
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Enter") return;
+  if (event.target.tagName === "BUTTON") return; // Enter already clicks a button
+  const codeForm = event.target.closest?.("[data-auth-code-form]");
+  if (codeForm) {
+    event.preventDefault();
+    codeForm.querySelector("[data-auth-code-submit]")?.click();
+    return;
+  }
   const form = event.target.closest?.("[data-auth-form]");
   if (!form) return;
-  if (event.target.tagName === "BUTTON") return; // Enter already clicks a button
   event.preventDefault();
   form.querySelector("[data-auth-submit]")?.click();
 });
@@ -5090,6 +5181,7 @@ document.addEventListener("keydown", (event) => {
 // Nothing should ever navigate away from the account screen by submitting.
 document.addEventListener("submit", (event) => {
   if (event.target.matches?.("[data-auth-form]")) event.preventDefault();
+  if (event.target.matches?.("[data-auth-code-form]")) event.preventDefault();
 });
 
 // Returning from Google's chooser can restore this page from the browser's
@@ -5164,6 +5256,7 @@ document.addEventListener("click", async (event) => {
   const googleAuthButton = event.target.closest("[data-google-auth]");
   const forgotPasswordButton = event.target.closest("[data-forgot-password]");
   const passwordToggle = event.target.closest("[data-password-toggle]");
+  const codeSubmitButton = event.target.closest("[data-auth-code-submit]");
   const confirmationSigninButton = event.target.closest("[data-auth-confirmation-signin]");
   const confirmationResendButton = event.target.closest("[data-auth-confirmation-resend]");
   const confirmationChangeButton = event.target.closest("[data-auth-confirmation-change]");
@@ -5182,10 +5275,11 @@ document.addEventListener("click", async (event) => {
     passwordToggle.setAttribute("aria-label", showing ? "Show password" : "Hide password");
     passwordToggle.setAttribute("aria-pressed", showing ? "false" : "true");
   }
+  if (codeSubmitButton) await verifySignupCode();
   if (confirmationSigninButton) {
     setAuthMode("signin");
     setSignupError();
-    document.querySelector("[data-auth-status]").textContent = "Sign in after you confirm the link in your email.";
+    document.querySelector("[data-auth-status]").textContent = "Link clicked? Sign in with your password to finish.";
     document.querySelector("[data-password-input]")?.focus();
   }
   if (confirmationResendButton) await resendSignupConfirmation();

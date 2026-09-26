@@ -189,9 +189,12 @@ console.log("OAuth cancellation recovery tests passed.");
   const note = script.match(/function homeScreenHandoffNote[\s\S]*?\n}\n/)[0];
   assert.match(note, /isIOSDevice\(\) && !isStandaloneApp\(\)/,
     "the Home Screen hint must only show on iOS outside the installed app");
-  // Both places a student is told to come back and sign in must carry it.
+  // A student who arrives from the emailed link must still get it.
   assert.match(script, /Email confirmed\. Sign in to finish setting up your alerts\.\$\{homeScreenHandoffNote\(\)\}/);
-  assert.match(script, /come back and sign in\.\$\{homeScreenHandoffNote\(\)\}/);
+  // Right after signup the student types the emailed code in place, so there
+  // is no handoff to warn about — and no instruction to leave and come back.
+  assert.match(script, /status\.textContent = "Enter the code from your email to finish\.";/);
+  assert.doesNotMatch(script, /come back and sign in/);
   assert.match(script, /function prefillPendingEmail\(\)[\s\S]*promptlyPendingMigrationEmail/,
     "the confirmed address must be put back in the field");
 }

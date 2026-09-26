@@ -149,10 +149,16 @@
         <div class="auth-confirmation" data-auth-confirmation role="status" hidden>
           <span class="auth-confirmation-icon" aria-hidden="true">✓</span>
           <h2>Check your inbox</h2>
-          <p>We sent a confirmation link to <strong data-auth-confirmation-email></strong>.</p>
-          <p>Open the link, then return here to sign in.</p>
-          <p class="auth-delivery-tip"><strong>School email on Outlook?</strong> Check Junk, the Other tab, and your school’s quarantine. If it still doesn’t arrive, a personal email works too.</p>
-          <button class="soft-action wide" type="button" data-auth-confirmation-signin>I confirmed my email</button>
+          <p>We sent a code to <strong data-auth-confirmation-email></strong>.</p>
+          <p>Type it here — no need to leave this page.</p>
+          <form class="auth-code-form" data-auth-code-form novalidate>
+            <label class="sr-only" for="auth-code">Confirmation code</label>
+            <input class="auth-code-input" data-auth-code-input id="auth-code" name="one-time-code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="10" placeholder="123456" />
+            <p class="form-error" data-auth-code-error role="alert" hidden></p>
+            <button class="soft-action wide" type="button" data-auth-code-submit>Confirm email</button>
+          </form>
+          <p class="auth-delivery-tip"><strong>School email on Outlook?</strong> It can take a few minutes. Check Junk, the Other tab, and your school’s quarantine. Got two emails? Use the code in the newest one. If nothing arrives, a personal email works too.</p>
+          <button class="text-action" type="button" data-auth-confirmation-signin>I already clicked the link in the email</button>
           <div class="auth-confirmation-links">
             <button class="text-action" type="button" data-auth-confirmation-resend>Resend email</button>
             <button class="text-action" type="button" data-auth-confirmation-change>Use a different email</button>

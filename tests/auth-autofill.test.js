@@ -59,6 +59,20 @@ assert.match(html, /data-auth-confirmation-resend/, "a missing confirmation emai
 assert.match(html, /data-auth-confirmation-change/, "students need a personal-email escape hatch when a school blocks auth mail");
 assert.match(script, /authClient\.auth\.resend\(\{[\s\S]*type: "signup"/,
   "resend must request another signup confirmation from the auth provider");
+// School Outlook link scanners open single-use confirmation links before the
+// student does, so the confirmation screen has to accept the emailed code.
+assert.match(html, /data-auth-code-input[^>]*inputmode="numeric"[^>]*autocomplete="one-time-code"/,
+  "the code field must bring up the number pad and accept the OS code autofill");
+assert.match(script, /authClient\.auth\.verifyOtp\(\{ email, token, type: "email" \}\)/,
+  "the typed code must confirm the signup through the auth provider");
+assert.match(script, /replace\(\/\\D\/g, ""\)/,
+  "pasted codes with spaces or newlines must still verify");
+assert.match(script, /if \(codeSubmitButton\) await verifySignupCode\(\);/,
+  "the Confirm email button must be wired to code verification");
+assert.match(script, /codeForm\.querySelector\("\[data-auth-code-submit\]"\)\?\.click\(\)/,
+  "Enter in the code field must submit the code");
+assert.match(script, /Use the code in the newest email/,
+  "after a resend, the student must be told which of two emails to use");
 assert.match(script, /emailRedirectTo: authEmailRedirectUrl\(\)/,
   "confirmation links must return to the current Promptly web origin");
 assert.match(script, /return isNativeShell\(\) \? API_ORIGIN : window\.location\.origin/,
