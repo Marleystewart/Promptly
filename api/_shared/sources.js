@@ -856,6 +856,9 @@ const SOURCES = [
   { company: "enVista", short: "ENVS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ukg", board: "recruiting.ultipro.com/ENV1003ENVIS/adc7da17-182d-0b77-a5c5-46cf3cb50218" },
   { company: "Nagarro", short: "NGRO", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "smartrecruiters", board: "Nagarro1" },
   { company: "Arthur D. Little", short: "ADL", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "adlittle" },
+  { company: "Kittelson & Associates", short: "KAI", logoClass: "eng", field: "Engineering", subField: "Infrastructure", ats: "custom", handler: "kittelson" },
+  { company: "Synapse Energy Economics", short: "SYNE", logoClass: "cons", field: "Consulting", subField: "Economic Consulting", ats: "custom", handler: "synapse" },
+  { company: "Boston Strategic Partners", short: "BSP", logoClass: "cons", field: "Consulting", subField: "Life Sciences", ats: "custom", handler: "bostonsp" },
   // Avature portals (api/_shared/avature.js). RGP honours a page size of 40,
   // so its whole board is three requests; Maximus ignores it and is read
   // through its own keyword search instead of 67 pages of six.

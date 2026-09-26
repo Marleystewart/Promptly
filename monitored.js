@@ -102,6 +102,7 @@ window.MONITORED_COMPANIES = [
   "Board of Innovation",
   "Boeing",
   "Booz Allen Hamilton",
+  "Boston Strategic Partners",
   "Bottomline Technologies",
   "Bounteous",
   "Brainlabs",
@@ -376,6 +377,7 @@ window.MONITORED_COMPANIES = [
   "Khan Academy",
   "Kimley-Horn",
   "Kirkland & Ellis",
+  "Kittelson & Associates",
   "KKR",
   "Komodo Health",
   "Korn Ferry",
@@ -626,6 +628,7 @@ window.MONITORED_COMPANIES = [
   "Susquehanna (SIG)",
   "Sweetgreen",
   "Sword Health",
+  "Synapse Energy Economics",
   "Synchrony",
   "Synechron",
   "Syneos Health",
@@ -736,11 +739,11 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 727,
-  "companies": 727,
+  "sources": 730,
+  "companies": 730,
   "byPlatform": {
     "greenhouse": 238,
-    "custom": 149,
+    "custom": 152,
     "workday": 158,
     "lever": 37,
     "ashby": 57,
@@ -769,10 +772,10 @@ window.PROMPTLY_COVERAGE = {
   "byField": {
     "Finance": 214,
     "Technology": 72,
-    "Consulting": 205,
+    "Consulting": 207,
     "Healthcare": 57,
     "Education": 4,
-    "Engineering": 58,
+    "Engineering": 59,
     "Law": 15,
     "Media": 15,
     "Consumer": 16,
