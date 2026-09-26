@@ -71,12 +71,39 @@ everything. Coca-Cola went from 209 results to 9 once the right one was used.
 Both expose `primary_country`, so US filtering is exact here — none of the
 IN/Indiana ambiguity that jobs2web forced.
 
-## Avature: not reachable from a server, at all
+## Avature: it depends on the tenant — check, don't assume
 
-**IBM, Slalom, CBRE.** Do not spend more time here without a decision about
-headless browsers.
+**Corrected in round six.** This section used to say Avature was unreachable
+from a server, full stop. That is true of some tenants and false of others, and
+believing the blanket version cost RGP and Maximus several rounds.
 
-Avature portals serve real content to a browser and **nothing** to a server:
+Two tenants ARE readable from plain Node, and their whole list is
+server-rendered. `api/_shared/avature.js` reads them:
+
+| Tenant | URL | Paging |
+|---|---|---|
+| RGP | `careers.rgp.com/Careers/SearchJobs/?jobRecordsPerPage=40&jobOffset=0` | honours the page size — 113 reqs in three requests |
+| Maximus | `maximus.avature.net/careers/SearchJobs/?folderOffset=0` | page size IGNORED, always six, so read it through `&search=<term>` instead |
+
+Note the two parameter families: `jobRecordsPerPage`/`jobOffset` on one
+generation, `folderRecordsPerPage`/`folderOffset` on the other. Neither is
+documented; both are in the pager's own hrefs, which is where to look.
+
+Rows are identical in both — `<article class="article article--result">` with
+the title in an `h3 > a`. The location is not: RGP fills a
+`list-item-locationBuiltIn` span, Maximus leaves that slot to a posted date and
+writes the country into the URL slug
+(`/FolderDetail/United-States-Senior-Cybersecurity-Engineer…/43712`).
+
+The ones that genuinely are unreachable are the NEWER React portals, which is a
+different failure: they serve a server no rows at all and expose no offset
+anywhere.
+
+
+**IBM, Slalom, CBRE, Avanade.** Do not spend more time on these without a
+decision about headless browsers.
+
+These portals serve real content to a browser and **nothing** to a server:
 
 | Client | Same URL | Result |
 |---|---|---|
@@ -88,10 +115,11 @@ the portal root first to pick up a session does not help either: that request
 also returns 202 and sets **no cookies**, so there is no session to acquire. The
 block happens on the very first request from a non-browser client.
 
-An Avature adapter would therefore need a real headless browser inside the
-refresh cron. That does not fit: the cron already runs to a 300s ceiling across
-300+ sources, and Promptly is at Vercel's 12-function limit. Treat IBM, Slalom
-and CBRE as unreachable unless that architecture changes.
+Reading these would need a real headless browser inside the refresh cron. That
+does not fit: the cron already runs to a 300s ceiling across 700+ sources, and
+Promptly is at Vercel's 12-function limit. Treat IBM, Slalom, CBRE and Avanade
+as unreachable unless that architecture changes — but test any NEW Avature
+tenant against the adapter first, because the readable generation is common.
 
 ## Consulting and finance sweep, 9 September 2026
 
@@ -510,3 +538,92 @@ The three techniques that found everything this round, in order of yield:
 3. When a board answers 200 but shows no rows, check whether it wants a session
    before concluding it is empty. That single check was the difference between
    "Centric has no board" and 24 live requisitions.
+
+## 500-firm list, round six (25 Sep 2026)
+
+Round five's method was "read the careers page". Round six's is **follow the
+firm's own site to the board**, which moved fourteen more firms. Two techniques
+did all of it.
+
+### Read the job links, not the careers page
+
+A careers page often names no ATS while a JOB LINK on a neighbouring page names
+the tenant outright.
+
+| Firm | Where the answer actually was |
+|---|---|
+| Spencer Stuart | `/who-we-are/careers-paths` — not the careers page — links `spencerstuart.wd5.myworkdayjobs.com/Spencer_Stuart_External_Careers` |
+| AtkinsRéalis | their job API's `external_posting_url` points at Workday tenant **`slihrms`** — SNC-Lavalin, their former name. No amount of guessing "atkins" would ever have found it |
+| Avanade | a job page's apply button points at `avanadeta.avature.net` (which then 404s every public search path, but the tenant is now known) |
+| Perficient | `careers.perficient.com` redirects to `/en/sites/CX_1` — Oracle Recruiting Cloud on their own domain. The earlier "0 reqs for every search" was the right site number against the wrong host |
+
+### Crawl the careers pages two levels deep
+
+`scripts/`-style landing-page reads miss boards that sit on subpages. A two-level
+crawl of the firm's own careers section found:
+
+| Firm | ATS | Page it was on |
+|---|---|---|
+| Arthur D. Little | iCIMS `internships-adlittle` | three levels down, under `careers/working-us` |
+| Bully Pulpit Interactive | Workable `bully-pulpit-international-1` | `/careers-na`, not `/careers` |
+| enVista | UKG `ENV1003ENVIS` | `/about/careers/` |
+| Nagarro | SmartRecruiters `Nagarro1` | seventeen pages in |
+| GEP | iCIMS `jobsus-gep` etc. | `/careers/join-us/campus-connect` — and all four portals are decommissioned |
+
+**Guessing a token by company name is worse than useless.** The only "envista"
+Workday board is Envista Holdings, a dental company; the only "slc" hit was the
+UK Student Loans Company. Both would have been added as the wrong employer.
+
+### Some firms ARE the board
+
+Three firms filed as "no job board found" keep their openings on their own site
+with no ATS anywhere. The employer's own page is the authoritative source, so
+these are addable with a small reader:
+
+- **Kittelson & Associates** — WordPress articles. Three live Summer 2027
+  internships. Offices are in separate `<span>`s and must be joined.
+- **Boston Strategic Partners** — WordPress posts, each linked twice (once by
+  title, once by a "Read More »" button, so take the first).
+- **Synapse Energy Economics** — Trakstar Hire, the old Recruiterbox. Its
+  careers page names nothing; the tenant (`synapseenergy`) is only inside the
+  widget's JavaScript. It publishes RSS at `/jobfeeds/<tenant>`, which
+  `api/_shared/trakstar.js` reads.
+
+### Two entries in the status table were simply wrong
+
+North Highland and HCLTech have had live cards for some time. HCLTech's row had
+even been given Maximus' reason, copy-pasted. **Cross-check the status doc
+against `SOURCES` before trusting a "not addable".**
+
+### The bug the additions exposed
+
+Workday collapses a multi-office requisition's locations to a COUNT — "5
+Locations" — which names no city and no country. A source marked
+`positiveUsOnly` had nothing to confirm, so it dropped the req. That was costing
+**46 real US student roles across 16 employers**, including all fourteen of
+Nike's internships and six of CACI's. `fetchWorkday` now asks the posting's own
+detail endpoint for the offices, for collapsed reqs that already look
+student-relevant. Pinned in `tests/workday-collapsed-locations.test.js`.
+
+Arthur D. Little exposed a second one: its whole student board is titled "Summer
+Business Analyst 2027" and "Winter Business Analyst 2027", which matched no
+intern phrase, so all six were served as New Grad roles. `INTERN_TITLE` now
+accepts a practice word between the season and the title — required, and only
+after summer/winter, so a bank's "2027 Fall Analyst Program" (a full-time campus
+class) stays on the new-grad path.
+
+### New walls, precisely
+
+| Firm | Why |
+|---|---|
+| Virtusa | Phenom `VIRVIRGLOBAL` behind Akamai; the `/widgets` jobs route 403s servers |
+| Mphasis | RippleHire; `candidatejobsearch` 500s for every payload shape tried, including from inside a live browser session |
+| CGI | Njoyn, behind a Radware captcha page |
+| AECOM | `aecom.jobs` is a client-rendered shell; its `prod-search-api.jobsyn.org` Solr API answers 400 without an origin and 403 with one it does not recognise |
+| SoftServe | Incapsula |
+| EPAM | now a Cloudflare challenge — it used to answer |
+| Slalom, Avanade | the newer React Avature portals: no rows to a server, no offset in the markup |
+| Egon Zehnder | softGarden, readable, but every requisition is German, Swiss or Austrian |
+| Russell Reynolds | no board — `/careers/join-us` is a talent-acquisition contact form |
+| FutureBrand | no careers section on its website at all |
+| Genesis Research | openings are listed as text with no per-role link, so there is nothing to send a student to |

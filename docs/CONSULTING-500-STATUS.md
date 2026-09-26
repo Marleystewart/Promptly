@@ -1,32 +1,76 @@
 # Trey's 500-firm consulting list: where every firm stands
 
-Checked 16 Sep 2026, after round four. Generated from the classification behind
-the round-three and round-four commits on `trey/min-age-18`; the reasons for
-every wall are in [`SOURCE-HUNTING-FINDINGS.md`](SOURCE-HUNTING-FINDINGS.md).
-
-Round five went back at the 86 remaining walls. The important correction is
-that 48 of them were mis-filed: every earlier sweep read only careers LANDING
-pages, and the board is routinely on a subpage. It also separates, for the
-first time, firms with no readable board from firms with **no board at all** —
-eight take applications by email, and one no longer has a website.
-
-Round four went back at the firms round three had given up on. Deloitte, PwC and
-KPMG all have cards now, which is most of the jump in the table below: a single
-Big Four firm carries dozens of the list's entries as practice areas.
+Checked 25 Sep 2026, after round six. The reasons behind every wall are in
+[`SOURCE-HUNTING-FINDINGS.md`](SOURCE-HUNTING-FINDINGS.md).
 
 | | Entries |
 |---|---|
-| Covered by a live card now | **377** of 500 |
-| - live before this round | 71 |
-| - added | 179 |
+| Covered by a live card now | **391** of 500 |
+| - live before round five | 73 |
+| - added in rounds four to six | 191 |
 | - a practice area of a firm with a live card | 127 |
-| Not addable (no readable feed, bot protection, or no board at all) | 83 |
+| Not addable (no readable feed, bot protection, or no board at all) | 82 |
 | - a practice area of a firm that is not addable (IBM, Slalom, Cognizant...) | 13 |
 | No US hiring to monitor | 27 |
 
 A job board is per employer, not per practice, so "Monitor Deloitte" and
 "Deloitte Human Capital" are the same board as Deloitte. Entry #50 is missing
 from the original list.
+
+## What each round changed
+
+**Round six** went back at the 83 firms round five had left as walls, and moved
+fourteen of them. Two things did the work.
+
+The first was reading the JOB LINKS rather than the careers page. That is how
+Spencer Stuart's Workday site name turned up (on /who-we-are/careers-paths, not
+on the careers page), how AtkinsRéalis' tenant turned out to be `slihrms` —
+their former name, SNC-Lavalin — and how Avanade's Avature tenant was found in
+a job page's apply URL.
+
+The second was crawling each firm's own careers pages two levels deep instead of
+reading the landing page. Arthur D. Little's iCIMS internships portal is three
+pages down under careers/working-us. Bully Pulpit's board is on /careers-na, not
+/careers. enVista's is UKG, not the Workday "envista" — which is Envista
+Holdings, a dental company.
+
+It also found that three firms filed as having "no job board" keep their
+openings ON THEIR OWN SITE, with no ATS named anywhere: Kittelson (three live
+Summer 2027 internships), Boston Strategic Partners, and Synapse Energy
+Economics, whose Trakstar Hire tenant appears only inside a widget script.
+
+Two entries in this table were simply wrong: North Highland and HCLTech have had
+live cards for some time. HCLTech's row had even been given Maximus' reason.
+
+Round six also corrected a bug the additions exposed. Workday collapses a
+multi-office requisition's locations to a COUNT — "5 Locations" — which names no
+city and no country, so a US-only source had nothing to confirm and dropped it.
+That was costing 46 real US student roles across 16 employers, including all
+fourteen of Nike's internships and six of CACI's. The reader now asks the board
+for the actual offices.
+
+**Round five** found that 48 of round four's walls were mis-filed: every sweep
+before it read only careers LANDING pages. It also separated, for the first
+time, firms with no readable board from firms with no board at all.
+
+**Round four** went back at what round three gave up on. Deloitte, PwC and KPMG
+all have cards, which is most of the jump: a single Big Four firm carries dozens
+of this list's entries as practice areas.
+
+## Walls that will not move
+
+Twenty firms are behind bot protection — Cloudflare, Akamai, Incapsula,
+Radware — on the only route that lists their jobs. Reading those would mean
+imitating a browser against a route that deliberately refuses servers, which is
+a line this project does not cross, so they stay out however big the firm is:
+Bain, Alvarez & Marsal, Cognizant, Infosys, Globant, UST, EPAM, Virtusa,
+SoftServe, Tetra Tech, Persistent Systems, Jacobs, CGI, Seven Letter, Steer,
+Mott MacDonald, Citeline, EVERSANA, Guidepost, Everest Group.
+
+Eight have no board at all. Five take applications by email only (Kepler Cannon,
+Wolff Olins, NovaRest, Patomak, Hattaway); Russell Reynolds' careers page is a
+talent-acquisition contact form; FutureBrand has no careers section; and Epsilon
+Economics no longer has a website.
 
 | # | Firm on the list | Status | Card / reason |
 |---|---|---|---|
@@ -55,8 +99,8 @@ from the original list.
 | 22 | Guidehouse | Live (before this round) | Guidehouse |
 | 23 | Gartner Consulting | **Added** | Gartner |
 | 24 | West Monroe | Live (before this round) | West Monroe |
-| 25 | Slalom | Not addable | Slalom: Avature's feed is a fixed latest-20 with no offset and no locations |
-| 26 | Arthur D. Little | Not addable | Arthur D. Little: no job board found: careers page has no ATS link, feed or embed |
+| 25 | Slalom | Not addable | Slalom — the newer React Avature portal: serves a server no rows at all, shows 12 of 436, and has no offset anywhere in the markup |
+| 26 | Arthur D. Little | **Added** | Arthur D. Little — its own iCIMS INTERNSHIPS portal, three pages deep under careers/working-us; 6 live US reqs |
 | 27 | OC&C Strategy Consultants | **Added** | OC&C Strategy Consultants |
 | 28 | Analysis Group | **Added** | Analysis Group |
 | 29 | Cornerstone Research | Live (before this round) | Cornerstone Research |
@@ -96,13 +140,13 @@ from the original list.
 | 64 | Tata Consultancy Services | Not addable | TCS: login-only proprietary ATS (iBegin) |
 | 65 | Wipro Consulting | **Added** | Wipro |
 | 66 | NTT DATA Consulting | **Added** | NTT DATA |
-| 67 | CGI | Not addable | CGI: no job board found: careers page has no ATS link, feed or embed |
-| 68 | EPAM Systems | Not addable | EPAM: own jobs API answers, but offers no US filter; needs a custom reader |
+| 67 | CGI | Not addable | CGI — Njoyn (cgi.njoyn.com), behind a Radware captcha |
+| 68 | EPAM Systems | Not addable | EPAM — its own jobs API is now behind a Cloudflare challenge |
 | 69 | Thoughtworks | Live (before this round) | ThoughtWorks |
-| 70 | Perficient | Not addable | Perficient: Oracle site CX_1 returns 0 reqs for every search |
+| 70 | Perficient | **Added** | Perficient — Oracle Recruiting Cloud on careers.perficient.com (CX_1); the earlier probe asked the wrong host |
 | 71 | PA Consulting | **Added** | PA Consulting |
 | 72 | BearingPoint | Live (before this round) | BearingPoint |
-| 73 | North Highland | Not addable | North Highland: job API requires a session token |
+| 73 | North Highland | Live (before this round) | North Highland — already live; the not-addable entry was wrong |
 | 74 | Point B | Live (before this round) | Point B |
 | 75 | Prophet | Live (before this round) | Prophet |
 | 76 | Monitor Deloitte | Same firm | → Deloitte |
@@ -130,7 +174,7 @@ from the original list.
 | 98 | MITRE | **Added** | MITRE |
 | 99 | Noblis | **Added** | Noblis |
 | 100 | LMI | **Added** | LMI |
-| 101 | Maximus | Not addable | Maximus: Avature, 6 reqs a page and a loose search, ~40+ requests per refresh |
+| 101 | Maximus | **Added** | Maximus — Avature; read through the portal's own keyword search, not 67 pages of six |
 | 102 | Serco | No US hiring | Serco: careers.serco.com is the UK site; the US (Serco Inc.) board was not found |
 | 103 | Amentum | **Added** | Amentum |
 | 104 | Leidos | Live (before this round) | Leidos |
@@ -151,7 +195,7 @@ from the original list.
 | 119 | ICF Climate | Same firm | → ICF |
 | 120 | ERM | **Added** | ERM |
 | 121 | Jacobs Solutions | Not addable | Jacobs: Avature serves servers an empty page (202) |
-| 122 | AECOM Advisory | Not addable | AECOM: Avature, no readable search page |
+| 122 | AECOM Advisory | Not addable | AECOM — aecom.jobs is a client-rendered shell; its jobsyn.org Solr API refuses any caller whose origin it does not recognise |
 | 123 | WSP Advisory | **Added** | WSP |
 | 124 | Arcadis | **Added** | Arcadis |
 | 125 | Stantec Consulting | **Added** | Stantec |
@@ -169,7 +213,7 @@ from the original list.
 | 137 | Guidehouse Energy | Same firm | → Guidehouse |
 | 138 | ICF Energy Advisory | Same firm | → ICF |
 | 139 | 1898 & Co. | Same firm | → Burns & McDonnell (1898 & Co. is its consulting arm) |
-| 140 | Synapse Energy Economics | Not addable | Synapse Energy Economics: no job board found: careers page has no ATS link, feed or embed |
+| 140 | Synapse Energy Economics | **Added** | Synapse Energy Economics — Trakstar Hire (ex-Recruiterbox) RSS; the tenant is only in the widget's JS |
 | 141 | Brattle Energy | Same firm | → The Brattle Group |
 | 142 | Cadmus | **Added** | Cadmus |
 | 143 | DNV Energy Systems | Same firm | → DNV |
@@ -182,18 +226,18 @@ from the original list.
 | 150 | Ramboll | **Added** | Ramboll |
 | 151 | FTI Delta | Same firm | → FTI Consulting |
 | 152 | Baringa | Live (before this round) | Baringa |
-| 153 | Argon & Co | Not addable | Argon & Co: no job board found: careers page has no ATS link, feed or embed |
-| 154 | GEP | Not addable | GEP: its campus page links iCIMS `jobsamericas-gep`, which returns iCIMS' decommissioned-portal page; every GEP variant does |
+| 153 | Argon & Co | Not addable | Argon & Co — /us/careers/join-us/ is an application form, with no openings listed |
+| 154 | GEP | Not addable | GEP — all four iCIMS portals its careers page links are decommissioned ('Site Not Found'), not just the Americas one |
 | 155 | Efficio | Not addable | Efficio: no job board found: careers page has no ATS link, feed or embed |
 | 156 | Proxima | Live (before this round) | Proxima |
 | 157 | The Hackett Group | **Added** | The Hackett Group |
 | 158 | Chainalytics | Same firm | → NTT DATA (chainalytics.com's careers link goes to NTT DATA) |
-| 159 | enVista | Not addable | enVista: the only 'envista' Workday board is Envista Holdings (dental), an impostor |
+| 159 | enVista | **Added** | enVista — UKG (ENV1003ENVIS). The Workday 'envista' is Envista Holdings, a dental company |
 | 160 | Maine Pointe | Not addable | Maine Pointe: no job board found: careers page has no ATS link, feed or embed |
 | 161 | TBM Consulting Group | **Added** | TBM Consulting Group |
 | 162 | Celerant Consulting | Not addable | Celerant: no job board found: careers page has no ATS link, feed or embed |
 | 163 | Proudfoot | **Added** | Proudfoot |
-| 164 | Kepner-Tregoe | Not addable | Kepner-Tregoe: no job board found: careers page has no ATS link, feed or embed |
+| 164 | Kepner-Tregoe | Not addable | Kepner-Tregoe — one open position on its own careers page, and it is in the Netherlands |
 | 165 | Partners in Performance | Not addable | Partners in Performance: no job board found: careers page has no ATS link, feed or embed |
 | 166 | dss+ | **Added** | dss+ |
 | 167 | Porsche Consulting | Not addable | Porsche Consulting: no job board found: careers page has no ATS link, feed or embed |
@@ -207,25 +251,25 @@ from the original list.
 | 175 | Sia Partners | **Added** | Sia Partners |
 | 176 | Sionic | No US hiring | Sionic: hires through Davies' Pinpoint board, which is UK-only |
 | 177 | Synechron | **Added** | Synechron |
-| 178 | Avanade | Not addable | Avanade: Avature search page 404s |
+| 178 | Avanade | Not addable | Avanade — the list renders only after a cookie-consent interaction, 12 of 620 with no pager; its avanadeta Avature tenant 404s every public search path |
 | 179 | Globant | Not addable | Globant: careers site refuses server requests (403) |
 | 180 | Endava | **Added** | Endava |
-| 181 | SoftServe | Not addable | SoftServe: no job board found: careers page has no ATS link, feed or embed |
-| 182 | Virtusa | Not addable | Virtusa: Taleo section without a published portal id |
+| 181 | SoftServe | Not addable | SoftServe — career.softserveinc.com is behind Incapsula |
+| 182 | Virtusa | Not addable | Virtusa — Phenom (VIRVIRGLOBAL) behind Akamai; the /widgets jobs route refuses servers |
 | 183 | Hexaware Technologies | **Added** | Hexaware Technologies |
 | 184 | LTIMindtree | **Added** | LTIMindtree |
 | 185 | Tech Mahindra | Not addable | Tech Mahindra: no job board found: careers page has no ATS link, feed or embed |
-| 186 | HCLTech | Not addable | Maximus: Avature renders its list client-side; the feed is a fixed latest-20 |
+| 186 | HCLTech | Live (before this round) | HCLTech — already live (SuccessFactors CSB); the not-addable entry was wrong, and quoted Maximus' reason |
 | 187 | Genpact | Live (before this round) | Genpact |
 | 188 | EXL | **Added** | EXL |
 | 189 | WNS | Not addable | WNS: no job board found: careers page has no ATS link, feed or embed |
 | 190 | UST | Not addable | UST: careers site refuses server requests (403) |
 | 191 | Persistent Systems | Not addable | Persistent Systems: careers site redirects to validate.perfdrive.com, a Radware bot check |
-| 192 | Mphasis | Not addable | Mphasis: no job board found: careers page has no ATS link, feed or embed |
+| 192 | Mphasis | Not addable | Mphasis — RippleHire; its search endpoint 500s for every payload shape, including from inside a live browser session |
 | 193 | Birlasoft | **Added** | Birlasoft |
 | 194 | Zensar Technologies | No US hiring | Zensar: its Oracle board reads fine — 311 reqs, none of them US (India, UK, South Africa) |
 | 195 | Coforge | Not addable | Coforge: no job board found: careers page has no ATS link, feed or embed |
-| 196 | Nagarro | Not addable | Nagarro: no job board found: careers page has no ATS link, feed or embed |
+| 196 | Nagarro | **Added** | Nagarro — SmartRecruiters Nagarro1, 156 US reqs |
 | 197 | Valtech | **Added** | Valtech |
 | 198 | VML Consulting | Live (before this round) | VML |
 | 199 | Merkle | Not addable | Merkle (dentsu): no job board found: careers page has no ATS link, feed or embed |
@@ -244,18 +288,18 @@ from the original list.
 | 212 | Landor | Live (before this round) | Landor |
 | 213 | Interbrand | Live (before this round) | Interbrand |
 | 214 | Siegel+Gale | **Added** | Siegel+Gale |
-| 215 | FutureBrand | Not addable | FutureBrand: only parent IPG's Workday tenant found |
+| 215 | FutureBrand | Not addable | FutureBrand — its site has no careers section at all |
 | 216 | Wolff Olins | Not addable | Wolff Olins: applications by email (talent@wolffolins.com); no board exists |
-| 217 | The Alexander Group | Not addable | The Alexander Group: no job board found: careers page has no ATS link, feed or embed |
+| 217 | The Alexander Group | Not addable | The Alexander Group — its own /careers/ URL 404s |
 | 218 | Korn Ferry Advisory | Same firm | → Korn Ferry |
 | 219 | Segal | **Added** | Segal |
 | 220 | Milliman | **Added** | Milliman |
 | 221 | Buck | Same firm | → Gallagher (acquired Buck) |
-| 222 | Spencer Stuart | Not addable | Spencer Stuart: Workday tenant exists (spencerstuart/wd5), site name not found |
-| 223 | Russell Reynolds Associates | Not addable | Russell Reynolds: the only Workday site found lists 0 reqs, so ownership of a live board is unproven |
+| 222 | Spencer Stuart | **Added** | Spencer Stuart — Workday Spencer_Stuart_External_Careers, named on /who-we-are/careers-paths |
+| 223 | Russell Reynolds Associates | Not addable | Russell Reynolds — no board; /careers/join-us is a talent-acquisition contact form |
 | 224 | Heidrick & Struggles | Live (before this round) | Heidrick & Struggles |
 | 225 | ghSMART | **Added** | ghSMART |
-| 226 | Egon Zehnder | Not addable | Egon Zehnder: no job board found: careers page has no ATS link, feed or embed |
+| 226 | Egon Zehnder | Not addable | Egon Zehnder — softGarden (egonzehnder.softgarden.io), readable, but every req is German, Swiss or Austrian |
 | 227 | DDI | **Added** | DDI |
 | 228 | FranklinCovey | **Added** | FranklinCovey |
 | 229 | BTS | **Added** | BTS |
@@ -297,9 +341,9 @@ from the original list.
 | 265 | Cornerstone Research Healthcare | Same firm | → Cornerstone Research |
 | 266 | Precision AQ | Live (before this round) | Precision AQ |
 | 267 | HEOR | No US hiring | HEOR Ltd: UK firm; site refuses servers |
-| 268 | Genesis Research | Not addable | Genesis Research: applications by email (careers@genesisrg.com); no board exists |
+| 268 | Genesis Research | Not addable | Genesis Research — openings are listed as text with no per-role link, so there is nothing to send a student to |
 | 269 | OPEN Health | **Added** | OPEN Health |
-| 270 | Boston Strategic Partners | Not addable | Boston Strategic Partners: applications by email (info@bostonsp.com); no board exists |
+| 270 | Boston Strategic Partners | **Added** | Boston Strategic Partners — own-site openings under /index.php/careers/; not email-only |
 | 271 | HealthScape Advisors | Same firm | → The Chartis Group |
 | 272 | Kaufman Hall | Same firm | → Vizient (Kaufman Hall) |
 | 273 | Sg2 | Same firm | → Vizient (Sg2) |
@@ -328,7 +372,7 @@ from the original list.
 | 296 | Econic Partners | **Added** | Econic Partners |
 | 297 | Microeconomic Insights | No US hiring | Microeconomic Insights: a research publication, not an employer |
 | 298 | Matrix Economics | Not addable | Matrix Economics: no job board found: careers page has no ATS link, feed or embed |
-| 299 | Criterion Economics | Not addable | Criterion Economics: no job board found: careers page has no ATS link, feed or embed |
+| 299 | Criterion Economics | Not addable | Criterion Economics — its own /about/careers/ URL 404s |
 | 300 | Oxera | No US hiring | Oxera: its teamtailor board is UK-only |
 | 301 | Frontier Economics | No US hiring | Frontier Economics: board is London/Brussels/Amsterdam only |
 | 302 | RBB Economics | No US hiring | RBB Economics: UK/EU only |
@@ -429,8 +473,8 @@ from the original list.
 | 397 | IMA Financial Group Advisory | **Added** | IMA Financial Group |
 | 398 | HUB International Consulting | **Added** | HUB International |
 | 399 | Wakely Consulting Group | **Added** | Wakely Consulting Group |
-| 400 | Lewis & Ellis | Not addable | Lewis & Ellis: iSolved board shows no openings; no reader built |
-| 401 | Axene Health Partners | Not addable | Axene Health Partners: no job board found: careers page has no ATS link, feed or embed |
+| 400 | Lewis & Ellis | Not addable | Lewis & Ellis — its iSolved board (lewisellis.isolvedhire.com) lists no openings at all (re-checked) |
+| 401 | Axene Health Partners | Not addable | Axene Health Partners — its own /careers/ URL 404s |
 | 402 | NovaRest | Not addable | NovaRest: applications by email (careers@novarest.com); no board exists |
 | 403 | Oliver Wyman Financial Services | Same firm | → Oliver Wyman |
 | 404 | Capco Financial Services | Same firm | → Capco |
@@ -473,7 +517,7 @@ from the original list.
 | 441 | Edelman Advisory | **Added** | Edelman |
 | 442 | Burson | **Added** | Burson |
 | 443 | FleishmanHillard | Live (before this round) | FleishmanHillard |
-| 444 | Mercury Public Affairs | Not addable | Mercury Public Affairs: no job board found: careers page has no ATS link, feed or embed |
+| 444 | Mercury Public Affairs | Not addable | Mercury Public Affairs — its careers page states it has no open positions and lists none |
 | 445 | Dentons Global Advisors | **Added** | Dentons Global Advisors |
 | 446 | Penta Group | **Added** | Penta Group |
 | 447 | Ballast Research | Same firm | → Penta Group (Ballast Research) |
@@ -481,8 +525,8 @@ from the original list.
 | 449 | Seven Letter | Not addable | Seven Letter: careers site refuses server requests (403) |
 | 450 | Rational 360 | **Added** | Rational 360 |
 | 451 | SKDK | **Added** | SKDK |
-| 452 | Targeted Victory | Not addable | Targeted Victory: posts on LinkedIn only |
-| 453 | Bully Pulpit Interactive | Not addable | Bully Pulpit: applications by email (jobs@bpigroup.com); no board exists |
+| 452 | Targeted Victory | Not addable | Targeted Victory — its own /careers/ URL 404s; posts on LinkedIn only |
+| 453 | Bully Pulpit Interactive | **Added** | Bully Pulpit Interactive — Workable bully-pulpit-international-1, 21 live US roles; the board is on /careers-na |
 | 454 | Blue State | **Added** | Blue State |
 | 455 | GMMB | Live (before this round) | GMMB |
 | 456 | Precision Strategies | **Added** | Precision Strategies |
@@ -494,10 +538,10 @@ from the original list.
 | 462 | CDM Smith | **Added** | CDM Smith |
 | 463 | Gannett Fleming TranSystems | **Added** | Gannett Fleming TranSystems |
 | 464 | Fehr & Peers | Live (before this round) | Fehr & Peers |
-| 465 | Kittelson & Associates | Not addable | Kittelson: no job board found: careers page has no ATS link, feed or embed |
-| 466 | Nelson\Nygaard | Not addable | Nelson\Nygaard: careers link goes to a UKG board coded for another firm, with 0 reqs |
+| 465 | Kittelson & Associates | **Added** | Kittelson & Associates — own-site openings; 3 live Summer 2027 internships |
+| 466 | Nelson\Nygaard | Not addable | Nelson\Nygaard — its careers link still points at Perkins&Will's UKG board, which lists 0 reqs (re-checked) |
 | 467 | RSG | **Added** | RSG |
-| 468 | AtkinsRéalis | Not addable | AtkinsRéalis: board not identified; the 'slc' Workday hit is the UK Student Loans Company |
+| 468 | AtkinsRéalis | **Added** | AtkinsRéalis — Workday slihrms (their former SNC-Lavalin tenant), US facet Location_Country |
 | 469 | Arup Advisory | Not addable | Arup: jobs.arup.com refuses servers (403); Taleo portal id not published |
 | 470 | Mott MacDonald | Not addable | Mott MacDonald: careers site refuses server requests (403) |
 | 471 | TYLin | **Added** | TYLin |
@@ -514,7 +558,7 @@ from the original list.
 | 482 | Capgemini Engineering | Same firm | → Capgemini |
 | 483 | Quest Global | **Added** | Quest Global |
 | 484 | ALTEN | **Added** | ALTEN |
-| 485 | RGP / Resources Connection | Not addable | RGP: own site list; no ATS reader built |
+| 485 | RGP / Resources Connection | **Added** | RGP — Avature; jobRecordsPerPage is honoured, so the whole board is three requests |
 | 486 | Propeller | Live (before this round) | Propeller Consulting |
 | 487 | Cprime | Live (before this round) | Cprime |
 | 488 | Clarasys | No US hiring | Clarasys: UK firm; no board found |
