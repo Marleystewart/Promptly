@@ -28,6 +28,12 @@ const REQUIRED_KEYS = {
   // career section explicit — a Taleo tenant can host several, and the wrong
   // one silently returns a different employer's reqs.
   taleo: ["tenant", "section"],
+  // Taleo Business Edition — a different product from taleo above.
+  tbe: ["board"],
+  // Avature — board is the portal's own SearchJobs URL, because the path
+  // differs per tenant (/Careers/SearchJobs on RGP, /careers/SearchJobs on
+  // Maximus) and there is no tenant id to build it from.
+  avature: ["board"],
   custom: ["handler"],
   // Small public-feed ATSs — api/_shared/small-ats.js. `board` is whatever id
   // that feed is keyed by (subdomain, slug, guid, or UKG host/tenant/guid).
@@ -45,6 +51,7 @@ const REQUIRED_KEYS = {
   jazzhr: ["board"],
   hrmdirect: ["board"],
   hibob: ["board"],
+  paycom: ["board"],
 };
 
 // Every ATS the registry may name must have a fetcher, and every small-ATS

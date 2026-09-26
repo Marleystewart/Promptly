@@ -15,7 +15,7 @@ const { logoPathFor } = require("./logo-manifest");
 // Taipei and others slipping through into a US-only product. Country names are
 // included because many feeds give "Bristol, United Kingdom" with a city we
 // don't list.
-const INTERNATIONAL = /london|hong ?kong|singapore|japan|munich|germany|india|toronto|calgary|montr|ottawa|waterloo, on|amsterdam|shanghai|sydney|melbourne|brisbane|perth|auckland|paris|zurich|geneva|dublin|tokyo|osaka|seoul|taipei|taiwan|\bhk\b|\buk\b|united kingdom|england|scotland|wales|ireland|tel aviv|israel|herzliya|madrid|barcelona|milan|rome|frankfurt|berlin|hamburg|stuttgart|warsaw|poland|krak|bucharest|romania|budapest|hungary|prague|czech|vienna|austria|bangalore|bengaluru|hyderabad|mumbai|pune|chennai|gurgaon|noida|manila|philippines|jakarta|indonesia|kuala lumpur|malaysia|selangor|petaling jaya|penang|johor|bangkok|thailand|vietnam|hanoi|shenzhen|beijing|guangzhou|china|dubai|abu dhabi|\buae\b|saudi|riyadh|qatar|doha|vancouver|ontario|quebec|alberta|british columbia|canada|stockholm|sweden|oslo|norway|copenhagen|denmark|helsinki|finland|brussels|belgium|luxembourg|switzerland|netherlands|rotterdam|eindhoven|france|la d[eé]fense|edinburgh|manchester|glasgow|birmingham, uk|bristol|cambridge, uk|oxford, uk|leeds|belfast|são paulo|sao paulo|brazil|mexico city|guadalajara|bogot|colombia|buenos aires|argentina|santiago|chile|lima|peru|cairo|egypt|nairobi|kenya|lagos|nigeria|johannesburg|cape town|south africa|spain|portugal|lisbon|greece|athens|turkey|istanbul|ukraine|serbia|croatia|slovakia|slovenia|bulgaria|estonia|latvia|lithuania|iceland|malta|cyprus|emea\b|apac\b|latam\b/i;
+const INTERNATIONAL = /london|hong ?kong|singapore|japan|munich|germany|india|toronto|calgary|montr|ottawa|waterloo, on|amsterdam|shanghai|sydney|melbourne|brisbane|perth|auckland|paris|zurich|geneva|dublin|tokyo|osaka|seoul|taipei|taiwan|\bhk\b|\buk\b|united kingdom|england|scotland|wales|ireland|tel aviv|israel|herzliya|madrid|barcelona|milan|rome|frankfurt|berlin|hamburg|stuttgart|warsaw|poland|krak|bucharest|romania|budapest|hungary|prague|czech|vienna|austria|bangalore|bengaluru|hyderabad|mumbai|pune|chennai|gurgaon|noida|manila|philippines|jakarta|indonesia|kuala lumpur|malaysia|selangor|petaling jaya|penang|johor|bangkok|thailand|vietnam|hanoi|ho chi minh|shenzhen|beijing|guangzhou|tianjin|wuxi|suzhou|jiangsu|china|dubai|abu dhabi|beirut|lebanon|\buae\b|saudi|riyadh|qatar|doha|vancouver|ontario|quebec|alberta|british columbia|canada|stockholm|sweden|oslo|norway|copenhagen|k[oø]benhavn|aarhus|aalborg|denmark|helsinki|finland|brussels|belgium|luxembourg|switzerland|netherlands|rotterdam|eindhoven|france|la d[eé]fense|edinburgh|manchester|glasgow|birmingham, uk|bristol|cambridge, uk|oxford, uk|leeds|belfast|são paulo|sao paulo|brazil|mexico city|ciudad de m[eé]xico|guadalajara|bogot|colombia|buenos aires|argentina|santiago|chile|lima|peru|cairo|egypt|nairobi|kenya|lagos|nigeria|johannesburg|cape town|south africa|spain|portugal|lisbon|greece|athens|turkey|istanbul|ukraine|serbia|croatia|slovakia|slovenia|bulgaria|estonia|latvia|lithuania|iceland|malta|cyprus|emea\b|apac\b|latam\b/i;
 // Some employers publish one req for several offices, e.g. "Austin, TX,
 // United States; London, United Kingdom; Singapore". An international office
 // must not hide the same req's explicit US locations.
@@ -69,7 +69,16 @@ const EXCLUDE_TITLE = /experienced|senior|staff|principal|\blead\b|manager|direc
 // that's in place but is kept for clarity/no-regression.
 // "Summer Consultant" is the consulting-firm name for the same programme
 // (Bates White's "Summer Consultant—2027"); it was being dropped as not-a-role.
-const INTERN_TITLE = /\bintern\b|\binterns\b|\binternships?\b|\bsummer analyst\b|\bsummer associate\b|\bsummer consultant\b|\bco-?op\b/i;
+// Firms also slot a practice word in the middle — Arthur D. Little's whole
+// student board is "Summer Business Analyst 2027" and "Winter Business Analyst
+// 2027, 8 - 10 weeks", which the fixed phrases above miss, so all six were
+// being served to students as New Grad roles.
+//
+// The qualifier word is REQUIRED, and only after summer/winter. That is what
+// keeps a bank's "2027 Fall Analyst Program" — a full-time campus class, not an
+// internship — out: it has no word between the season and "analyst", and this
+// pattern is tested before the new-grad one.
+const INTERN_TITLE = /\bintern\b|\binterns\b|\binternships?\b|\bsummer analyst\b|\bsummer associate\b|\bsummer consultant\b|\b(?:summer|winter)\s+(?:\w+\s+){1,2}(?:analysts?|associates?|consultants?)\b|\bco-?op\b/i;
 const NEWGRAD_TITLE = /new\s?grad|university (graduate|hire)|recent graduate|ph\.?d\.? graduate|early career|entry[ -]?level|campus hire|rotational program|analyst program|\b3l applications?\b/i;
 // Titles that only mean "new grad" on a board that is ITSELF student-only.
 // "2027 Full Time Analyst" is the canonical campus-hire title in banking, but
@@ -241,6 +250,61 @@ const WORKDAY_PAGES = 5; // per term, 20 per page
 // in the posting path ("/job/Chicago/Title_R00123"). Display only — it never
 // feeds a filter, because a bare city ("Bristol", "Cambridge") cannot say which
 // country it is in; the source's workdayFacets is what proves the req is US.
+// Some Workday boards write a US office as "IL-Rosemont" — state first, no
+// country. Shown raw that is hard to read, and the positive US test cannot see
+// a state code that is not after a comma, so every row on such a board gets
+// flagged as un-placeable. Sources set stateFirstLocations to flip it to
+// "Rosemont, IL".
+//
+// The flip is deliberately NOT automatic. "CA-Toronto" is California to this
+// pattern and Canada to an ISO country-code reader, and both spellings exist in
+// the wild — so a board only opts in once its locations have been checked to be
+// US states. PwC's US_Entry_Level_Careers is US entry-level hiring only, and
+// all 448 of its reqs are state-shaped or "N Locations".
+const US_STATES = new Set(["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "DC", "PR"]);
+
+// Two shapes, same idea: the country or state is written before the city.
+//   "IL-Rosemont"                     (PwC)
+//   "US.FL.Orlando.482 S Keller Rd"   (AtkinsRéalis — trailing street address)
+// Both become "City, ST". The street is dropped: a student scanning a list
+// wants the city, and the full address is on the posting itself.
+function flipStateFirst(location) {
+  return String(location || "")
+    .split(";")
+    .map((raw) => {
+      const part = raw.trim();
+      const dashed = part.match(/^([A-Z]{2})-(.+)$/);
+      if (dashed && US_STATES.has(dashed[1])) return `${dashed[2].trim()}, ${dashed[1]}`;
+      const dotted = part.match(/^US\.([A-Z]{2})\.([^.]+)/);
+      if (dotted && US_STATES.has(dotted[1])) return `${dotted[2].trim()}, ${dotted[1]}`;
+      return part;
+    })
+    .filter(Boolean)
+    .join("; ");
+}
+
+// Workday writes a multi-office req's location as "5 Locations" — a count, not
+// a place. Its own detail endpoint lists the offices, so a collapsed req is
+// expanded from the board rather than inferred from the URL. Only reqs that
+// already look student-relevant get here, so this is a handful of requests per
+// refresh. A failure falls back to whatever the caller already had.
+const COLLAPSED_LOCATIONS = /^\d+\s+locations?$/i;
+
+async function expandCollapsedLocations(detailBase, externalPath, fallback) {
+  let info;
+  try {
+    const data = await fetchJson(`${detailBase}${externalPath}`, { headers: { Accept: "application/json" } });
+    info = data && data.jobPostingInfo;
+  } catch {
+    return fallback;
+  }
+  if (!info) return fallback;
+  const offices = [info.location, ...(Array.isArray(info.additionalLocations) ? info.additionalLocations : [])]
+    .map((office) => String(office || "").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+  return offices.length ? offices.join("; ") : fallback;
+}
+
 function workdayPathCity(externalPath) {
   const segment = String(externalPath || "").split("/")[2] || "";
   let city = segment;
@@ -258,6 +322,7 @@ async function fetchWorkday(src) {
     ? `https://${src.dc}.myworkdaysite.com`
     : `https://${src.tenant}.${src.dc}.myworkdayjobs.com`;
   const api = `${base}/wday/cxs/${src.tenant}/${src.site}/jobs`;
+  const detailBase = `${base}/wday/cxs/${src.tenant}/${src.site}`;
   const out = [];
   const seenPaths = new Set();
   // workdayFacets: the board's OWN filter, applied server-side. Some global
@@ -283,27 +348,53 @@ async function fetchWorkday(src) {
       if (!postings.length) break;
       for (const p of postings) {
         if (!p.externalPath || seenPaths.has(p.externalPath)) continue;
+        // Mark it decided, not just kept. Every check below reads only the
+        // posting's own fields, so the verdict is the same on every search
+        // term — and the board returns the same req under several of them.
+        // Recording it only on success meant a rejected req was re-examined
+        // once per term, which since the location expansion below costs a
+        // network request each time.
+        seenPaths.add(p.externalPath);
         // Global employers often return a loose keyword match from every
         // country on one Workday board.  The general international blocklist
         // is deliberately permissive, so an unfamiliar foreign city can look
         // like a US role.  Sources marked positiveUsOnly must instead provide
         // affirmative US evidence (country wording or a state code).
-        // A multi-office req collapses its location to "3 Locations", which
-        // carries no country at all — that dropped genuinely US postings whose
-        // TITLE states the country ("2027 Early Careers: Summer Intern,
-        // Finance – United States"). Accept affirmative US evidence from
-        // either field; a UK req names a UK town in both, so nothing leaks.
-        if (src.positiveUsOnly
-          && !isUsLocation(p.locationsText)
-          && !isUsLocation(p.title)) continue;
-        const cycle = detectCycle(p.title, p.locationsText, true, Boolean(src.studentBoard));
+        //
+        // A multi-office req collapses its location to "5 Locations", which
+        // names no city and no country, so the test has nothing to confirm and
+        // a genuinely US role is thrown away. The TITLE sometimes states the
+        // country ("2027 Early Careers: Summer Intern, Finance – United
+        // States"); when it does not, ASK THE BOARD rather than guess —
+        // expandCollapsedLocations reads the posting's own offices. Spencer
+        // Stuart's one student req is exactly this shape: five offices, every
+        // one of them US, behind a string that proves nothing.
+        const collapsed = COLLAPSED_LOCATIONS.test(String(p.locationsText || "").trim());
+        // The path city is a cheap stand-in until then — enough for the cycle
+        // check, which only needs to see no foreign city.
+        let where = collapsed || !p.locationsText
+          ? workdayPathCity(p.externalPath)
+          : p.locationsText;
+        // Cycle first: it costs nothing, and it is what keeps the expansion
+        // below down to a handful of requests instead of one per req.
+        const cycle = detectCycle(p.title, where, true, Boolean(src.studentBoard));
         if (!cycle) continue;
-        seenPaths.add(p.externalPath);
+        if (collapsed) where = await expandCollapsedLocations(detailBase, p.externalPath, where);
+        // Two positive tests, because they read different spellings. The local
+        // one wants a state CODE or the country ("Chicago, IL", "United
+        // States"); us-location's also knows state NAMES, which is all an
+        // expanded office list gives you ("New York; Washington, D.C.;
+        // Boston"), and it vetoes a foreign country in the country position so
+        // "Ontario, Canada" cannot sneak through on the word Ontario.
+        if (src.positiveUsOnly
+          && !isUsLocation(where)
+          && !isUsLocation(p.title)
+          && !isPositiveUsLocation(where)) continue;
         // Public posting URL follows the same two shapes as the API host.
         const url = src.siteHost
           ? `${base}/recruiting/${src.tenant}/${src.site}${p.externalPath}`
           : `${base}/en-US/${src.site}${p.externalPath}`;
-        out.push(normalize(src, p.title, url, p.locationsText || workdayPathCity(p.externalPath), cycle));
+        out.push(normalize(src, p.title, url, src.stateFirstLocations ? flipStateFirst(where) : where, cycle));
       }
       if (postings.length < 20) break;
     }
@@ -333,7 +424,14 @@ async function fetchAshby(src) {
   const out = [];
   for (const j of jobs) {
     if (j.isListed === false) continue;
-    if (!passesUsGate(src, j.location, j.title)) continue;
+    // Ashby postings carry a structured country alongside the free-text
+    // location, and a remote req writes only "Remote" in the text. Chartis'
+    // board is 40 reqs, most of them "Remote" with
+    // address.postalAddress.addressCountry "United States" — a text-only gate
+    // reads those as un-placeable and drops a US employer's whole board.
+    const country = j.address?.postalAddress?.addressCountry;
+    if (!passesUsGate(src, j.location, j.title)
+      && !(country && passesUsGate(src, country, ""))) continue;
     const cycle = detectCycle(j.title, j.location);
     if (cycle) out.push(normalize(src, j.title, j.jobUrl, j.location, cycle, j.workplaceType || null, j.publishedAt));
   }
@@ -477,6 +575,46 @@ async function fetchTaleo(src) {
   const raw = await fetchTaleoListings(src.tenant, src.section || "1");
   const out = [];
   for (const j of raw) {
+    const cycle = detectCycle(j.title, j.location, true, Boolean(src.studentBoard));
+    if (cycle) out.push(normalize(src, j.title, j.url, j.location, cycle, null, j.postedAt || null));
+  }
+  return out;
+}
+
+// ── Taleo Business Edition (api/_shared/tbe.js) ───────────────────────────
+// { ats:"tbe", board:"<segment>/<ORG>/<cws>" } e.g. "phg02/CENTCONS/38".
+// Needs two requests — the first is only there to be issued a session. See
+// tbe.js for why asking for results directly returns the search form instead.
+async function fetchTbe(src) {
+  const { fetchTbeListings } = require("./tbe");
+  const raw = await fetchTbeListings(src.board);
+  const out = [];
+  for (const j of raw) {
+    if (!passesUsGate(src, j.location, j.title)) continue;
+    const cycle = detectCycle(j.title, j.location, true, Boolean(src.studentBoard));
+    if (cycle) out.push(normalize(src, j.title, j.url, j.location, cycle, null, j.postedAt || null));
+  }
+  return out;
+}
+
+// ── Avature (api/_shared/avature.js) ──────────────────────────────────────
+// { ats:"avature", board:"<the SearchJobs URL>", avaturePaging:"job"|"folder",
+//   avatureTerms:[…] }
+// Every Avature tenant here is a global employer, so the US gate is not
+// optional: RGP's own board is 113 reqs, 13 of them outside the US, and
+// Maximus' is mostly UK and Canadian.
+async function fetchAvature(src) {
+  const { fetchAvatureListings } = require("./avature");
+  const raw = await fetchAvatureListings(src.board, {
+    paging: src.avaturePaging || "job",
+    terms: src.avatureTerms || [""],
+  });
+  const out = [];
+  for (const j of raw) {
+    // isPositiveUsLocation, not the local test: these portals write "Dallas,
+    // Texas, United States" and, where the location comes from the URL slug,
+    // a bare "United States" — neither carries a state CODE.
+    if (!isPositiveUsLocation(j.location)) continue;
     const cycle = detectCycle(j.title, j.location, true, Boolean(src.studentBoard));
     if (cycle) out.push(normalize(src, j.title, j.url, j.location, cycle, null, j.postedAt || null));
   }
@@ -646,6 +784,8 @@ const FETCHERS = {
   florecruit: fetchFloRecruit,
   usajobs: fetchUsaJobs,
   taleo: fetchTaleo,
+  tbe: fetchTbe,
+  avature: fetchAvature,
   custom: fetchCustom,
   workable: fetchSmallAts,
   ukg: fetchSmallAts,
@@ -661,6 +801,7 @@ const FETCHERS = {
   jazzhr: fetchSmallAts,
   hrmdirect: fetchSmallAts,
   hibob: fetchSmallAts,
+  paycom: fetchSmallAts,
 };
 
 // Run a single source's real ATS fetcher. Used both by the aggregate loop and
@@ -828,4 +969,4 @@ async function aggregateOpenings() {
   return { openings, sourceStatus, updatedAt: new Date().toISOString() };
 }
 
-module.exports = { aggregateOpenings, settleWithConcurrency, isWorthRetrying, FETCH_CONCURRENCY, isRelevant, detectCycle, fetchOne, isPastCycle, canonicalUrl, normalizeCompany, normalizeRole, preferUsLocations };
+module.exports = { aggregateOpenings, flipStateFirst, settleWithConcurrency, isWorthRetrying, FETCH_CONCURRENCY, isRelevant, detectCycle, fetchOne, isPastCycle, canonicalUrl, normalizeCompany, normalizeRole, preferUsLocations };

@@ -10,6 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 const cheerio = require("cheerio");
+const { usOnly } = require("../us-location");
 
 const RESULTS_URL = "https://jobs.citi.com/search-jobs/results";
 const RECORDS_PER_PAGE = 15;
@@ -79,7 +80,12 @@ async function fetchListings() {
       if (items.length < RECORDS_PER_PAGE) break;
     }
   }
-  return [...seen.values()];
+  // Citi is a global bank and this search is worldwide, so US-ness has to be
+  // proved rather than assumed. Left to the aggregator's international
+  // blocklist alone it shipped "Libreville, Estuaire, Gabon" and "Monterrey,
+  // Nuevo León, Mexico" — neither city is on a list that cannot name every
+  // country there is, which is exactly what usOnly() exists for.
+  return usOnly([...seen.values()]);
 }
 
 module.exports = fetchListings;

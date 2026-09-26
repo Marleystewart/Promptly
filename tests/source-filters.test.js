@@ -55,6 +55,19 @@ function stub(handler) {
     const ashby = await fetchOne({ ...base, ats: "ashby", positiveUsOnly: true });
     assert.deepEqual(ashby.map((o) => o.location), ["Chicago, IL"]);
 
+    // A remote Ashby req writes only "Remote" as its location, but carries the
+    // country in address.postalAddress. The Chartis Group's board is 40 reqs,
+    // most of them exactly this shape — read on the text alone, a US employer's
+    // whole board reads as un-placeable and disappears.
+    stub(() => ({ jobs: [
+      { title: "Analyst Intern", location: "Remote", jobUrl: "https://jobs.ashbyhq.com/x/3", address: { postalAddress: { addressCountry: "United States" } } },
+      { title: "Analyst Intern", location: "Remote", jobUrl: "https://jobs.ashbyhq.com/x/4", address: { postalAddress: { addressCountry: "United Kingdom" } } },
+      { title: "Analyst Intern", location: "Remote", jobUrl: "https://jobs.ashbyhq.com/x/5" },
+    ] }));
+    const remote = await fetchOne({ ...base, ats: "ashby", positiveUsOnly: true });
+    assert.deepEqual(remote.map((o) => o.sourceUrl), ["https://jobs.ashbyhq.com/x/3"],
+      "the US remote req is kept; a UK one and one with no country are not");
+
     // ── Workday + workdayFacets ──────────────────────────────────────────
     const US = "bc33aa3152ec42d4995f4791a106ed09";
     const sentFacets = [];
@@ -98,6 +111,70 @@ function stub(handler) {
     assert.equal(detectCycle("Analyst Intern (Spring 2028 Graduates) - Summer 2027", "Chicago, IL"), "Summer 2027",
       "the season must come from the term, not the graduation phrase");
     assert.equal(detectCycle("Turnaround and Restructuring Analyst 2027 Graduates (Q3/Q4 2027 Start Dates)", "Chicago, IL"), "New Grad 2027");
+
+    // ── stateFirstLocations: "IL-Rosemont" is Rosemont, Illinois ─────────
+    // PwC's entry-level Workday board writes the state first and names no
+    // country, so every row read as un-placeable until it was flipped. The
+    // flip is opt-in per source precisely because "CA-Toronto" is California
+    // to this pattern and Canada to an ISO reader: only a two-letter US STATE
+    // is flipped, and anything else is left exactly as the board wrote it.
+    const { flipStateFirst } = require("../api/_shared/aggregator.js");
+    assert.equal(flipStateFirst("IL-Rosemont"), "Rosemont, IL");
+    assert.equal(flipStateFirst("NY-New York"), "New York, NY");
+    // AtkinsRéalis writes the same idea with dots and a trailing street:
+    // "US.FL.Orlando.482 S Keller Rd". The street is dropped — a student
+    // scanning a list wants the city, and the address is on the posting.
+    assert.equal(flipStateFirst("US.FL.Orlando.482 S Keller Rd"), "Orlando, FL");
+    assert.equal(flipStateFirst("US.CO.Denver"), "Denver, CO");
+    assert.equal(flipStateFirst("US.NY.New York.10 East 40 Street"), "New York, NY");
+    // The same board carries Canadian offices in the identical shape. Only a
+    // US. prefix is flipped, so Mississauga is never relabelled as a US city.
+    assert.equal(flipStateFirst("CA.ON.Mississauga.2251 Speakman Drive"), "CA.ON.Mississauga.2251 Speakman Drive");
+    assert.equal(flipStateFirst("TX-Dallas; FL-Tampa"), "Dallas, TX; Tampa, FL");
+    const { isUsLocation } = require("../api/_shared/us-location.js");
+    assert.equal(isUsLocation(flipStateFirst("IL-Rosemont")), true, "flipping is what lets the US test see the state");
+    assert.equal(flipStateFirst("14 Locations"), "14 Locations", "a collapsed multi-office req is left alone");
+    assert.equal(flipStateFirst("ZZ-Nowhere"), "ZZ-Nowhere", "a two-letter code that is not a US state is not a state");
+    assert.equal(flipStateFirst("Amsterdam, NH"), "Amsterdam, NH", "only the state-first shape is touched");
+
+    // ── US-only: the leaks a full run actually found ─────────────────────
+    // Reading all 716 sources showed foreign student roles reaching US
+    // students: Dentsu's DAN_GLOBAL board (Aarhus, København, Ho Chi Minh
+    // City, Beirut), Caterpillar (Wuxi, Tianjin, Suzhou) and Balyasny
+    // (Aalborg). Dentsu and Caterpillar are gated by their own Workday country
+    // facet; these cities are also added to the blocklist so no future source
+    // reintroduces them.
+    //
+    // The other half matters just as much: the blocklist is deliberately
+    // permissive, and every one of these US towns MATCHES a foreign name in
+    // it. They survive only because the guard is "blocked AND not positively
+    // US". Rome NY, Melbourne FL, Vancouver WA and North Wales PA are the real
+    // rows that a naive foreign-city check threw away.
+    for (const loc of ["Aarhus", "København K", "Ho Chi Minh City", "Beirut", "Aalborg",
+                       "Tianjin, Tianjin", "Wuxi, Jiangsu", "Suzhou, Jiangsu",
+                       // Nubank writes its Mexican office in Spanish; the list
+                       // only knew the English "Mexico City".
+                       "Ciudad de México", "Ciudad de Mexico"]) {
+      assert.equal(detectCycle("Summer Intern 2027", loc), null, `${loc} is not a US location`);
+    }
+    for (const loc of ["Rome, NY", "Melbourne, FL", "Vancouver, WA", "North Wales, PA",
+                       "Pojoaque, New Mexico", "United States-Florida-Melbourne"]) {
+      assert.ok(detectCycle("Summer Intern 2027", loc), `${loc} is a US town and must survive the blocklist`);
+    }
+
+    // A season plus a practice word plus "Analyst" is an internship, not a
+    // new-grad class. Arthur D. Little's entire student board is written that
+    // way, and all six reqs were being shown to students as New Grad roles.
+    assert.equal(detectCycle("Summer Business Analyst 2027", "Boston, US"), "Summer 2027");
+    assert.equal(detectCycle("Winter Business Analyst 2027, 8 - 10 weeks (Advanced Degree)", "Boston, US"), "Winter 2027");
+    assert.equal(detectCycle("Summer Technology Associate 2027", "New York, NY"), "Summer 2027");
+    // The other direction, which is why the qualifier word is required: a bank's
+    // "Fall Analyst Program" is a full-time campus class. There is no word
+    // between the season and "Analyst", so it must stay on the new-grad path —
+    // and INTERN_TITLE is tested first, so getting this wrong is silent.
+    assert.equal(detectCycle("2027 Fall Analyst Program", "New York, NY"), "New Grad 2027");
+    assert.equal(detectCycle("Winter Analyst Program 2027", "New York, NY"), "New Grad 2027");
+    assert.equal(detectCycle("2027 Investment Banking Full-Time Analyst", "New York, NY"), "New Grad 2027");
 
     console.log("Source filter tests passed. US gates, Workday facets, and event exclusion hold.");
   } finally {
