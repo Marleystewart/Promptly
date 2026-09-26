@@ -19,10 +19,10 @@
       })();
     </script>
     <style>
-      /* Matches ios/App/App/Assets.xcassets/Splash exactly: #fafafc ground, the
-         same radial glow stops, a 14.64vh icon (400px of a 2732px square
-         aspect-filled to screen height). No animation, so the hand-off from the
-         native splash is invisible. */
+      /* The cover the native shell holds up while the session and feed resolve.
+         Its ground matches ios/App/App/Assets.xcassets/Splash — #fafafc with
+         the same radial glow stops — so the hand-off from the iOS launch image
+         is not a colour change. The lockup on it is the website's, below. */
       .boot-cover { display: none; }
       html.native-app.app-booting .boot-cover,
       html.native-app .boot-cover.is-leaving {
@@ -33,7 +33,27 @@
         z-index: 2147483647;
         background: radial-gradient(circle at 50% 50%, rgba(128,87,255,.24) 0, rgba(128,87,255,.14) 12vh, rgba(128,87,255,0) 30vh), #fafafc;
       }
-      html.native-app .boot-cover img { width: 14.64vh; height: 14.64vh; border-radius: 22.5%; }
+      /* The cover shows the SAME lockup as the website's launch screen — the
+         app icon with the Promptly wordmark under it — so the app opens on
+         what the site opens on. It used to show the bolt on its own, which is
+         why the two platforms looked different: the real launch screen is
+         underneath this cover the whole time, and by the time the cover lifts
+         the app has moved past it.
+         The lockup deliberately does NOT restate .launch-icon /
+         .launch-wordmark here. Those carry a responsive border-radius and a
+         clamped width in styles.css, and an inline copy is more specific than
+         the media query, so it silently wins and the cover stops matching the
+         screen it is imitating — which is exactly what a first attempt at this
+         did (34px corners against the site's 28px). styles.css stays the one
+         source of truth; the only rule here is the max-width that stops the
+         artwork painting at its natural size in the frame before that file
+         lands, and it is loose enough never to clamp the real values. */
+      html.native-app .boot-lockup {
+        display: grid;
+        justify-items: center;
+        gap: 22px; /* equal to .launch-screen's gap */
+      }
+      html.native-app .boot-cover img { max-width: 62vw; }
       html.native-app .boot-cover.is-leaving { opacity: 0; transition: opacity 200ms ease-out; pointer-events: none; }
       html.native-app.app-booting body { overflow: hidden; }
     </style>
@@ -55,18 +75,26 @@
     <meta property="og:title" content="Promptly | Never miss an internship opening" />
     <meta property="og:description" content="Alerts students the moment an internship opens, read straight from employers' own hiring systems. 730 employers monitored, refreshed hourly." />
     <meta property="og:url" content="https://app.joinpromptly.co/" />
-    <meta property="og:image" content="https://app.joinpromptly.co/assets/og-card.png?v=20260914j" />
+    <meta property="og:image" content="https://app.joinpromptly.co/assets/og-card.png?v=20260919c" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="Promptly — never miss the window." />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Promptly | Never miss an internship opening" />
     <meta name="twitter:description" content="Alerts students the moment an internship opens. 730 employers monitored, refreshed hourly." />
-    <meta name="twitter:image" content="https://app.joinpromptly.co/assets/og-card.png?v=20260914j" />
-    <link rel="stylesheet" href="styles.css?v=20260914j" />
+    <meta name="twitter:image" content="https://app.joinpromptly.co/assets/og-card.png?v=20260919c" />
+    <!-- The launch lockup paints before anything else, so it is fetched first. -->
+    <link rel="preload" as="image" href="assets/app-icon.png" />
+    <link rel="preload" as="image" href="assets/wordmark.png" />
+    <link rel="stylesheet" href="styles.css?v=20260919c" />
   </head>
   <body class="onboarding-active launch-active">
-    <div class="boot-cover" aria-hidden="true"><img alt="" src="data:image/png;base64,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" /></div>
+    <div class="boot-cover" aria-hidden="true">
+      <div class="boot-lockup">
+        <img class="launch-icon" src="assets/app-icon.png" alt="" />
+        <img class="launch-wordmark" src="assets/wordmark.png" alt="" />
+      </div>
+    </div>
     <section class="onboarding-shell" aria-label="Promptly sign up">
       <div class="launch-screen onboard-step active" data-step="0" aria-label="Opening Promptly">
         <img class="launch-icon" src="assets/app-icon.png" alt="" />
@@ -81,38 +109,61 @@
         <p class="eyebrow">Your account</p>
         <h1>Build alerts around you.</h1>
         <p>Create an account so your profile and saved alerts follow you across devices.</p>
-        <div class="auth-tabs" role="tablist" aria-label="Account action">
-          <button class="active" type="button" data-auth-mode="signup">Sign up</button>
-          <button type="button" data-auth-mode="signin">Sign in</button>
+        <div data-auth-entry>
+          <div class="auth-tabs" role="tablist" aria-label="Account action">
+            <button class="active" type="button" role="tab" aria-selected="true" data-auth-mode="signup">Sign up</button>
+            <button type="button" role="tab" aria-selected="false" data-auth-mode="signin">Sign in</button>
+          </div>
+          <button class="primary-action wide auth-google" type="button" data-google-auth>
+            <svg viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.9c1.7-1.57 2.7-3.88 2.7-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.9-2.26c-.8.54-1.84.86-3.06.86-2.35 0-4.34-1.59-5.05-3.72H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.95 10.7A5.4 5.4 0 0 1 3.67 9c0-.59.1-1.16.28-1.7V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.03l2.99-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.97l2.99 2.33C4.66 5.17 6.65 3.58 9 3.58z"/></svg>
+            <span data-google-label>Continue with Google</span>
+          </button>
+          <p class="auth-fast-note" data-auth-fast-note>Fastest way in — nothing to confirm, no email to wait for.</p>
+          <div class="auth-divider"><span data-auth-divider-label>or sign up with email</span></div>
+          <!-- A real <form> with named fields, so password managers recognise this
+               as an account flow.
+               Safari offers to create a strong password only when it can see a
+               username field and a new-password field inside a form. These inputs
+               were bare, so iCloud Keychain, 1Password and the rest had nothing to
+               latch onto and students were left inventing their own passwords.
+               The submit button stays type="button" — submission is handled by the
+               existing delegated click listener, and making it a real submit would
+               fire that path twice. -->
+          <form class="auth-form" data-auth-form autocomplete="on" novalidate>
+            <label class="field-label" data-auth-name-group>Name<input data-name-input id="auth-name" name="name" type="text" placeholder="Your name" autocomplete="name" /></label>
+            <!-- autocomplete="username", not "email": "username" is the signal
+                 password managers look for to pair an account with a password. -->
+            <label class="field-label">Email<input data-email-input id="auth-username" name="username" type="email" placeholder="you@example.com" autocomplete="username" /></label>
+            <p class="student-hint" data-student-hint hidden></p>
+            <label class="field-label" data-auth-password-group>Password
+              <span class="password-input-wrap">
+                <input data-password-input id="auth-password" name="password" type="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" />
+                <button class="password-toggle" type="button" data-password-toggle aria-label="Show password" aria-pressed="false">Show</button>
+              </span>
+            </label>
+            <p class="form-error" data-signup-error role="alert" hidden></p>
+            <button class="soft-action wide" type="button" data-auth-submit>Create Account</button>
+            <button class="text-action" type="button" data-forgot-password hidden>Forgot password?</button>
+          </form>
         </div>
-        <button class="primary-action wide auth-google" type="button" data-google-auth>Continue with Google</button>
-        <p class="auth-fast-note" data-auth-fast-note>Fastest way in — nothing to confirm, no email to wait for.</p>
-        <div class="auth-divider"><span data-auth-divider-label>or sign up with email</span></div>
-        <!-- A real <form> with named fields, so password managers recognise this
-             as an account flow.
-             Safari offers to create a strong password only when it can see a
-             username field and a new-password field inside a form. These inputs
-             were bare, so iCloud Keychain, 1Password and the rest had nothing to
-             latch onto and students were left inventing their own passwords.
-             The submit button stays type="button" — submission is handled by the
-             existing delegated click listener, and making it a real submit would
-             fire that path twice. -->
-        <form class="auth-form" data-auth-form autocomplete="on" novalidate>
-          <label class="field-label" data-auth-name-group>Name<input data-name-input id="auth-name" name="name" type="text" placeholder="Your name" autocomplete="name" /></label>
-          <!-- autocomplete="username", not "email": "username" is the signal
-               password managers look for to pair an account with a password. -->
-          <label class="field-label">Email<input data-email-input id="auth-username" name="username" type="email" placeholder="you@example.com" autocomplete="username" /></label>
-          <p class="student-hint" data-student-hint hidden></p>
-          <label class="field-label" data-auth-password-group>Password<input data-password-input id="auth-password" name="password" type="password" placeholder="At least 8 characters" minlength="8" autocomplete="new-password" /></label>
-          <p class="form-error" data-signup-error hidden></p>
-          <button class="soft-action wide" type="button" data-auth-submit>Create Account</button>
-          <button class="text-action" type="button" data-forgot-password hidden>Forgot password?</button>
-        </form>
-        <p class="auth-status" data-auth-status>Checking secure account setup...</p>
+        <div class="auth-confirmation" data-auth-confirmation role="status" hidden>
+          <span class="auth-confirmation-icon" aria-hidden="true">✓</span>
+          <h2>Check your inbox</h2>
+          <p>We sent a confirmation link to <strong data-auth-confirmation-email></strong>.</p>
+          <p>Open the link, then return here to sign in.</p>
+          <p class="auth-delivery-tip"><strong>School email on Outlook?</strong> Check Junk, the Other tab, and your school’s quarantine. If it still doesn’t arrive, a personal email works too.</p>
+          <button class="soft-action wide" type="button" data-auth-confirmation-signin>I confirmed my email</button>
+          <div class="auth-confirmation-links">
+            <button class="text-action" type="button" data-auth-confirmation-resend>Resend email</button>
+            <button class="text-action" type="button" data-auth-confirmation-change>Use a different email</button>
+          </div>
+        </div>
+        <p class="auth-status" data-auth-status role="status" aria-live="polite">Checking secure account setup...</p>
         <p class="signup-privacy-note">
           Before you continue: account and alert information is stored with our account and
-          alert providers; your profile photo stays on this device. Read
-          <a href="/privacy">Privacy</a> and <a href="/terms">Terms</a>.
+          alert providers; your profile photo is saved to your account so it follows you to a
+          new device, and is deleted when you delete your account. Read
+          <a href="privacy.html">Privacy</a> and <a href="terms.html">Terms</a>.
         </p>
       </div>
 
@@ -203,7 +254,7 @@
           <p data-tracked-label>companies tracked</p>
           <small data-tracked-open hidden></small>
           <small data-tracked-refreshed hidden></small>
-          <a class="watch-card-link" href="/how-it-works">How this works</a>
+          <a class="watch-card-link" href="how-it-works.html">How this works</a>
         </div>
       </aside>
 
@@ -233,7 +284,7 @@
                 <button type="button" role="menuitem" data-help-go="cycles">
                   <strong>Recruiting cycles</strong><span>When employers actually post</span>
                 </button>
-                <a role="menuitem" href="/how-it-works">
+                <a role="menuitem" href="how-it-works.html">
                   <strong>How Promptly works</strong><span>Where the listings come from</span>
                 </a>
               </div>
@@ -413,6 +464,10 @@
                 <button type="button" class="cycm-month" data-cycm-label aria-live="polite"></button>
                 <button type="button" class="cycm-arrow" data-cycm-step="1" aria-label="Next month">›</button>
               </div>
+              <!-- Says what the list below is limited to and flips it. Hidden
+                   entirely for a student who has chosen no fields, because then
+                   there is nothing to narrow to. -->
+              <button type="button" class="cycm-scope" data-cycm-scope hidden aria-pressed="false"></button>
               <div class="cycm-list" data-cycm-list></div>
             </div>
 
@@ -463,9 +518,11 @@
                   <button class="profile-photo" data-photo-button aria-label="Change profile photo">P</button>
                   <div>
                     <strong>Profile photo</strong>
-                    <small>Use a picture that feels like you.</small>
+                    <small>Use a picture that feels like you. Saved to your account, so it follows you to a new phone.</small>
+                    <button class="link-action" type="button" data-remove-photo hidden>Remove photo</button>
                   </div>
                 </div>
+                <p class="photo-status" data-photo-status hidden role="status"></p>
                 <input class="sr-only" data-photo-input type="file" accept="image/*" />
                 <div class="profile-row"><span>School</span><strong data-profile-school>Not set</strong></div>
                 <div class="profile-row"><span>Graduation year</span><strong data-profile-year>Not set</strong></div>
@@ -500,23 +557,23 @@
                 </div>
                 <p class="alert-status" data-push-status>Tap Enable Phone Notifications first. If you are on iPhone, open Promptly from the Home Screen app icon.</p>
                 <p class="alert-status verify-notice" data-verify-notice hidden></p>
-                <p class="push-privacy-note">Push alerts can show the company, role, or deadline on your lock screen. Leave push off or hide notification previews in your device settings if that is private. We never send ads or sell your data. <a href="/privacy">How your data is handled</a></p>
+                <p class="push-privacy-note">Push alerts can show the company, role, or deadline on your lock screen. Leave push off or hide notification previews in your device settings if that is private. We never send ads or sell your data. <a href="privacy.html">How your data is handled</a></p>
               </article>
 
               <article class="settings-card trust-card">
                 <span class="status-pill">YOUR DATA AND SAFETY</span>
                 <h2>What Promptly does with your information</h2>
                 <ul class="trust-list">
-                  <li><b>Your profile photo never leaves this device.</b> It is stored in your browser only — we have no copy.</li>
+                  <li><b>Your profile photo is yours alone.</b> It is stored with your account so it follows you to a new phone, readable only by you, never shown to other students or shared with anyone, and deleted when you remove it or delete your account.</li>
                   <li><b>We never sell your data.</b> Not to advertisers, not to data brokers, not to recruiters.</li>
                   <li><b>We never apply for you.</b> Every alert links to the employer's own official posting.</li>
                   <li><b>Promptly is free, and always will be for students.</b> If any posting asks you to pay to apply, it is a scam — tell us and we will pull the source.</li>
                   <li><b>No ad trackers.</b> We count basic usage in our own database, with no advertising cookies or pixels.</li>
                 </ul>
                 <div class="trust-links">
-                  <a href="/how-it-works">How Promptly works</a>
-                  <a href="/privacy">Privacy</a>
-                  <a href="/terms">Terms</a>
+                  <a href="how-it-works.html">How Promptly works</a>
+                  <a href="privacy.html">Privacy</a>
+                  <a href="terms.html">Terms</a>
                   <a href="mailto:help.promptly@gmail.com">help.promptly@gmail.com</a>
                 </div>
               </article>
@@ -635,16 +692,16 @@
 
     <!-- Supabase is loaded on demand (see loadSupabaseSdk in script.js) only when
          auth is switched on, so a parked-auth build makes no third-party requests. -->
-    <script src="watchlist.js?v=20260914j"></script>
-    <script src="monitored.js?v=20260914j"></script>
-    <script src="auth-routing.js?v=20260914j"></script>
+    <script src="watchlist.js?v=20260919c"></script>
+    <script src="monitored.js?v=20260919c"></script>
+    <script src="auth-routing.js?v=20260919c"></script>
     <!-- Location resolution + great-circle distance, shared with the alert
          pipeline. Must load before script.js, which uses it on first render. -->
-    <script src="geo.js?v=20260914j"></script>
-    <script src="student-email.js?v=20260914j"></script>
-    <script src="listing-state.js?v=20260914j"></script>
-    <script src="script.js?v=20260914j"></script>
-    <script src="onboarding.js?v=20260914j"></script>
-    <script src="assistant.js?v=20260914j"></script>
+    <script src="geo.js?v=20260919c"></script>
+    <script src="student-email.js?v=20260919c"></script>
+    <script src="listing-state.js?v=20260919c"></script>
+    <script src="script.js?v=20260919c"></script>
+    <script src="onboarding.js?v=20260919c"></script>
+    <script src="assistant.js?v=20260919c"></script>
   </body>
 </html>

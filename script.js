@@ -898,6 +898,9 @@ const profile = {
   willingToRelocate: false,
   interests: "",
   photoDataUrl: "",
+  // Set when a photo is uploaded. Lives in the account profile (not the image
+  // itself) so another device knows there is something newer to fetch.
+  photoUpdatedAt: "",
   fields: [],
   // Fields the student turned on/off by hand, kept apart from the ones inferred
   // from their major and interests (see syncInferredFields).
@@ -2350,6 +2353,15 @@ function isPhoneCycles() {
 // Months from the current month. 0 = now; negative = past.
 let cycmOffset = 0;
 const cycmExpanded = new Set(); // industries the student opened via "+N more"
+// The phone calendar leads with the student's own fields. Cam opened it and
+// found Finance at the top of a list he had no interest in — the groups were
+// ordered by how busy each industry was, which on this dataset means Finance
+// for everyone. A month of every industry is a wall of noise on a phone, where
+// only a few rows are visible at once.
+//
+// Phone only, by request: the desktop calendar has the room to show everything
+// and its filter selects are always on screen.
+let cycmMineOnly = true;
 
 function cycmPoint(offset = cycmOffset, now = new Date()) {
   const index = now.getUTCFullYear() * 12 + now.getUTCMonth() + offset;
@@ -2411,6 +2423,29 @@ function cycmMonthLabel(point) {
   return `${MONTH_LABELS[point.month]} ${point.year}`;
 }
 
+// The fields the student actually picked. userFields() deliberately falls back
+// to everything when nothing is chosen, which is right for the feed chips but
+// wrong here: this has to distinguish "wants these" from "has not said".
+function chosenFields() {
+  return Array.isArray(profile.fields) ? profile.fields.filter(Boolean) : [];
+}
+
+// The scope control states what the list is limited to and what tapping does.
+// Deliberately not a bare icon or a "filter" label: the student needs to know
+// the list is narrowed, or a quiet month in their own field reads as Promptly
+// having no data.
+function renderCycmScope(canPersonalize, chosen, starved) {
+  const button = document.querySelector("[data-cycm-scope]");
+  if (!button) return;
+  button.hidden = !canPersonalize;
+  if (!canPersonalize) return;
+  const showingMine = cycmMineOnly && !starved;
+  const fieldList = chosen.length <= 2 ? chosen.join(" and ") : `${chosen.length} fields`;
+  button.textContent = showingMine ? `Your fields: ${fieldList} · Show all` : "All fields · Show only yours";
+  button.setAttribute("aria-pressed", showingMine ? "true" : "false");
+  button.classList.toggle("is-mine", showingMine);
+}
+
 function renderCyclesMobile(filtered) {
   const wrap = document.querySelector("[data-cycle-mobile]");
   const list = document.querySelector("[data-cycm-list]");
@@ -2427,10 +2462,28 @@ function renderCyclesMobile(filtered) {
     btn.disabled = next < CYCM_MIN_OFFSET || next > CYCM_MAX_OFFSET;
   });
 
+  const monthItems = cycmItemsFor(filtered, point, future);
+
+  // Narrow to the student's own fields. Skipped when they have chosen none
+  // (nothing to narrow to) and when a track is explicitly selected — picking
+  // "Finance" from the dropdown IS the request, and filtering it away again
+  // would make the control look broken.
+  const chosen = chosenFields();
+  const canPersonalize = chosen.length > 0 && !cycleFilters.track;
+  const mineItems = canPersonalize ? monthItems.filter((item) => chosen.includes(item.field)) : monthItems;
+  // Never answer a narrowing with a blank screen: if the student's fields drew
+  // nothing this month, show everything and say why rather than implying there
+  // is no activity at all.
+  const starved = canPersonalize && cycmMineOnly && !mineItems.length && monthItems.length > 0;
+  const personalized = canPersonalize && cycmMineOnly && !starved;
+  const shownItems = personalized ? mineItems : monthItems;
+
+  renderCycmScope(canPersonalize, chosen, starved);
+
   // Group into industries, drop the empty ones entirely rather than reserving
   // rows for them, and lead with the busiest.
   const groups = new Map();
-  for (const item of cycmItemsFor(filtered, point, future)) {
+  for (const item of shownItems) {
     const key = timelineRowKey(item);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(item);
@@ -2444,7 +2497,11 @@ function renderCyclesMobile(filtered) {
     return;
   }
 
-  list.innerHTML = ordered.map(([name, items]) => {
+  const starvedNote = starved
+    ? `<p class="cycm-note">Nothing in ${esc(chosen.join(", "))} this month, so this shows every field.</p>`
+    : "";
+
+  list.innerHTML = starvedNote + ordered.map(([name, items]) => {
     const open = cycmExpanded.has(name);
     const shown = open ? items : items.slice(0, CYCM_VISIBLE);
     const hidden = items.length - shown.length;
@@ -2954,6 +3011,9 @@ function accountProfile() {
     remoteOkay: profile.remoteOkay,
     willingToRelocate: profile.willingToRelocate,
     interests: profile.interests,
+    // The stamp only — never photoDataUrl. This object is embedded in the
+    // access token JWT; the image itself lives in Storage.
+    photoUpdatedAt: profile.photoUpdatedAt || "",
     fields: Array.isArray(profile.fields) ? profile.fields : [],
     emailNotifications: profile.emailNotifications !== false,
     pushNotifications: profile.pushNotifications !== false,
@@ -3126,9 +3186,67 @@ async function signOutAndReset() {
   window.location.replace(`${window.location.origin}/`);
 }
 
+let authAttemptInFlight = false;
+
+function setAuthBusy(busy, action = "email") {
+  authAttemptInFlight = busy;
+  const entry = document.querySelector("[data-auth-entry]");
+  const submit = document.querySelector("[data-auth-submit]");
+  const google = document.querySelector("[data-google-auth]");
+  const googleLabel = document.querySelector("[data-google-label]");
+  const forgotPassword = document.querySelector("[data-forgot-password]");
+  if (entry) entry.setAttribute("aria-busy", busy ? "true" : "false");
+  document.querySelectorAll("[data-auth-mode]").forEach((button) => { button.disabled = busy; });
+  if (submit) {
+    submit.disabled = busy;
+    submit.textContent = busy && action === "email"
+      ? (authMode === "signin" ? "Signing in…" : "Creating account…")
+      : (authMode === "signin" ? "Sign In" : "Create Account");
+  }
+  if (google) google.disabled = busy;
+  if (forgotPassword) forgotPassword.disabled = busy;
+  if (googleLabel) googleLabel.textContent = busy && action === "google" ? "Connecting…" : "Continue with Google";
+}
+
+function authErrorMessage(error, action = "account") {
+  const raw = String(error?.message || error?.error_description || error || "").toLowerCase();
+  if (raw.includes("invalid login credentials")) return "That email and password don’t match. Try again, or reset your password.";
+  if (raw.includes("email not confirmed")) return "Confirm your email first, then come back here to sign in.";
+  if (raw.includes("already registered") || raw.includes("already been registered")) return "You already have an account with this email. Switch to Sign in instead.";
+  if (raw.includes("rate limit") || raw.includes("too many")) return "Too many attempts. Wait a minute, then try again.";
+  if (raw.includes("network") || raw.includes("fetch")) return "We couldn’t reach Promptly. Check your connection and try again.";
+  if (action === "google") return "Google sign-in didn’t finish. Please try again.";
+  if (action === "confirmation") return "We couldn’t resend the confirmation email. Wait a minute, then try again.";
+  if (action === "reset") return "We couldn’t send the reset email. Check your connection and try again.";
+  return "We couldn’t complete that. Please check your details and try again.";
+}
+
+function showAuthConfirmation(email) {
+  const entry = document.querySelector("[data-auth-entry]");
+  const confirmation = document.querySelector("[data-auth-confirmation]");
+  const emailLabel = document.querySelector("[data-auth-confirmation-email]");
+  if (entry) entry.hidden = true;
+  if (confirmation) confirmation.hidden = false;
+  if (emailLabel) emailLabel.textContent = email;
+  const password = document.querySelector("[data-password-input]");
+  if (password) password.value = "";
+}
+
+function showAuthEntry() {
+  const entry = document.querySelector("[data-auth-entry]");
+  const confirmation = document.querySelector("[data-auth-confirmation]");
+  if (entry) entry.hidden = false;
+  if (confirmation) confirmation.hidden = true;
+}
+
 function setAuthMode(mode) {
+  showAuthEntry();
   authMode = mode === "signin" ? "signin" : "signup";
-  document.querySelectorAll("[data-auth-mode]").forEach((button) => button.classList.toggle("active", button.dataset.authMode === authMode));
+  document.querySelectorAll("[data-auth-mode]").forEach((button) => {
+    const selected = button.dataset.authMode === authMode;
+    button.classList.toggle("active", selected);
+    button.setAttribute("aria-selected", selected ? "true" : "false");
+  });
   document.querySelector("[data-auth-name-group]").hidden = authMode === "signin";
   document.querySelector("[data-auth-submit]").textContent = authMode === "signin" ? "Sign In" : "Create Account";
   document.querySelector("[data-forgot-password]").hidden = authMode !== "signin" || !authClient;
@@ -3193,6 +3311,7 @@ function applyAccountUser(user) {
       willingToRelocate: false,
       interests: "",
       photoDataUrl: "",
+      photoUpdatedAt: "",
           fields: [],
       manualFieldsOn: [],
       manualFieldsOff: [],
@@ -3205,6 +3324,10 @@ function applyAccountUser(user) {
   }
   profile.email = user?.email || profile.email;
   profile.name = profile.name || user?.user_metadata?.full_name || user?.user_metadata?.name || "";
+  // Fire and forget: a new device paints the rest of the profile now and the
+  // photo drops in when it arrives, rather than holding the screen on a
+  // download that may not exist.
+  syncRemotePhoto();
   fillProfileInputs();
   localStorage.setItem(profileStorageKey, JSON.stringify(profile));
   if (Array.isArray(remoteSaved)) {
@@ -3428,6 +3551,9 @@ async function initializeAuth() {
     });
     authRetryAttempt = 0;
     authStatus.textContent = "Your account securely keeps your profile and saved alerts in sync.";
+    // Must be attached before any Google tap: iOS delivers the callback URL
+    // through the plugin, and a listener registered later would miss it.
+    listenForNativeAuthCallback();
     authClient.auth.onAuthStateChange((event, session) => {
       window.setTimeout(() => {
         if (event === "PASSWORD_RECOVERY") {
@@ -3462,6 +3588,13 @@ async function initializeAuth() {
         setSignupError();
         prefillPendingEmail();
         authStatus.textContent = `Email confirmed. Sign in to finish setting up your alerts.${homeScreenHandoffNote()}`;
+      } else if (oauthCallback.type === "error") {
+        const canceled = /access_denied|cancel/i.test(`${oauthCallback.errorCode} ${oauthCallback.errorDescription}`);
+        showAuthEntryFallback("signin");
+        setSignupError(canceled
+          ? "Google sign-in was canceled. Nothing changed — try again when you’re ready."
+          : authErrorMessage(oauthCallback.errorDescription, "google"));
+        authStatus.textContent = "You’re still signed out.";
       } else {
         setSignupError("Google sign-in did not complete. Please try again.");
         showAuthEntryFallback();
@@ -3483,6 +3616,7 @@ async function initializeAuth() {
 }
 
 async function handleAuthSubmit() {
+  if (authAttemptInFlight) return;
   const email = document.querySelector("[data-email-input]").value.trim();
   const password = document.querySelector("[data-password-input]").value;
   const name = document.querySelector("[data-name-input]").value.trim();
@@ -3500,59 +3634,57 @@ async function handleAuthSubmit() {
   if (authMode === "signup" && !name) return setSignupError("Add your name first.");
 
   setSignupError();
-  status.textContent = authMode === "signin" ? "Signing you in..." : "Creating your account...";
+  status.textContent = authMode === "signin" ? "Signing you in securely…" : "Creating your account securely…";
   if (authMode === "signup") {
     sessionStorage.setItem("promptlyMigrateLocal", "1");
     localStorage.setItem("promptlyPendingMigrationEmail", email);
   }
   else sessionStorage.removeItem("promptlyMigrateLocal");
-  const result = authMode === "signin"
-    ? await authClient.auth.signInWithPassword({ email, password })
-    : await authClient.auth.signUp({ email, password, options: { data: { name } } });
-  if (result.error) {
+  setAuthBusy(true, "email");
+  try {
+    const result = authMode === "signin"
+      ? await authClient.auth.signInWithPassword({ email, password })
+      : await authClient.auth.signUp({
+          email,
+          password,
+          options: { data: { name }, emailRedirectTo: authEmailRedirectUrl() },
+        });
+    if (result.error) throw result.error;
+
+    // Supabase returns a FAKE SUCCESS when you sign up with an address that
+    // already has an account — no error, no session — so that an attacker cannot
+    // discover which emails are registered. The empty identities array is the
+    // documented signal that this was not a new account.
+    const alreadyRegistered = authMode === "signup"
+      && result.data?.user
+      && Array.isArray(result.data.user.identities)
+      && result.data.user.identities.length === 0;
+    if (alreadyRegistered) {
+      sessionStorage.removeItem("promptlyMigrateLocal");
+      localStorage.removeItem("promptlyPendingMigrationEmail");
+      setAuthMode("signin");
+      setSignupError("You already have an account with this email — signing in instead.");
+      status.textContent = "Enter your password to sign in.";
+      document.querySelector("[data-password-input]")?.focus();
+      return;
+    }
+
+    profile.name = name || result.data.user?.user_metadata?.name || profile.name;
+    profile.email = result.data.user?.email || email;
+    if (result.data.session?.user) {
+      routeAuthenticatedUser(result.data.session.user);
+    } else {
+      saveProfile();
+      showAuthConfirmation(email);
+      status.textContent = `Check your email to confirm your account, then come back and sign in.${homeScreenHandoffNote()}`;
+    }
+  } catch (error) {
     sessionStorage.removeItem("promptlyMigrateLocal");
     localStorage.removeItem("promptlyPendingMigrationEmail");
-    setSignupError(result.error.message || "Account setup failed.");
-    status.textContent = "Check your details and try again.";
-    return;
-  }
-
-  // Supabase returns a FAKE SUCCESS when you sign up with an address that
-  // already has an account — no error, no session — so that an attacker cannot
-  // discover which emails are registered. That protection is correct and stays
-  // on; what was missing is our ability to recognise it.
-  //
-  // Without this check the fake success is indistinguishable from a real
-  // signup, so the branch below promised "check your email to confirm" for a
-  // confirmation Supabase deliberately never sends. The student waits forever
-  // for a message that does not exist, presses Create Account again, and gets
-  // the same promise — the loop Marley hit on his phone after confirming the
-  // account on his laptop.
-  //
-  // The tell is documented: an existing user comes back with an empty
-  // `identities` array, where a genuine new signup has one entry.
-  const alreadyRegistered = authMode === "signup"
-    && result.data?.user
-    && Array.isArray(result.data.user.identities)
-    && result.data.user.identities.length === 0;
-  if (alreadyRegistered) {
-    sessionStorage.removeItem("promptlyMigrateLocal");
-    localStorage.removeItem("promptlyPendingMigrationEmail");
-    setAuthMode("signin");
-    setSignupError("You already have an account with this email — signing in instead.");
-    status.textContent = "Enter your password to sign in.";
-    return;
-  }
-
-  profile.name = name || result.data.user?.user_metadata?.name || profile.name;
-  profile.email = result.data.user?.email || email;
-  if (result.data.session?.user) {
-    routeAuthenticatedUser(result.data.session.user);
-  } else {
-    saveProfile();
-    // On iPhone the confirmation link opens Safari, never the Home Screen app,
-    // so "return here" is not something the student can simply tap back to.
-    status.textContent = `Check your email to confirm your account, then come back and sign in.${homeScreenHandoffNote()}`;
+    setSignupError(authErrorMessage(error, authMode));
+    status.textContent = "Nothing changed — you can try again.";
+  } finally {
+    setAuthBusy(false);
   }
 }
 
@@ -3578,18 +3710,98 @@ function renderStudentHint() {
 
 document.querySelector("[data-email-input]")?.addEventListener("input", renderStudentHint);
 
+// Where Google sends the student back inside the native shell. The web build
+// can use its own origin, but the iOS app lives at capacitor://localhost —
+// an origin Google will never redirect to, and one Capacitor hands straight to
+// Safari the moment anything navigates off it. That is why TestFlight testers
+// tapped "Continue with Google", got bounced into Safari, and finished signing
+// in on the website instead of in the app. Native builds keep the consent
+// screen in an in-app browser and come back through this custom URL scheme,
+// which is registered in ios/App/App/Info.plist.
+const NATIVE_AUTH_REDIRECT = "com.thealmargroup.promptly://auth-callback";
+
+function authEmailRedirectUrl() {
+  return isNativeShell() ? API_ORIGIN : window.location.origin;
+}
+
 async function signInWithGoogle() {
-  if (!authClient) return;
+  if (!authClient || authAttemptInFlight) return;
   if (authMode === "signup") sessionStorage.setItem("promptlyMigrateLocal", "1");
   else sessionStorage.removeItem("promptlyMigrateLocal");
-  const { error } = await authClient.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: window.location.origin },
-  });
-  if (error) {
+  const native = isNativeShell();
+  setSignupError();
+  setAuthBusy(true, "google");
+  document.querySelector("[data-auth-status]").textContent = "Opening Google securely…";
+  let data;
+  try {
+    const result = await authClient.auth.signInWithOAuth({
+      provider: "google",
+      options: native
+        ? { redirectTo: NATIVE_AUTH_REDIRECT, skipBrowserRedirect: true }
+        : { redirectTo: window.location.origin },
+    });
+    if (result.error) throw result.error;
+    data = result.data;
+  } catch (error) {
     sessionStorage.removeItem("promptlyMigrateLocal");
-    setSignupError(error.message || "Google sign-in could not start.");
+    setSignupError(authErrorMessage(error, "google"));
+    document.querySelector("[data-auth-status]").textContent = "Nothing changed — you can try again.";
+    setAuthBusy(false);
+    return;
   }
+  if (!native) return;
+  // skipBrowserRedirect means nothing navigated: the app owns the URL and
+  // opens it itself. The PKCE verifier was already written to this webview's
+  // storage, so the exchange below happens in the same browser that started
+  // the flow — the reason the consent screen must not be handed to Safari.
+  const Browser = window.Capacitor?.Plugins?.Browser;
+  if (!Browser || !data?.url) {
+    sessionStorage.removeItem("promptlyMigrateLocal");
+    setSignupError("Google sign-in could not start.");
+    setAuthBusy(false);
+    return;
+  }
+  try {
+    await Browser.open({ url: data.url, presentationStyle: "popover" });
+  } catch {
+    sessionStorage.removeItem("promptlyMigrateLocal");
+    setSignupError("Google sign-in could not start.");
+  } finally {
+    setAuthBusy(false);
+  }
+}
+
+// The native counterpart to the callback handling in initializeAuth(): iOS
+// reopens the app on the custom scheme instead of reloading a page, so the
+// code arrives through appUrlOpen rather than window.location.
+let nativeAuthCallbackAttached = false;
+function listenForNativeAuthCallback() {
+  if (nativeAuthCallbackAttached || !isNativeShell()) return;
+  const App = window.Capacitor?.Plugins?.App;
+  if (!App) return;
+  nativeAuthCallbackAttached = true;
+  App.addListener("appUrlOpen", async ({ url }) => {
+    const callback = window.PromptlyAuthRouting.parseOAuthCallback(url || "");
+    if (!callback || !authClient) return;
+    // Dismiss the consent screen first so the student is looking at Promptly
+    // while the exchange finishes, not at a spent Google page.
+    try { await window.Capacitor?.Plugins?.Browser?.close(); } catch {}
+    try {
+      const session = await window.PromptlyAuthRouting.establishAuthSession(authClient.auth, callback);
+      if (session?.user && callback.recovery) await completePasswordReset();
+      routeAuthenticatedUser(session?.user);
+      if (!session?.user) {
+        setSignupError("Google sign-in did not complete. Please try again.");
+        showAuthEntryFallback();
+        flushDeferredProfilePaint();
+      }
+    } catch (err) {
+      sessionStorage.removeItem("promptlyMigrateLocal");
+      setSignupError(err?.message || "Google sign-in did not complete. Please try again.");
+      showAuthEntryFallback();
+      flushDeferredProfilePaint();
+    }
+  });
 }
 
 // Finish the password-reset flow: the recovery link signs the user in, then
@@ -3624,8 +3836,68 @@ async function sendPasswordReset() {
   if (!authClient) return;
   const email = document.querySelector("[data-email-input]").value.trim();
   if (!isValidEmail(email)) return setSignupError("Enter your email first.");
-  const { error } = await authClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
-  document.querySelector("[data-auth-status]").textContent = error ? error.message : "Password reset email sent.";
+  const button = document.querySelector("[data-forgot-password]");
+  const status = document.querySelector("[data-auth-status]");
+  button.disabled = true;
+  button.textContent = "Sending…";
+  setSignupError();
+  try {
+    const { error } = await authClient.auth.resetPasswordForEmail(email, { redirectTo: authEmailRedirectUrl() });
+    if (error) throw error;
+    status.textContent = `Password reset sent to ${email}. Check spam or promotions if you don’t see it.`;
+  } catch (error) {
+    setSignupError(authErrorMessage(error, "reset"));
+    status.textContent = "Nothing changed — you can try again.";
+  } finally {
+    button.disabled = false;
+    button.textContent = "Forgot password?";
+  }
+}
+
+let confirmationResendTimer = null;
+async function resendSignupConfirmation() {
+  if (!authClient) return;
+  const email = document.querySelector("[data-auth-confirmation-email]")?.textContent?.trim()
+    || localStorage.getItem("promptlyPendingMigrationEmail")
+    || "";
+  const button = document.querySelector("[data-auth-confirmation-resend]");
+  const status = document.querySelector("[data-auth-status]");
+  if (!isValidEmail(email) || !button) return;
+  button.disabled = true;
+  button.textContent = "Sending…";
+  try {
+    const { error } = await authClient.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: authEmailRedirectUrl() },
+    });
+    if (error) throw error;
+    status.textContent = `Confirmation sent again to ${email}.`;
+    button.textContent = "Sent — try again in 30s";
+    window.clearTimeout(confirmationResendTimer);
+    confirmationResendTimer = window.setTimeout(() => {
+      button.disabled = false;
+      button.textContent = "Resend email";
+    }, 30000);
+  } catch (error) {
+    status.textContent = authErrorMessage(error, "confirmation");
+    button.disabled = false;
+    button.textContent = "Resend email";
+  }
+}
+
+function changeSignupEmail() {
+  window.clearTimeout(confirmationResendTimer);
+  sessionStorage.removeItem("promptlyMigrateLocal");
+  localStorage.removeItem("promptlyPendingMigrationEmail");
+  setAuthMode("signup");
+  setSignupError();
+  const input = document.querySelector("[data-email-input]");
+  if (input) {
+    input.focus();
+    input.select();
+  }
+  document.querySelector("[data-auth-status]").textContent = "Use another school address or a personal email — both work with Promptly.";
 }
 
 async function deleteAccount() {
@@ -3938,6 +4210,123 @@ async function removeWatch(id) {
   } catch {}
 }
 
+// ── Profile photo, across devices ───────────────────────────────────────────
+// The photo used to live only in localStorage. That made it vanish on a new
+// phone, which students read as the app losing their profile rather than as a
+// deliberate privacy choice — so it now belongs to the account.
+//
+// It is stored in a PRIVATE Supabase Storage bucket at "<user id>/avatar", one
+// object per account, and read back with an authenticated download rather than
+// a public URL. See supabase/migrations/20260919_avatar_storage.sql for the
+// per-user policies that make one student's path unreadable to another.
+//
+// Deliberately NOT in user_metadata: that object is embedded in the access
+// token JWT, so a photo there would be attached to every request the app makes.
+// Only the timestamp lives in the account profile, which is what tells another
+// device there is something newer to fetch.
+const AVATAR_BUCKET = "avatars";
+const photoStampStorageKey = "promptlyPhotoStamp";
+const MAX_AVATAR_EDGE = 512;
+
+function avatarObjectPath() {
+  return authUser?.id ? `${authUser.id}/avatar` : "";
+}
+
+// Downscale before upload. A modern phone camera produces several megabytes,
+// and the photo is only ever drawn into a circle a few dozen pixels wide —
+// uploading the original would cost the student's data plan and fill the
+// bucket for no visible gain. Also normalises HEIC/PNG/WebP to one JPEG, so
+// the bucket's allowed MIME list stays narrow.
+function downscaleImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("error", () => reject(new Error("Could not read that image.")));
+    reader.addEventListener("load", () => {
+      const image = new Image();
+      image.addEventListener("error", () => reject(new Error("That file is not an image Promptly can read.")));
+      image.addEventListener("load", () => {
+        const scale = Math.min(1, MAX_AVATAR_EDGE / Math.max(image.width, image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => (blob ? resolve({ blob, dataUrl: canvas.toDataURL("image/jpeg", 0.85) }) : reject(new Error("Could not process that image."))),
+          "image/jpeg",
+          0.85,
+        );
+      });
+      image.src = String(reader.result || "");
+    });
+    reader.readAsDataURL(file);
+  });
+}
+
+// Signed out, or accounts parked: the photo stays on this device exactly as it
+// always did. Nothing is uploaded for a user who has no account to attach it to.
+async function uploadProfilePhoto(blob) {
+  const path = avatarObjectPath();
+  if (!authClient || !authUser || !path) return false;
+  const { error } = await authClient.storage
+    .from(AVATAR_BUCKET)
+    .upload(path, blob, { upsert: true, contentType: "image/jpeg", cacheControl: "0" });
+  if (error) throw new Error(error.message || "Your photo could not be saved to your account.");
+  return true;
+}
+
+// Pull the account's photo onto this device. Called after sign-in hydration,
+// so a student who just installed the app on a second phone sees their own
+// face rather than a grey initial.
+async function fetchRemotePhoto() {
+  const path = avatarObjectPath();
+  if (!authClient || !authUser || !path) return "";
+  const { data, error } = await authClient.storage.from(AVATAR_BUCKET).download(path);
+  // A missing object is the normal case for anyone who never set a photo —
+  // it is not an error worth reporting to the student.
+  if (error || !data) return "";
+  return await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(String(reader.result || "")));
+    reader.addEventListener("error", () => resolve(""));
+    reader.readAsDataURL(data);
+  });
+}
+
+// Decide whether this device needs to go and get the photo. The stamp comes
+// from the account profile, so it is the same on every device; the local copy
+// records what this device last downloaded. Different, or no local photo at
+// all, means fetch.
+async function syncRemotePhoto() {
+  if (!authClient || !authUser) return;
+  const stamp = String(profile.photoUpdatedAt || "");
+  if (!stamp) return;
+  const localStamp = localStorage.getItem(photoStampStorageKey) || "";
+  if (stamp === localStamp && profile.photoDataUrl) return;
+  const dataUrl = await fetchRemotePhoto();
+  if (!dataUrl) return;
+  profile.photoDataUrl = dataUrl;
+  localStorage.setItem(photoStampStorageKey, stamp);
+  saveProfile();
+  updateProfilePhoto();
+}
+
+// Remove the photo from the account as well as this device. Without the
+// storage delete the image would outlive the student's decision to remove it,
+// which is the kind of gap the August privacy audit was written to catch.
+async function removeProfilePhoto() {
+  const path = avatarObjectPath();
+  profile.photoDataUrl = "";
+  profile.photoUpdatedAt = "";
+  localStorage.removeItem(photoStampStorageKey);
+  saveProfile();
+  updateProfilePhoto();
+  if (!authClient || !authUser || !path) return;
+  try {
+    await authClient.storage.from(AVATAR_BUCKET).remove([path]);
+  } catch {}
+  scheduleAccountSync();
+}
+
 function updateProfilePhoto() {
   const initial = profile.name.trim()[0]?.toUpperCase() || "P";
   document.querySelectorAll(".profile-chip, [data-photo-button]").forEach((button) => {
@@ -3960,6 +4349,10 @@ function updateProfilePhoto() {
     avatar.style.backgroundImage = profile.photoDataUrl ? `url("${profile.photoDataUrl}")` : "";
     avatar.classList.toggle("has-photo", Boolean(profile.photoDataUrl));
   });
+  // Nothing to remove when there is no photo, and an always-visible "Remove"
+  // under an empty circle reads as an error.
+  const removeButton = document.querySelector("[data-remove-photo]");
+  if (removeButton) removeButton.hidden = !profile.photoDataUrl;
 }
 
 function openProfileEditor() {
@@ -4699,8 +5092,26 @@ document.addEventListener("submit", (event) => {
   if (event.target.matches?.("[data-auth-form]")) event.preventDefault();
 });
 
+// Returning from Google's chooser can restore this page from the browser's
+// back/forward cache. Reset the progress state so a canceled attempt never
+// leaves every account control disabled on "Connecting…".
+window.addEventListener("pageshow", () => {
+  if (authAttemptInFlight) setAuthBusy(false);
+});
+
 document.addEventListener("click", async (event) => {
   if (event.target.closest("[data-verify-resend]")) { event.preventDefault(); await resendVerification(); return; }
+
+  if (event.target.closest("[data-remove-photo]")) {
+    event.preventDefault();
+    await removeProfilePhoto();
+    const status = document.querySelector("[data-photo-status]");
+    if (status) {
+      status.hidden = false;
+      status.textContent = "Photo removed.";
+    }
+    return;
+  }
 
   const watchSubmitButton = event.target.closest("[data-watch-submit]");
   if (watchSubmitButton) { event.preventDefault(); await submitWatch(); return; }
@@ -4752,6 +5163,10 @@ document.addEventListener("click", async (event) => {
   const authSubmitButton = event.target.closest("[data-auth-submit]");
   const googleAuthButton = event.target.closest("[data-google-auth]");
   const forgotPasswordButton = event.target.closest("[data-forgot-password]");
+  const passwordToggle = event.target.closest("[data-password-toggle]");
+  const confirmationSigninButton = event.target.closest("[data-auth-confirmation-signin]");
+  const confirmationResendButton = event.target.closest("[data-auth-confirmation-resend]");
+  const confirmationChangeButton = event.target.closest("[data-auth-confirmation-change]");
   const signOutButton = event.target.closest("[data-sign-out]");
   const deleteAccountButton = event.target.closest("[data-delete-account]");
 
@@ -4759,6 +5174,22 @@ document.addEventListener("click", async (event) => {
   if (authSubmitButton) handleAuthSubmit();
   if (googleAuthButton) signInWithGoogle();
   if (forgotPasswordButton) sendPasswordReset();
+  if (passwordToggle) {
+    const input = document.querySelector("[data-password-input]");
+    const showing = input?.type === "text";
+    if (input) input.type = showing ? "password" : "text";
+    passwordToggle.textContent = showing ? "Show" : "Hide";
+    passwordToggle.setAttribute("aria-label", showing ? "Show password" : "Hide password");
+    passwordToggle.setAttribute("aria-pressed", showing ? "false" : "true");
+  }
+  if (confirmationSigninButton) {
+    setAuthMode("signin");
+    setSignupError();
+    document.querySelector("[data-auth-status]").textContent = "Sign in after you confirm the link in your email.";
+    document.querySelector("[data-password-input]")?.focus();
+  }
+  if (confirmationResendButton) await resendSignupConfirmation();
+  if (confirmationChangeButton) changeSignupEmail();
   if (signOutButton) {
     await signOutAndReset();
     return;
@@ -5023,6 +5454,12 @@ document.querySelectorAll("[data-cycm-step]").forEach((btn) => {
   });
 });
 
+document.querySelector("[data-cycm-scope]")?.addEventListener("click", () => {
+  cycmMineOnly = !cycmMineOnly;
+  cycmExpanded.clear(); // group sizes change, so old expansions no longer apply
+  renderCyclesView();
+});
+
 // Tapping the month label jumps back to the current month — the fast way home
 // after paging, without adding a second row of controls.
 document.querySelector("[data-cycm-label]")?.addEventListener("click", () => {
@@ -5221,16 +5658,42 @@ document.addEventListener("keydown", (event) => {
   openDetails(row.dataset.openDetails);
 });
 
-document.querySelector("[data-photo-input]")?.addEventListener("change", (event) => {
+document.querySelector("[data-photo-input]")?.addEventListener("change", async (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.addEventListener("load", () => {
-    profile.photoDataUrl = String(reader.result || "");
+  // Clear the input so picking the same file twice still fires a change.
+  event.target.value = "";
+  const status = document.querySelector("[data-photo-status]");
+  const setStatus = (message) => {
+    if (!status) return;
+    status.hidden = !message;
+    status.textContent = message || "";
+  };
+  try {
+    const { blob, dataUrl } = await downscaleImage(file);
+    // Show it immediately. The upload is what makes it follow the account, but
+    // the student should never wait on the network to see their own photo.
+    profile.photoDataUrl = dataUrl;
     saveProfile();
     applyProfileToUI();
-  });
-  reader.readAsDataURL(file);
+    if (!authClient || !authUser) {
+      setStatus("Saved on this device. Sign in to keep it across devices.");
+      return;
+    }
+    setStatus("Saving to your account…");
+    await uploadProfilePhoto(blob);
+    const stamp = new Date().toISOString();
+    profile.photoUpdatedAt = stamp;
+    localStorage.setItem(photoStampStorageKey, stamp);
+    saveProfile();
+    scheduleAccountSync();
+    setStatus("Saved to your account.");
+  } catch (error) {
+    // The photo is already on screen and in local storage at this point, so
+    // say plainly that only the account copy failed rather than implying the
+    // picture was lost.
+    setStatus(error?.message || "Saved on this device, but not to your account yet.");
+  }
 });
 
 document.querySelector(".search-panel input")?.addEventListener("input", (event) => {

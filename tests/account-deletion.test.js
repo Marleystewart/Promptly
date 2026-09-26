@@ -54,6 +54,14 @@ function response() {
           },
         };
       }
+      // The profile photo lives in Storage and does not cascade when the auth
+      // user is deleted, so deletion removes it explicitly.
+      if (url.includes("/storage/v1/object/avatars/")) {
+        assert.equal(url, "https://project.supabase.co/storage/v1/object/avatars/verified-user-id/avatar");
+        assert.equal(options.method, "DELETE");
+        assert.equal(options.headers.Authorization, "Bearer server-secret");
+        return { ok: true, async json() { return {}; } };
+      }
       assert.equal(url, "https://project.supabase.co/auth/v1/admin/users/verified-user-id");
       assert.equal(options.method, "DELETE");
       assert.equal(options.headers.Authorization, "Bearer server-secret");
@@ -64,7 +72,13 @@ function response() {
     await subscribeHandler({ method: "DELETE", headers: { authorization: "Bearer caller-jwt" } }, deleted);
     assert.equal(deleted.statusCode, 200);
     assert.equal(deleted.body.ok, true);
-    assert.equal(requests.length, 2, "deletion must not be blocked by the confirmation-policy check");
+    assert.equal(requests.length, 3, "deletion must not be blocked by the confirmation-policy check");
+    // Order matters: after the auth user is gone there is no id left to build
+    // the photo's path from, so the photo must go first.
+    const avatarAt = requests.findIndex((r) => r.url.includes("/storage/v1/object/avatars/"));
+    const userAt = requests.findIndex((r) => r.url.includes("/auth/v1/admin/users/"));
+    assert.ok(avatarAt >= 0, "the stored profile photo must be deleted with the account");
+    assert.ok(avatarAt < userAt, "the photo must be deleted before the auth user");
   } finally {
     global.fetch = originalFetch;
     for (const [key, value] of Object.entries(originalEnv)) {

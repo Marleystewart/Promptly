@@ -16,7 +16,23 @@ Promptly uses Supabase Auth for email/password and Google sign-in. Profiles and 
 
 Without these values, Promptly intentionally falls back to a profile stored only on the current device.
 
-For launch, configure custom SMTP in Supabase so confirmation and password-reset emails are not limited by the default sender.
+For launch, custom SMTP in Supabase is required — do not rely on Supabase's
+default sender for student confirmations or password resets. School inboxes on
+Microsoft 365 are especially likely to route an untrusted sender to Junk,
+Other, or the institution's quarantine where the student never sees it.
+
+Use a verified `joinpromptly.co` sending domain, publish its SPF and DKIM
+records, add a DMARC policy, and use a recognizable sender such as
+`Promptly <accounts@joinpromptly.co>`. After changing SMTP, test both signup
+confirmation and password reset with a real Microsoft-hosted `.edu` inbox —
+including the school's quarantine — before calling the flow healthy. The app
+provides resend and change-address recovery, but those controls cannot repair
+an untrusted sending domain.
+
+Microsoft/Azure OAuth is currently disabled in the Supabase project. Enabling
+it later is the strongest no-email fallback for schools that use Microsoft
+accounts, but it requires a Microsoft Entra app and matching redirect URLs in
+both Entra and Supabase.
 
 ## Alert delivery
 

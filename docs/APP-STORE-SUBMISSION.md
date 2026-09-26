@@ -49,14 +49,29 @@ graduation-year BAND, not an exact year.
 Source: `api/stats.js` — explicitly "identifier-free event tracking", rate
 limited per IP, no email or user id attached. Declare as NOT linked.
 
+### User Content — DECLARE (changed 19 Sep 2026)
+
+| Data | Collected | Linked | Purpose | Tracking |
+|---|---|---|---|---|
+| Photos or Videos | Yes | Yes | App Functionality | No |
+
+The profile photo used to be device-only and was previously declared as NOT
+collected. As of 19 Sep 2026 it is stored in a private Supabase Storage bucket
+so it follows the student to a new device — see
+`supabase/migrations/20260919_avatar_storage.sql`. It is readable only by the
+account that owns it, is never shown to another user, and is deleted with the
+account by `api/subscribe.js`. **This section of App Privacy must be re-answered
+on the next submission** — the previously filed label says we do not collect it.
+
 ### Do NOT declare (we genuinely do not collect these)
-- **Résumé / User Content** — the upload feature was REMOVED. `script.js`
+- **Résumé** — the upload feature was REMOVED. `script.js`
   deletes any legacy `resumeText` from local storage on load, and "resume"
   appears nowhere under `api/`. Verify with: `grep -rn resume api/`
 - **Location** — no geolocation API use. `geo.js` is a static city table used to
   match a typed preference; it never reads device location.
 - **Payments / Purchases** — the app is free and takes no payment.
-- **Contacts, Photos, Health, Browsing History, Search History.**
+- **Contacts, Health, Browsing History, Search History.** (Photos moved to the
+  declared section above.)
 
 ### Tracking question
 Answer **"No"** to "Do you or your third-party partners use data for tracking?"

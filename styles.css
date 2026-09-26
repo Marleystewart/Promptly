@@ -153,14 +153,19 @@ body:not(.onboarding-active) .onboarding-shell {
 }
 
 .launch-icon {
-  width: clamp(116px, 22vw, 178px);
-  height: clamp(116px, 22vw, 178px);
+  /* Sized from the MINIMUM, because that is what a phone actually gets: 22vw
+     was 82px at 375px wide, well under the old 116px floor, so the middle term
+     never applied and every phone saw the floor. The vw term is set so it takes
+     over right at phone width and the lockup grows with the screen from there.
+     The icon:wordmark ratio is held at 1:1.29, as it was. */
+  width: clamp(142px, 38vw, 200px);
+  height: clamp(142px, 38vw, 200px);
   border-radius: 34px;
   box-shadow: 0 32px 90px rgba(16, 24, 40, 0.06), 0 0 52px rgba(128, 87, 255, 0.5);
 }
 
 .launch-wordmark {
-  width: clamp(150px, 32vw, 230px);
+  width: clamp(184px, 49vw, 258px);
   height: auto;
   border-radius: 16px;
   /* wordmark.png is white artwork drawn for a dark page, and on white it
@@ -256,12 +261,27 @@ body.launch-active .onboarding-brand {
   background: rgba(128,87,255,0.45);
 }
 
+.auth-tabs button:focus-visible,
+.password-toggle:focus-visible {
+  outline: 3px solid rgba(93, 56, 242, 0.24);
+  outline-offset: 2px;
+}
+
 /* Google leads the signup card. It is the only path that skips email
    confirmation entirely — Google hands Supabase an already-verified address —
    and confirmation is where the funnel was losing most signups. */
 .auth-google {
   margin-top: 16px;
   gap: 10px;
+}
+
+.auth-google svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  padding: 3px;
+  border-radius: 50%;
+  background: #fff;
 }
 
 .auth-fast-note {
@@ -301,6 +321,81 @@ body.launch-active .onboarding-brand {
   color: var(--muted) !important;
   font-size: 13px !important;
   text-align: center;
+}
+
+.password-input-wrap {
+  position: relative;
+  display: block;
+}
+
+.password-input-wrap input {
+  padding-right: 76px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  min-width: 52px;
+  min-height: 36px;
+  padding: 0 8px;
+  transform: translateY(-50%);
+  border-radius: 9px;
+  color: var(--purple-ink);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.password-toggle:hover { background: rgba(128, 87, 255, 0.1); }
+
+.auth-confirmation {
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid rgba(93, 56, 242, 0.18);
+  border-radius: 18px;
+  background: rgba(128, 87, 255, 0.07);
+  text-align: center;
+}
+
+.auth-confirmation-icon {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--purple-2);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.auth-confirmation h2 { margin: 0; font-size: 23px; }
+.auth-confirmation p { margin: 9px 0 0; color: var(--muted); line-height: 1.5; }
+.auth-confirmation strong { color: var(--ink); overflow-wrap: anywhere; }
+.auth-confirmation .soft-action { margin-top: 18px; }
+
+.auth-delivery-tip {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  text-align: left;
+  font-size: 13px;
+}
+
+.auth-confirmation-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.auth-confirmation-links .text-action { margin: 0; font-size: 13px; }
+
+[data-auth-entry][aria-busy="true"] button,
+[data-auth-entry][aria-busy="true"] input {
+  cursor: progress;
 }
 
 .preference-options {
@@ -2131,6 +2226,34 @@ input[type="checkbox"] {
   border: 1px solid var(--line);
 }
 
+/* The caption grew when the photo started following the account, and an
+   inline label ran straight into it. */
+.profile-photo-row strong { display: block; }
+
+/* "Remove photo" sits under the photo caption. A link rather than a button:
+   it is a rare, reversible action and should not compete with the photo
+   itself for attention. --purple-ink measures 6.34:1 on white. */
+.link-action {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--purple-ink);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Upload feedback. role="status" on the element announces changes, so this
+   only has to carry the visual weight of secondary text. */
+.photo-status {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .profile-photo {
   width: 62px;
   height: 62px;
@@ -3578,6 +3701,40 @@ body.onboarding-active .ap-panel { display: none; }
     cursor: pointer;
   }
 
+  /* Scope control. Full width and stated in words, because a narrowed list
+     that does not announce itself reads as missing data. */
+  .cycm-scope {
+    display: block;
+    width: 100%;
+    margin: 0 0 10px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--panel-strong);
+    color: var(--muted);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 650;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  /* Narrowed is the notable state, so it carries the accent. */
+  .cycm-scope.is-mine {
+    border-color: var(--purple);
+    color: var(--purple-ink);
+  }
+
+  .cycm-note {
+    margin: 0 0 10px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    background: var(--panel-strong);
+    color: var(--muted);
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+
   .cycm-empty {
     margin: 0;
     padding: 26px 16px;
@@ -4824,8 +4981,11 @@ body.tour-open .mobile-nav {
 .ig-card button:focus-visible { outline: 2px solid var(--purple-ink); outline-offset: 2px; }
 
 /* ── Native iOS app only ────────────────────────────────────────────────────
-   html.native-app is set by onboarding.js inside the Capacitor shell, so none
-   of this reaches the website. */
+   html.native-app is set by index.html's head script, before any CSS or
+   content, so none of this reaches the website and none of it lands late.
+   (onboarding.js sets the same class again at the end of <body>; that is a
+   harmless no-op kept so the file stands alone. It must not also rewrite the
+   viewport — see the note there.) */
 html.native-app body {
   padding-top: env(safe-area-inset-top, 0px);
   overscroll-behavior: none;

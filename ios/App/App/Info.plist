@@ -68,5 +68,20 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.thealmargroup.promptly</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.thealmargroup.promptly</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Promptly uses the camera only if you choose to take a new profile photo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Promptly opens your photo library only so you can pick a profile photo.</string>
 </dict>
 </plist>

@@ -32,11 +32,21 @@
   // screen instead of feeling zoomed in, pins the scale so a focused field
   // cannot zoom, and uses viewport-fit=cover so env(safe-area-inset-top) is
   // real and content clears the status bar.
+  // index.html's head script already did both of these, before any CSS or
+  // content, which is the only time they can be done without being seen. This
+  // block is kept so onboarding.js still stands on its own, but it must not
+  // REDO the work: assigning meta[viewport].content makes WebKit re-parse the
+  // viewport and re-lay out the whole page, and this file runs at the end of
+  // <body>, so that relayout lands after the app is already on screen. That is
+  // the launch jump the head script was added to remove — the early copy went
+  // in, this late one was left behind, and it has been undoing the fix on every
+  // launch since. Only write when the value would actually change.
   if (isNativeApp()) {
     document.documentElement.classList.add("native-app");
     var viewport = document.querySelector('meta[name="viewport"]');
-    if (viewport) {
-      viewport.content = "width=device-width, initial-scale=0.9, minimum-scale=0.9, maximum-scale=0.9, viewport-fit=cover";
+    var wanted = "width=device-width, initial-scale=0.9, minimum-scale=0.9, maximum-scale=0.9, viewport-fit=cover";
+    if (viewport && viewport.content !== wanted) {
+      viewport.content = wanted;
     }
 
     // Bottom bar shrinks while scrolling down and grows back on any scroll up
