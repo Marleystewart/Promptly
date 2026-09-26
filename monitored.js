@@ -428,6 +428,7 @@ window.MONITORED_COMPANIES = [
   "MassMutual",
   "Mastercard",
   "Mathematica",
+  "Maximus",
   "Mayo Clinic",
   "McKinsey & Company",
   "Mercer",
@@ -558,6 +559,7 @@ window.MONITORED_COMPANIES = [
   "Relativity Space",
   "Replit",
   "Reprise",
+  "RGP",
   "Riot Games",
   "Ripple",
   "Riveron",
@@ -734,8 +736,8 @@ window.MONITORED_COMPANIES = [
 ];
 
 window.PROMPTLY_COVERAGE = {
-  "sources": 725,
-  "companies": 725,
+  "sources": 727,
+  "companies": 727,
   "byPlatform": {
     "greenhouse": 238,
     "custom": 149,
@@ -748,6 +750,7 @@ window.PROMPTLY_COVERAGE = {
     "taleo": 1,
     "workable": 10,
     "ukg": 7,
+    "avature": 2,
     "adp": 4,
     "paylocity": 3,
     "pinpoint": 1,
@@ -766,7 +769,7 @@ window.PROMPTLY_COVERAGE = {
   "byField": {
     "Finance": 214,
     "Technology": 72,
-    "Consulting": 203,
+    "Consulting": 205,
     "Healthcare": 57,
     "Education": 4,
     "Engineering": 58,

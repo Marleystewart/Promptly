@@ -856,6 +856,11 @@ const SOURCES = [
   { company: "enVista", short: "ENVS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ukg", board: "recruiting.ultipro.com/ENV1003ENVIS/adc7da17-182d-0b77-a5c5-46cf3cb50218" },
   { company: "Nagarro", short: "NGRO", logoClass: "cons", field: "Consulting", subField: "Tech Consulting", ats: "smartrecruiters", board: "Nagarro1" },
   { company: "Arthur D. Little", short: "ADL", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "custom", handler: "adlittle" },
+  // Avature portals (api/_shared/avature.js). RGP honours a page size of 40,
+  // so its whole board is three requests; Maximus ignores it and is read
+  // through its own keyword search instead of 67 pages of six.
+  { company: "RGP", short: "RGP", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "avature", board: "https://careers.rgp.com/Careers/SearchJobs", avaturePaging: "job" },
+  { company: "Maximus", short: "MMS", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "avature", board: "https://maximus.avature.net/careers/SearchJobs", avaturePaging: "folder", avatureTerms: ["internship", "graduate", "campus", "co-op"] },
   { company: "Milliman", short: "MILL", logoClass: "cons", field: "Consulting", subField: "Management Consulting", ats: "ukg", board: "recruiting2.ultipro.com/MIL1017/f54234e9-dfde-b183-fd20-4fbdb19cba7a" },
   { company: "Dentons Global Advisors", short: "DGA", logoClass: "cons", field: "Consulting", subField: "Strategy", ats: "ukg", board: "dgahr.rec.pro.ukg.net/DEN1502DGBV/35d54f2b-b9c1-442f-9403-035c369c012b" },
   // Procurement Leaders is a World 50 business; procurementleaders.com links here.

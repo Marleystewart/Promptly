@@ -597,6 +597,30 @@ async function fetchTbe(src) {
   return out;
 }
 
+// ── Avature (api/_shared/avature.js) ──────────────────────────────────────
+// { ats:"avature", board:"<the SearchJobs URL>", avaturePaging:"job"|"folder",
+//   avatureTerms:[…] }
+// Every Avature tenant here is a global employer, so the US gate is not
+// optional: RGP's own board is 113 reqs, 13 of them outside the US, and
+// Maximus' is mostly UK and Canadian.
+async function fetchAvature(src) {
+  const { fetchAvatureListings } = require("./avature");
+  const raw = await fetchAvatureListings(src.board, {
+    paging: src.avaturePaging || "job",
+    terms: src.avatureTerms || [""],
+  });
+  const out = [];
+  for (const j of raw) {
+    // isPositiveUsLocation, not the local test: these portals write "Dallas,
+    // Texas, United States" and, where the location comes from the URL slug,
+    // a bare "United States" — neither carries a state CODE.
+    if (!isPositiveUsLocation(j.location)) continue;
+    const cycle = detectCycle(j.title, j.location, true, Boolean(src.studentBoard));
+    if (cycle) out.push(normalize(src, j.title, j.url, j.location, cycle, null, j.postedAt || null));
+  }
+  return out;
+}
+
 // ── Small public-feed ATSs (api/_shared/small-ats.js) ─────────────────────
 // { ats:"workable"|"ukg"|"adp"|"paylocity"|"pinpoint"|"recruitee"|"jobvite"|
 //   "rippling"|"teamtailor"|"breezy"|"bamboohr"|"jazzhr"|"hrmdirect"|"hibob", board:"<that feed's id>" }
@@ -761,6 +785,7 @@ const FETCHERS = {
   usajobs: fetchUsaJobs,
   taleo: fetchTaleo,
   tbe: fetchTbe,
+  avature: fetchAvature,
   custom: fetchCustom,
   workable: fetchSmallAts,
   ukg: fetchSmallAts,
