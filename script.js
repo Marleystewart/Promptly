@@ -3291,8 +3291,11 @@ const routeAuthenticatedUser = window.PromptlyAuthRouting.createAuthenticatedUse
     setView("home");
   },
   showIncomplete() {
+    // Confirming from the code bar can happen on any setup step. Only start
+    // them at step 2 if they are not already past it.
+    const current = Number(document.querySelector(".onboard-step.active")?.dataset.step || 0);
     document.body.classList.add("onboarding-active");
-    setOnboardingStep(2);
+    if (current < 2) setOnboardingStep(2);
   },
 });
 
@@ -3374,6 +3377,7 @@ function applyAccountUser(user) {
   accountSyncPaused = false;
   sessionStorage.removeItem("promptlyMigrateLocal");
   localStorage.removeItem("promptlyPendingMigrationEmail");
+  renderCodeBar();
   if (shouldMigrateLocal && !remoteProfile) scheduleAccountSync();
   updateAccountUI();
   // Auth has decided. Whatever was held back can now be drawn, and it is drawn
@@ -3591,6 +3595,9 @@ async function initializeAuth() {
     if (session?.user && oauthCallback?.recovery) await completePasswordReset();
     routeAuthenticatedUser(session?.user);
     pendingOAuthCallback = false;
+    // Closed the tab before the code came? They are back in the app on their
+    // on-device profile, and the bar is where they left it.
+    renderCodeBar();
     // The callback produced no session (expired code, or — much more common —
     // the confirmation email was opened on a different device or browser than
     // the one that signed up, so the PKCE verifier isn't in this browser's
@@ -3691,9 +3698,21 @@ async function handleAuthSubmit() {
     if (result.data.session?.user) {
       routeAuthenticatedUser(result.data.session.user);
     } else {
+      // Do not make the student wait on the email. School Microsoft 365 tenants
+      // hold new mail for minutes while they scan it, and a first visit that
+      // stalls on "check your inbox" is where people give up. They carry on
+      // setting up on an on-device profile, and the code goes in the bar at the
+      // top whenever it lands; verifying moves that profile into the account
+      // (applyAccountUser migrates it, keyed on promptlyPendingMigrationEmail).
+      //
+      // Nothing is unlocked by skipping ahead. Supabase still has no session
+      // until the code is entered, so no alert is sent and no student badge is
+      // shown for an address nobody has proved they own.
       saveProfile();
-      showAuthConfirmation(email);
-      status.textContent = "Enter the code from your email to finish.";
+      document.body.classList.add("onboarding-active");
+      setOnboardingStep(2);
+      renderCodeBar();
+      status.textContent = "";
     }
   } catch (error) {
     sessionStorage.removeItem("promptlyMigrateLocal");
@@ -3884,21 +3903,21 @@ async function sendPasswordReset() {
 // Requires {{ .Token }} in the Supabase "Confirm signup" template. The link
 // stays in that email too, so either path confirms the account.
 let codeVerifyInFlight = false;
-async function verifySignupCode() {
-  if (!authClient || codeVerifyInFlight) return;
+// Shared by the "Check your inbox" screen and the in-app code bar, so there is
+// one path that turns a code into a session and they cannot drift apart.
+async function verifyEmailCode({ input, button, setError, idleLabel }) {
+  if (!authClient || codeVerifyInFlight) return false;
   const email = document.querySelector("[data-auth-confirmation-email]")?.textContent?.trim()
     || localStorage.getItem("promptlyPendingMigrationEmail")
     || "";
-  const input = document.querySelector("[data-auth-code-input]");
-  const button = document.querySelector("[data-auth-code-submit]");
   const status = document.querySelector("[data-auth-status]");
   // Pasted codes arrive as "123 456" or with a trailing newline.
   const token = String(input?.value || "").replace(/\D/g, "");
   if (input) input.value = token;
-  if (!isValidEmail(email)) return setCodeError("Go back and re-enter your email, then try again.");
-  if (token.length < 6) return setCodeError("Enter the 6-digit code from the email.");
+  if (!isValidEmail(email)) { setError("Go back and re-enter your email, then try again."); return false; }
+  if (token.length < 6) { setError("Enter the 6-digit code from the email."); return false; }
 
-  setCodeError();
+  setError();
   codeVerifyInFlight = true;
   if (button) {
     button.disabled = true;
@@ -3908,30 +3927,45 @@ async function verifySignupCode() {
     const { data, error } = await authClient.auth.verifyOtp({ email, token, type: "email" });
     if (error) throw error;
     window.clearTimeout(confirmationResendTimer);
-    status.textContent = "Email confirmed — you’re in.";
+    if (status) status.textContent = "Email confirmed — you’re in.";
     // onAuthStateChange fires SIGNED_IN as well; the router ignores a repeat.
     if (data?.session?.user) routeAuthenticatedUser(data.session.user);
+    return true;
   } catch (error) {
-    setCodeError(authErrorMessage(error, "code"));
+    setError(authErrorMessage(error, "code"));
     input?.focus();
     input?.select();
+    return false;
   } finally {
     codeVerifyInFlight = false;
     if (button) {
       button.disabled = false;
-      button.textContent = "Confirm email";
+      button.textContent = idleLabel;
     }
   }
 }
 
+function verifySignupCode() {
+  return verifyEmailCode({
+    input: document.querySelector("[data-auth-code-input]"),
+    button: document.querySelector("[data-auth-code-submit]"),
+    setError: setCodeError,
+    idleLabel: "Confirm email",
+  });
+}
+
 let confirmationResendTimer = null;
-async function resendSignupConfirmation() {
+// The button and where the result is reported are parameters because the code
+// bar and the "Check your inbox" screen each have their own.
+async function resendSignupConfirmation({
+  button = document.querySelector("[data-auth-confirmation-resend]"),
+  report = (message) => { document.querySelector("[data-auth-status]").textContent = message; },
+  clearError = setCodeError,
+} = {}) {
   if (!authClient) return;
   const email = document.querySelector("[data-auth-confirmation-email]")?.textContent?.trim()
     || localStorage.getItem("promptlyPendingMigrationEmail")
     || "";
-  const button = document.querySelector("[data-auth-confirmation-resend]");
-  const status = document.querySelector("[data-auth-status]");
   if (!isValidEmail(email) || !button) return;
   button.disabled = true;
   button.textContent = "Sending…";
@@ -3944,8 +3978,8 @@ async function resendSignupConfirmation() {
     if (error) throw error;
     // A resend replaces the earlier code, and a slow school inbox can deliver
     // both at once — say which one to use before the student has to wonder.
-    status.textContent = `New code sent to ${email}. Use the code in the newest email.`;
-    setCodeError();
+    report(`New code sent to ${email}. Use the code in the newest email.`);
+    clearError();
     let secondsLeft = 60;
     const tick = () => {
       if (secondsLeft <= 0) {
@@ -3960,7 +3994,7 @@ async function resendSignupConfirmation() {
     window.clearTimeout(confirmationResendTimer);
     tick();
   } catch (error) {
-    status.textContent = authErrorMessage(error, "confirmation");
+    report(authErrorMessage(error, "confirmation"));
     button.disabled = false;
     button.textContent = "Resend email";
   }
@@ -3983,6 +4017,71 @@ function changeSignupEmail() {
     input.select();
   }
   document.querySelector("[data-auth-status]").textContent = "Use another school address or a personal email — both work with Promptly.";
+}
+
+// ── In-app code bar ─────────────────────────────────────────────────────────
+// Visible exactly while an account exists but has not been confirmed on this
+// device. The pending address is the same key applyAccountUser reads to
+// migrate the on-device profile, so the bar and the migration cannot disagree
+// about whether there is something waiting.
+function pendingSignupEmail() {
+  return localStorage.getItem("promptlyPendingMigrationEmail") || "";
+}
+
+function renderCodeBar() {
+  const bar = document.querySelector("[data-code-bar]");
+  if (!bar) return;
+  const email = pendingSignupEmail();
+  const show = Boolean(authClient && !authUser && email);
+  bar.hidden = !show;
+  document.body.classList.toggle("has-code-bar", show);
+  if (!show) return;
+  const label = document.querySelector("[data-code-bar-email]");
+  if (label) label.textContent = email;
+}
+
+function setCodeBarError(message = "") {
+  const error = document.querySelector("[data-code-bar-error]");
+  if (!error) return;
+  error.textContent = message;
+  error.hidden = !message;
+}
+
+async function verifyCodeBar() {
+  const ok = await verifyEmailCode({
+    input: document.querySelector("[data-code-bar-input]"),
+    button: document.querySelector("[data-code-bar-submit]"),
+    setError: setCodeBarError,
+    idleLabel: "Confirm",
+  });
+  if (!ok) return;
+  renderCodeBar();
+  // A student who finished setup before the code arrived has never had an
+  // alert profile saved — there was no account to save it to. Do it now, or
+  // they are signed in and silently not alerted.
+  if (authUser && accountProfileIsComplete()) saveSubscriber();
+}
+
+function resendCodeBar() {
+  return resendSignupConfirmation({
+    button: document.querySelector("[data-code-bar-resend]"),
+    report: (message) => {
+      const text = document.querySelector("[data-code-bar-error]");
+      if (!text) return;
+      text.textContent = message;
+      text.hidden = false;
+    },
+    clearError: () => {},
+  });
+}
+
+// A typo in the address means the code is never coming. Send them back to the
+// account step with what they typed, keeping everything else they set up.
+function changeCodeBarEmail() {
+  changeSignupEmail();
+  renderCodeBar();
+  document.body.classList.add("onboarding-active");
+  setOnboardingStep(1);
 }
 
 async function deleteAccount() {
@@ -4554,7 +4653,9 @@ function enterApp() {
   syncInferredFields();
   if (!validateInterests()) return;
   saveProfile();
-  saveSubscriber();
+  // Waiting on the email code there is no session, so the request could only
+  // fail. verifyCodeBar() saves it the moment the account is confirmed.
+  if (authUser || !authClient) saveSubscriber();
   track("signup");
   applyProfileToUI();
   setView("home");
@@ -5166,6 +5267,11 @@ initializeAuth().finally(() => {
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Enter") return;
   if (event.target.tagName === "BUTTON") return; // Enter already clicks a button
+  if (event.target.matches?.("[data-code-bar-input]")) {
+    event.preventDefault();
+    verifyCodeBar();
+    return;
+  }
   const codeForm = event.target.closest?.("[data-auth-code-form]");
   if (codeForm) {
     event.preventDefault();
@@ -5283,6 +5389,9 @@ document.addEventListener("click", async (event) => {
     document.querySelector("[data-password-input]")?.focus();
   }
   if (confirmationResendButton) await resendSignupConfirmation();
+  if (event.target.closest("[data-code-bar-submit]")) await verifyCodeBar();
+  if (event.target.closest("[data-code-bar-resend]")) await resendCodeBar();
+  if (event.target.closest("[data-code-bar-change]")) changeCodeBarEmail();
   if (confirmationChangeButton) changeSignupEmail();
   if (signOutButton) {
     await signOutAndReset();

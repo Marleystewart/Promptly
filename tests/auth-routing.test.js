@@ -191,9 +191,14 @@ console.log("OAuth cancellation recovery tests passed.");
     "the Home Screen hint must only show on iOS outside the installed app");
   // A student who arrives from the emailed link must still get it.
   assert.match(script, /Email confirmed\. Sign in to finish setting up your alerts\.\$\{homeScreenHandoffNote\(\)\}/);
-  // Right after signup the student types the emailed code in place, so there
-  // is no handoff to warn about — and no instruction to leave and come back.
-  assert.match(script, /status\.textContent = "Enter the code from your email to finish\.";/);
+  // Right after signup the student carries on into setup and types the code
+  // into the in-app bar whenever it lands, so there is no handoff to warn
+  // about — and no instruction to leave and come back.
+  const submit = script.match(/async function handleAuthSubmit\(\)[\s\S]*?\n}\n/)[0];
+  assert.match(submit, /setOnboardingStep\(2\);\s*renderCodeBar\(\);/,
+    "an unconfirmed signup must continue into setup, not stop on a waiting screen");
+  assert.doesNotMatch(submit, /showAuthConfirmation\(email\)/,
+    "signup must not block on the inbox — school mail can take minutes to arrive");
   assert.doesNotMatch(script, /come back and sign in/);
   assert.match(script, /function prefillPendingEmail\(\)[\s\S]*promptlyPendingMigrationEmail/,
     "the confirmed address must be put back in the field");
