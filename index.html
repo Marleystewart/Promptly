@@ -95,6 +95,23 @@
         <img class="launch-wordmark" src="assets/wordmark.png" alt="" />
       </div>
     </div>
+    <!-- Shown while a new account is waiting on its email code. The student is
+         already inside the app on an on-device profile; this is where the code
+         goes whenever it arrives, and entering it moves that profile into the
+         account. Outside the app shell so it stays visible during onboarding. -->
+    <div class="code-bar" data-code-bar role="region" aria-label="Confirm your email" hidden>
+      <p class="code-bar-text">Enter the code sent to <strong data-code-bar-email></strong> to save your account. <small>It's in the email's subject line.</small></p>
+      <div class="code-bar-row">
+        <label class="sr-only" for="code-bar-input">6-digit code</label>
+        <input class="code-bar-input" id="code-bar-input" data-code-bar-input type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="10" placeholder="123456" />
+        <button type="button" class="soft-action" data-code-bar-submit>Confirm</button>
+      </div>
+      <p class="form-error" data-code-bar-error role="alert" hidden></p>
+      <div class="code-bar-links">
+        <button type="button" class="text-action" data-code-bar-resend>Resend email</button>
+        <button type="button" class="text-action" data-code-bar-change>Wrong email?</button>
+      </div>
+    </div>
     <section class="onboarding-shell" aria-label="Promptly sign up">
       <div class="launch-screen onboard-step active" data-step="0" aria-label="Opening Promptly">
         <img class="launch-icon" src="assets/app-icon.png" alt="" />
