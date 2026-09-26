@@ -1,129 +1,167 @@
-// Avature career portals.
+// Reusable Avature careers-site adapter.
 //
-// Recorded for a long time as unreadable ("a fixed latest-20 with no offset").
-// That was wrong in both halves: the list IS server-rendered, and it DOES page
-// — the controls are just in the markup rather than in any documentation, and
-// two portal generations name them differently:
+// Avature server-renders its result cards, so no private API or browser is
+// needed. Each card is <article class="article--result"> containing the job
+// title as a link to /JobDetail/... or /FolderDetail/..., and a meta line
+// shaped like
+//   "<Location> • Job ID: 15518 • 17-Feb-2026"
+// Location matters: Avature tenants here are global employers, so the caller
+// pairs this with usOnly() rather than shipping every country.
 //
-//   RGP      /Careers/SearchJobs/?jobRecordsPerPage=40&jobOffset=0
-//   Maximus  /careers/SearchJobs/?folderOffset=0        (page size fixed at 6)
+// Two portal generations, and they name the pager differently. Neither is
+// documented; both are in the pager's own hrefs, which is where to look.
 //
-// So a source says which family its portal uses. RGP honours a page size of 40
-// and its whole board is three requests; Maximus ignores the size entirely, so
-// it is read through its own keyword search instead of walking 398 reqs six at
-// a time.
+//   paging "job"     ?jobRecordsPerPage=40&jobOffset=0        (RGP, ManTech,
+//                    MetLife) — the page size is honoured, so RGP's whole
+//                    board is three requests.
+//   paging "folder"  ?folderOffset=0                          (Maximus) — the
+//                    page size is IGNORED and always six, so walking 398 reqs
+//                    would be 67 requests. Pass `terms` instead and let the
+//                    portal's own keyword search do the narrowing.
 //
-// Every row is the same shape in both:
-//
-//   <article class="article article--result" id="article--1">
-//     <h3 class="article__header__text__title …"><a class="link" href="…">TITLE</a></h3>
-//     <div class="article__header__text__subtitle">
-//       <span class="list-item-locationBuiltIn">California, United States</span>
-//
-// The location span is the difference. RGP fills it; Maximus has only a posted
-// date and a job id there, and writes the country into the URL slug instead
-// ("/FolderDetail/United-States-Senior-Cybersecurity-Engineer…/43712"). That
-// slug is the board's own wording, so it is read rather than guessed at — and
-// only an explicit country is accepted, never a bare city.
+// The NEWER React portals (IBM, Slalom, CBRE, Avanade) are a different thing
+// again: they serve a server no rows at all and expose no offset. Nothing here
+// reaches those — see docs/SOURCE-HUNTING-FINDINGS.md.
 
-const UA = "Mozilla/5.0 (compatible; PromptlyJobs/1.0)";
-const MAX_PAGES = 6;
+const cheerio = require("cheerio");
 
-// Countries as Avature slugifies them. Only used to read a country off the
-// slug, so an unknown one yields "" (no location) rather than a wrong one.
+const MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+
+// Countries as Avature slugifies them, for the tenants that put no location on
+// the card at all. Only an explicit country is read, so an unknown slug yields
+// "" and the caller's US gate drops it rather than guessing.
 const SLUG_COUNTRY = [
   ["United-States", "United States"],
-  ["Canada", "Canada"],
   ["United-Kingdom-of-Great-Britain-and-Northern-Ireland", "United Kingdom"],
+  ["United-Arab-Emirates", "United Arab Emirates"],
+  ["Saudi-Arabia", "Saudi Arabia"],
   ["United-Kingdom", "United Kingdom"],
   ["Australia", "Australia"],
+  ["Canada", "Canada"],
   ["India", "India"],
-  ["Saudi-Arabia", "Saudi Arabia"],
-  ["United-Arab-Emirates", "United Arab Emirates"],
 ];
 
-function clean(value) {
-  return String(value || "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'").replace(/&nbsp;/g, " ")
-    .replace(/&#8211;|&ndash;/g, "–").replace(/&#8226;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+// "17-Feb-2026" -> ISO. Avature's own posted date, so a role lands in the month
+// it actually dropped rather than the month Promptly first saw it.
+//
+// brassring.js imports this — Avature and BrassRing write dates the same way.
+// Do not remove it because nothing in THIS file calls it.
+function parsePostedAt(text) {
+  const m = String(text || "").match(/(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
+  if (!m) return null;
+  const month = MONTHS[m[2].toLowerCase()];
+  if (month === undefined) return null;
+  const d = new Date(Date.UTC(Number(m[3]), month, Number(m[1])));
+  return Number.isFinite(d.getTime()) ? d.toISOString() : null;
 }
 
-// "/FolderDetail/United-Kingdom-…-Operations-Director-UK/43598" -> "United Kingdom".
-// The country can follow a city ("London-United-Kingdom-…"), so the longest
-// spelling is tested first — "United-Kingdom" would otherwise shadow the full
-// "United-Kingdom-of-Great-Britain-and-Northern-Ireland".
+// "/FolderDetail/United-Kingdom-…-Operations-Director-UK/43598" -> "United
+// Kingdom". The country can follow a city ("London-United-Kingdom-…"), so the
+// longest spelling is tested first — "United-Kingdom" would otherwise shadow
+// the full "United-Kingdom-of-Great-Britain-and-Northern-Ireland".
 function countryFromSlug(url) {
-  const slug = decodeURIComponent(String(url || "").split("/").slice(-2, -1)[0] || "");
+  const slug = (() => {
+    try { return decodeURIComponent(String(url || "").split("/").slice(-2, -1)[0] || ""); }
+    catch { return String(url || "").split("/").slice(-2, -1)[0] || ""; }
+  })();
   for (const [needle, name] of SLUG_COUNTRY) {
     if (slug.includes(needle)) return name;
   }
   return "";
 }
 
-function parseArticles(html, origin) {
-  const out = [];
-  const blocks = String(html).split(/<article[^>]*class="[^"]*article--result[^"]*"/i).slice(1);
-  for (const block of blocks) {
-    const link = block.match(/<h3[^>]*article__header__text__title[^>]*>\s*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
-    if (!link) continue;
-    const title = clean(link[2]);
-    if (!title) continue;
-    const href = link[1].replace(/&amp;/g, "&");
-    const url = href.startsWith("http") ? href : `${origin}${href.startsWith("/") ? "" : "/"}${href}`;
-    const built = block.match(/<span[^>]*list-item-locationBuiltIn[^>]*>([\s\S]*?)<\/span>/i);
-    out.push({
-      title,
-      url,
-      location: built ? clean(built[1]) : countryFromSlug(url),
-      postedAt: null,
-    });
-  }
-  return out;
+function parseCard($, element, origin) {
+  const card = $(element);
+  // Both separators, deliberately. ManTech and MetLife write
+  // "/JobDetail/<slug>/<id>"; RGP writes "/Careers/JobDetail?jobTitle=…&jobId=…".
+  // The original selector required the trailing slash, so RGP's 113 rows all
+  // parsed to null and the board read as empty.
+  const link = card.find('a[href*="/JobDetail"], a[href*="/FolderDetail"]').first();
+  const href = link.attr("href");
+  const title = link.text().replace(/\s+/g, " ").trim();
+  if (!href || !title) return null;
+
+  // When the tenant gives the location its own span, that is the precise
+  // answer and nothing else needs guessing at. RGP's cards have no bullets, so
+  // the meta-line parse below returns the whole line — "California, United
+  // States Consulting", with the job category glued on.
+  const span = card.find(".list-item-locationBuiltIn").first().text().replace(/\s+/g, " ").trim();
+
+  // Everything after the title is the meta line; the location is its first
+  // bullet-separated segment.
+  const text = card.text().replace(/\s+/g, " ").trim();
+  const after = text.startsWith(title) ? text.slice(title.length) : text;
+  const segments = after.split("•").map((s) => s.trim()).filter(Boolean);
+  // Not every Avature tenant puts a location on the card — Jack Henry's meta
+  // line is just "Posted <date>" followed by share links. Strip that furniture
+  // and, if what's left doesn't look like a place, return "" rather than a
+  // sentence. Blank is safe: usOnly() drops it instead of guessing it's US.
+  let location = (segments[0] || "")
+    .replace(/\bposted\b\s*\d{1,2}-[A-Za-z]{3}-\d{4}/gi, "")
+    .replace(/\bshare this job\b[\s\S]*$/i, "")
+    .replace(/\bapply\b/gi, "")
+    .replace(/\bnow\b\s*$/i, "")
+    .trim();
+  if (location.length > 80 || /\bshare\b/i.test(location)) location = "";
+
+  if (span) location = span;
+  // Maximus leaves the location slot to a posted date and a job id, and writes
+  // the country into the URL slug instead. That is the board's own wording, so
+  // it is read rather than inferred.
+  if (!location) location = countryFromSlug(href);
+
+  let url;
+  try { url = new URL(href, origin).href; } catch { return null; }
+  return { title, url, location, postedAt: parsePostedAt(after) };
 }
 
-async function page(url) {
-  const res = await fetch(url, {
-    headers: { "User-Agent": UA, Accept: "text/html" },
-    redirect: "follow",
-    signal: AbortSignal.timeout(20000),
-  });
-  if (!res.ok) throw new Error(`${res.status} avature ${url}`);
-  return res.text();
-}
-
-// portal: the SearchJobs URL, e.g. "https://careers.rgp.com/Careers/SearchJobs".
-// paging: "job" (page size honoured) or "folder" (fixed page size, so the
-//         portal's own keyword search does the narrowing instead).
-async function fetchAvatureListings(portal, { paging = "job", perPage = 40, terms = [""] } = {}) {
-  const origin = new URL(portal).origin;
-  const sizeParam = paging === "folder" ? "folderRecordsPerPage" : "jobRecordsPerPage";
-  const offsetParam = paging === "folder" ? "folderOffset" : "jobOffset";
-  const step = paging === "folder" ? 6 : perPage;
+// searchUrl is the tenant's SearchJobs page.
+//
+// `pages`/`perPage` keep the original meaning and defaults, so ManTech's
+// { pages: 5, perPage: 10 } and MetLife's bare call behave exactly as before.
+async function fetchAvatureListings(searchUrl, { pages = 10, perPage = 10, paging = "job", terms = [""] } = {}) {
+  const origin = new URL(searchUrl).origin;
+  const folder = paging === "folder";
+  const sizeParam = folder ? "folderRecordsPerPage" : "jobRecordsPerPage";
+  const offsetParam = folder ? "folderOffset" : "jobOffset";
+  // A folder-paged portal returns six however many are asked for, so the
+  // offset must step by six or rows are skipped.
+  const step = folder ? 6 : perPage;
   const seen = new Map();
 
   for (const term of terms) {
-    for (let index = 0; index < MAX_PAGES; index += 1) {
-      const url = new URL(portal);
+    for (let page = 0; page < pages; page += 1) {
+      const url = new URL(searchUrl);
       url.searchParams.set(sizeParam, String(perPage));
-      url.searchParams.set(offsetParam, String(index * step));
+      url.searchParams.set(offsetParam, String(page * step));
       if (term) url.searchParams.set("search", term);
-      let rows;
+
+      let html;
       try {
-        rows = parseArticles(await page(url.toString()), origin);
+        const res = await fetch(url, {
+          headers: { "user-agent": "Mozilla/5.0 (compatible; PromptlyJobs/1.0)" },
+          signal: AbortSignal.timeout(12000),
+        });
+        if (!res.ok) break;
+        html = await res.text();
       } catch {
         break; // this term failed — keep what the others found
       }
-      const before = seen.size;
-      for (const row of rows) if (!seen.has(row.url)) seen.set(row.url, row);
-      // A short page is the last one; no new rows means the pager is not moving.
-      if (rows.length < step || seen.size === before) break;
+
+      const $ = cheerio.load(html);
+      const cards = $("article.article--result");
+      let added = 0;
+      cards.each((_, element) => {
+        const job = parseCard($, element, origin);
+        if (!job || seen.has(job.url)) return;
+        seen.set(job.url, job);
+        added += 1;
+      });
+      if (!cards.length || added === 0) break;
     }
   }
+
   return [...seen.values()];
 }
 
-module.exports = { fetchAvatureListings, parseArticles, countryFromSlug, clean };
+module.exports = { fetchAvatureListings, parsePostedAt, parseCard, countryFromSlug };

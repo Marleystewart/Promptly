@@ -1,94 +1,133 @@
 // Avature portals (api/_shared/avature.js).
 //
-// These were recorded as unreadable — "a fixed latest-20 with no offset". Both
-// halves were wrong: the list is server-rendered, and it pages. What is true is
-// that two portal generations name the pager differently, and that only one of
-// them honours a page size. Get that backwards and the reader silently returns
-// the first six rows of a 400-req board for ever, which is exactly the failure
-// this file exists to catch.
+// This file exists because of two real breakages, both silent.
+//
+// 1. The module is shared. brassring.js imports parsePostedAt from it and
+//    nothing in avature.js itself calls that function — so it looks unused and
+//    is easy to drop. Dropping it took UBS and Edward Jones down with a
+//    "parsePostedAt is not a function" crash, and a crashed source reports as
+//    an employer with no openings.
+//
+// 2. The card's job link is written two ways. ManTech and MetLife use
+//    "/JobDetail/<slug>/<id>"; RGP uses "/Careers/JobDetail?jobTitle=…&jobId=…".
+//    A selector that insists on the trailing slash parses every RGP card to
+//    null, and its 113-req board reads as empty with no error anywhere.
+//
+// Plus the thing that made the adapter necessary: two portal generations name
+// the pager differently, and only one honours a page size.
 
 const assert = require("node:assert/strict");
-const { fetchAvatureListings, parseArticles, countryFromSlug } = require("../api/_shared/avature.js");
+const { fetchAvatureListings, parsePostedAt, parseCard, countryFromSlug } = require("../api/_shared/avature.js");
+
+// ── The shared export brassring.js depends on ───────────────────────────────
+assert.equal(typeof parsePostedAt, "function",
+  "brassring.js imports parsePostedAt from here; removing it crashes UBS and Edward Jones");
+assert.equal(parsePostedAt("Job ID: 15518 • 17-Feb-2026"), "2026-02-17T00:00:00.000Z");
+assert.equal(parsePostedAt("no date here"), null, "an unparseable date is null, never today's date");
+assert.equal(parsePostedAt("31-Xxx-2026"), null, "an unknown month must not fall through to January");
+
+// ── Slug countries ─────────────────────────────────────────────────────────
+assert.equal(countryFromSlug("/careers/FolderDetail/United-States-Cyber-Intern/1"), "United States");
+assert.equal(
+  countryFromSlug("/careers/FolderDetail/Leeds-United-Kingdom-of-Great-Britain-and-Northern-Ireland-Director/2"),
+  "United Kingdom",
+  "the long UK spelling must be tested before the short one, and a leading city must not hide it");
+assert.equal(countryFromSlug("/careers/FolderDetail/Canada-Analyste/3"), "Canada");
+assert.equal(countryFromSlug("/careers/FolderDetail/Some-Town-Analyst/7"), "",
+  "an unrecognised slug yields NO location, so the caller's US gate drops it rather than guessing");
 
 const realFetch = global.fetch;
 const asked = [];
 
-const article = (id, title, href, locationSpan) => `
-  <article class="article article--result" id="article--${id}">
-    <div class="article__header"><div class="article__header__text">
-      <h3 class="article__header__text__title title title--10">
-        <a class="link" href="${href}"> ${title} </a>
-      </h3>
-      <div class="article__header__text__subtitle">
-        ${locationSpan || '<span class="list-item-posted">Posted 25-Sep-2026</span><span class="list-item-jobId">Job ID #43712</span>'}
-      </div>
-    </div></div>
+// RGP shape: query-string job link, location in its own span, no bullets.
+const rgpCard = (i) => `
+  <article class="article article--result" id="article--${i}">
+    <h3 class="article__header__text__title title title--10">
+      <a class="link" href="/Careers/JobDetail?jobTitle=Consultant+${i}&amp;jobId=${900 + i}"> Consultant ${i} </a>
+    </h3>
+    <div class="article__header__text__subtitle">
+      <span class="list-item-locationBuiltIn">Dallas, Texas, United States</span>
+    </div>
+    <div class="article__header__text__subtitle">
+      <span class="article__header__text__subtitle__category"> Consulting </span>
+    </div>
   </article>`;
 
-const loc = (text) => `<span class="list-item-locationBuiltIn">${text}</span>`;
+// Maximus shape: path job link, and the slot that would hold a location holds
+// a posted date and a job id instead.
+const maximusCard = (slug, id, title) => `
+  <article class="article article--result" id="article--${id}">
+    <h3 class="article__header__text__title title title--04">
+      <a class="link" href="/careers/FolderDetail/${slug}/${id}"> ${title} </a>
+    </h3>
+    <div class="article__header__text__subtitle">
+      <span class="list-item-posted">Posted 25-Sep-2026</span>
+      <span class="separator">&nbsp;&#8226;&nbsp;</span>
+      <span class="list-item-jobId">Job ID #${id}</span>
+    </div>
+  </article>`;
 
 global.fetch = async (url) => {
   const u = new URL(String(url));
   asked.push(u.pathname + u.search);
-  // RGP-style: page size honoured, so a full page is 40.
   if (u.pathname.startsWith("/Careers/")) {
     const offset = Number(u.searchParams.get("jobOffset") || 0);
     const body = offset === 0
-      ? Array.from({ length: 40 }, (_, i) =>
-          article(i + 1, `Consultant ${i}`, `/Careers/JobDetail?jobTitle=C${i}&amp;jobId=${900 + i}`, loc("Dallas, Texas, United States"))).join("")
-      : article(99, "Summer Analyst Intern", "/Careers/JobDetail?jobTitle=Intern&amp;jobId=1000", loc("New York, New York, United States"));
+      ? Array.from({ length: 40 }, (_, i) => rgpCard(i + 1)).join("")
+      : rgpCard(99);
     return { ok: true, status: 200, text: async () => `<html>${body}</html>` };
   }
-  // Maximus-style: page size IGNORED — always six, whatever is asked for.
   const offset = Number(u.searchParams.get("folderOffset") || 0);
-  const term = u.searchParams.get("search") || "";
   if (offset > 0) return { ok: true, status: 200, text: async () => "<html></html>" };
   const body = [
-    article(1, "Cyber Intern", `/careers/FolderDetail/United-States-Cyber-Intern-${term}/1`, null),
-    article(2, "Director UK", "/careers/FolderDetail/Leeds-United-Kingdom-of-Great-Britain-and-Northern-Ireland-Director/2", null),
-    article(3, "Analyste", "/careers/FolderDetail/Canada-Analyste/3", null),
+    maximusCard("United-States-Cyber-Intern", 1, "Cyber Intern"),
+    maximusCard("Leeds-United-Kingdom-of-Great-Britain-and-Northern-Ireland-Director", 2, "Director UK"),
+    maximusCard("Canada-Analyste", 3, "Analyste"),
   ].join("");
   return { ok: true, status: 200, text: async () => `<html>${body}</html>` };
 };
 
 (async () => {
   try {
-    // ── RGP shape: pages until a short page ────────────────────────────────
+    // ── RGP: page size honoured, so the walk ends on a short page ───────────
     asked.length = 0;
-    const rgp = await fetchAvatureListings("https://careers.rgp.com/Careers/SearchJobs", { paging: "job", perPage: 40 });
-    assert.match(asked[0], /jobRecordsPerPage=40&jobOffset=0/, "a job-paged portal must ask for the larger page");
-    assert.match(asked[1], /jobOffset=40/, "a FULL page must be followed by the next offset");
-    assert.equal(asked.length, 2, "a short page ends the walk — it must not keep asking");
-    assert.equal(rgp.length, 41);
-    assert.equal(rgp[40].title, "Summer Analyst Intern", "the second page's row must survive");
-    assert.equal(rgp[0].location, "Dallas, Texas, United States", "the location span is what RGP fills");
-    assert.equal(rgp[0].url, "https://careers.rgp.com/Careers/JobDetail?jobTitle=C0&jobId=900",
-      "the &amp; in the href must be decoded, or the link 404s");
+    const rgp = await fetchAvatureListings("https://careers.rgp.com/Careers/SearchJobs", { pages: 4, perPage: 40 });
+    assert.equal(rgp.length, 41, "a query-string job link must parse — insisting on /JobDetail/ empties the board");
+    assert.match(asked[0], /jobRecordsPerPage=40&jobOffset=0/);
+    assert.match(asked[1], /jobOffset=40/, "a full page of 40 must be followed by offset 40");
+    // The walk ends on a page that adds nothing NEW, not on a short page —
+    // Avature repeats the last page rather than returning an empty one, so a
+    // short-page rule would stop one page early on some tenants.
+    assert.equal(asked.length, 3, "page 3 repeats page 2's row, adds nothing, and ends the walk");
+    assert.equal(rgp[0].location, "Dallas, Texas, United States",
+      "the location span wins; the bullet parse would return the whole meta line with the category glued on");
+    assert.equal(rgp[0].url, "https://careers.rgp.com/Careers/JobDetail?jobTitle=Consultant+1&jobId=901",
+      "the &amp; in the href must be decoded, or the apply link 404s");
 
-    // ── Maximus shape: page size ignored, so the SEARCH does the narrowing ──
+    // ── Maximus: page size ignored, so the SEARCH does the narrowing ────────
     asked.length = 0;
     const mx = await fetchAvatureListings("https://maximus.avature.net/careers/SearchJobs", {
       paging: "folder", terms: ["internship", "graduate"],
     });
     assert.ok(asked.every((a) => a.includes("folderOffset")), "a folder-paged portal must use folderOffset");
+    // "internship" costs two: the page of rows, then one more to learn there
+    // are no others. "graduate" costs one, because every row it returns has
+    // already been seen — which is what stops a four-term read from being
+    // four full walks of the same board.
     assert.deepEqual(asked.map((a) => new URLSearchParams(a.split("?")[1]).get("search")),
-      ["internship", "graduate"],
-      "three rows is a short page, so each term costs exactly one request");
-    // Location comes from the URL slug here, because the row has no location span.
+      ["internship", "internship", "graduate"]);
+    assert.ok(asked.every((a) => Number(new URLSearchParams(a.split("?")[1]).get("folderOffset")) % 6 === 0),
+      "a folder-paged portal returns six however many are asked for, so the offset must step by six");
     const byTitle = new Map(mx.map((r) => [r.title, r.location]));
-    assert.equal(byTitle.get("Cyber Intern"), "United States");
-    assert.equal(byTitle.get("Director UK"), "United Kingdom",
-      "the long UK spelling must win over the short one, and a leading city must not hide it");
+    assert.equal(byTitle.get("Cyber Intern"), "United States",
+      "with no location span, the country comes from the posting path");
+    assert.equal(byTitle.get("Director UK"), "United Kingdom");
     assert.equal(byTitle.get("Analyste"), "Canada");
 
-    // A slug with no country we recognise yields NO location, never a guess —
-    // the positive US gate then drops it, which is the safe direction.
-    assert.equal(countryFromSlug("https://x.avature.net/careers/FolderDetail/Some-Town-Analyst/7"), "");
+    // Default options must stay what MetLife's bare call has always relied on.
+    assert.equal(fetchAvatureListings.length, 1, "searchUrl is the only required argument");
 
-    // A row with no title is not a job.
-    assert.equal(parseArticles(article(1, "", "/x/1", null), "https://x").length, 0);
-
-    console.log("Avature tests passed. Both pagers walk, and the slug country is read, not guessed.");
+    console.log("Avature tests passed. Both link shapes parse, both pagers walk, parsePostedAt is still exported.");
   } finally {
     global.fetch = realFetch;
   }
